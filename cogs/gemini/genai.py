@@ -180,7 +180,7 @@ class AI(commands.Cog):
 
             # Immediately use the "used" status message to indicate that the file API is used
             if _x_msgstatus is not None:
-                await _x_msgstatus.edit(content=f"Used: **[{attachment.filename}](<{attachment.url}>)**")
+                await _x_msgstatus.edit(content=f"Used: **{attachment.filename}**")
             else:
                 await ctx.send(f"Used: **{attachment.filename}**")
 
