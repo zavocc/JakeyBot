@@ -1,0 +1,11 @@
+**/__pycache__
+.vscode/
+temp/
+.venv/
+.idx/
+wavelink/plugins
+wavelink/application.yml
+wavelink/Lavalink.jar
+wavelink/logs
+chat_history.db
+dev.env

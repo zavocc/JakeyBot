@@ -1,0 +1,8 @@
+aiosqlite==0.20.0
+google-generativeai >= 0.7.2
+gradio_client==1.1.0
+jsonpickle==3.2.2
+py-cord >= 2.6.0
+python-dotenv==1.0.0
+PyYAML==6.0.1
+wavelink==3.4.1
