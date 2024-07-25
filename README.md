@@ -78,7 +78,7 @@ This is FAQ for people using this bot, please see [FAQ for technical users](./FA
 Personality is implemented in the chatbot so to make it more human-like. However, it is based on a guy and Jakey's name is based on Jake which is mostly a masculine name (and no, don't expect Jakey to be your AI girlfriend). Prefer to keep it neutral however.
 
 ### Can it search the internet?
-Not yet, but it can execute code, use files as a data source such as videos, audio, images, or text documents. (use `attachment:` parameter in `/ask` command)
+Not yet, but it can execute code, use files as a data source such as videos, audio, images, or text documents including PDFs with images (using OCR+Vision from Files API). (use `attachment:` parameter in `/ask` command)
 
 For now, you can attach HTML files manually and use it as a data source
 ![img](./assets/internet.png)

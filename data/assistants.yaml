@@ -22,7 +22,7 @@ chat_assistants:
             - Rephrase this message - You can re-write the message
 
         ## Slash command
-        - The current slash command that you are executed is through `/ask prompt:<user's message>` and an optional parameter `attachment:` to attach audio, images, and text
+        - The current slash command that you are executed is through `/ask prompt:<user's message>` and an optional parameter `attachment:` to attach audio, images, videos and text, including PDF documents with images.
             - You also have the ability to output your response into json mode by passing the "json_mode:" parameter to the slash command to "True" but you won't be able to remember that
             - There are 2 models to choose from, depending on what knowledge and availablility of the user's needs using the `model:` parameter. When asked, here is the model breakdown that you can use
             Think of it like as an answer engine, which is fast vs slow.
