@@ -7,9 +7,11 @@ import asyncio
 # A class that is responsible for managing and manipulating the chat history
 class HistoryManagement:
     def __init__(self, guild_id):
+        # Defaults
         self.context_history = {"prompt_history": [], "chat_history": None}
-        self.history_db = environ.get("CHAT_HISTORY_DB", "chat_history.db")
         self.guild_id = guild_id
+        self.history_db = environ.get("CHAT_HISTORY_DB", "chat_history.db")
+        self.tool_use = "code_execution"
 
     async def initialize(self):
         # Establish connection with SQLite
@@ -20,22 +22,31 @@ class HistoryManagement:
         await self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS chat_history (
                 guild_id INTEGER PRIMARY KEY,
-                context_history TEXT
+                context_history TEXT,
+                tool_use TEXT
             )
         """)
-        
-    async def load_history(self, check_length = False):
-        # First, check if the guild id exists in the database
+
+        # Check if the 'tool_use' column exists
+        await self.cursor.execute("PRAGMA table_info(chat_history)")
+        columns = [column[1] for column in await self.cursor.fetchall()]
+
+        # Add the 'tool_use' column if it doesn't exist
+        if 'tool_use' not in columns:
+            await self.cursor.execute("ALTER TABLE chat_history ADD COLUMN tool_use TEXT")
+            await self.set_config()
+
+        # check if the guild id exists in the database and set defaults
         _history = await self.cursor.execute("SELECT guild_id FROM chat_history WHERE guild_id = ?", (self.guild_id,))
-        if (await _history.fetchone()) is not None:
-            # Load the context history from the database associated with the guild_id
-            await _history.execute("SELECT context_history FROM chat_history WHERE guild_id = ?", (self.guild_id,))
-            self.context_history = jsonpickle.loads((await _history.fetchone())[0])
-        else:
-            # Create a database row for the guild id
-            await self.cursor.execute("INSERT INTO chat_history (guild_id, context_history) VALUES (?, ?)", (self.guild_id, jsonpickle.dumps(self.context_history)))
+        if await _history.fetchone() is None:
+            await _history.execute("INSERT INTO chat_history (guild_id, context_history, tool_use) VALUES (?, ?, ?)", (self.guild_id, jsonpickle.dumps(self.context_history), self.tool_use))
             await self.conn.commit()
 
+    async def load_history(self, check_length = False):
+        # Load the context history from the database associated with the guild_id
+        _history = await self.cursor.execute("SELECT context_history FROM chat_history WHERE guild_id = ?", (self.guild_id,))
+        self.context_history = jsonpickle.loads((await _history.fetchone())[0])
+       
         if check_length:
             # Check context history size
             if len(self.context_history["prompt_history"]) >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
@@ -47,6 +58,30 @@ class HistoryManagement:
         await self.conn.commit()
 
     async def clear_history(self):
+        # Automatically initialize the database
+        await self.initialize()
+
         # Remove the chat history from the database
         await self.cursor.execute("DELETE FROM chat_history WHERE guild_id = ?", (self.guild_id,))
         await self.conn.commit()
+
+    async def set_config(self, tool="code_execution"):
+        # Automatically initialize the database
+        await self.initialize()
+
+        self.tool_use = tool
+        _config = await self.cursor.execute(
+            "UPDATE chat_history SET tool_use = ? WHERE guild_id = ?",
+            (tool, self.guild_id)
+        )
+        await self.conn.commit()
+
+    async def get_config(self):
+        # Automatically initialize the database
+        await self.initialize()
+
+        _config = await self.cursor.execute("SELECT tool_use FROM chat_history WHERE guild_id = ?", (self.guild_id,))
+        _result = await _config.fetchone()
+        if _result is not None:
+            self.tool_use = _result[0]
+        return self.tool_use

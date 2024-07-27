@@ -57,7 +57,7 @@ Required fields to configure:
 - `GOOGLE_AI_TOKEN` - Gemini API token, please see [this link](https://aistudio.google.com/app/apikey) to obtain API keys (Its free)
 - `SYSTEM_USER_ID` - Its strongly advisable you to use your Discord user ID for administrative commands like eval. You probably don't want me to control your infrastructure 😉
 
-Please see [CONFIG.md](./CONFIG.md) for more information about configuration.
+Please see [CONFIG.md](./docs/CONFIG.md) for more information about configuration.
 
 ### Voice commands configuration:
 You can enable VC-related commands such as `/voice play` (which plays videos from YouTube and other supported sources) by downloading [Lavalink jar file](https://github.com/lavalink-devs/Lavalink/releases) and placing it as `wavelink/Lavalink.jar` in project's root directory.
@@ -71,14 +71,35 @@ Get started by asking Jakey `/ask prompt:Who are you and how can I get started`
 
 By default, it uses **Gemini 1.5 Flash** because it's cheap, widely used, and has the same multimodal and contextual capabilities as Pro but it is statistically nerfed in terms of performance and diverse domain understanding, but it is much better than **1.0 Pro** and **GPT-3.5** and on-parity (in some cases outclasses) with the first GPT-4 model snapshot from March 2023. Please see [the LLM arena for comparison](https://arena.lmsys.org/)
 
+## Get started
+Jakey provides commands such as:
+- `/ask` - Ask Jakey anything!
+  - Get started by asking `/ask` `prompt:` `Hey Jakey, I'm new, tell me your commands, features, and capabilities`
+  - Accepts file attachments in image, video, audio, text files, and PDFs (with images) by passing `attachment:` parameter
+  - JSON mode with `json_mode:True`
+  - Ephemeral conversation with `append_hist:True`
+  - You can choose between **Gemini 1.5 Flash** or **Gemini 1.5 Pro** using `model:` parameter
+- `/sweep` - Clear the conversation
+- `/feature` - Extend Jakey skills by activating chat tools! (Clears conversation when feature are set)
+- `/imagine` - Create images using Stable Diffusion 3
+- `/summarize` - Summarize the current text channel or thread and gather insights into a single summary thanks to Gemini 1.5 Flash's long context it can understand conversations even from the past decade!
+- `/mimic` - Mimics other users using webhook
+- `/voice` - Basic streaming audio functionality from YouTube, soundcloud and more!
+
+Jakey also has apps which is used to take action on a selected message. Such as explain, rephrase, or suggest messages.  
+
+![apps](./assets/apps.png)
+
 ## FAQ
-This is FAQ for people using this bot, please see [FAQ for technical users](./FAQ.md) to understand how data is stored or how the code works under the hood.
+This is FAQ for people using this bot, please see [FAQ for technical users](./docs/FAQ.md) to understand how data is stored or how the code works under the hood.
 
 ### Why Jakey instead of standard Gemini personality?
 Personality is implemented in the chatbot so to make it more human-like. However, it is based on a guy and Jakey's name is based on Jake which is mostly a masculine name (and no, don't expect Jakey to be your AI girlfriend). Prefer to keep it neutral however.
 
 ### Can it search the internet?
 Not yet, but it can execute code, use files as a data source such as videos, audio, images, or text documents including PDFs with images (using OCR+Vision from Files API). (use `attachment:` parameter in `/ask` command)
+
+You can also use [tools](./docs/TOOLS.md) using `/feature` command for Jakey to interact with services from outside world.
 
 For now, you can attach HTML files manually and use it as a data source
 ![img](./assets/internet.png)

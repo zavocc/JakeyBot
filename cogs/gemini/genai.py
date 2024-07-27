@@ -1,8 +1,10 @@
 from core.ai.assistants import Assistants
 from core.ai.core import GenAIConfigDefaults
 from core.ai.history import HistoryManagement as histmgmt
+from core.ai.tools import BaseFunctions
 from discord.ext import commands
 from google.api_core.exceptions import PermissionDenied, InternalServerError
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from os import environ, remove
 from pathlib import Path
 import google.generativeai as genai
@@ -38,15 +40,17 @@ class AI(commands.Cog):
     )
     @discord.option(
         "attachment",
-        description="Attach your files to answer from. Supports image, audio, video, and some text files",
+        description="Attach your files to answer from. Supports image, audio, video, text, and PDF files",
         required=False,
     )
     @discord.option(
         "model",
         description="Choose a model to use for the conversation - flash is the default model",
-        choices=["Gemini 1.5 Pro (2M) - advanced chat tasks with low availability",
-                "Gemini 1.5 Flash (1M) - general purpose with high availability",],
-        default="Gemini 1.5 Flash (1M)",
+        choices=[
+            discord.OptionChoice("Gemini 1.5 Pro (2M) - advanced chat tasks with low availability", "gemini-1.5-pro-001"),
+            discord.OptionChoice("Gemini 1.5 Flash (1M) - general purpose with high availability", "gemini-1.5-flash-001")
+        ],
+        default="gemini-1.5-flash-001",
         required=False
     )
     @discord.option(
@@ -89,7 +93,7 @@ class AI(commands.Cog):
 
         # Load the context history and initialize the HistoryManagement class
         HistoryManagement = histmgmt(guild_id)
-        # Initialize
+        # Initialize chat history for loading and saving
         await HistoryManagement.initialize()
 
         try:
@@ -112,24 +116,25 @@ class AI(commands.Cog):
         # default system prompt - load assistants
         assistants_system_prompt = Assistants()
 
+        # tool use
+        tools_functions = BaseFunctions(self.bot, ctx)
+
         # Check whether to output as JSON and disable code execution
         if not json_mode:
             # enable plugins
-            enabled_tools = "code_execution"
+            _config = await HistoryManagement.get_config()
+
+            # check if its a code_execution
+            if _config == "code_execution":
+                enabled_tools = "code_execution"
+            else:
+                enabled_tools = getattr(tools_functions, _config)
         else:
             genai_configs.generation_config.update({"response_mime_type": "application/json"})
             enabled_tools = None
             
         # Model configuration - the default model is flash
-        if model.split("-")[0].strip() in genai_configs.supported_models:
-            # Check if the model is implemented
-            if genai_configs.supported_models[model.split("-")[0].strip()] == "unsupported-yet-to-be-implemented":
-                await ctx.respond("⚠️ This model is not yet available. Please try again later")
-                return
-
-            genai_configs.model_config = genai_configs.supported_models[model.split("-")[0].strip()]
-
-        model_to_use = genai.GenerativeModel(model_name=genai_configs.model_config, safety_settings=genai_configs.safety_settings_config, generation_config=genai_configs.generation_config, system_instruction=assistants_system_prompt.jakey_system_prompt, tools=enabled_tools)
+        model_to_use = genai.GenerativeModel(model_name=model, safety_settings=genai_configs.safety_settings_config, generation_config=genai_configs.generation_config, system_instruction=assistants_system_prompt.jakey_system_prompt, tools=enabled_tools)
 
         ###############################################
         # File attachment processing
@@ -184,11 +189,14 @@ class AI(commands.Cog):
             else:
                 await ctx.send(f"Used: **{attachment.filename}**")
 
+            # Add caution that the attachment data would be lost in 48 hours
+            await ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context cache after 48 hours.")
+
         ###############################################
         # Answer generation
         ###############################################
         final_prompt = [_xfile_uri, f'{prompt}'] if _xfile_uri is not None else f'{prompt}'
-        chat_session = model_to_use.start_chat(history=context_history["chat_history"], enable_automatic_function_calling=True)
+        chat_session = model_to_use.start_chat(history=context_history["chat_history"])
 
         if not json_mode:
             # Re-write the history if an error has occured
@@ -206,6 +214,41 @@ class AI(commands.Cog):
                     if x.role and y.text
                 ]
                 answer = await chat_session.send_message_async(final_prompt)
+
+            # Call tools
+            # DEBUG: content.parts[0] is the first step message and content.parts[1] is the function calling data that is STOPPED
+            # print(answer.candidates[0].content)
+            _candidates = answer.candidates[0]
+            _func_call = _candidates.content.parts[-1].function_call
+            if _func_call.name and _func_call.args:
+                # Call the function through their callables with getattr
+                try:
+                    _result = await getattr(tools_functions, f"_callable_{_func_call.name}")(**_func_call.args)
+                except AttributeError as e:
+                    await ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
+                    return
+
+                # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
+                answer = await chat_session.send_message_async(
+                    genai.protos.Content(
+                        parts=[
+                            genai.protos.Part(
+                                function_response = genai.protos.FunctionResponse(
+                                    name = _func_call.name,
+                                    response = {"response": _result}
+                                )
+                            )
+                        ]
+                    ),
+                    safety_settings={
+                        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE
+                    }
+                )
+
+                await ctx.send(f"Used: **{_func_call.name}**")
         else:
             answer = await model_to_use.generate_content_async(final_prompt)
     
@@ -242,10 +285,10 @@ class AI(commands.Cog):
             await HistoryManagement.save_history()
             await ctx.send(inspect.cleandoc(f"""
                            > 📃 Context size: **{len(context_history["prompt_history"])}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
-                           > ✨ Model used: **{genai_configs.model_config}**
+                           > ✨ Model used: **{model}**
                            """))
         else:
-            await ctx.send(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{genai_configs.model_config}**")
+            await ctx.send(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{model}**")
 
     # Handle all unhandled exceptions through error event, handled exceptions are currently image analysis safety settings
     @ask.error
@@ -273,50 +316,6 @@ class AI(commands.Cog):
         
         # Raise error
         raise error
-
-    ###############################################
-    # Clear context command
-    ###############################################
-    @commands.slash_command(
-        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
-        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
-    )
-    async def sweep(self, ctx):
-        """Clear the context history of the conversation"""
-        # Check if SHARED_CHAT_HISTORY is enabled
-        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
-            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
-        else:
-            guild_id = ctx.author.id
-
-        # This command is available in DMs
-        if ctx.guild is not None:
-            # This returns None if the bot is not installed or authorized in guilds
-            # https://docs.pycord.dev/en/stable/api/models.html#discord.AuthorizingIntegrationOwners
-            if ctx.interaction.authorizing_integration_owners.guild == None:
-                await ctx.respond("🚫 This commmand can only be used in DMs or authorized guilds!")
-                return  
-
-        # Initialize history
-        HistoryManagement = histmgmt(guild_id)
-        await HistoryManagement.initialize()
-
-        # Clear
-        await HistoryManagement.clear_history()
-        await ctx.respond("✅ Context history cleared!")
-
-    # Handle errors
-    @sweep.error
-    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
-        # Get original error
-        _error = getattr(error, "original")
-        if isinstance(_error, PermissionError):
-            await ctx.respond("⚠️ An error has occured while clearing chat history, logged the error to the owner")
-        elif isinstance(_error, FileNotFoundError):
-            await ctx.respond("ℹ️ Chat history is already cleared!")
-        else:
-            await ctx.respond("❌ Something went wrong, please check the console logs for details.")
-            raise error
 
 def setup(bot):
     bot.add_cog(AI(bot))

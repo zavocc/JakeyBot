@@ -1,11 +1,12 @@
-import datetime
-import discord
-import yaml
 from discord.ext import bridge, commands
 from dotenv import load_dotenv
 from os import chdir, environ, mkdir
 from pathlib import Path
 from inspect import cleandoc
+import datetime
+import discord
+import importlib
+import yaml
 
 # Go to project root directory
 chdir(Path(__file__).parent.resolve())
@@ -13,11 +14,16 @@ chdir(Path(__file__).parent.resolve())
 # Load environment variables
 load_dotenv("dev.env")
 
-# Prepare playback support
+# Playback support
 playback_support=False
-if Path("wavelink").exists() and Path("wavelink/Lavalink.jar").is_file() and Path("wavelink/application.yml").is_file():
-    import wavelink
+try:
+    wavelink = importlib.import_module("wavelink")
     playback_support=True
+except ModuleNotFoundError as e:
+    print(f"Playback support is disabled: {e}")
+else:
+    if Path("wavelink").exists() and Path("wavelink/Lavalink.jar").is_file() and Path("wavelink/application.yml").is_file():
+        playback_support=True
 
 # Check if TOKEN is set
 if "TOKEN" in environ and (environ.get("TOKEN") == "INSERT_DISCORD_TOKEN") and (environ.get("TOKEN") is not None) or (environ.get("TOKEN") == ""):
@@ -40,23 +46,22 @@ bot = bridge.Bot(command_prefix=commands.when_mentioned_or("$"), intents = inten
 ###############################################
 # Initiate wavelink for music playback feature
 ###############################################
-if playback_support:
-    async def wavelink_setup():
-        await bot.wait_until_ready()
-        # https://wavelink.dev/en/latest/recipes.html
-        ENV_LAVALINK_HOST = environ.get("ENV_LAVALINK_HOST") if environ.get("ENV_LAVALINK_HOST") is not None else "0.0.0.0"
-        ENV_LAVALINK_PORT = environ.get("ENV_LAVALINK_PORT") if environ.get("ENV_LAVALINK_PORT") is not None else "2333"
-        ENV_LAVALINK_PASS = environ.get("ENV_LAVALINK_PASS") if environ.get("ENV_LAVALINK_PASS") is not None else "youshallnotpass"
+async def wavelink_setup():
+    await bot.wait_until_ready()
+    # https://wavelink.dev/en/latest/recipes.html
+    ENV_LAVALINK_HOST = environ.get("ENV_LAVALINK_HOST") if environ.get("ENV_LAVALINK_HOST") is not None else "0.0.0.0"
+    ENV_LAVALINK_PORT = environ.get("ENV_LAVALINK_PORT") if environ.get("ENV_LAVALINK_PORT") is not None else "2333"
+    ENV_LAVALINK_PASS = environ.get("ENV_LAVALINK_PASS") if environ.get("ENV_LAVALINK_PASS") is not None else "youshallnotpass"
 
-        node: wavelink.Node = wavelink.Node(
-            uri=f"ws://{ENV_LAVALINK_HOST}:{ENV_LAVALINK_PORT}",
-            password=ENV_LAVALINK_PASS
-        )
+    node = wavelink.Node(
+        uri=f"ws://{ENV_LAVALINK_HOST}:{ENV_LAVALINK_PORT}",
+        password=ENV_LAVALINK_PASS
+    )
 
-        await wavelink.Pool.connect(
-            client=bot,
-            nodes=[node]
-        )
+    await wavelink.Pool.connect(
+        client=bot,
+        nodes=[node]
+    )
 
 ###############################################
 # ON READY
