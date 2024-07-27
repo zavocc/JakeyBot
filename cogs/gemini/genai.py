@@ -219,8 +219,10 @@ class AI(commands.Cog):
             # DEBUG: content.parts[0] is the first step message and content.parts[1] is the function calling data that is STOPPED
             # print(answer.candidates[0].content)
             _candidates = answer.candidates[0]
-            _func_call = _candidates.content.parts[-1].function_call
-            if _func_call.name and _func_call.args:
+
+            if 'function_call' in _candidates.content.parts[-1]:
+                _func_call = _candidates.content.parts[-1].function_call
+
                 # Call the function through their callables with getattr
                 try:
                     _result = await getattr(tools_functions, f"_callable_{_func_call.name}")(**_func_call.args)
