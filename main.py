@@ -18,11 +18,10 @@ load_dotenv("dev.env")
 playback_support=False
 try:
     wavelink = importlib.import_module("wavelink")
-    playback_support=True
 except ModuleNotFoundError as e:
     print(f"Playback support is disabled: {e}")
 else:
-    if Path("wavelink").exists() and Path("wavelink/Lavalink.jar").is_file() and Path("wavelink/application.yml").is_file():
+    if Path("_wavelink").exists() and Path("_wavelink/Lavalink.jar").is_file() and Path("_wavelink/application.yml").is_file():
         playback_support=True
 
 # Check if TOKEN is set
