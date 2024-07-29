@@ -35,10 +35,10 @@ class ToolImpl(ToolsDefinitions):
 
         # Import required libs
         try:
+            aiohttp = importlib.import_module("aiohttp")
             bs4 = importlib.import_module("bs4")
             ddg = importlib.import_module("duckduckgo_search")
             inspect = importlib.import_module("inspect")
-            requests = importlib.import_module("requests")
         except ModuleNotFoundError:
             return "This tool is not available at the moment"
 
@@ -61,30 +61,35 @@ class ToolImpl(ToolsDefinitions):
         
         page_contents = []
         try:
-            for url in links:
-                # Perform a request
-                _page_text = requests.get(url, verify=False, allow_redirects=True).text
+            # Create ClientSession
+            # https://github.com/aio-libs/aiohttp/issues/955#issuecomment-230897285
+            async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=False)) as session:
+                for url in links:
+                    # Perform a request
+                    async with session.get(url, allow_redirects=True, timeout=10) as request:
+                        _page_text = await request.text()
 
-                # Scrape with BeautifulSoup
-                _scrapdata = bs4.BeautifulSoup(_page_text, 'html.parser')
+                    # Scrape with BeautifulSoup
+                    _scrapdata = bs4.BeautifulSoup(_page_text, 'html.parser')
 
-                # Clean the text
-                _cleantext = "\n".join([x.text for x in _scrapdata.find_all(['article', 'p'])])
-                _cleantext = "\n".join([x.strip() for x in _cleantext.splitlines() if x.strip()])
+                    # Clean the text
+                    _cleantext = "\n".join([x.text for x in _scrapdata.find_all(['article', 'p'])])
+                    _cleantext = "\n".join([x.strip() for x in _cleantext.splitlines() if x.strip()])
 
-                # Format
-                page_contents.append(inspect.cleandoc(f"""
-                
-                ---
-                # Page URL: {url} 
-                # Page Title: {_scrapdata.title}
+                    # Format
+                    page_contents.append(inspect.cleandoc(f"""
+                    
+                    ---
+                    # Page URL: {url} 
+                    # Page Title: {_scrapdata.title}
 
-                # Page contents:
-                ***
-                {_cleantext}
-                ***
-                ---
-                """))
+                    # Page contents:
+                    ***
+                    {_cleantext}
+                    ***
+                    ---
+                    """))
+    
         except Exception as e:
             return f"An error has occured during web browsing process, reason: {e}"
 
