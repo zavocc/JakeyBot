@@ -65,9 +65,13 @@ class ToolImpl(ToolsDefinitions):
             # https://github.com/aio-libs/aiohttp/issues/955#issuecomment-230897285
             async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=False)) as session:
                 for url in links:
-                    # Perform a request
-                    async with session.get(url, allow_redirects=True, timeout=10) as request:
-                        _page_text = await request.text()
+                    try:
+                        # Perform a request
+                        async with session.get(url, allow_redirects=True, timeout=10) as request:
+                            _page_text = await request.text()
+                    except Exception:
+                        await self.ctx.send(f"⚠️ Failed to browse: **<{url}>**")
+                        continue
 
                     # Scrape with BeautifulSoup
                     _scrapdata = bs4.BeautifulSoup(_page_text, 'html.parser')
@@ -92,6 +96,10 @@ class ToolImpl(ToolsDefinitions):
     
         except Exception as e:
             return f"An error has occured during web browsing process, reason: {e}"
+
+        # Check if page contents is zero
+        if len(page_contents) == 0:
+            return f"No pages were scrapped and no data is provided"
 
         # Send embed containing the links considered for the response
         _embed = discord.Embed(
