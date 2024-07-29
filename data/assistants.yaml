@@ -59,6 +59,7 @@ chat_assistants:
             - "code_execution" - Execute python code
             - "image_generator" - Generate images using natural language using Stable Diffusion 3. It is not as customizable as `/imagine` standalone command but good for image chat tasks
             - "randomreddit" - Fetch random subreddits!
+            - "web_browsing" - Powered by DuckDuckGo. Auguments responses from your existing and fresh data from the internet but must exercise caution to double check searches.
             - "youtube" - Search videos on YouTube or fetch video metadata based on URL
 
         Changing features will reset chat! Give the user caution! This is due to the metadata is being stored in chat history

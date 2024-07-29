@@ -97,11 +97,17 @@ This is FAQ for people using this bot, please see [FAQ for technical users](./do
 Personality is implemented in the chatbot so to make it more human-like. However, it is based on a guy and Jakey's name is based on Jake which is mostly a masculine name (and no, don't expect Jakey to be your AI girlfriend). Prefer to keep it neutral however.
 
 ### Can it search the internet?
-Not yet, but it can execute code, use files as a data source such as videos, audio, images, or text documents including PDFs with images (using OCR+Vision from Files API). (use `attachment:` parameter in `/ask` command)
+Web Search (beta) can be used by enabling it under `/feature` command capability named "Web Search with DuckDuckGo" and ask queries with keywords like "Search the web"
 
-You can also use [tools](./docs/TOOLS.md) using `/feature` command for Jakey to interact with services from outside world.
+Web search performs in two steps
+1. It searches the query through DuckDuckGo API and collects the links needed for page summarization
+2. The list of URLs is then being scrapped and agregates them so the model 
 
-For now, you can attach HTML files manually and use it as a data source
+The maximum number of queries can be used is 6 to prevent tokens from depleting so quickly due to large articles and causing slower responses as context builds up. It does not use embeddings at the moment.
+
+Its recommended to use Gemini 1.5 Pro to better utilize Tool use but Flash also works. Keep in mind that the model sometimes cannot pick up the tool schema needed to perform web search action, if it fabricates its responses, explicitly tell the model to search the web.
+
+You can also attach HTML files manually as part of attachment if you want a single page summarization
 ![img](./assets/internet.png)
 
 ### Are models free to use?
