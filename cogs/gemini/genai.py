@@ -8,11 +8,12 @@ from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from os import environ, remove
 from pathlib import Path
 import google.generativeai as genai
+import aiohttp
+import aiofiles
 import asyncio
 import discord
 import inspect
 import random
-import requests
 
 class AI(commands.Cog):
     def __init__(self, bot):
@@ -145,15 +146,13 @@ class AI(commands.Cog):
             # Download the attachment
             _xfilename = f"JAKEY.{guild_id}.{random.randint(5000, 6000)}.{attachment.filename}"
             try:
-                with requests.get(attachment.url, allow_redirects=True, stream=True) as _xattachments:
-                    # Raise error if the request failed
-                    _xattachments.raise_for_status()
-
-                    # write to file with random number ID
-                    with open(f"{environ.get('TEMP_DIR', 'temp')}/{_xfilename}", "wb") as filepath:
-                        for _chunk in _xattachments.iter_content(chunk_size=4096):
-                            filepath.write(_chunk)
-            except requests.exceptions.HTTPError as httperror:
+                async with aiohttp.ClientSession(raise_for_status=True) as session:
+                    async with session.get(attachment.url, allow_redirects=True) as _xattachments:
+                        # write to file with random number ID
+                        async with aiofiles.open(f"{environ.get('TEMP_DIR', 'temp')}/{_xfilename}", "wb") as filepath:
+                            async for _chunk in _xattachments.content.iter_chunked(8192):
+                                await filepath.write(_chunk)
+            except aiohttp.ClientError as httperror:
                 # Remove the file if it exists ensuring no data persists even on failure
                 if Path(f"{environ.get('TEMP_DIR', 'temp')}/{_xfilename}").exists():
                     remove(f"{environ.get('TEMP_DIR', 'temp')}/{_xfilename}")
@@ -311,7 +310,7 @@ class AI(commands.Cog):
         elif isinstance(error, InternalServerError):
             await ctx.respond("⚠️ Something went wrong (500) and its not your fault but its mostly you! If that's the case, please retry or try changing the model or rewrite your prompt.")
         # For failed downloads from attachments
-        elif isinstance(error, requests.exceptions.HTTPError):
+        elif isinstance(error, aiohttp.ClientError):
             await ctx.respond("⚠️ Uh oh! Something went wrong while processing file attachment! Please try again later.")
         else:
             await ctx.respond(f"⚠️ Uh oh! I couldn't answer your question, something happend to our end!\nHere is the logs for reference and troubleshooting:\n ```{error}```")
