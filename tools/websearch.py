@@ -87,7 +87,7 @@ class ToolImpl(ToolsDefinitions):
                     
                     ---
                     # Page URL: {url} 
-                    # Page Title: {_scrapdata.title}
+                    # Page Title: {_scrapdata.title.text}
 
                     # Page contents:
                     ***
