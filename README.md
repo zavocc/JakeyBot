@@ -107,9 +107,9 @@ The maximum number of queries can be used is 6 to prevent tokens from depleting 
 
 Its recommended to use Gemini 1.5 Pro to better utilize Tool use but Flash also works. Keep in mind that the model sometimes cannot pick up the tool schema needed to perform web search action, if it fabricates its responses, explicitly tell the model to search the web.
 
-Using web search can affect the response overall performance, due to number of pages are being passed through the model which is quite similar to attaching a single 20 page PDF being processed. Its recommended to use web search sparingly if you want the model to be aware with certain information. You can also tell the model how many searches it can perform (but queries are maximum to 6) optimally 2-3 searches.
+Using web search can affect the response overall performance, due to number of pages are being passed depending through the query through the model which is quite similar to attaching a single 20 page PDF being processed. Its recommended to use web search sparingly if you want the model to be aware with certain information. You can also tell the model how many searches it can perform (but queries are maximum to 6) optimally 2-3 searches.
 
-Depending on a website, some pages may not be used for responses that does not have atleast p, ol, li, ul, and h1-h6 tags.
+Depending on a website, some pages may not be used for responses that does not have extractable textual data.
 
 You can also attach HTML files manually as part of attachment if you want a single page summarization
 ![img](./assets/internet.png)
