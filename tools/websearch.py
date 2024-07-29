@@ -77,7 +77,7 @@ class ToolImpl(ToolsDefinitions):
                     _scrapdata = bs4.BeautifulSoup(_page_text, 'html.parser')
 
                     # Clean the text
-                    _cleantext = "\n".join([x.text for x in _scrapdata.find_all(['article', 'p'])])
+                    _cleantext = "\n".join([x.text for x in _scrapdata.find_all(['article', 'p', 'li', 'ul'])])
                     _cleantext = "\n".join([x.strip() for x in _cleantext.splitlines() if x.strip()])
 
                     # Format
