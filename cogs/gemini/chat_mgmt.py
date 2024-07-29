@@ -68,6 +68,7 @@ class ChatMgmt(commands.Cog):
             discord.OptionChoice("Code Execution with Python", "code_execution"),
             discord.OptionChoice("Image Generator with Stable Diffusion 3", "image_generator"),
             discord.OptionChoice("Random Reddit", "randomreddit"),
+            discord.OptionChoice("Web Browsing with DuckDuckGo", "web_browsing"),
             discord.OptionChoice("YouTube Search", "youtube")
         ]
     )

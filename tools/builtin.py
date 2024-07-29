@@ -44,10 +44,17 @@ class ToolImpl(ToolsDefinitions):
         self.bot = bot
         self.ctx = ctx
 
-    async def randomreddit(self, subreddit: str):
+    async def _randomreddit(self, subreddit: str):
         # Fetch subreddit
-        requests = importlib.import_module("requests")
-        subreddit = requests.get(f"https://meme-api.com/gimme/{subreddit}").json()
+        aiohttp = importlib.import_module("aiohttp")
+
+        # GET meme-api.com
+        try:
+            async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=False)) as session:
+                async with await session.get(f"https://meme-api.com/gimme/{subreddit}") as request:
+                    subreddit = await request.json()
+        except Exception as e:
+            return f"An error has occured while fetching reddit, reason: {e}"
         
         # Serialize objects and get the URL, image preview and title
         rdt_url = subreddit.get("postLink", "N/A")
@@ -57,7 +64,7 @@ class ToolImpl(ToolsDefinitions):
         # Print meme information
         return f"[{rdt_title}]({rdt_image}) ([source]({rdt_url}))"
     
-    async def youtube(self, query: str, is_youtube_link: bool):
+    async def _youtube(self, query: str, is_youtube_link: bool):
         # Limit searches 1-10 results
         #if max_results > 10 or max_results < 1:
         #    max_results = 10

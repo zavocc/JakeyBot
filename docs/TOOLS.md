@@ -18,6 +18,7 @@ Jakey already has few tools since its initial implementation, first-party built-
 - Code execution (default) - Executes Python code and performs calculations but it cannot exchange unstructured data, this has been used by default before Jakey Tools are implemented.
 - Image generation with Stable Diffusion 3 - Calls Huggingface spaces endpoints to generate an image within using the space from [stabilityai/stable-diffusion-3-medium](https://huggingface.co/spaces/stabilityai/stable-diffusion-3-medium) but the model can only pass `prompt`, `width` and `height` parameters unlike `/imagine` command and caps to 1344x1344 resolution at max. Since we're using public space endpoints, this is much slower than managed plans. This tool sends the image output to the current Discord thread where you have the permission or Jakey to send messages.
 - Random Reddit - This is a simple tool to fetch random posts with images from subreddits of your choice.
+- Web Browsing with DuckDuckGo - Simple web search using DuckDuckGo and scrapes webpage contents to augument responses with Jakey. This only supports upto 6 webpage query max.
 - YouTube Search - When enabled, the model can search for videos based on your request and extract video metadata from YouTube if you provided a YouTube URL.
 
 Using these Tools is in currently beta and is subject to change, you agree that your chats may not always call the tool correctly.
@@ -35,7 +36,7 @@ If you already enabled particular tool and re-ran the command with the same tool
 The only way to opt out of tools is to use Code Execution. Since its a native capability from Gemini API and does not show interstitial when used in any way. Having this capability always enabled reduces the model to fabricate calculations and make output assumptions from Python code. But code execution cannot be used with other tools at the same time
 
 ## Limitations
-- Jakey may not always call the tool especially on first conversation. You can always explicitly ask Jakey a follow up question to use that particular feature (e.g. "Search it using YouTube tool"), refine your prompt, or clear your chat history (as it may influence how it should call tools).
+- Jakey may not always call the tool especially on first conversation. You can always explicitly ask Jakey a follow up question to use that particular feature (e.g. "Search it using YouTube tool"), refine your prompt, or clear your chat history (as it may influence how it should call tools). For best results, its suggested to use the 1.5 Pro model to better call function automatically in some cases.
 - Any unstructured data (e.g. attachments) cannot be passed within functions as [the schema only allows certain input and output types](https://github.com/google-gemini/generative-ai-python/blob/main/docs/api/google/generativeai/protos/Type.md) and preferrably inline input parameters (subject to change as more tools are going to be implemented). 
 
     While output data is still limited to supported types mentioned, all of the unstructured data outputs can utilize Discord API (pycord) inside the function for yielding the result by sending the attachment and the only data that is going to be returned to the model is the result/status. Meaning, the model has no idea what it actually outputs and only assumes whether if it was successful or not.
@@ -110,7 +111,8 @@ class ToolImpl(ToolsDefinitions):
     # All functions must be in async even if there's nothing to be awaited, and all functions must have a return statement
 
     # The signature must be in order according to the schema
-    async def multiply (self, a, b, c):
+    # and the method name must not be the same as attribute name from the schema to prevent confusion
+    async def _multiply(self, a, b, c):
         # Return types must be from the supported types as
         # https://github.com/google-gemini/generative-ai-python/blob/main/docs/api/google/generativeai/protos/Type.md
         return a*b*c
@@ -167,7 +169,7 @@ class BaseFunctions:
     #
     # You just need to specify your function name and signature with default values for optional params in order
     async def _callable_multiply(self, a, b, c = 1):
-        return await self.example.multiply(a, b, c)
+        return await self.example._multiply(a, b, c)
 ```
 
 ### Step 3: Making your tool visible to Discord UI
