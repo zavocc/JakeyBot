@@ -18,7 +18,7 @@ Jakey already has few tools since its initial implementation, first-party built-
 - Code execution (default) - Executes Python code and performs calculations but it cannot exchange unstructured data, this has been used by default before Jakey Tools are implemented.
 - Image generation with Stable Diffusion 3 - Calls Huggingface spaces endpoints to generate an image within using the space from [stabilityai/stable-diffusion-3-medium](https://huggingface.co/spaces/stabilityai/stable-diffusion-3-medium) but the model can only pass `prompt`, `width` and `height` parameters unlike `/imagine` command and caps to 1344x1344 resolution at max. Since we're using public space endpoints, this is much slower than managed plans. This tool sends the image output to the current Discord thread where you have the permission or Jakey to send messages.
 - Random Reddit - This is a simple tool to fetch random posts with images from subreddits of your choice.
-- Web Browsing with DuckDuckGo - Simple web search using DuckDuckGo and scrapes webpage contents to augument responses with Jakey. This only supports upto 6 webpages max with "li", "ul", "p" and "article" elements for now.
+- Web Browsing with DuckDuckGo - Simple web search using DuckDuckGo and scrapes webpage contents to augument responses with Jakey. This only supports upto 6 webpages max with "li", "ul", "ol", "p" and "h1-h6" elements for now.
 - YouTube Search - When enabled, the model can search for videos based on your request and extract video metadata from YouTube if you provided a YouTube URL.
 
 Using these Tools is in currently beta and is subject to change, you agree that your chats may not always call the tool correctly.

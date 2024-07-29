@@ -76,8 +76,10 @@ class ToolImpl(ToolsDefinitions):
                     # Scrape with BeautifulSoup
                     _scrapdata = bs4.BeautifulSoup(_page_text, 'html.parser')
 
-                    # Clean the text
-                    _cleantext = "\n".join([x.text for x in _scrapdata.find_all(['article', 'p', 'li', 'ul'])])
+                    # Find all elements and clean the text
+                    _common_tags = ['p', 'li', 'ul', 'ol']
+                    _common_tags.extend([f"h{i}" for i in range(1, 7)])
+                    _cleantext = "\n".join([x.text for x in _scrapdata.find_all(_common_tags)])
                     _cleantext = "\n".join([x.strip() for x in _cleantext.splitlines() if x.strip()])
 
                     # Format
