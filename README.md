@@ -101,7 +101,7 @@ Web Search (beta) can be used by enabling it under `/feature` command capability
 
 Web search performs in two steps
 1. It searches the query through DuckDuckGo API and collects the links needed for page summarization
-2. The list of URLs is then being scrapped and agregates them so the model 
+2. The list of URLs is then being scrapped and agregates them so the model can ground them
 
 The maximum number of queries can be used is 6 to prevent tokens from depleting so quickly due to large articles and causing slower responses as context builds up. It does not use embeddings at the moment.
 
