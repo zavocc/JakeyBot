@@ -20,24 +20,6 @@ class ToolsDefinitions:
         ]
     )
 
-    # Web Browsing
-    web_browsing = genai.protos.Tool(
-        function_declarations=[
-            genai.protos.FunctionDeclaration(
-                name = "web_browsing",
-                description = "Search the web from information around the world powered by DuckDuckGo",
-                parameters=genai.protos.Schema(
-                    type=genai.protos.Type.OBJECT,
-                    properties={
-                        'query':genai.protos.Schema(type=genai.protos.Type.STRING),
-                        'max_results':genai.protos.Schema(type=genai.protos.Type.NUMBER)
-                    },
-                    required=['query']
-                )
-            )
-        ]
-    )
-
     # YouTube
     youtube = genai.protos.Tool(
         function_declarations=[
@@ -62,7 +44,7 @@ class ToolImpl(ToolsDefinitions):
         self.bot = bot
         self.ctx = ctx
 
-    async def randomreddit(self, subreddit: str):
+    async def _randomreddit(self, subreddit: str):
         # Fetch subreddit
         requests = importlib.import_module("requests")
         subreddit = requests.get(f"https://meme-api.com/gimme/{subreddit}").json()
@@ -75,45 +57,7 @@ class ToolImpl(ToolsDefinitions):
         # Print meme information
         return f"[{rdt_title}]({rdt_image}) ([source]({rdt_url}))"
     
-    async def web_browsing(self, query: str, max_results: int):
-        # Limit searches upto 5 results due to context length limits
-        max_results = max(max_results, 6)
-
-        # Import required libs
-        try:
-            bs4 = importlib.import_module("bs4")
-            ddg = importlib.import_module("duckduckgo_search")
-            requests = importlib.import_module("requests")
-        except ModuleNotFoundError:
-            return "This tool is not available at the moment"
-
-        links = []
-        # Perform search using AsyncDDGs to fully support asynchronous searches
-        try:
-            results = await ddg.AsyncDDGS(proxy=None).atext(query, max_results=int(max_results))
-            msg = await self.ctx.send(f"🔍 Searching for **{query}**")
-            # Iterate over searches with results from URL
-            for urls in results:
-                await msg.edit(f"➡️ Searched for {urls['title']}")
-                links.append(urls["href"])
-            await msg.delete()
-        except Exception as e:
-            return f"An error has occured, reason: {e}"
-        
-        # Iterate over links and scrape information
-        if len(links) == 0:
-            return "No results found! And no pages had been extracted"
-        
-        page_contents = []
-        try:
-            for url in links:
-                # Perform a request
-                _page_text = requests.get(url).text
-        except Exception as e:
-            return f"An error has occured during web browsing process, reason: {e}"
-
-    
-    async def youtube(self, query: str, is_youtube_link: bool):
+    async def _youtube(self, query: str, is_youtube_link: bool):
         # Limit searches 1-10 results
         #if max_results > 10 or max_results < 1:
         #    max_results = 10

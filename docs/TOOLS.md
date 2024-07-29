@@ -110,7 +110,8 @@ class ToolImpl(ToolsDefinitions):
     # All functions must be in async even if there's nothing to be awaited, and all functions must have a return statement
 
     # The signature must be in order according to the schema
-    async def multiply (self, a, b, c):
+    # and the method name must not be the same as attribute name from the schema to prevent confusion
+    async def _multiply(self, a, b, c):
         # Return types must be from the supported types as
         # https://github.com/google-gemini/generative-ai-python/blob/main/docs/api/google/generativeai/protos/Type.md
         return a*b*c
@@ -167,7 +168,7 @@ class BaseFunctions:
     #
     # You just need to specify your function name and signature with default values for optional params in order
     async def _callable_multiply(self, a, b, c = 1):
-        return await self.example.multiply(a, b, c)
+        return await self.example._multiply(a, b, c)
 ```
 
 ### Step 3: Making your tool visible to Discord UI

@@ -30,7 +30,7 @@ class ToolImpl(ToolsDefinitions):
         self.ctx = ctx
 
     # Image generator
-    async def image_generator(self, image_description: str, width: int, height: int):
+    async def _image_generator(self, image_description: str, width: int, height: int):
         # Validate parameters, width and height should not exceed 1344 and should not be set to 0
         if width > 1344 or width == 0 or height > 1344 or height == 0:
             height, width = 1024, 1024

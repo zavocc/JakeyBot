@@ -29,7 +29,7 @@ class ToolImpl(ToolsDefinitions):
         self.bot = bot
         self.ctx = ctx
 
-    async def web_browsing(self, query: str, max_results: int):
+    async def _web_browsing(self, query: str, max_results: int):
         # Limit searches upto 6 results due to context length limits
         max_results = min(max_results, 6)
 
