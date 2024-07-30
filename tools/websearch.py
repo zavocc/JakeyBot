@@ -2,6 +2,7 @@
 import google.generativeai as genai
 import discord
 import importlib
+import yaml
 
 class ToolsDefinitions:
     # Web Browsing
@@ -43,9 +44,17 @@ class ToolImpl(ToolsDefinitions):
             return "This tool is not available at the moment"
 
         links = []
+
+        # Load excluded urls list
+        with open("data/excluded_urls.yaml") as x:
+            excluded_url_list = yaml.safe_load(x)
+
+        # Iterate
+        excluded_urls = " ".join([f"-site:{x}" for x in excluded_url_list])
+
         # Perform search using AsyncDDGs to fully support asynchronous searches
         try:
-            results = await ddg.AsyncDDGS(proxy=None).atext(query, max_results=int(max_results))
+            results = await ddg.AsyncDDGS(proxy=None).atext(f"{query} {excluded_urls}", max_results=int(max_results))
             msg = await self.ctx.send(f"🔍 Searching for **{query}**")
             # Iterate over searches with results from URL
             for urls in results:
