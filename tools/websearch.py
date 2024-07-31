@@ -1,5 +1,4 @@
 # Built in Tools
-from core.ai.embeddings import GeminiDocumentRetrieval
 import google.generativeai as genai
 import discord
 import importlib
@@ -38,8 +37,6 @@ class ToolImpl(ToolsDefinitions):
         # Import required libs
         try:
             aiohttp = importlib.import_module("aiohttp")
-            # For relevance and similarity
-            chromadb = importlib.import_module("chromadb")
             bs4 = importlib.import_module("bs4")
             ddg = importlib.import_module("duckduckgo_search")
             inspect = importlib.import_module("inspect")
@@ -110,43 +107,8 @@ class ToolImpl(ToolsDefinitions):
             return f"An error has occured during web browsing process, reason: {e}"
 
         # Check if page contents is zero
-        if len(page_contents) == 0 and type(page_contents) != list:
+        if len(page_contents) == 0:
             return f"No pages were scrapped and no data is provided"
-
-        result = None
-        # Perform vector similarity search
-        try:
-            _msgstatus = await self.ctx.send("📄 Extracting relevant details...")
-
-            # non-persistent session
-            _chroma_client = chromadb.Client()
-
-            # create a collection
-            _collection = _chroma_client.get_or_create_collection(name="query", embedding_function=GeminiDocumentRetrieval())
-
-            # add documents
-            for id, docs in enumerate(page_contents):
-                _collection.add(
-                    documents=docs,
-                    ids=str(int(id))
-                )
-
-            # Query
-            result = _collection.query(
-                query_texts=query,
-                n_results=int(max_results)
-            )["documents"][0][0]
-
-            # delete collection
-            _chroma_client.delete_collection(name="query")
-
-            await _msgstatus.delete()
-
-        except Exception as e:
-            return f"An error has occured during relevance similarity step: {e}"
-
-        if result is None:
-            return f"No pages has been extracted"
 
         # Send embed containing the links considered for the response
         _embed = discord.Embed(
@@ -158,4 +120,4 @@ class ToolImpl(ToolsDefinitions):
         await self.ctx.send(embed=_embed)
 
         # Join page contents
-        return f"Here is the extracted web pages based on the query {query}: \n" + result
+        return f"Here is the extracted web pages based on the query {query}: \n" + "\n".join(page_contents)
