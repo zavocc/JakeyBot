@@ -69,7 +69,7 @@ After everything is configured, you can run `main.py`
 
 Get started by asking Jakey `/ask prompt:Who are you and how can I get started`
 
-By default, it uses **Gemini 1.5 Flash** because it's cheap, widely used, and has the same multimodal and contextual capabilities as Pro but it is statistically nerfed in terms of performance and diverse domain understanding, but it is much better than **1.0 Pro** and **GPT-3.5** and on-parity (in some cases outclasses) with the first GPT-4 model snapshot from March 2023. Please see [the LLM arena for comparison](https://arena.lmsys.org/)
+By default, it uses **Gemini 1.5 Flash** because it's cheap, widely used, and has the same multimodal and contextual capabilities as Pro but it is distilled which means it may not get the same capabilities as Pro, but it is much better than **1.0 Pro** and **GPT-3.5** but **GPT-4o mini** outclasses it. Please see [the LLM arena by livebench for comparison](https://livebench.ai/)
 
 ## Get started
 Jakey provides commands such as:
