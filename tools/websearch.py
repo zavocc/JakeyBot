@@ -115,7 +115,7 @@ class ToolImpl(ToolsDefinitions):
 
             # chunk and add documents
             for url, docs in page_contents.items():
-                await _msgstatus.edit(f"📎 Indexing **{url}**")
+                await _msgstatus.edit(f"🔍 Extracting relevant details from **{url}**")
 
                 # chunk to 300 characters
                 chunked = [(url, docs[i:i+350]) for i in range(0, len(docs), 250)]
