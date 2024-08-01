@@ -71,7 +71,7 @@ class ToolImpl(ToolsDefinitions):
         if len(links) == 0:
             return "No results found! And no pages had been extracted"
         
-        page_contents = []
+        page_contents = {}
         try:
             # Create ClientSession
             # https://github.com/aio-libs/aiohttp/issues/955#issuecomment-230897285
@@ -93,18 +93,7 @@ class ToolImpl(ToolsDefinitions):
                     _cleantext = "\n".join([x.strip() for x in _cleantext.splitlines() if x.strip()])
 
                     # Format
-                    page_contents.append(inspect.cleandoc(f"""
-                    
-                    ---
-                    # Page URL: {url} 
-                    # Page Title: {_scrapdata.title.text}
-
-                    # Page contents:
-                    ***
-                    {_cleantext}
-                    ***
-                    ---
-                    """))
+                    page_contents.update({f"{url}": f"{_cleantext}"})
     
         except Exception as e:
             return f"An error has occured during web browsing process, reason: {e}"
@@ -122,20 +111,27 @@ class ToolImpl(ToolsDefinitions):
             _chroma_client = chromadb.Client()
 
             # create a collection
-            _collection = _chroma_client.get_or_create_collection(name="query", embedding_function=GeminiDocumentRetrieval())
+            _collection = _chroma_client.get_or_create_collection(name="query")
 
-            # add documents
-            for id, docs in enumerate(page_contents):
-                _collection.add(
-                    documents=docs,
-                    ids=str(int(id))
-                )
+            # chunk and add documents
+            for url, docs in page_contents.items():
+                await _msgstatus.edit(f"📎 Indexing **{url}**")
+
+                # chunk to 300 characters
+                chunked = [(url, docs[i:i+350]) for i in range(0, len(docs), 250)]
+                for id, (url, chunk) in enumerate(chunked):
+                    _collection.add(
+                        documents=[chunk],
+                        ids=[f"{url}_{id}"]
+                    )
 
             # Query
             result = _collection.query(
                 query_texts=query,
-                n_results=int(max_results)
-            )["documents"][0][0]
+                n_results=30
+            )["documents"][0]
+
+            print(result)
 
             # delete collection
             _chroma_client.delete_collection(name="query")
@@ -158,4 +154,4 @@ class ToolImpl(ToolsDefinitions):
         await self.ctx.send(embed=_embed)
 
         # Join page contents
-        return f"Here is the extracted web pages based on the query {query}: \n" + result
+        return f"Here is the extracted web pages based on the query {query}: \n" + "\n".join(result)
