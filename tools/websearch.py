@@ -113,7 +113,7 @@ class ToolImpl(ToolsDefinitions):
             # create a collection
             _collection = _chroma_client.get_or_create_collection(name="query")
 
-            _chunk_size = 150
+            _chunk_size = 350
             # chunk and add documents
             for url, docs in page_contents.items():
                 await _msgstatus.edit(f"🔍 Extracting relevant details from **{url}**")
@@ -129,7 +129,7 @@ class ToolImpl(ToolsDefinitions):
             # Query
             result = _collection.query(
                 query_texts=query,
-                n_results=30
+                n_results=25
             )["documents"][0]
 
             print(result)
