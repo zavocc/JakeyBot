@@ -113,12 +113,13 @@ class ToolImpl(ToolsDefinitions):
             # create a collection
             _collection = _chroma_client.get_or_create_collection(name="query")
 
+            _chunk_size = 150
             # chunk and add documents
             for url, docs in page_contents.items():
                 await _msgstatus.edit(f"🔍 Extracting relevant details from **{url}**")
 
                 # chunk to 300 characters
-                chunked = [(url, docs[i:i+350]) for i in range(0, len(docs), 250)]
+                chunked = [(url, docs[i:i+_chunk_size]) for i in range(0, len(docs), _chunk_size)]
                 for id, (url, chunk) in enumerate(chunked):
                     _collection.add(
                         documents=[chunk],
