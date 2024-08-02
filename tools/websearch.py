@@ -1,6 +1,7 @@
 # Built in Tools
 from core.ai.embeddings import GeminiDocumentRetrieval
 import google.generativeai as genai
+import asyncio
 import discord
 import importlib
 import yaml
@@ -42,7 +43,6 @@ class ToolImpl(ToolsDefinitions):
             chromadb = importlib.import_module("chromadb")
             bs4 = importlib.import_module("bs4")
             ddg = importlib.import_module("duckduckgo_search")
-            inspect = importlib.import_module("inspect")
         except ModuleNotFoundError:
             return "This tool is not available at the moment"
 
@@ -115,7 +115,7 @@ class ToolImpl(ToolsDefinitions):
 
             _chunk_size = 350
             # chunk and add documents
-            for url, docs in page_contents.items():
+            async def __batch_chunker(url, docs):
                 await _msgstatus.edit(f"🔍 Extracting relevant details from **{url}**")
 
                 # chunk to 300 characters
@@ -125,6 +125,10 @@ class ToolImpl(ToolsDefinitions):
                         documents=[chunk],
                         ids=[f"{url}_{id}"]
                     )
+
+            # tasks
+            tasks = [__batch_chunker(url, docs) for url, docs in page_contents.items()]
+            await asyncio.gather(*tasks)
 
             # Query
             result = _collection.query(
