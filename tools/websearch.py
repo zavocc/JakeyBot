@@ -164,7 +164,7 @@ class ToolImpl(ToolsDefinitions):
 
         # Send embed containing the links considered for the response
         _embed = discord.Embed(
-            title="Links considered for this response",
+            title="Links used for this response",
             description="\n".join(links),
             color=discord.Colour.random()
         )
