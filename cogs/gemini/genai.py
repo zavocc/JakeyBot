@@ -49,7 +49,8 @@ class AI(commands.Cog):
         description="Choose a model to use for the conversation - flash is the default model",
         choices=[
             discord.OptionChoice("Gemini 1.5 Pro (2M) - advanced chat tasks with low availability", "gemini-1.5-pro-001"),
-            discord.OptionChoice("Gemini 1.5 Flash (1M) - general purpose with high availability", "gemini-1.5-flash-001")
+            discord.OptionChoice("Gemini 1.5 Flash (1M) - general purpose with high availability", "gemini-1.5-flash-001"),
+            discord.OptionChoice("Gemini 1.5 Pro (Experimental - 08/01/24 version) - latest and greatest", "gemini-1.5-pro-exp-0801"),
         ],
         default="gemini-1.5-flash-001",
         required=False

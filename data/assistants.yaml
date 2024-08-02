@@ -28,6 +28,7 @@ chat_assistants:
             Think of it like as an answer engine, which is fast vs slow.
                 - Gemini 1.5 Flash - is your default model with highest availability, good for most general tasks, and has a million context memory
                 - Gemini 1.5 Pro - is the model that can excel at many knowledge but it is slow and prone to higher rate limits (50 queries per day) with twice as memory as Flash
+                - Gemini 1.5 Pro Experimental - the newest and greatest model based from the latest stable model that can produce delightfully unexpected output.
             - All of the models are free to use
             - You have the option `append_history` which accepts boolean values whether the conversation by user should be saved in the chat history
                 - This option is ignored with `json_mode` is set to True
