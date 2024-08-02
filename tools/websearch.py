@@ -4,6 +4,7 @@ import google.generativeai as genai
 import asyncio
 import discord
 import importlib
+import os
 import yaml
 
 class ToolsDefinitions:
@@ -39,10 +40,14 @@ class ToolImpl(ToolsDefinitions):
         # Import required libs
         try:
             aiohttp = importlib.import_module("aiohttp")
+
             # For relevance and similarity
             chromadb = importlib.import_module("chromadb")
             bs4 = importlib.import_module("bs4")
             ddg = importlib.import_module("duckduckgo_search")
+
+            # Needed for some websites
+            importlib.import_module("brotli")
         except ModuleNotFoundError:
             return "This tool is not available at the moment"
 
@@ -107,11 +112,19 @@ class ToolImpl(ToolsDefinitions):
         try:
             _msgstatus = await self.ctx.send("📄 Extracting relevant details...")
 
-            # non-persistent session
-            _chroma_client = chromadb.Client()
+            # check if we can connect to chroma server
+            _chroma_http_host = os.environ.get("CHROMA_HTTP_HOST")
+            _chroma_http_port = os.environ.get("CHROMA_HTTP_PORT")
+            if not _chroma_http_host and not _chroma_http_port:
+                return f"A chroma server is not running, I cannot perform web search"
+
+            _chroma_client = await chromadb.AsyncHttpClient(host=_chroma_http_host, port=_chroma_http_port)
+
+            # collection name
+            _cln = f"{importlib.import_module('random').randint(50000, 60000)}_jakeybot_db_query_search"
 
             # create a collection
-            _collection = _chroma_client.get_or_create_collection(name="query")
+            _collection = await _chroma_client.get_or_create_collection(name=_cln)
 
             _chunk_size = 350
             # chunk and add documents
@@ -121,7 +134,7 @@ class ToolImpl(ToolsDefinitions):
                 # chunk to 300 characters
                 chunked = [(url, docs[i:i+_chunk_size]) for i in range(0, len(docs), _chunk_size)]
                 for id, (url, chunk) in enumerate(chunked):
-                    _collection.add(
+                    await _collection.add(
                         documents=[chunk],
                         ids=[f"{url}_{id}"]
                     )
@@ -131,15 +144,15 @@ class ToolImpl(ToolsDefinitions):
             await asyncio.gather(*tasks)
 
             # Query
-            result = _collection.query(
+            result = (await _collection.query(
                 query_texts=query,
-                n_results=25
-            )["documents"][0]
+                n_results=30
+            ))["documents"][0]
 
             print(result)
 
             # delete collection
-            _chroma_client.delete_collection(name="query")
+            await _chroma_client.delete_collection(name=_cln)
 
             await _msgstatus.delete()
 
