@@ -103,11 +103,11 @@ Web search performs in two steps
 1. It searches the query through DuckDuckGo API and collects the links needed for page summarization
 2. The list of URLs is then being scrapped and agregates them so the model can understand them
 
-The maximum number of queries can be used is 6 to prevent tokens from depleting so quickly due to large articles and causing slower responses as context builds up. It does not use embeddings at the moment.
+The maximum number of queries can be used is 6 to prevent tokens from depleting so quickly due to large articles and causing slower responses as context builds up and performs batch chunks of webpage scrapping its contents before the response get sent from the model.
 
 Its recommended to use Gemini 1.5 Pro to better utilize Tool use but Flash also works. Keep in mind that the model sometimes cannot pick up the tool schema needed to perform web search action, if it fabricates its responses, explicitly tell the model to search the web.
 
-Using web search can affect the response overall performance, due to number of pages are being passed depending through the query through the model which is quite similar to attaching a single 20 page PDF being processed. Its recommended to use web search sparingly if you want the model to be aware with certain information. You can also tell the model how many searches it can perform (but queries are maximum to 6) optimally 2-3 searches.
+Using web search can affect the response overall performance as chat history grows, however the webpages are embedded, chunked, and stores the embeddings through temporary database to efficiently provide and extract relevant context to the model from the large batch of chunked corpuses of webpage contents. By default, its using its default text transformer model to embed texts locally. Its recommended to use web search sparingly if you want the model to be aware with certain information. You can also tell the model how many searches it can perform (but queries are maximum to 6) optimally 2-3 searches.
 
 Depending on a website, some pages may not be used for responses that does not have extractable textual data.
 

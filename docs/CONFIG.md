@@ -22,3 +22,14 @@ Please do not use this module in production unless you're serving it yourself or
 - `TEMP_DIR` - Path to store temporary uploaded/downloaded attachments for multimodal use. Defaults to `temp/` in the cuurent directory if not set. Files are always deleted on every execution regardless if its successful or not, or when the bot is restared.
 
 - `SHARED_CHAT_HISTORY` - Determines whether to share the chat history to all members inside the guild. Accepts case insensitive boolean values. We recommend setting this to `false` as the bot does not have admin controls to manage chat history guild wide and conversations are treated as single dialogue. Setting to `false` makes it as if interacting the bot in DMs having their own history regardless of the setting. Keep in mind that this does not immediately delete per-guild chat history when set to `false`. Use SQLite database browser to manually manage history, refer to [HistoryManagement class](./core/ai/history.py) for more information.
+
+## Web Search
+To efficiently use web search, a chroma server (using `chroma` command) must be running to embed webpages from the search results from being scrapped and summarized to provide relevant information to the model. And to perform embed operations asynchronously in batches to improve search performance during the web search step...
+
+You must configure chroma server address or port where it is hosted, by default, it looks up for host `localhost` and port `6400` but you can change it depending how you ran chroma server
+
+```
+CHROMA_HTTP_HOST=127.0.0.1
+CHROMA_HTTP_PORT=6400
+```
+If neither of these options are set, web search tool will fail.
