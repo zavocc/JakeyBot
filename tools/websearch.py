@@ -134,7 +134,6 @@ class ToolImpl(ToolsDefinitions):
                 # chunk to 300 characters
                 # returns the list of tuples of chunked documents associated with the url
                 chunked = [(url, docs[i:i+_chunk_size]) for i in range(0, len(docs), _chunk_size)]
-                print(chunked)
                 for id, (url, chunk) in enumerate(chunked):
                     await _collection.add(
                         documents=[chunk],
