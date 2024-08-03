@@ -36,6 +36,8 @@ Core dependencies is Python with PIP, depending on your distribution, pip must b
 - OpenJDK 17 with ffmpeg \
     Needed for voice commands (wavelink/lavalink)
 
+There may be other dependencies needed for some operations such as tools. Please see [TOOLS.md](./docs/TOOLS.md) for rationale.
+
 ### Installation
 Once you activated your enviornment and has pip ready, you can run
 ```
