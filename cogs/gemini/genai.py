@@ -3,11 +3,11 @@ from core.ai.core import GenAIConfigDefaults
 from core.ai.history import HistoryManagement as histmgmt
 from core.ai.tools import BaseFunctions
 from discord.ext import commands
-from google.api_core.exceptions import PermissionDenied, InternalServerError
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from os import environ, remove
 from pathlib import Path
 import google.generativeai as genai
+import google.api_core.exceptions #import PermissionDenied, InternalServerError
 import aiohttp
 import aiofiles
 import asyncio
@@ -206,7 +206,7 @@ class AI(commands.Cog):
             try:
                 answer = await chat_session.send_message_async(final_prompt)
             #  Retry the response if an error has occured
-            except PermissionDenied:
+            except google.api_core.exceptions.PermissionDenied:
                 context_history["chat_history"] = [
                     {"role": x.role, "parts": [y.text]} 
                     for x in chat_session.history 
@@ -308,7 +308,7 @@ class AI(commands.Cog):
         if any(_iter for _iter in _exceptions if isinstance(error, _iter)):
             await ctx.respond("❌ Sorry, I can't answer that question! Please try asking another question.")
         # Check if the error is InternalServerError
-        elif isinstance(error, InternalServerError):
+        elif isinstance(error, google.api_core.exceptions.InternalServerError):
             await ctx.respond("⚠️ Something went wrong (500) and its not your fault but its mostly you! If that's the case, please retry or try changing the model or rewrite your prompt.")
         # For failed downloads from attachments
         elif isinstance(error, aiohttp.ClientError):
