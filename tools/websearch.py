@@ -150,7 +150,7 @@ class ToolImpl(ToolsDefinitions):
                 n_results=30
             ))["documents"][0]
 
-            print(result)
+            #print(result)
 
             # delete collection
             await _chroma_client.delete_collection(name=_cln)
