@@ -213,6 +213,12 @@ class AI(commands.Cog):
                     for y in x.parts 
                     if x.role and y.text
                 ]
+
+                # Notify the user that the chat session has been re-initialized
+                await ctx.send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
+
+                # Re-initialize the chat session
+                chat_session = model_to_use.start_chat(history=context_history["chat_history"])
                 answer = await chat_session.send_message_async(final_prompt)
 
             # Call tools
