@@ -190,7 +190,7 @@ class AI(commands.Cog):
                 await ctx.send(f"Used: **{attachment.filename}**")
 
             # Add caution that the attachment data would be lost in 48 hours
-            await ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context cache after 48 hours.")
+            await ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context after 48 hours.")
 
         ###############################################
         # Answer generation
