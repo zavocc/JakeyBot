@@ -80,6 +80,7 @@ async def on_ready():
         for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
             file.unlink()
     else:
+        environ["TEMP_DIR"] = environ.get("TEMP_DIR", "temp")
         mkdir(environ.get("TEMP_DIR", "temp"))
 
 ###############################################
