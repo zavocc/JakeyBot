@@ -83,8 +83,8 @@ async def on_ready():
         else:
             mkdir(environ.get("TEMP_DIR"))
     else:
-        environ["TEMP_DIR"] = "temp"
-        mkdir(environ.get("TEMP_DIR"))
+        environ["TEMP_DIR"] = environ.get("TEMP_DIR", "temp")
+        mkdir(environ.get("TEMP_DIR", "temp"))
 
 ###############################################
 # ON GUILD JOIN
