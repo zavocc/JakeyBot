@@ -3,11 +3,11 @@ import os
 import random
 
 class BaseTextToSpeech:
-    def __init__(self, prompt: str):
-        self.prompt = prompt
+    def __init__(self):
+        pass
 
     # Speech generation
-    async def generate_speech(self):
+    async def generate_speech(self, prompt):
         # Initiate OpenAI client
         client = openai.AsyncOpenAI()
 
@@ -15,17 +15,17 @@ class BaseTextToSpeech:
         audio_file_path = f"{os.environ.get('TEMP_DIR')}/{random.randint(69310, 158165)}.JAKEYVOICE.mp3"
         
         # There is a limit on the character count to 4096, so we just instead tell the user to check their chat instead for output
-        if len(self.prompt) > 4096:
+        if len(prompt) > 4096:
             response = "Hey there! Sorry, I cannot understand your request because its too long... But, I sent you the message instead"
         else:
-            response = self.prompt
+            response = prompt
 
         # Generate speech
         synthesis = await client.audio.speech.create(
             model="tts-1-hd",
             voice="echo",
             input=response,
-            response_format="aac"
+            response_format="wav"
         )
 
         # Save speech to file to stream it later

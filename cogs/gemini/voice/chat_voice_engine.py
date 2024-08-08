@@ -75,8 +75,8 @@ class VoiceAI(commands.Cog):
             await text_channel.send(answer.text)
 
         # Transcribe
-        tts = BaseTextToSpeech(answer.text)
-        transdata = await tts.generate_speech()
+        tts = BaseTextToSpeech()
+        transdata = await tts.generate_speech(answer.text)
 
         # Play
         await sink.vc.play(discord.FFmpegPCMAudio(f"{transdata}", executable='ffmpeg'), wait_finish=True)
