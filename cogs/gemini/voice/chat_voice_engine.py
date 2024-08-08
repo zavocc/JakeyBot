@@ -35,7 +35,7 @@ class VoiceAI(commands.Cog):
         assistants_system_prompt = Assistants()
 
         # Model configuration - use pro experiment model
-        model_to_use = genai.GenerativeModel(model_name="gemini-1.5-pro-exp-0801", safety_settings=genai_configs.safety_settings_config, generation_config=genai_configs.generation_config, system_instruction=assistants_system_prompt.jakey_system_prompt)
+        model_to_use = genai.GenerativeModel(model_name="gemini-1.5-flash", safety_settings=genai_configs.safety_settings_config, generation_config=genai_configs.generation_config, system_instruction=assistants_system_prompt.jakey_system_prompt)
 
                 
         for user_id, audio in sink.audio_data.items():
@@ -51,7 +51,7 @@ class VoiceAI(commands.Cog):
         chat_session = model_to_use.start_chat(history=[])
 
         # Send message
-        answer = await chat_session.send_message_async([mmdal, "Respond based from this audio, remember, you are going to provide answers as the audio asks you something"])
+        answer = await chat_session.send_message_async([mmdal, "Answer from this audio"])
 
         # Embed the response if the response is more than 2000 characters
         # Check to see if this message is more than 2000 characters which embeds will be used for displaying the message

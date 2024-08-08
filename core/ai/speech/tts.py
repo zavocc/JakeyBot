@@ -23,7 +23,7 @@ class BaseTextToSpeech:
         # Generate speech
         synthesis = await client.audio.speech.create(
             model="tts-1-hd",
-            voice="alloy",
+            voice="echo",
             input=response,
             response_format="aac"
         )
