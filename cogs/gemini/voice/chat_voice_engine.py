@@ -11,8 +11,9 @@ import random
 class VoiceAI(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.current_user = None
-        self.connections = {}
+        
+        # Initiate connection cache
+        self.voice_conndata = BaseTextToSpeech()
 
         # Check for gemini API keys
         if environ.get("GOOGLE_AI_TOKEN") is None or environ.get("GOOGLE_AI_TOKEN") == "INSERT_API_KEY":
@@ -36,10 +37,9 @@ class VoiceAI(commands.Cog):
 
         # Model configuration - use pro experiment model
         model_to_use = genai.GenerativeModel(model_name="gemini-1.5-flash", safety_settings=genai_configs.safety_settings_config, generation_config=genai_configs.generation_config, system_instruction=assistants_system_prompt.jakey_system_prompt)
-
                 
         for user_id, audio in sink.audio_data.items():
-            if user_id == self.current_user:
+            if user_id == self.voice_conndata.guild_states.get(sink.vc.guild.id):
                 file_path = path.join(f"{environ.get("TEMP_DIR", "temp")}", f"{user_id}.{sink.encoding}")
                 with open(file_path, "wb") as f:
                     f.write(audio.file.read())
@@ -81,24 +81,33 @@ class VoiceAI(commands.Cog):
         # Play
         await sink.vc.play(discord.FFmpegPCMAudio(f"{transdata}", executable='ffmpeg'), wait_finish=True)
         await sink.vc.disconnect()
-        self.current_user = None
 
+        # Remove self user id from guild states
+        del self.voice_conndata.guild_states[sink.vc.guild.id]
+        
 
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
     )
-    async def record(self, ctx):  # If you're using commands.Bot, this will also work.
+    async def call(self, ctx):
         voice = ctx.author.voice
 
         if not voice:
             await ctx.respond("You aren't in a voice channel!")
 
         # Lock user id
-        self.current_user = ctx.author.id
+        if ctx.guild.id not in self.voice_conndata.guild_states:
+            self.voice_conndata.guild_states.update({ctx.guild.id: ctx.author.id})
+        elif self.voice_conndata.guild_states[ctx.guild.id] != ctx.author.id:
+            await ctx.respond("I am currently recording for someone else. Please wait for them to finish.")
 
-        vc = await voice.channel.connect()  # Connect to the voice channel the author is in.
-        self.connections.update({ctx.guild.id: vc})  # Updating the cache with the guild and channel.
+        try:
+            vc = await voice.channel.connect() 
+        except discord.errors.ClientException:
+            await ctx.respond("I am already in a voice channel.")
+            return
+        self.voice_conndata.connections.update({ctx.guild.id: vc})
 
         vc.start_recording(
             discord.sinks.WaveSink(),
@@ -112,13 +121,26 @@ class VoiceAI(commands.Cog):
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
     )
     async def stop(self, ctx):
-        if ctx.guild.id in self.connections:  # Check if the guild is in the cache.
-            vc = self.connections[ctx.guild.id]
+        if ctx.guild.id in self.voice_conndata.connections:  # Check if the guild is in the cache.
+            vc = self.voice_conndata.connections[ctx.guild.id]
             vc.stop_recording()  # Stop recording, and call the callback (once_done).
-            del self.connections[ctx.guild.id]  # Remove the guild from the cache.
+            del self.voice_conndata.connections[ctx.guild.id]  # Remove the guild from the cache.
             await ctx.delete()  # And delete.
         else:
             await ctx.respond("I am currently not recording here.")
+
+    async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.NoPrivateMessage):
+            await ctx.send("❌ Sorry, this feature is not supported in DMs. Please use this command inside the guild.")
+        else:
+            # Delete connection states
+            if ctx.guild.id in self.voice_conndata.connections:
+                del self.voice_conndata.connections[ctx.guild.id]
+
+            if ctx.guild.id in self.voice_conndata.guild_states:
+                del self.voice_conndata.guild_states[ctx.guild.id]
+            raise error
+        
 
 def setup(bot):
     bot.add_cog(VoiceAI(bot))

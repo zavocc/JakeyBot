@@ -4,15 +4,18 @@ import random
 
 class BaseTextToSpeech:
     def __init__(self):
-        pass
+        # Guild states and associated current user and acquire lock
+        self.connections = {}
+        self.guild_states = {}
 
     # Speech generation
     async def generate_speech(self, prompt):
         # Initiate OpenAI client
         client = openai.AsyncOpenAI()
+        fileformat = "wav"
 
         # Set temporary directory to store generated speech
-        audio_file_path = f"{os.environ.get('TEMP_DIR')}/{random.randint(69310, 158165)}.JAKEYVOICE.mp3"
+        audio_file_path = f"{os.environ.get('TEMP_DIR')}/{random.randint(69310, 158165)}.JAKEYVOICE.{fileformat}"
         
         # There is a limit on the character count to 4096, so we just instead tell the user to check their chat instead for output
         if len(prompt) > 4096:
