@@ -3,10 +3,10 @@
 temp/
 .venv/
 .idx/
-wavelink/plugins
-wavelink/application.yml
-wavelink/Lavalink.jar
-wavelink/logs
+_wavelink/plugins
+_wavelink/application.yml
+_wavelink/Lavalink.jar
+_wavelink/logs
 chat_history.db
 dev.env
 .github
