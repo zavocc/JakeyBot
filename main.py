@@ -76,12 +76,15 @@ async def on_ready():
         await wavelink_setup()
 
     # Prepare temporary directory
-    if Path(environ.get("TEMP_DIR", "temp")).exists():
-        for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
-            file.unlink()
+    if environ.get("TEMP_DIR") is not None:
+        if Path(environ.get("TEMP_DIR")).exists():
+            for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
+                file.unlink()
+        else:
+            mkdir(environ.get("TEMP_DIR"))
     else:
-        environ["TEMP_DIR"] = environ.get("TEMP_DIR", "temp")
-        mkdir(environ.get("TEMP_DIR", "temp"))
+        environ["TEMP_DIR"] = "temp"
+        mkdir(environ.get("TEMP_DIR"))
 
 ###############################################
 # ON GUILD JOIN
