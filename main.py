@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from os import chdir, environ, mkdir
 from pathlib import Path
 from inspect import cleandoc
-import datetime
+#import datetime
 import discord
 import importlib
 import yaml
@@ -15,14 +15,11 @@ chdir(Path(__file__).parent.resolve())
 load_dotenv("dev.env")
 
 # Playback support
-playback_support=False
 try:
     wavelink = importlib.import_module("wavelink")
 except ModuleNotFoundError as e:
     print(f"Playback support is disabled: {e}")
-else:
-    if Path("_wavelink").exists() and Path("_wavelink/Lavalink.jar").is_file() and Path("_wavelink/application.yml").is_file():
-        playback_support=True
+    wavelink = None
 
 # Check if TOKEN is set
 if "TOKEN" in environ and (environ.get("TOKEN") == "INSERT_DISCORD_TOKEN") and (environ.get("TOKEN") is not None) or (environ.get("TOKEN") == ""):
@@ -43,38 +40,38 @@ intents.members = True
 bot = bridge.Bot(command_prefix=commands.when_mentioned_or("$"), intents = intents)
 
 ###############################################
-# Initiate wavelink for music playback feature
-###############################################
-async def wavelink_setup():
-    await bot.wait_until_ready()
-    # https://wavelink.dev/en/latest/recipes.html
-    ENV_LAVALINK_URI = environ.get("ENV_LAVALINK_URI") if environ.get("ENV_LAVALINK_URI") is not None else "http://127.0.0.1:2222"
-    ENV_LAVALINK_PASS = environ.get("ENV_LAVALINK_PASS") if environ.get("ENV_LAVALINK_PASS") is not None else "youshallnotpass"
-    ENV_LAVALINK_IDENTIFIER = environ.get("ENV_LAVALINK_IDENTIFIER") if environ.get("ENV_LAVALINK_IDENTIFIER") is not None else "main"
-
-    node = wavelink.Node(
-        identifier=ENV_LAVALINK_IDENTIFIER,
-        uri=ENV_LAVALINK_URI,
-        password=ENV_LAVALINK_PASS
-    )
-
-    await wavelink.Pool.connect(
-        client=bot,
-        nodes=[node]
-    )
-
-###############################################
 # ON READY
 ###############################################
 @bot.event
 async def on_ready():
+    global wavelink
+    await bot.wait_until_ready()
+
     print(f"{bot.user} is ready and online!")
     #https://stackoverflow.com/a/65780398 - for multiple statuses
     await bot.change_presence(activity=discord.Game("/ask me anything or $help"))
 
     # start wavelink setup if playback support is enabled
-    if playback_support:
-        await wavelink_setup()
+    if wavelink is not None:
+        try:
+            # https://wavelink.dev/en/latest/recipes.html
+            ENV_LAVALINK_URI = environ.get("ENV_LAVALINK_URI") if environ.get("ENV_LAVALINK_URI") is not None else "http://127.0.0.1:2222"
+            ENV_LAVALINK_PASS = environ.get("ENV_LAVALINK_PASS") if environ.get("ENV_LAVALINK_PASS") is not None else "youshallnotpass"
+            ENV_LAVALINK_IDENTIFIER = environ.get("ENV_LAVALINK_IDENTIFIER") if environ.get("ENV_LAVALINK_IDENTIFIER") is not None else "main"
+
+            node = wavelink.Node(
+                identifier=ENV_LAVALINK_IDENTIFIER,
+                uri=ENV_LAVALINK_URI,
+                password=ENV_LAVALINK_PASS
+            )
+
+            await wavelink.Pool.connect(
+                client=bot,
+                nodes=[node]
+            )
+        except wavelink.WavelinkException as e:
+            print(f"Failed to setup wavelink: {e}... Disabling playback support")
+            wavelink = None
 
     # Prepare temporary directory
     if environ.get("TEMP_DIR") is not None:
@@ -90,20 +87,21 @@ async def on_ready():
 ###############################################
 # ON GUILD JOIN
 ###############################################
-@bot.event
-async def on_member_join(member):
-    if datetime.datetime.now().hour < 12:
-        await member.send(
-            f'Good morning **{member.mention}**! Enjoy your stay in **{member.guild.name}**!'
-        )
-    elif datetime.datetime.now().hour < 18:
-        await member.send(
-            f'Good afternoon **{member.mention}**! Enjoy your stay in **{member.guild.name}**'
-        )
-    else:
-        await member.send(
-            f'Good evening **{member.mention}**! Enjoy your stay in **{member.guild.name}**'
-        )
+# TODO: Implement SYSTEM_MESSAGE_ONJOIN in dev.env
+#@bot.event
+#async def on_member_join(member):
+#    if datetime.datetime.now().hour < 12:
+#        await member.send(
+#            f'Good morning **{member.mention}**! Enjoy your stay in **{member.guild.name}**!'
+#        )
+#    elif datetime.datetime.now().hour < 18:
+#        await member.send(
+#            f'Good afternoon **{member.mention}**! Enjoy your stay in **{member.guild.name}**'
+#        )
+#    else:
+#        await member.send(
+#            f'Good evening **{member.mention}**! Enjoy your stay in **{member.guild.name}**'
+#        )
 
 
 ###############################################
@@ -131,7 +129,8 @@ with open('commands.yaml', 'r') as file:
     cog_commands = yaml.safe_load(file)
     for command in cog_commands:
         # Disable voice commands if playback support is not enabled
-        if command.__contains__("voice") and not playback_support:
+        if "voice" in command and not wavelink:
+           print(f"Skipping {command}... Playback support is disabled")
            continue
 
         try:
