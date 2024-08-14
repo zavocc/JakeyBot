@@ -66,6 +66,8 @@ You can enable VC-related commands such as `/voice play` (which plays videos fro
 
 Activate voice by placing `Lavalink.jar` from lavalink releases and rename `application.yml.template` to `application.yml` and run `java -jar Lavalink.jar` in separate session before starting the bot.
 
+Alternatively, you can use the servers from You can skip the installation step above and use servers from https://lavalink.darrennathanael.com/NoSSL/lavalink-without-ssl/ and configure the `dev.env` file pointing the third party Lavalink servers, no installation required... Please see [CONFIG.md#voice](./docs/CONFIG.md#voice)
+
 ## Running the server
 After everything is configured, you can run `main.py`
 

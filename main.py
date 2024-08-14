@@ -48,13 +48,13 @@ bot = bridge.Bot(command_prefix=commands.when_mentioned_or("$"), intents = inten
 async def wavelink_setup():
     await bot.wait_until_ready()
     # https://wavelink.dev/en/latest/recipes.html
-    ENV_LAVALINK_HOST = environ.get("ENV_LAVALINK_HOST") if environ.get("ENV_LAVALINK_HOST") is not None else "0.0.0.0"
-    ENV_LAVALINK_PORT = environ.get("ENV_LAVALINK_PORT") if environ.get("ENV_LAVALINK_PORT") is not None else "2333"
+    ENV_LAVALINK_URI = environ.get("ENV_LAVALINK_URI") if environ.get("ENV_LAVALINK_URI") is not None else "http://127.0.0.1:2222"
     ENV_LAVALINK_PASS = environ.get("ENV_LAVALINK_PASS") if environ.get("ENV_LAVALINK_PASS") is not None else "youshallnotpass"
+    ENV_LAVALINK_IDENTIFIER = environ.get("ENV_LAVALINK_IDENTIFIER") if environ.get("ENV_LAVALINK_IDENTIFIER") is not None else "main"
 
     node = wavelink.Node(
-        identifier="main",
-        uri=f"http://{ENV_LAVALINK_HOST}:{ENV_LAVALINK_PORT}",
+        identifier=ENV_LAVALINK_IDENTIFIER,
+        uri=ENV_LAVALINK_URI,
         password=ENV_LAVALINK_PASS
     )
 

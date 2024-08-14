@@ -20,10 +20,14 @@ class Voice(commands.Cog):
     )
     async def play(self, ctx, search: str):
         """Play music or audio from YouTube, enter a search query or a YouTube URL to play"""
+        await ctx.response.defer()
         vc = typing.cast(wavelink.Player, ctx.voice_client)
 
-        if not vc:
-            vc = await ctx.author.voice.channel.connect(cls=wavelink.Player)
+        try:
+            if not vc:
+                vc = await ctx.author.voice.channel.connect(cls=wavelink.Player)
+        except AttributeError:
+            return await ctx.respond("🎙️ You must be in a voice channel to use this command.")
 
         # Check if there is a playback on the voice client, otherwise, clear the current user record
         if self.current_user.get(ctx.guild.id) is not None and hasattr(vc, "playing") or hasattr(vc, "paused"):
