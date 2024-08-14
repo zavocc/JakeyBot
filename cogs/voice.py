@@ -1,13 +1,14 @@
 from discord.commands import SlashCommandGroup
 from discord.ext import commands
 import discord
+import typing
 import wavelink
 
 # For now everything is taken from https://pypi.org/project/WavelinkPycord/ but "class"ified bad pun intended
 class Voice(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.current_user = None
+        self.current_user = {}
 
     voice = SlashCommandGroup("voice", "Access voice features!", contexts={discord.InteractionContextType.guild})
 
@@ -19,32 +20,26 @@ class Voice(commands.Cog):
     )
     async def play(self, ctx, search: str):
         """Play music or audio from YouTube, enter a search query or a YouTube URL to play"""
+        await ctx.response.defer()
+        vc = typing.cast(wavelink.Player, ctx.voice_client)
 
-        if hasattr(ctx, "voice_client") and hasattr(ctx.author.voice, "channel"):
-            if ctx.voice_client:
-                vc: wavelink.Player = ctx.voice_client
-                # If the bot is connected to a different channel than the user, disconnect and connect to the user's channel
-                if vc.channel != ctx.author.voice.channel:
-                    #if hasattr(vc, "playing") and vc.playing or hasattr(vc, "paused") and vc.paused:
-                    #    await vc.stop()
-                    #await vc.disconnect()
-                    #vc: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
-                    # That code is buggy, has higher delay bug so for now, we prompt the user to move to another voice channel where it originally started
-                    await ctx.respond("⚠️ Please move to the voice channel where the bot is currently playing.")
-                    return
-            else:
-                vc: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player)   
-        else:
-            return await ctx.respond('🎤 Please join a voice channel.')
+        try:
+            if not vc:
+                vc = await ctx.author.voice.channel.connect(cls=wavelink.Player)
+        except AttributeError:
+            return await ctx.respond("🎙️ You must be in a voice channel to use this command.")
 
         # Check if there is a playback on the voice client, otherwise, clear the current user record
-        if self.current_user is not None and hasattr(vc, "playing") or hasattr(vc, "paused"):
+        if self.current_user.get(ctx.guild.id) is not None and hasattr(vc, "playing") or hasattr(vc, "paused"):
             if vc.playing or vc.paused:
                 if ctx.author.guild_permissions.administrator == False and ctx.guild.owner_id != ctx.author.id:
-                    if self.current_user != ctx.author.id:
+                    if self.current_user.get(ctx.guild.id) != ctx.author.id:
                         return await ctx.respond('⚠️ You are not the one who queued this track.')
         else:
-            self.current_user = None
+            self.current_user.update({ctx.guild.id: None})
+
+        if ctx.author.voice.channel.id != vc.channel.id:
+            return await ctx.respond("🎙️ You must be in the same voice channel as the bot.")
 
         # Search for tracks using the given query and assign it to the tracks variable
         try:
@@ -68,19 +63,19 @@ class Voice(commands.Cog):
         # For moral purposes
 
         # Set the user currently playing the track to the class-level variable
-        self.current_user = ctx.author.id
+        self.current_user.update({ctx.guild.id: ctx.author.id})
 
     @voice.command()
     async def status(self, ctx):
         """Get status of the currently playing track or queue"""
-        vc: wavelink.Player = ctx.voice_client
+        vc = typing.cast(wavelink.Player, ctx.voice_client)
     
         # Check for playback
-        if not hasattr(vc, "playing") or not hasattr(vc.current, "title"):
+        if not vc and not hasattr(vc, "playing") or not hasattr(vc.current, "title"):
             await ctx.respond("❌ You are not playing any tracks!")
             return
 
-        user = await self.bot.fetch_user(self.current_user)
+        user = await self.bot.fetch_user(self.current_user.get(ctx.guild.id))
         avatar_url = user.avatar.url if user.avatar else "https://cdn.discordapp.com/embed/avatars/0.png"
 
         embed = discord.Embed(
@@ -114,10 +109,10 @@ class Voice(commands.Cog):
     @voice.command()
     async def ping(self, ctx):
         """Pings the wavelink.Player server for latency"""
-        vc: wavelink.Player = ctx.voice_client
+        vc = typing.cast(wavelink.Player, ctx.voice_client)
 
         # Check if there's even a voice client connected
-        if not hasattr(vc, "connected"):
+        if not vc and not hasattr(vc, "connected"):
             return await ctx.respond('🎙️ Not currently connected to a voice channel.')
 
         # Check ping
@@ -130,11 +125,11 @@ class Voice(commands.Cog):
     )
     async def pause(self, ctx):
         """Pause the currently playing track"""
-        vc: wavelink.Player = ctx.voice_client
+        vc = typing.cast(wavelink.Player, ctx.voice_client)
 
         # We are not rude people
         if ctx.author.guild_permissions.administrator == False and ctx.guild.owner_id != ctx.author.id:
-            if self.current_user != ctx.author.id:
+            if self.current_user.get(ctx.guild.id) != ctx.author.id:
                 return await ctx.respond('🛑 You are not the one who queued this track.')
                 
         # Check if there's even a voice client connected
@@ -151,11 +146,11 @@ class Voice(commands.Cog):
     @voice.command()
     async def resume(self, ctx):
         """Resume the currently paused track"""
-        vc: wavelink.Player = ctx.voice_client
+        vc = typing.cast(wavelink.Player, ctx.voice_client)
 
         # We are not rude people
         if ctx.author.guild_permissions.administrator == False and ctx.guild.owner_id != ctx.author.id:
-            if self.current_user != ctx.author.id:
+            if self.current_user.get(ctx.guild.id) != ctx.author.id:
                 return await ctx.respond('You are not the one who queued this track.')
 
         # Check if there's even a voice client connected
@@ -171,15 +166,15 @@ class Voice(commands.Cog):
     @voice.command()
     async def stop(self, ctx):
         """Stop the currently playing or paused track"""
-        vc: wavelink.Player = ctx.voice_client
+        vc = typing.cast(wavelink.Player, ctx.voice_client)
 
         # Lets not be selfish and allow the user who queued the track to stop it... Only the guild owner can stop the track in case he playing porn or something
         if ctx.author.guild_permissions.administrator == False and ctx.guild.owner_id != ctx.author.id:
-            if self.current_user != ctx.author.id:
+            if self.current_user.get(ctx.guild.id) != ctx.author.id:
                 return await ctx.respond('🎤 You are not the one who queued this track.')
 
         # Check if there's even a voice client connected
-        if not hasattr(vc, "connected"):
+        if not vc and not hasattr(vc, "connected"):
             return await ctx.respond('🎙️ Not currently connected to a voice channel.')
 
         # Store the title in the variable before stopping the track to notifiy the user since once it's stopped, vc.current.title will be None
@@ -190,15 +185,15 @@ class Voice(commands.Cog):
     @voice.command()
     async def disconnect(self, ctx):
         """Disconnects the bot from wavelink.Player and removes from the voice channel"""
-        vc: wavelink.Player = ctx.voice_client
+        vc = typing.cast(wavelink.Player, ctx.voice_client)
 
         # Disconnect only if the user initiated the connection, server administrator or the guild owner
         if ctx.author.guild_permissions.administrator == False and ctx.guild.owner_id != ctx.author.id:
-            if self.current_user != ctx.author.id:
+            if self.current_user.get(ctx.guild.id) != ctx.author.id:
                 return await ctx.respond('You are not the one who queued this track or has insufficent admin permissions to do this.')
 
         # Check if there's even a voice client connected
-        if not hasattr(vc, "connected"):
+        if not vc and not hasattr(vc, "connected"):
             return await ctx.respond('🎙️ Not currently connected to a voice channel.')
 
         # Check if we are playing a track before disconnecting

@@ -34,7 +34,7 @@ Core dependencies is Python with PIP, depending on your distribution, pip must b
 
 ### Optional dependencies
 - OpenJDK 17 with ffmpeg \
-    Needed for voice commands (wavelink/lavalink)
+    Needed for voice commands (wavelink/lavalink) if needing to self-host lavalink server
 
 There may be other dependencies needed for some operations such as tools. Please see [TOOLS.md](./docs/TOOLS.md) for rationale.
 
@@ -62,9 +62,14 @@ Required fields to configure:
 Please see [CONFIG.md](./docs/CONFIG.md) for more information about configuration.
 
 ### Voice commands configuration:
+#### Your own LavaLink server
 You can enable VC-related commands such as `/voice play` (which plays videos from YouTube and other supported sources) by downloading [Lavalink jar file](https://github.com/lavalink-devs/Lavalink/releases) and placing it as `wavelink/Lavalink.jar` in project's root directory.
 
 Activate voice by placing `Lavalink.jar` from lavalink releases and rename `application.yml.template` to `application.yml` and run `java -jar Lavalink.jar` in separate session before starting the bot.
+
+---
+#### Serverless lavalink
+Alternatively, you can use the list of 3rd party servers from and use servers from https://lavalink.darrennathanael.com/NoSSL/lavalink-without-ssl/ and skip the installation step above and configure the `dev.env` file pointing the third party Lavalink servers, no installation required... Please see [CONFIG.md#voice](./docs/CONFIG.md#voice) for more information.
 
 ## Running the server
 After everything is configured, you can run `main.py`
