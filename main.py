@@ -54,7 +54,7 @@ async def wavelink_setup():
 
     node = wavelink.Node(
         identifier="main",
-        uri=f"ws://{ENV_LAVALINK_HOST}:{ENV_LAVALINK_PORT}",
+        uri=f"http://{ENV_LAVALINK_HOST}:{ENV_LAVALINK_PORT}",
         password=ENV_LAVALINK_PASS
     )
 
