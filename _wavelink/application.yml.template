@@ -12,7 +12,7 @@ plugins:
     clients: ["MUSIC", "ANDROID_TESTSUITE", "WEB"]
 lavalink:
   plugins:
-    - dependency: "dev.lavalink.youtube:youtube-plugin:1.4.0"
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.5.2"
       snapshot: false
   server:
     password: "youshallnotpass"
