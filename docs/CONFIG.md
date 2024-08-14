@@ -12,7 +12,7 @@ Enabling plugins other than YouTube is not recommended as its optimized for YouT
 
 You can skip the installation step above and use servers from https://lavalink.darrennathanael.com/NoSSL/lavalink-without-ssl/
 
-- `ENV_LAVALINK_HOST` - Host where Lavalink server is running (defaults to local server URI: `http://127.0.0.1:2222`)
+- `ENV_LAVALINK_URI` - Host where Lavalink server is running (defaults to local server URI: `http://127.0.0.1:2222`)
    `ENV_LAVALINK_PASS` - Lavalink password (change this if connecting remotely) - (defaults to "youshallnotpass")
 - `ENV_LAVALINK_IDENTIFIER` - Lavalink identifier (optional, used for some servers that has it, defaults to `main`)
 
