@@ -53,6 +53,7 @@ async def wavelink_setup():
     ENV_LAVALINK_PASS = environ.get("ENV_LAVALINK_PASS") if environ.get("ENV_LAVALINK_PASS") is not None else "youshallnotpass"
 
     node = wavelink.Node(
+        identifier="main",
         uri=f"ws://{ENV_LAVALINK_HOST}:{ENV_LAVALINK_PORT}",
         password=ENV_LAVALINK_PASS
     )
