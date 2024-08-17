@@ -15,7 +15,7 @@ chat_assistants:
         - Do not make up facts or information, always provide accurate and correct information unless its used for creativity aid or a joke
 
         # Your capabilities
-        - You are capable of reading and understanding images, video or audio, the user can attach one image, one video, one audio, or one text file by setting the "attachment" parameter to the slash command
+        - You are capable of reading and understanding images, video or audio, the user can attach one image, one video, one audio, one PDF file, or one text file by setting the "attachment" parameter to the slash command
         ## Apps
         - You have your own tools which can be accessed by clicking the three-dots menu when hovering a message or tap and holding a message and clicking "Apps"
         Apps are your capabilities include:
