@@ -11,6 +11,7 @@ class Voice(commands.Cog):
         self.bot = bot
         self.current_user = {}
         self.enqueued_tracks = {}
+        self.pendings = {}
 
     voice = SlashCommandGroup("voice", "Access voice features!", contexts={discord.InteractionContextType.guild})
 
@@ -67,11 +68,15 @@ class Voice(commands.Cog):
 
         if not vc.playing:
             while self.enqueued_tracks.get(ctx.guild.id):
+                # Check if there is a pending shutdown state which is initiated at disconnect command
+                if self.pendings.get(ctx.guild.id) == "disconnecting":
+                    break
+
                 # Use two separate variables since popping the list will remove the first element and will cause errors
                 _now_playingby = self.enqueued_tracks.get(ctx.guild.id).pop(0)
                 _track = _now_playingby.get(list(_now_playingby)[0])
 
-                await ctx.send(f'🎵 Now playing track: **{_track.title}**')
+                await ctx.send(f'▶️ Now playing track: **{_track.title}**')
                 await vc.play(_track)
 
                 # Temporarily save user id to check if the user is the one who queued the track
@@ -84,10 +89,6 @@ class Voice(commands.Cog):
                     await asyncio.sleep(1)
         else:
             await ctx.respond(f'⌛ Waiting for the current track to finish playing...', ephemeral=True)
-
-        # Clear the enqueued tracks list
-        if not vc.playing:
-            self.enqueued_tracks.get(ctx.guild.id).clear()
 
     @voice.command()
     @discord.option(
@@ -168,7 +169,7 @@ class Voice(commands.Cog):
 
         # Check if enqueue tracks list is empty
         if not self.enqueued_tracks.get(ctx.guild.id) or len(self.enqueued_tracks.get(ctx.guild.id)) == 0:
-            return await ctx.respond('🎵 No tracks in the queue.')
+            return await ctx.respond('0️⃣ No tracks in the queue.')
         
         # Indicator where there is a skipped track
         _tracks_skipped = False
@@ -225,7 +226,8 @@ class Voice(commands.Cog):
             return await ctx.respond('🎙️ Not currently connected to a voice channel.')
         
         # Check if we are playing a track before pausing
-        if not vc.playing or vc.paused: return await ctx.respond('⏸️ There is no track currently playing.')
+        if not vc.playing or vc.paused: 
+            return await ctx.respond('⏸️ There is no track currently playing.')
         
         # Pause the track
         await vc.pause(True)
@@ -261,9 +263,17 @@ class Voice(commands.Cog):
             if self.current_user.get(ctx.guild.id) != ctx.author.id:
                 return await ctx.respond('🎤 You are not the one who queued this track.')
 
-        # Check if there's even a voice client connected
+        # Check if there's even a voice client connected nbm
         if not vc and not hasattr(vc, "connected"):
             return await ctx.respond('🎙️ Not currently connected to a voice channel.')
+        
+        # Check if there is a playing track or else return a message
+        if not vc.playing:
+            return await ctx.respond('ℹ️ There is no track currently playing.')
+
+        # If there is a paused track, we need to resume it first before stopping it so it doesn't pause the next track
+        if vc.paused:
+            await vc.pause(False)
 
         # Store the title in the variable before stopping the track to notifiy the user since once it's stopped, vc.current.title will be None
         _current_track_title = vc.current.title
@@ -290,11 +300,16 @@ class Voice(commands.Cog):
             # Store the title in the variable before stopping the track to notifiy the user since once it's stopped, vc.current.title will be None
             current_track_title = vc.current.title
 
+            # Set pending disconnect state
+            self.pendings.update({ctx.guild.id: "disconnecting"})
+
             await vc.stop()
             await ctx.send(f'⏹️ Stopped track: **{current_track_title}**')
 
-        # Clear the enqueued tracks list
-        self.enqueued_tracks.get(ctx.guild.id).clear()
+        # Clear the enqueued tracks list and the current user record
+        self.enqueued_tracks.pop(ctx.guild.id)
+        self.current_user.pop(ctx.guild.id)
+        self.pendings.pop(ctx.guild.id)
 
         # Disconnect the bot from the voice channel
         await vc.disconnect()
