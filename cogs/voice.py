@@ -208,10 +208,7 @@ class Voice(commands.Cog):
         pong = vc.ping / 1000
         await ctx.respond(f"**Pong:** {pong}")
 
-    @voice.command(
-        contexts={discord.InteractionContextType.guild},
-        integration_types={discord.IntegrationType.guild_install}
-    )
+    @voice.command()
     async def pause(self, ctx):
         """Pause the currently playing track"""
         vc = typing.cast(wavelink.Player, ctx.voice_client)
