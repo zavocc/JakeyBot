@@ -307,9 +307,9 @@ class Voice(commands.Cog):
             await ctx.send(f'⏹️ Stopped track: **{current_track_title}**')
 
         # Clear the enqueued tracks list and the current user record
-        self.enqueued_tracks.pop(ctx.guild.id)
-        self.current_user.pop(ctx.guild.id)
-        self.pendings.pop(ctx.guild.id)
+        self.enqueued_tracks.pop(ctx.guild.id) if self.enqueued_tracks.get(ctx.guild.id) else None
+        self.current_user.pop(ctx.guild.id) if self.current_user.get(ctx.guild.id) else None
+        self.pendings.pop(ctx.guild.id) if self.pendings.get(ctx.guild.id) else None
 
         # Disconnect the bot from the voice channel
         await vc.disconnect()
