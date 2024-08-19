@@ -79,7 +79,7 @@ class HistoryManagement:
         self.tool_use = tool
 
         async with aiosqlite.connect(self.history_db) as conn:
-            async with conn.cursor() as cursor:
+            async with conn.execute("SELECT guild_id FROM chat_history WHERE guild_id = ?", (self.guild_id,)) as cursor:
                 await cursor.execute(
                     "UPDATE chat_history SET tool_use = ? WHERE guild_id = ?",
                     (tool, self.guild_id)
@@ -91,7 +91,7 @@ class HistoryManagement:
         await self.initialize()
 
         async with aiosqlite.connect(self.history_db) as conn:
-            async with conn.cursor() as cursor:
+            async with conn.execute("SELECT guild_id FROM chat_history WHERE guild_id = ?", (self.guild_id,)) as cursor:
                 _config = await cursor.execute("SELECT tool_use FROM chat_history WHERE guild_id = ?", (self.guild_id,))
                 _result = await _config.fetchone()
                 if _result is not None:
