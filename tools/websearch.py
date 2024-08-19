@@ -95,10 +95,10 @@ class ToolImpl(ToolsDefinitions):
 
                     # extract and clean the text
                     _cleantext = _scrapdata.get_text()
-                    _cleantext = "\n".join([x.strip() for x in _cleantext.splitlines() if x.strip()])
+                    _cleantext = [x.strip() for x in _cleantext.splitlines() if x.strip()]
 
                     # Format
-                    page_contents.update({f"{url}": f"{_cleantext}"})
+                    page_contents.update({f"{url}": _cleantext})
     
         except Exception as e:
             return f"An error has occured during web browsing process, reason: {e}"
@@ -126,15 +126,17 @@ class ToolImpl(ToolsDefinitions):
             # create a collection
             _collection = await _chroma_client.get_or_create_collection(name=_cln)
 
-            _chunk_size = 350
+            #_chunk_size = 350
             # chunk and add documents
             async def __batch_chunker(url, docs):
                 await _msgstatus.edit(f"🔍 Extracting relevant details from **{url}**")
 
-                # chunk to 300 characters
                 # returns the list of tuples of chunked documents associated with the url
-                chunked = [(url, docs[i:i+_chunk_size]) for i in range(0, len(docs), _chunk_size)]
-                for id, (url, chunk) in enumerate(chunked):
+                for id, chunk in enumerate(docs):
+                    # Check if the chunk is below 10 characters
+                    if len(chunk) < 10:
+                        continue
+
                     await _collection.add(
                         documents=[chunk],
                         ids=[f"{url}_{id}"]
@@ -150,7 +152,7 @@ class ToolImpl(ToolsDefinitions):
                 n_results=30
             ))["documents"][0]
 
-            #print(result)
+            print(result)
 
             # delete collection
             await _chroma_client.delete_collection(name=_cln)
