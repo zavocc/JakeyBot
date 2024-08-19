@@ -126,15 +126,15 @@ class ToolImpl(ToolsDefinitions):
             # create a collection
             _collection = await _chroma_client.get_or_create_collection(name=_cln)
 
-            #_chunk_size = 350
+            _chunk_min_size = 10
             # chunk and add documents
             async def __batch_chunker(url, docs):
                 await _msgstatus.edit(f"🔍 Extracting relevant details from **{url}**")
 
-                # returns the list of tuples of chunked documents associated with the url
+                # returns the list of chunked documents associated with the url
                 for id, chunk in enumerate(docs):
-                    # Check if the chunk is below 10 characters
-                    if len(chunk) < 10:
+                    # Check if the chunk is below {chunk_min_size} characters
+                    if len(chunk) < _chunk_min_size:
                         continue
 
                     await _collection.add(
@@ -149,10 +149,10 @@ class ToolImpl(ToolsDefinitions):
             # Query
             result = (await _collection.query(
                 query_texts=query,
-                n_results=30
+                n_results=35,
             ))["documents"][0]
 
-            print(result)
+            #print(result)
 
             # delete collection
             await _chroma_client.delete_collection(name=_cln)
@@ -174,5 +174,6 @@ class ToolImpl(ToolsDefinitions):
         _embed.set_footer(text="Web search (powered by DuckDuckGo) is a beta feature, it cannot cross reference or verify the accuracy of the sources provided!")
         await self.ctx.send(embed=_embed)
 
-        # Join page contents
-        return f"Here is the extracted web pages based on the query {query}: \n" + "\n".join(result)
+        # Join page contents and anchor the urls
+        return "Here is the extracted web pages based on the query {}: \n{}\n\nLinks:\n{}" \
+                .format(query, "\n".join(result), "\n".join(links))
