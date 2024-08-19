@@ -20,12 +20,6 @@ class AI(commands.Cog):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
-        # Check for gemini API keys
-        if environ.get("GOOGLE_AI_TOKEN") is None or environ.get("GOOGLE_AI_TOKEN") == "INSERT_API_KEY":
-            raise Exception("GOOGLE_AI_TOKEN is not configured in the dev.env file. Please configure it and try again.")
-
-        genai.configure(api_key=environ.get("GOOGLE_AI_TOKEN"))
-
     ###############################################
     # Ask command
     ###############################################
@@ -73,6 +67,12 @@ class AI(commands.Cog):
         ###############################################
         # Model configuration
         ###############################################
+        # Check for gemini API keys
+        if environ.get("GOOGLE_AI_TOKEN") is None or environ.get("GOOGLE_AI_TOKEN") == "INSERT_API_KEY":
+            raise Exception("GOOGLE_AI_TOKEN is not configured in the dev.env file. Please configure it and try again.")
+
+        genai.configure(api_key=environ.get("GOOGLE_AI_TOKEN"))
+
         # Message history
         # Since pycord 2.6, user apps support is implemented. But in order for this command to work in DMs, it has to be installed as user app
         # Which also exposes the command to the guilds the user joined where the bot is not authorized to send commands. This can cause partial function succession with MissingAccess error
