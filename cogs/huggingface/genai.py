@@ -1,5 +1,6 @@
 from discord.ext import commands
 from gradio_client import Client
+import asyncio
 import discord
 import gradio_client
 
@@ -52,7 +53,8 @@ class HFGenAITools(commands.Cog):
 
         # Create image
         try:
-            result = Client("stabilityai/stable-diffusion-3-medium").predict(
+            result = await asyncio.to_thread(
+                Client("stabilityai/stable-diffusion-3-medium").predict,
                 prompt=prompt,
                 negative_prompt=f"{_default_negative_prompt}{', ' + negative_prompt if negative_prompt is not None else ' '}",
                 width=width,

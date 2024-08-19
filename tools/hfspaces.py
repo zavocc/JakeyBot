@@ -1,5 +1,6 @@
 # Huggingface spaces endpoints 
 import google.generativeai as genai
+import asyncio
 import discord
 import importlib
 
@@ -45,7 +46,8 @@ class ToolImpl(ToolsDefinitions):
         # Create image
         try:
             message_curent = await self.ctx.send("⌛ Generating an image... this may take few minutes")
-            result = gradio_client.Client("stabilityai/stable-diffusion-3-medium").predict(
+            result = await asyncio.to_thread(
+                gradio_client.Client("stabilityai/stable-diffusion-3-medium").predict,
                 prompt=image_description,
                 negative_prompt=f"low quality, distorted, bad art, strong violence, sexually explicit, disturbing",
                 width=width,
