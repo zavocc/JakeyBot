@@ -131,16 +131,20 @@ class ToolImpl(ToolsDefinitions):
             async def __batch_chunker(url, docs):
                 await _msgstatus.edit(f"🔍 Extracting relevant details from **{url}**")
 
+                _chunk_collection_tasks = []
+
                 # returns the list of chunked documents associated with the url
                 for id, chunk in enumerate(docs):
                     # Check if the chunk is below {chunk_min_size} characters
                     if len(chunk) < _chunk_min_size:
                         continue
 
-                    await _collection.add(
+                    _chunk_collection_tasks.append(_collection.add(
                         documents=[chunk],
                         ids=[f"{url}_{id}"]
-                    )
+                    ))
+
+                await asyncio.gather(*_chunk_collection_tasks)
 
             # tasks
             tasks = [__batch_chunker(url, docs) for url, docs in page_contents.items()]
@@ -149,10 +153,10 @@ class ToolImpl(ToolsDefinitions):
             # Query
             result = (await _collection.query(
                 query_texts=query,
-                n_results=35,
+                n_results=30,
             ))["documents"][0]
 
-            #print(result)
+            print(result)
 
             # delete collection
             await _chroma_client.delete_collection(name=_cln)
