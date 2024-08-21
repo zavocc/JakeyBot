@@ -10,6 +10,7 @@ class BaseFunctions:
         self.websearch = tools.websearch.ToolImpl(bot, ctx)
 
         # Built in
+        self.artifacts = self.builtins.artifacts
         self.randomreddit = self.builtins.randomreddit
         self.youtube = self.builtins.youtube
 
@@ -32,3 +33,6 @@ class BaseFunctions:
     
     async def _callable_web_browsing(self, query: str, max_results: int = 6):
         return await self.websearch._web_browsing(query, max_results)
+    
+    async def _callable_artifacts(self, contents: str, filename: str):
+        return await self.builtins._artifacts(contents, filename)

@@ -65,6 +65,7 @@ class ChatMgmt(commands.Cog):
         "capability",
         description = "Integrate tools to chat! Setting chat features will clear your history!",
         choices=[
+            discord.OptionChoice("Artifacts", "artifacts"),
             discord.OptionChoice("Code Execution with Python", "code_execution"),
             discord.OptionChoice("Image Generator with Stable Diffusion 3", "image_generator"),
             discord.OptionChoice("Random Reddit", "randomreddit"),

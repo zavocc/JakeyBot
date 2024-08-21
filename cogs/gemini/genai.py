@@ -231,6 +231,9 @@ class AI(commands.Cog):
 
                 # Call the function through their callables with getattr
                 try:
+                    for x, y in _func_call.args:
+                        print(x, y)
+
                     _result = await getattr(tools_functions, f"_callable_{_func_call.name}")(**_func_call.args)
                 except AttributeError as e:
                     await ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")

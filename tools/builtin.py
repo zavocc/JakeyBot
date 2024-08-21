@@ -1,5 +1,6 @@
 # Built in Tools
 import google.generativeai as genai
+import discord
 import importlib
 
 class ToolsDefinitions:
@@ -38,11 +39,63 @@ class ToolsDefinitions:
         ]
     )
 
+    # Artifacts
+    artifacts = genai.protos.Tool(
+        function_declarations=[
+            genai.protos.FunctionDeclaration(
+                name = "artifacts",
+                description = "Create and upload meaningful files as artifacts within the conversation from code snippet, text outputs, or other textual data",
+                parameters=genai.protos.Schema(
+                    type=genai.protos.Type.OBJECT,
+                    properties={
+                        'contents':genai.protos.Schema(type=genai.protos.Type.STRING),
+                        'filename':genai.protos.Schema(type=genai.protos.Type.STRING)
+                    },
+                    required=['contents', 'filename']
+                )
+            )
+        ]
+    )
+
 # Function implementations
 class ToolImpl(ToolsDefinitions):
     def __init__(self, bot, ctx):
         self.bot = bot
         self.ctx = ctx
+
+    async def _artifacts(self, contents: str, filename: str):
+        # Import required libs
+        try:
+            os = importlib.import_module("os")
+            random = importlib.import_module("random")
+        except ModuleNotFoundError:
+            return "This tool is not available at the moment"
+        
+        # Set the file path
+        file_path = f"{os.environ.get('TEMP_DIR', 'temp')}/{random.randint(58386, 98159)}_{self.ctx.author.id}_{filename}"
+        
+        # Replace \n with new lines
+        contents = contents.encode("utf-8").decode("unicode_escape")
+        try:
+            # Write the file, check if its a string and not binary
+            if isinstance(contents, bytes):
+                with open(file_path, "wb") as f:
+                    f.write(contents)
+            else:
+                with open(file_path, "w") as f:
+                    f.write(contents)
+        except Exception as e:
+            return f"An error occurred: {e}"
+        
+        # Send the file
+        await self.ctx.send(file=discord.File(fp=file_path, filename=filename))
+
+        # Remove the file
+        os.remove(file_path)
+
+        # Return the result
+        return f"File has been sent"
+
 
     async def _randomreddit(self, subreddit: str):
         # Fetch subreddit
