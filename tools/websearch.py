@@ -147,8 +147,9 @@ class ToolImpl(ToolsDefinitions):
                 await asyncio.gather(*_chunk_collection_tasks)
 
             # tasks
-            tasks = [__batch_chunker(url, docs) for url, docs in page_contents.items()]
-            await asyncio.gather(*tasks)
+            for url, docs in page_contents.items():
+                await __batch_chunker(url, docs)
+            
 
             # Query
             result = (await _collection.query(
@@ -156,7 +157,7 @@ class ToolImpl(ToolsDefinitions):
                 n_results=30,
             ))["documents"][0]
 
-            print(result)
+            #print(result)
 
             # delete collection
             await _chroma_client.delete_collection(name=_cln)
