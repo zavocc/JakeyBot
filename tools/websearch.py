@@ -95,10 +95,10 @@ class ToolImpl(ToolsDefinitions):
 
                     # extract and clean the text
                     _cleantext = _scrapdata.get_text()
-                    _cleantext = [x.strip() for x in _cleantext.splitlines() if x.strip()]
+                    _cleantext = "\n".join([x.strip() for x in _cleantext.splitlines() if x.strip()])
 
                     # Format
-                    page_contents.update({f"{url}": _cleantext})
+                    page_contents.update({f"{url}": f"{_cleantext}"})
     
         except Exception as e:
             return f"An error has occured during web browsing process, reason: {e}"
@@ -126,35 +126,28 @@ class ToolImpl(ToolsDefinitions):
             # create a collection
             _collection = await _chroma_client.get_or_create_collection(name=_cln)
 
-            _chunk_min_size = 10
+            _chunk_size = 350
             # chunk and add documents
             async def __batch_chunker(url, docs):
                 await _msgstatus.edit(f"🔍 Extracting relevant details from **{url}**")
 
-                _chunk_collection_tasks = []
-
-                # returns the list of chunked documents associated with the url
-                for id, chunk in enumerate(docs):
-                    # Check if the chunk is below {chunk_min_size} characters
-                    if len(chunk) < _chunk_min_size:
-                        continue
-
-                    _chunk_collection_tasks.append(_collection.add(
+                # chunk to 300 characters
+                # returns the list of tuples of chunked documents associated with the url
+                chunked = [(url, docs[i:i+_chunk_size]) for i in range(0, len(docs), _chunk_size)]
+                for id, (url, chunk) in enumerate(chunked):
+                    await _collection.add(
                         documents=[chunk],
                         ids=[f"{url}_{id}"]
-                    ))
-
-                await asyncio.gather(*_chunk_collection_tasks)
+                    )
 
             # tasks
-            for url, docs in page_contents.items():
-                await __batch_chunker(url, docs)
-            
+            tasks = [__batch_chunker(url, docs) for url, docs in page_contents.items()]
+            await asyncio.gather(*tasks)
 
             # Query
             result = (await _collection.query(
                 query_texts=query,
-                n_results=30,
+                n_results=35
             ))["documents"][0]
 
             #print(result)
@@ -179,6 +172,5 @@ class ToolImpl(ToolsDefinitions):
         _embed.set_footer(text="Web search (powered by DuckDuckGo) is a beta feature, it cannot cross reference or verify the accuracy of the sources provided!")
         await self.ctx.send(embed=_embed)
 
-        # Join page contents and anchor the urls
-        return "Here is the extracted web pages based on the query {}: \n{}\n\nLinks:\n{}" \
-                .format(query, "\n".join(result), "\n".join(links))
+        # Join page contents
+        return f"Here is the extracted web pages based on the query {query}: \n" + "\n".join(result)
