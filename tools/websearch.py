@@ -94,8 +94,9 @@ class ToolImpl(ToolsDefinitions):
                     _scrapdata = bs4.BeautifulSoup(_page_text, 'html.parser')
 
                     # extract and clean the text
+                    _char_max_size = 10
                     _cleantext = _scrapdata.get_text()
-                    _cleantext = "\n".join([x.strip() for x in _cleantext.splitlines() if x.strip()])
+                    _cleantext = "\n".join([x.strip() for x in _cleantext.splitlines() if x.strip() and len(x.strip()) >= _char_max_size])
 
                     # Format
                     page_contents.update({f"{url}": f"{_cleantext}"})
