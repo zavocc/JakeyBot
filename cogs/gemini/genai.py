@@ -44,7 +44,9 @@ class AI(commands.Cog):
         choices=[
             discord.OptionChoice("Gemini 1.5 Pro (2M) - advanced chat tasks with low availability", "gemini-1.5-pro-001"),
             discord.OptionChoice("Gemini 1.5 Flash (1M) - general purpose with high availability", "gemini-1.5-flash-001"),
-            discord.OptionChoice("Gemini 1.5 Pro (Experimental - 08/01/24 version) - latest and greatest", "gemini-1.5-pro-exp-0801"),
+            discord.OptionChoice("Gemini 1.5 Pro (Experimental - 08/27/24 version) - latest and greatest", "gemini-1.5-pro-exp-0827"),
+            discord.OptionChoice("Gemini 1.5 Flash (Experimental - 08/27/24 version) - latest and greatest", "gemini-1.5-flash-exp-0827"),
+            discord.OptionChoice("Gemini 1.5 Flash (8B experimental) - Fast and smallest model with same context window as Flash", "gemini-1.5-flash-8b-exp-0827")
         ],
         default="gemini-1.5-flash-001",
         required=False
