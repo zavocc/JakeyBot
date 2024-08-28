@@ -14,6 +14,18 @@ import asyncio
 import discord
 import inspect
 import random
+import yaml
+
+# Load the models list from YAML file
+with open("data/models.yaml", "r") as models:
+    _internal_model_data = yaml.safe_load(models)
+
+# Iterate through the models and merge them as dictionary
+# It has to be put here instead of the init class since decorators doesn't seem to reference self class attributes
+_model_choices = [
+    discord.OptionChoice(f"{model['name']} - {model['description']}", model['model'])
+    for model in _internal_model_data['gemini_models']
+]
 
 class AI(commands.Cog):
     def __init__(self, bot):
@@ -41,13 +53,7 @@ class AI(commands.Cog):
     @discord.option(
         "model",
         description="Choose a model to use for the conversation - flash is the default model",
-        choices=[
-            discord.OptionChoice("Gemini 1.5 Pro (2M) - advanced chat tasks with low availability", "gemini-1.5-pro-001"),
-            discord.OptionChoice("Gemini 1.5 Flash (1M) - general purpose with high availability", "gemini-1.5-flash-001"),
-            discord.OptionChoice("Gemini 1.5 Pro (Experimental - 08/27/24 version) - latest and greatest", "gemini-1.5-pro-exp-0827"),
-            discord.OptionChoice("Gemini 1.5 Flash (Experimental - 08/27/24 version) - latest and greatest", "gemini-1.5-flash-exp-0827"),
-            discord.OptionChoice("Gemini 1.5 Flash (8B experimental) - Fast and smallest model with same context window as Flash", "gemini-1.5-flash-8b-exp-0827")
-        ],
+        choices=_model_choices,
         default="gemini-1.5-flash-001",
         required=False
     )
