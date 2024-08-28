@@ -2,6 +2,19 @@ from core.ai.history import HistoryManagement as histmgmt
 from discord.ext import commands
 from os import environ
 import discord
+import yaml
+
+# Load the tools list from YAML file
+with open("data/tools.yaml", "r") as models:
+    _tools_list = yaml.safe_load(models)
+
+# Load tools metadata
+_tool_choices = [
+    discord.OptionChoice(tools["ui_name"], tools['tool_name'])
+    for tools in _tools_list
+]
+
+del _tools_list
 
 class ChatMgmt(commands.Cog):
     def __init__(self, bot):
@@ -64,13 +77,7 @@ class ChatMgmt(commands.Cog):
     @discord.option(
         "capability",
         description = "Integrate tools to chat! Setting chat features will clear your history!",
-        choices=[
-            discord.OptionChoice("Code Execution with Python", "code_execution"),
-            discord.OptionChoice("Image Generator with Stable Diffusion 3", "image_generator"),
-            discord.OptionChoice("Random Reddit", "randomreddit"),
-            discord.OptionChoice("Web Browsing with DuckDuckGo", "web_browsing"),
-            discord.OptionChoice("YouTube Search", "youtube")
-        ]
+        choices=_tool_choices
     )
     async def feature(self, ctx, capability: str):
         """Enhance your chat with capabilities! Some are in BETA so things may not always pick up"""

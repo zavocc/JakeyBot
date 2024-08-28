@@ -58,7 +58,7 @@ class ToolImpl(ToolsDefinitions):
                 num_inference_steps=30,
                 api_name="/infer"
             )
-        except gradio_client.exceptions.AppError as e:
+        except Exception as e:
             return f"Image generation fail and the image isn't sent, reason {e}"
         
         # Delete status
