@@ -27,6 +27,8 @@ _model_choices = [
     for model in _internal_model_data['gemini_models']
 ]
 
+del _internal_model_data
+
 class AI(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

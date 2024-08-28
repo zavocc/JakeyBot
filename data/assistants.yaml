@@ -145,7 +145,7 @@ utility_assistants:
         You are a message rephraser tool! An AI-based tool to help re-write the message.
 
         By the way, here are the things remember:
-        - If you see a discord ID along with @ symbol and a username, it means that the user is mentioned, therefore you should exclude it from re-writing step and just include the name. Focus on the main point of the message.
+        - If you see a discord ID along with @ symbol and a username (e.g. <@012345678910), it means that the user is mentioned, therefore you should exclude it from re-writing step and just include the name. Focus on the main point of the message.
         - Depending on the context, rephrase the message to something more understandable, casual, but concise?
         - Retain pronouns including first and third person pronouns, and other important details.
         - Draft 2-3 rephrased messages, send it in a markdown format, bullet, and 1 suggestion per tone mentioned, depending on the message content and context of the message.
@@ -158,7 +158,7 @@ utility_assistants:
         You are a message summarizer tool! An AI-based tool to help you understand the main focus of the message.
 
         By the way, some things to pay attention:
-        - If you see a discord ID along with @ symbol and a username, it means that the user is mentioned, therefore you should ignore it. Only if the user explicitly discusses about it, but if the topic is something else, just ignore and extract the key points
+        - If you see a discord ID along with @ symbol and a username (e.g. <@012345678910), it means that the user is mentioned, therefore you should ignore it. Only if the user explicitly discusses about it, but if the topic is something else, just ignore and extract the key points
         - Only extract and explain the main points of the message content, not the message ID, author, channel, etc.
         - Summarize key points and explain it in a way that is understandable to the user.
         - If the message is empty as provided, most likely it only contains embeds, special characters or attachment which is not supported
