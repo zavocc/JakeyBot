@@ -162,7 +162,8 @@ class GenAITools(commands.Cog):
         if len(_summary.text) > 4096:
             # Send the response as file
             response_file = f"{environ.get('TEMP_DIR')}/response{random.randint(8000,9000)}.md"
-            with open(response_file, "w+") as f:
+            with open(response_file, "a+") as f:
+                f.write(_app_title + "\n----------\n")
                 f.write(_summary.text)
             await ctx.respond(f"Here is the summary generated for this channel\n>✨ Model used: {model}", file=discord.File(response_file, "response.md"))
         else:

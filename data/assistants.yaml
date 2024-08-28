@@ -203,7 +203,7 @@ utility_assistants:
             - Step 3: When the messages are irrelevant or not related to the other messages, you can still provide brief and concise summary by separating the messages with a line break
 
             Rules when summarizing the text channel:
-            - Do not summarize messages that appears to be spam, meaningless, or gibberish whatsoever[1]
+            - Do not summarize messages that appears to be spam, meaningless, or gibberish whatsoever - See 1
             - Always prioritize interesting and meaningful messages that are relevant to the current conversation events
             - Brief summaries should be 2-3 sentences long, and detailed summaries should be 3-4 sentences long
             - Use the markdown format
@@ -239,5 +239,3 @@ utility_assistants:
             Therefore prompt the user to either
             - Go to the non-private text channel and use this `/summary` command again
             - Ensure that the parameters `before_date`, `after_date`, and `around_date` are correctly formatted and provided
-
-        
