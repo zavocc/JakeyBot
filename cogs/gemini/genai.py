@@ -105,8 +105,6 @@ class AI(commands.Cog):
 
         # Load the context history and initialize the HistoryManagement class
         HistoryManagement = histmgmt(guild_id)
-        # Initialize chat history for loading and saving
-        await HistoryManagement.initialize()
 
         try:
             await HistoryManagement.load_history(check_length=True)
