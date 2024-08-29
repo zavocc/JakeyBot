@@ -241,6 +241,8 @@ class AI(commands.Cog):
                     _result = await getattr(tools_functions, f"_callable_{_func_call.name}")(**_func_call.args)
                 except AttributeError as e:
                     await ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
+                    # Also print the error to the console
+                    print(e)
                     return
 
                 # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
