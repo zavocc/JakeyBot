@@ -60,9 +60,10 @@ class HistoryManagement:
                     if len(self.context_history["prompt_history"]) >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
                         raise ValueError("Maximum history reached! Clear the conversation")
 
-    async def save_history(self):
-        # Initialize chat history for loading and saving
-        await self.initialize()
+    async def save_history(self, skip_init = False):
+        if not skip_init:
+            # Initialize chat history for loading and saving
+            await self.initialize()
 
         # Save the context history to the database
         async with aiosqlite.connect(self.history_db) as conn:
@@ -81,9 +82,10 @@ class HistoryManagement:
                 await cursor.execute("DELETE FROM chat_history WHERE guild_id = ?", (self.guild_id,))
                 await conn.commit()
 
-    async def set_config(self, tool="code_execution"):
-        # Automatically initialize the database
-        await self.initialize()
+    async def set_config(self, tool="code_execution", skip_init = False):
+        if not skip_init:
+            # Automatically initialize the database
+            await self.initialize()
 
         async with aiosqlite.connect(self.history_db) as conn:
             async with conn.cursor() as cursor:
@@ -93,9 +95,10 @@ class HistoryManagement:
                 )
                 await conn.commit()
 
-    async def get_config(self):
-        # Automatically initialize the database
-        await self.initialize()
+    async def get_config(self, skip_init = False):
+        if not skip_init:
+            # Automatically initialize the database
+            await self.initialize()
 
         async with aiosqlite.connect(self.history_db) as conn:
             async with conn.cursor() as cursor:
