@@ -70,9 +70,10 @@ class HistoryManagement:
                 await cursor.execute("UPDATE chat_history SET context_history = ? WHERE guild_id = ?", (jsonpickle.dumps(self.context_history), self.guild_id))
                 await conn.commit()
 
-    async def clear_history(self):
-        # Automatically initialize the database
-        await self.initialize()
+    async def clear_history(self, skip_init = False):
+        if not skip_init:
+            # Automatically initialize the database
+            await self.initialize()
 
         # Remove the chat history from the database
         async with aiosqlite.connect(self.history_db) as conn:

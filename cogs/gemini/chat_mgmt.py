@@ -49,7 +49,7 @@ class ChatMgmt(commands.Cog):
         _feature = await HistoryManagement.get_config()
 
         # Clear and set feature
-        await HistoryManagement.clear_history()
+        await HistoryManagement.clear_history(skip_init=True)
         await HistoryManagement.set_config(_feature)
 
         await ctx.respond("✅ Chat history reset!")
@@ -106,7 +106,7 @@ class ChatMgmt(commands.Cog):
             await ctx.respond("✅ Feature already enabled!")
         else:
             # clear and reinitialize history
-            await HistoryManagement.clear_history()
+            await HistoryManagement.clear_history(skip_init=True)
 
             # set config
             await HistoryManagement.set_config(capability)

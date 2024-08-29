@@ -132,13 +132,12 @@ class AI(commands.Cog):
         # Check whether to output as JSON and disable code execution
         if not json_mode:
             # enable plugins
-            _config = await HistoryManagement.get_config()
 
             # check if its a code_execution
-            if _config == "code_execution":
+            if (await HistoryManagement.get_config()) == "code_execution":
                 enabled_tools = "code_execution"
             else:
-                enabled_tools = getattr(tools_functions, _config)
+                enabled_tools = getattr(tools_functions, (await HistoryManagement.get_config()))
         else:
             genai_configs.generation_config.update({"response_mime_type": "application/json"})
             enabled_tools = None
