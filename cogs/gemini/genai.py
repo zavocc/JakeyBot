@@ -27,6 +27,8 @@ _model_choices = [
     for model in _internal_model_data['gemini_models']
 ]
 
+del _internal_model_data
+
 class AI(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -103,8 +105,6 @@ class AI(commands.Cog):
 
         # Load the context history and initialize the HistoryManagement class
         HistoryManagement = histmgmt(guild_id)
-        # Initialize chat history for loading and saving
-        await HistoryManagement.initialize()
 
         try:
             await HistoryManagement.load_history(check_length=True)
@@ -132,13 +132,12 @@ class AI(commands.Cog):
         # Check whether to output as JSON and disable code execution
         if not json_mode:
             # enable plugins
-            _config = await HistoryManagement.get_config()
 
             # check if its a code_execution
-            if _config == "code_execution":
+            if (await HistoryManagement.get_config()) == "code_execution":
                 enabled_tools = "code_execution"
             else:
-                enabled_tools = getattr(tools_functions, _config)
+                enabled_tools = getattr(tools_functions, (await HistoryManagement.get_config()))
         else:
             genai_configs.generation_config.update({"response_mime_type": "application/json"})
             enabled_tools = None
@@ -242,6 +241,8 @@ class AI(commands.Cog):
                     _result = await getattr(tools_functions, f"_callable_{_func_call.name}")(**_func_call.args)
                 except AttributeError as e:
                     await ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
+                    # Also print the error to the console
+                    print(e)
                     return
 
                 # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution

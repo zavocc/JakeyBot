@@ -62,8 +62,8 @@ The only way to opt out of tools is to use Code Execution. Since its a native ca
 When forking or creating a PR to add and integrate your function or tool, you must follow the guidelines how to add your tools
 
 Files involved:
-- `cogs/gemini/chat_mgmt.py`
 - `core/ai/tools.py`
+- `data/tools.yaml`
 - `tools/*.py`
 
 For inspiration, you can refer to the files above.
@@ -183,19 +183,10 @@ class BaseFunctions:
 ### Step 3: Making your tool visible to Discord UI
 The last step is to make it visble to Discord UI for users to activate the tool.
 
-On the file [`cogs/gemini/chat_mgmt.py`](../cogs/gemini/chat_mgmt.py#L67) within the method `feature` command decorator `@discord.option` and parameter `choices` which accepts `list[str, discord.OptionChoices]`. Format your option as
-```python
-@discord.option(
-    "capability",
-    description = "Integrate tools to chat! Setting chat features will clear your history!",
-    choices=[
-        discord.OptionChoice("Human readable description about your tool", "tool_name_from_schema")
-    ]
-)
-```
-In this example's case. It would be
-```python
-choices=[
-    discord.OptionChoice("Multiply numbers", "multiply")
-]
+On the file [`data/tools.yaml`](/data/tools.yaml). Register your tools definition for the model to use and human readable description of your tool
+```yaml
+# tool_name is your function name from the schema as the model will use it
+- tool_name: multiply
+# human readable description where the tool choice is visible to Discord UI within the `/feature` command
+  ui_name: Muliply with Python
 ```

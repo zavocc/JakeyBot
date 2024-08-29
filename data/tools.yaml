@@ -1,0 +1,10 @@
+- tool_name: code_execution
+  ui_name: Code Execution with Python
+- tool_name: image_generator
+  ui_name: Image Generator with Stable Diffusion 3
+- tool_name: randomreddit
+  ui_name: Random Reddit
+- tool_name: web_browsing
+  ui_name: Web Browsing with DuckDuckGo
+- tool_name: youtube
+  ui_name: YouTube Search
