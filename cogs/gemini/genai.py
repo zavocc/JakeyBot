@@ -56,8 +56,18 @@ class AI(commands.Cog):
         "model",
         description="Choose a model to use for the conversation - flash is the default model",
         choices=_model_choices,
-        default="gemini-1.5-flash-001",
-        required=False
+        default="gemini-1.5-flash-001"
+    )
+    @discord.option(
+        "personality",
+        description="Choose a personality to use for the conversation - default is Jakey",
+        choices=[
+            discord.OptionChoice("Jakey", "jakey_system_prompt"),
+            discord.OptionChoice("Gemini", "gemini_stock_system_prompt"),
+            discord.OptionChoice("Coding Partner", "coding_partner_system_prompt"),
+            discord.OptionChoice("Brainstormer", "brainstormer_system_prompt")
+        ],
+        default="jakey_system_prompt"
     )
     @discord.option(
         "json_mode",
@@ -69,7 +79,7 @@ class AI(commands.Cog):
         description="Store the conversation to chat history? (This option is void with json_mode)",
         default=True
     )
-    async def ask(self, ctx, prompt: str, attachment: discord.Attachment, model: str, json_mode: bool,
+    async def ask(self, ctx, prompt: str, attachment: discord.Attachment, model: str, personality: str, json_mode: bool,
         append_history: bool):
         """Ask a question using Gemini-based AI"""
         await ctx.response.defer()
@@ -141,9 +151,12 @@ class AI(commands.Cog):
         else:
             genai_configs.generation_config.update({"response_mime_type": "application/json"})
             enabled_tools = None
-            
+        
+        # Parse personality using getattr
+        assistants_system_prompt = getattr(assistants_system_prompt, personality)
+
         # Model configuration - the default model is flash
-        model_to_use = genai.GenerativeModel(model_name=model, safety_settings=genai_configs.safety_settings_config, generation_config=genai_configs.generation_config, system_instruction=assistants_system_prompt.jakey_system_prompt, tools=enabled_tools)
+        model_to_use = genai.GenerativeModel(model_name=model, safety_settings=genai_configs.safety_settings_config, generation_config=genai_configs.generation_config, system_instruction=assistants_system_prompt, tools=enabled_tools)
 
         ###############################################
         # File attachment processing
@@ -302,10 +315,10 @@ class AI(commands.Cog):
             await HistoryManagement.save_history()
             await ctx.send(inspect.cleandoc(f"""
                            > 📃 Context size: **{len(context_history["prompt_history"])}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
-                           > ✨ Model used: **{model}**
+                           > ✨ Model used: **{model}** (Personality: **{personality}**)
                            """))
         else:
-            await ctx.send(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{model}**")
+            await ctx.send(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{model}** (Personality: **{personality}**)")
 
     # Handle all unhandled exceptions through error event, handled exceptions are currently image analysis safety settings
     @ask.error
