@@ -119,12 +119,12 @@ class ToolImpl(ToolsDefinitions):
             # create a collection
             _collection = await _chroma_client.get_or_create_collection(name=_cln)
 
-            _chunk_size = 350
+            _chunk_size = 275
             # chunk and add documents
             async def __batch_chunker(url, docs):
                 await _msgstatus.edit(f"🔍 Extracting relevant details from **{url}**")
 
-                # chunk to 350 characters
+                # chunk to 275 characters
                 # returns the list of tuples of chunked documents associated with the url
                 _chunked = HtmlChunker(
                     max_words_per_aggregate_passage=_chunk_size,
