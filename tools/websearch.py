@@ -131,24 +131,33 @@ class ToolImpl(ToolsDefinitions):
                     greedily_aggregate_sibling_nodes=True,
                     html_tags_to_exclude={"noscript", "script", "style"}
                 ).chunk(docs)
-                for id, chunk in enumerate(_chunked):
+                for ids, chunk in enumerate(_chunked):
                     await _collection.add(
                         documents=[chunk],
-                        ids=[f"{url}_{id}"]
+                        metadatas=[{"url":url}],
+                        ids=[f"{url}_{ids}"]
                     )
 
             # tasks
-            tasks = [__batch_chunker(url, docs) for url, docs in page_contents.items()]
-            await asyncio.gather(*tasks)
+            _tasks = [__batch_chunker(url, docs) for url, docs in page_contents.items()]
+            await asyncio.gather(*_tasks)
 
-            # Query
-            result = (await _collection.query(
-                query_texts=query,
-                n_results=35
-            ))["documents"][0]
+            # Aggregate results, anchor queries associated with their URLs
+            _result = []
+            
+            for url, _ in page_contents.items():
+                _result.append("Result from {}:\n=======================\n{}\n=======================\n".format(
+                    url, 
+                    "\n".join((await _collection.query(
+                            query_texts=query,
+                            n_results=10,
+                            where={"url": url}
+                        ))["documents"][0])
+                ))
 
-            if os.environ.get("_WEB_ENABLE_DEBUG") == 1:
-                print(result)
+            if os.environ.get("_WEB_ENABLE_DEBUG") == "1":
+                print(_result, end="\n\n")
+                print("\n".join(_result))
 
             # delete collection
             await _chroma_client.delete_collection(name=_cln)
@@ -158,7 +167,7 @@ class ToolImpl(ToolsDefinitions):
         except Exception as e:
             return f"An error has occured during relevance similarity step: {e}"
 
-        if result is None:
+        if len(_result) == 0:
             return f"No pages has been extracted"
 
         # Send embed containing the links considered for the response
@@ -171,4 +180,4 @@ class ToolImpl(ToolsDefinitions):
         await self.ctx.send(embed=_embed)
 
         # Join page contents
-        return f"Here is the extracted web pages based on the query {query}: \n" + "\n".join(result)
+        return f"Here is the extracted web pages aggregated based on the query {query}: \n" + "\n".join(_result)
