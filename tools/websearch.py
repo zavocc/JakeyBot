@@ -147,7 +147,8 @@ class ToolImpl(ToolsDefinitions):
                 n_results=35
             ))["documents"][0]
 
-            print(result)
+            if os.environ.get("_WEB_ENABLE_DEBUG") == 1:
+                print(result)
 
             # delete collection
             await _chroma_client.delete_collection(name=_cln)
