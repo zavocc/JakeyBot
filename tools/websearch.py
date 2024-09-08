@@ -1,5 +1,6 @@
 # Built in Tools
 from core.ai.embeddings import GeminiDocumentRetrieval
+from google_labs_html_chunker.html_chunker import HtmlChunker
 import google.generativeai as genai
 import asyncio
 import discord
@@ -43,7 +44,6 @@ class ToolImpl(ToolsDefinitions):
 
             # For relevance and similarity
             chromadb = importlib.import_module("chromadb")
-            bs4 = importlib.import_module("bs4")
             ddg = importlib.import_module("duckduckgo_search")
 
             # Needed for some websites
@@ -90,16 +90,8 @@ class ToolImpl(ToolsDefinitions):
                         await self.ctx.send(f"⚠️ Failed to browse: **<{url}>**")
                         continue
 
-                    # Scrape with BeautifulSoup
-                    _scrapdata = bs4.BeautifulSoup(_page_text, 'html.parser')
-
-                    # extract and clean the text
-                    _char_max_size = 10
-                    _cleantext = _scrapdata.get_text()
-                    _cleantext = "\n".join([x.strip() for x in _cleantext.splitlines() if x.strip() and len(x.strip()) >= _char_max_size])
-
                     # Format
-                    page_contents.update({f"{url}": f"{_cleantext}"})
+                    page_contents.update({f"{url}": f"{_page_text}"})
     
         except Exception as e:
             return f"An error has occured during web browsing process, reason: {e}"
@@ -132,10 +124,14 @@ class ToolImpl(ToolsDefinitions):
             async def __batch_chunker(url, docs):
                 await _msgstatus.edit(f"🔍 Extracting relevant details from **{url}**")
 
-                # chunk to 300 characters
+                # chunk to 350 characters
                 # returns the list of tuples of chunked documents associated with the url
-                chunked = [(url, docs[i:i+_chunk_size]) for i in range(0, len(docs), _chunk_size)]
-                for id, (url, chunk) in enumerate(chunked):
+                _chunked = HtmlChunker(
+                    max_words_per_aggregate_passage=_chunk_size,
+                    greedily_aggregate_sibling_nodes=True,
+                    html_tags_to_exclude={"noscript", "script", "style"}
+                ).chunk(docs)
+                for id, chunk in enumerate(_chunked):
                     await _collection.add(
                         documents=[chunk],
                         ids=[f"{url}_{id}"]
@@ -151,7 +147,7 @@ class ToolImpl(ToolsDefinitions):
                 n_results=35
             ))["documents"][0]
 
-            #print(result)
+            print(result)
 
             # delete collection
             await _chroma_client.delete_collection(name=_cln)
