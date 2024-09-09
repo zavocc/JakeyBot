@@ -1,7 +1,5 @@
 from core.ai.assistants import Assistants
-from core.ai.core import GenAIConfigDefaults
-from core.ai.history import HistoryManagement as histmgmt
-from core.ai.tools import BaseFunctions
+from core.ai.models.gemini import Gemini
 from discord.ext import commands
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from os import environ, remove
@@ -60,18 +58,17 @@ class AI(commands.Cog):
         default="gemini-1.5-flash-001",
         required=False
     )
-    @discord.option(
-        "json_mode",
-        description="Configures the response whether to format it in JSON",
-        default=False,
-    )
-    @discord.option(
-        "append_history",
-        description="Store the conversation to chat history? (This option is void with json_mode)",
-        default=True
-    )
-    async def ask(self, ctx, prompt: str, attachment: discord.Attachment, model: str, json_mode: bool,
-        append_history: bool):
+    #@discord.option(
+    #    "json_mode",
+    #    description="Configures the response whether to format it in JSON",
+    #    default=False,
+    #)
+    #@discord.option(
+    #    "append_history",
+    #    description="Store the conversation to chat history? (This option is void with json_mode)",
+    #    default=True
+    #)
+    async def ask(self, ctx, prompt: str, attachment: discord.Attachment, model: str):
         """Ask a question using Gemini-based AI"""
         await ctx.response.defer()
 
@@ -104,42 +101,12 @@ class AI(commands.Cog):
                 await ctx.respond("🚫 This commmand can only be used in DMs or authorized guilds!")
                 return
 
-        # Load the context history and initialize the HistoryManagement class
-        HistoryManagement = histmgmt(guild_id)
-
-        try:
-            await HistoryManagement.load_history(check_length=True)
-        except ValueError:
-            await ctx.respond("⚠️ Maximum history reached! Please wipe the conversation using `/sweep` command")
-            return
-        
-        # Set context_history
-        context_history = HistoryManagement.context_history
-
-        # Initialize GenAIConfigDefaults
-        genai_configs = GenAIConfigDefaults()
-
         # default system prompt - load assistants
         assistants_system_prompt = Assistants()
-
-        # tool use
-        tools_functions = BaseFunctions(self.bot, ctx)
-
-        # Check whether to output as JSON and disable code execution
-        if not json_mode:
-            # enable plugins
-
-            # check if its a code_execution
-            if (await HistoryManagement.get_config()) == "code_execution":
-                enabled_tools = "code_execution"
-            else:
-                enabled_tools = getattr(tools_functions, (await HistoryManagement.get_config()))
-        else:
-            genai_configs.generation_config.update({"response_mime_type": "application/json"})
-            enabled_tools = None
             
-        # Model configuration - the default model is flash
-        model_to_use = genai.GenerativeModel(model_name=model, safety_settings=genai_configs.safety_settings_config, generation_config=genai_configs.generation_config, system_instruction=assistants_system_prompt.jakey_system_prompt, tools=enabled_tools)
+        # Model configuration 
+        client = Gemini(bot=self.bot, ctx=ctx, model_name=model, 
+                             system_prompt=assistants_system_prompt.jakey_system_prompt)
 
         ###############################################
         # File attachment processing
@@ -163,34 +130,8 @@ class AI(commands.Cog):
                 # Raise exception
                 raise httperror
 
-            # Upload the file to the server
-            try:
-                _xfile_uri = genai.upload_file(path=_xfilename, display_name=_xfilename.split("/")[-1])
-                _x_msgstatus = None
-
-                # Wait for the file to be uploaded
-                while _xfile_uri.state.name == "PROCESSING":
-                    if _x_msgstatus is None:
-                        _x_msgstatus = await ctx.send("⌛ Processing the file attachment... this may take a while")
-                    await asyncio.sleep(3)
-                    _xfile_uri = genai.get_file(_xfile_uri.name)
-
-                if _xfile_uri.state.name == "FAILED":
-                    await ctx.respond("❌ Sorry, I can't process the file attachment. Please try again.")
-                    raise ValueError(_xfile_uri.state.name)
-            except Exception as e:
-                await ctx.respond(f"❌ An error has occured when uploading the file or the file format is not supported\nLog:\n```{e}```")
-                remove(_xfilename)
-                return
-
-            # Immediately use the "used" status message to indicate that the file API is used
-            if _x_msgstatus is not None:
-                await _x_msgstatus.edit(content=f"Used: **{attachment.filename}**")
-            else:
-                await ctx.send(f"Used: **{attachment.filename}**")
-
-            # Add caution that the attachment data would be lost in 48 hours
-            await ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context after 48 hours.")
+            # Upload the file to the Files API
+            _xfile_uri = await client.multimodal_handler(attachment=Path(_xfilename), filename=attachment.filename)
 
             # Remove the file from the temp directory
             remove(_xfilename)
@@ -198,110 +139,28 @@ class AI(commands.Cog):
         ###############################################
         # Answer generation
         ###############################################
-        final_prompt = [_xfile_uri, f'{prompt}'] if _xfile_uri is not None else f'{prompt}'
-        chat_session = model_to_use.start_chat(history=context_history["chat_history"])
-
-        if not json_mode:
-            # Re-write the history if an error has occured
-            # For now this is the only workaround that I could find to re-write the history if there are dead file references causing PermissionDenied exception
-            # when trying to access the deleted file uploaded using Files API. See:
-            # https://discuss.ai.google.dev/t/what-is-the-best-way-to-persist-chat-history-into-file/3804/6?u=zavocc306
-            try:
-                answer = await chat_session.send_message_async(final_prompt)
-            #  Retry the response if an error has occured
-            except google.api_core.exceptions.PermissionDenied:
-                context_history["chat_history"] = [
-                    {"role": x.role, "parts": [y.text]} 
-                    for x in chat_session.history 
-                    for y in x.parts 
-                    if x.role and y.text
-                ]
-
-                # Notify the user that the chat session has been re-initialized
-                await ctx.send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
-
-                # Re-initialize the chat session
-                chat_session = model_to_use.start_chat(history=context_history["chat_history"])
-                answer = await chat_session.send_message_async(final_prompt)
-
-            # Call tools
-            # DEBUG: content.parts[0] is the first step message and content.parts[1] is the function calling data that is STOPPED
-            # print(answer.candidates[0].content)
-            _candidates = answer.candidates[0]
-
-            if 'function_call' in _candidates.content.parts[-1]:
-                _func_call = _candidates.content.parts[-1].function_call
-
-                # Call the function through their callables with getattr
-                try:
-                    _result = await getattr(tools_functions, f"_callable_{_func_call.name}")(**_func_call.args)
-                except AttributeError as e:
-                    await ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
-                    # Also print the error to the console
-                    print(e)
-                    return
-
-                # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
-                answer = await chat_session.send_message_async(
-                    genai.protos.Content(
-                        parts=[
-                            genai.protos.Part(
-                                function_response = genai.protos.FunctionResponse(
-                                    name = _func_call.name,
-                                    response = {"response": _result}
-                                )
-                            )
-                        ]
-                    ),
-                    safety_settings={
-                        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE
-                    }
-                )
-
-                await ctx.send(f"Used: **{_func_call.name}**")
-        else:
-            answer = await model_to_use.generate_content_async(final_prompt)
+        _answer = await client.chat_completion(prompt, file=(_xfile_uri if _xfile_uri is not None else None))
     
         # Embed the response if the response is more than 2000 characters
         # Check to see if this message is more than 2000 characters which embeds will be used for displaying the message
-        if len(answer.text) > 4096:
+        if len(_answer) > 4096:
             # Send the response as file
             response_file = f"{environ.get('TEMP_DIR')}/response{random.randint(6000,7000)}.md"
             with open(response_file, "w+") as f:
-                f.write(answer.text)
+                f.write(_answer)
             await ctx.respond("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(response_file, "response.md"))
-        elif len(answer.text) > 2000:
+        elif len(_answer) > 2000:
             embed = discord.Embed(
                 # Truncate the title to (max 256 characters) if it exceeds beyond that since discord wouldn't allow it
                 title=str(prompt)[0:100],
-                description=str(answer.text),
+                description=str(_answer),
                 color=discord.Color.random()
             )
             embed.set_author(name=self.author)
             embed.set_footer(text="Responses generated by AI may not give accurate results! Double check with facts!")
             await ctx.respond(embed=embed)
         else:
-            await ctx.respond(answer.text)
-
-        # Append the context history if JSON mode is not enabled
-        if not json_mode:
-            # Append the prompt to prompts history
-            context_history["prompt_history"].append(prompt)
-            # Also save the ChatSession.history attribute to the context history chat history key so it will be saved through pickle
-            context_history["chat_history"] = chat_session.history
-
-        # Print context size and model info
-        if not json_mode and append_history:
-            await HistoryManagement.save_history()
-            await ctx.send(inspect.cleandoc(f"""
-                           > 📃 Context size: **{len(context_history["prompt_history"])}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
-                           > ✨ Model used: **{model}**
-                           """))
-        else:
-            await ctx.send(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{model}**")
+            await ctx.respond(_answer)
 
     # Handle all unhandled exceptions through error event, handled exceptions are currently image analysis safety settings
     @ask.error

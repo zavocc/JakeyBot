@@ -9,31 +9,38 @@ import inspect
 
 class Gemini:
     def __init__(self,
-                 bot,
-                 ctx,
+                 bot, ctx,
                  model_name = "gemini-1.5-flash-001",
                  system_prompt = None, 
                  generation_config = None,
-                 safety_settings = None,
-                 tools = None):
+                 safety_settings = None):
         self.ctx = ctx
+        self.bot = bot
 
         self.model = model_name
         if system_prompt is None:
-            self.system_prompt = "You are a helpful assistant"
+            system_prompt = "You are a helpful assistant"
 
         # Set the generation configuration if not provided
         if not generation_config and type(generation_config) is not dict:
-            self.generation_config = {
-                "temperature": 0.5,
-                "top_p": 1,
-                "top_k": 32,
-                "max_output_tokens": 8192,
-            }
+            generation_config = {}
+
+        # Validate the generation configuration
+        if "temperature" not in generation_config:
+            generation_config["temperature"] = 0.8
+
+        if "top_p" not in generation_config:
+            generation_config["top_p"] = 1
+
+        if "top_k" not in generation_config:
+            generation_config["top_k"] = 64
+
+        if "max_output_tokens" not in generation_config:
+            generation_config["max_output_tokens"] = 8192
 
         # Set safety settings if not provided
         if not safety_settings and type(safety_settings) is not dict:
-            self.safety_settings = [
+            safety_settings = [
                 {
                     "category": "HARM_CATEGORY_HARASSMENT",
                     "threshold": "BLOCK_ONLY_HIGH"
@@ -64,10 +71,9 @@ class Gemini:
         # Configure
         self.client = genai.GenerativeModel(
             model_name=self.model,
-            safety_settings=self.safety_settings,
-            generation_config=self.generation_config,
-            system_instruction=self.system_prompt,
-            tools=tools
+            safety_settings=safety_settings,
+            generation_config=generation_config,
+            system_instruction=system_prompt,
         )
 
     async def multimodal_handler(self, attachment = None, filename = None):
@@ -91,9 +97,9 @@ class Gemini:
         
         # Immediately use the "used" status message to indicate that the file API is used
         if _msgstatus is not None:
-            await _msgstatus.edit(content=f"Used: **{attachment.filename}**")
+            await _msgstatus.edit(content=f"Used: **{filename if filename is not None else 'Files API'}**")
         else:
-            await self.ctx.send(f"Used: **{attachment.filename}**")
+            await self.ctx.send(f"Used: **{filename if filename is not None else 'Files API'}**")
 
         # Add caution that the attachment data would be lost in 48 hours
         await self.ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context after 48 hours.")
@@ -112,13 +118,20 @@ class Gemini:
         
         _history = self._HistoryManagement.context_history
 
+        # enable plugins
+        # check if its a code_execution
+        if (await self._HistoryManagement.get_config()) == "code_execution":
+            _enabled_tools = "code_execution"
+        else:
+            _enabled_tools = getattr(self.tools_functions, (await self._HistoryManagement.get_config()))
+
         # Craft prompt if it has a file
         final_prompt = [file, f'{prompt}'] if file is not None else f'{prompt}'
-        chat_session = self.client.start_chat(history=_history)
+        chat_session = self.client.start_chat(history=_history["chat_history"])
 
         # Generate completion
         try:
-            _answer = await chat_session.send_message_async(final_prompt)
+            _answer = await chat_session.send_message_async(final_prompt, tools=_enabled_tools)
         except google.api_core.exceptions.PermissionDenied:
             _history["chat_history"] = [
                 {"role": x.role, "parts": [y.text]} 
@@ -131,8 +144,8 @@ class Gemini:
             await self.ctx.send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
 
             # Re-initialize the chat session
-            chat_session = self.client.start_chat(history=history["chat_history"])
-            _answer = await chat_session.send_message_async(final_prompt)
+            chat_session = self.client.start_chat(history=_history["chat_history"])
+            _answer = await chat_session.send_message_async(final_prompt, tools=_enabled_tools)
 
         # Call tools
         # DEBUG: content.parts[0] is the first step message and content.parts[1] is the function calling data that is STOPPED
@@ -172,17 +185,17 @@ class Gemini:
 
             await self.ctx.send(f"Used: **{_func_call.name}**")
 
-            # Append the prompt to prompts history
-            _history["prompt_history"].append(prompt)
-            # Also save the ChatSession.history attribute to the context history chat history key so it will be saved through pickle
-            _history["chat_history"] = chat_session.history
+        # Append the prompt to prompts history
+        _history["prompt_history"].append(prompt)
+        # Also save the ChatSession.history attribute to the context history chat history key so it will be saved through pickle
+        _history["chat_history"] = chat_session.history
 
-            # Print context size and model info
-            await self._HistoryManagement.save_history()
-            await self.ctx.send(inspect.cleandoc(f"""
-                        > 📃 Context size: **{len(_history["prompt_history"])}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
-                        > ✨ Model used: **{self.model}**
-                        """))
+        # Print context size and model info
+        await self._HistoryManagement.save_history()
+        await self.ctx.send(inspect.cleandoc(f"""
+                    > 📃 Context size: **{len(_history["prompt_history"])}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
+                    > ✨ Model used: **{self.model}**
+                    """))
 
-            # Return the response
-            return _answer
+        # Return the response
+        return _answer.text
