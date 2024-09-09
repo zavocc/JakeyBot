@@ -45,6 +45,7 @@ class AI(commands.Cog):
     @discord.option(
         "prompt",
         description="Enter your prompt, ask real questions, or provide a context for the model to generate a response",
+        max_length=4096,
         required=True
     )
     @discord.option(
@@ -114,11 +115,6 @@ class AI(commands.Cog):
         
         # Set context_history
         context_history = HistoryManagement.context_history
-
-        # Limit prompt characters to 2000
-        if len(prompt) > 2000:
-            await ctx.respond("Sorry, I can only process prompts with 2000 characters or less!")
-            return
 
         # Initialize GenAIConfigDefaults
         genai_configs = GenAIConfigDefaults()
