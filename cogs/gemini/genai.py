@@ -148,24 +148,24 @@ class AI(commands.Cog):
         # Enable multimodal support if an attachment is provided
         if attachment is not None:
             # Download the attachment
-            _xfilename = f"JAKEY.{guild_id}.{random.randint(5000, 6000)}.{attachment.filename}"
+            _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{guild_id}.{random.randint(5000, 6000)}.{attachment.filename}"
             try:
                 async with aiohttp.ClientSession(raise_for_status=True) as session:
                     async with session.get(attachment.url, allow_redirects=True) as _xattachments:
                         # write to file with random number ID
-                        async with aiofiles.open(f"{environ.get('TEMP_DIR')}/{_xfilename}", "wb") as filepath:
+                        async with aiofiles.open(_xfilename, "wb") as filepath:
                             async for _chunk in _xattachments.content.iter_chunked(8192):
                                 await filepath.write(_chunk)
             except aiohttp.ClientError as httperror:
                 # Remove the file if it exists ensuring no data persists even on failure
-                if Path(f"{environ.get('TEMP_DIR')}/{_xfilename}").exists():
-                    remove(f"{environ.get('TEMP_DIR')}/{_xfilename}")
+                if Path(_xfilename).exists():
+                    remove(_xfilename)
                 # Raise exception
                 raise httperror
 
             # Upload the file to the server
             try:
-                _xfile_uri = genai.upload_file(path=f"{environ.get('TEMP_DIR')}/{_xfilename}", display_name=_xfilename)
+                _xfile_uri = genai.upload_file(path=_xfilename, display_name=_xfilename.split("/")[-1])
                 _x_msgstatus = None
 
                 # Wait for the file to be uploaded
@@ -180,11 +180,8 @@ class AI(commands.Cog):
                     raise ValueError(_xfile_uri.state.name)
             except Exception as e:
                 await ctx.respond(f"❌ An error has occured when uploading the file or the file format is not supported\nLog:\n```{e}```")
-                remove(f"{environ.get('TEMP_DIR')}/{_xfilename}")
+                remove(_xfilename)
                 return
-
-            # Remove the file from the temp directory
-            remove(f"{environ.get('TEMP_DIR')}/{_xfilename}")
 
             # Immediately use the "used" status message to indicate that the file API is used
             if _x_msgstatus is not None:
@@ -194,6 +191,9 @@ class AI(commands.Cog):
 
             # Add caution that the attachment data would be lost in 48 hours
             await ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context after 48 hours.")
+
+            # Remove the file from the temp directory
+            remove(_xfilename)
 
         ###############################################
         # Answer generation
