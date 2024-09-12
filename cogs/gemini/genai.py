@@ -13,7 +13,6 @@ import aiofiles
 import asyncio
 import discord
 import inspect
-import jsonpickle
 import random
 import yaml
 
@@ -107,13 +106,15 @@ class AI(commands.Cog):
 
         # Load the context history and initialize the HistoryManagement class
         HistoryManagement = histmgmt(guild_id)
-        await HistoryManagement.initialize()
 
         try:
             await HistoryManagement.load_history(check_length=True)
         except ValueError:
             await ctx.respond("⚠️ Maximum history reached! Please wipe the conversation using `/sweep` command")
             return
+        
+        # Set context_history
+        context_history = HistoryManagement.context_history
 
         # Initialize GenAIConfigDefaults
         genai_configs = GenAIConfigDefaults()
@@ -198,7 +199,7 @@ class AI(commands.Cog):
         # Answer generation
         ###############################################
         final_prompt = [_xfile_uri, f'{prompt}'] if _xfile_uri is not None else f'{prompt}'
-        chat_session = model_to_use.start_chat(history=(await HistoryManagement.load_history()))
+        chat_session = model_to_use.start_chat(history=context_history["chat_history"])
 
         if not json_mode:
             # Re-write the history if an error has occured
@@ -209,19 +210,18 @@ class AI(commands.Cog):
                 answer = await chat_session.send_message_async(final_prompt)
             #  Retry the response if an error has occured
             except google.api_core.exceptions.PermissionDenied:
-                __context = [
+                context_history["chat_history"] = [
                     {"role": x.role, "parts": [y.text]} 
                     for x in chat_session.history 
                     for y in x.parts 
                     if x.role and y.text
                 ]
-                await HistoryManagement.update_context(__context)
 
                 # Notify the user that the chat session has been re-initialized
                 await ctx.send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
 
                 # Re-initialize the chat session
-                chat_session = model_to_use.start_chat(history=(await HistoryManagement.load_history()))
+                chat_session = model_to_use.start_chat(history=context_history["chat_history"])
                 answer = await chat_session.send_message_async(final_prompt)
 
             # Call tools
@@ -289,17 +289,15 @@ class AI(commands.Cog):
         # Append the context history if JSON mode is not enabled
         if not json_mode:
             # Append the prompt to prompts history
-            await HistoryManagement._set("prompt_history", 
-                                         (await HistoryManagement._get("prompt_history", "")).append(prompt))
-            
-            # Context
-            await HistoryManagement._set("chat_context", jsonpickle.dumps(chat_session.history))
-
+            context_history["prompt_history"].append(prompt)
+            # Also save the ChatSession.history attribute to the context history chat history key so it will be saved through pickle
+            context_history["chat_history"] = chat_session.history
 
         # Print context size and model info
         if not json_mode and append_history:
+            await HistoryManagement.save_history()
             await ctx.send(inspect.cleandoc(f"""
-                           > 📃 Context size: **{len((await HistoryManagement._get("_jakey_data_gemini", "prompt_history")))}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
+                           > 📃 Context size: **{len(context_history["prompt_history"])}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
                            > ✨ Model used: **{model}**
                            """))
         else:

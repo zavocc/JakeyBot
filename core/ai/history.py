@@ -1,112 +1,110 @@
 from os import environ
 import jsonpickle
-import motor.motor_asyncio
+import aiosqlite
 
 # A class that is responsible for managing and manipulating the chat history
 class HistoryManagement:
     def __init__(self, guild_id):
+        # Defaults
+        self.context_history = {"prompt_history": [], "chat_history": None}
         self.guild_id = guild_id
-        self.history_db = environ.get("MONGO_DB_URL")
-
-        if not self.history_db:
-            raise ConnectionError("MongoDB connection string is not set")
+        self.history_db = environ.get("CHAT_HISTORY_DB", "chat_history.db")
 
     async def initialize(self):
-        # Establish connection with MongoDB
-        self._db_conn_client = motor.motor_asyncio.AsyncIOMotorClient(self.history_db)
+        # Establish connection with SQLite
+        #self.conn = await aiosqlite.connect(self.history_db)
+        #self.cursor = await self.conn.cursor()
 
-        # Create document if not exists
-        self._db = self._db_conn_client["chat_history"]
-        # Collection is under _generativeai_data_gemini
-        self._collection = self._db["_jakey_data_gemini"]
+        # Create table if not exists
+        async with aiosqlite.connect(self.history_db) as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS chat_history (
+                        guild_id INTEGER PRIMARY KEY,
+                        context_history TEXT,
+                        tool_use TEXT
+                    )
+                """)
+                await conn.commit()
 
-        # Check if necessary fields exist
-        if not await self._collection.find_one({"guild_id": self.guild_id}):
-            self._collection.insert_one(
-                {
-                    "guild_id": self.guild_id,
-                    "prompt_history": [],
-                    "chat_context": None,
-                    "tool_use": "code_execution"
-                }
-            )
+                # Check if the 'tool_use' column exists
+                await cursor.execute("PRAGMA table_info(chat_history)")
+                columns = [column[1] for column in await cursor.fetchall()]
 
-    async def _get(self, key, value):
-        # Fail if initialize is not called
-        if not hasattr(self, "_db_conn_client") and type(self._db_conn_client) != motor.motor_asyncio.AsyncIOMotorClient:
-            raise ConnectionError("Database connection not initialized, please call `initialize` method first")
+                # Add the 'tool_use' column if it doesn't exist
+                if 'tool_use' not in columns:
+                    await cursor.execute("ALTER TABLE chat_history ADD COLUMN tool_use TEXT")
+                    # for each columns set the default value of the tool_use in every row IF the value doesn't exist
+                    await cursor.execute("UPDATE chat_history SET tool_use = ? WHERE tool_use IS NULL", ("code_execution",))
+                    await conn.commit()
 
-        # Return values
-        return (await self._collection.find_one({"guild_id": self.guild_id}, {key: value}))
-    
-    async def _set(self, key, value):
-        # Fail if initialize is not called
-        if not hasattr(self, "_db_conn_client") and type(self._db_conn_client) != motor.motor_asyncio.AsyncIOMotorClient:
-            raise ConnectionError("Database connection not initialized, please call `initialize` method first")
+                # check if the guild id exists in the database and set defaults
+                _history = await cursor.execute("SELECT guild_id FROM chat_history WHERE guild_id = ?", (self.guild_id,))
+                if await _history.fetchone() is None:
+                    await _history.execute("INSERT OR IGNORE INTO chat_history (guild_id, context_history, tool_use) VALUES (?, ?, ?)", (self.guild_id, jsonpickle.dumps(self.context_history), "code_execution"))
+                    await conn.commit()
 
-        # Set values
-        await self._collection.update_one(
-            {"guild_id": self.guild_id},
-            {"$set": {key: value}}
-        )
 
     async def load_history(self, check_length = False):
-        # Fail if initialize is not called
-        if not hasattr(self, "_db") and type(self._db_conn_client) != motor.motor_asyncio.AsyncIOMotorClient:
-            raise ConnectionError("Database connection not initialized, please call `initialize` method first")
+        # Initialize chat history for loading and saving
+        await self.initialize()
 
         # Load the context history from the database associated with the guild_id
-        _history = (await self._collection.find_one({"guild_id": self.guild_id}))["chat_context"]
+        async with aiosqlite.connect(self.history_db) as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute("SELECT context_history FROM chat_history WHERE guild_id = ?", (self.guild_id,))
+                self.context_history = jsonpickle.loads((await cursor.fetchone())[0])
+            
+                if check_length:
+                    # Check context history size
+                    if len(self.context_history["prompt_history"]) >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
+                        raise ValueError("Maximum history reached! Clear the conversation")
 
-        if not _history:
-            return []
+    async def save_history(self, skip_init = False):
+        if not skip_init:
+            # Initialize chat history for loading and saving
+            await self.initialize()
 
-        if check_length:
-            # Check context history size
-            if type((await self._collection.find_one({"guild_id": self.guild_id}))["prompt_history"]) == list:
-                if len((await self._collection.find_one({"guild_id": self.guild_id}))["prompt_history"]) >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
-                    raise MemoryError("Maximum context history reached")
-                
-        return _history
+        # Save the context history to the database
+        async with aiosqlite.connect(self.history_db) as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute("UPDATE chat_history SET context_history = ? WHERE guild_id = ?", (jsonpickle.dumps(self.context_history), self.guild_id))
+                await conn.commit()
 
-    async def update_context(self, context):
-        # Fail if initialize is not called
-        if not hasattr(self, "_db_conn_client") and type(self._db_conn_client) != motor.motor_asyncio.AsyncIOMotorClient:
-            raise ConnectionError("Database connection not initialized, please call `initialize` method first")
-
-        # Must be a list
-        if type(context) != list:
-            raise ValueError("Context data must be a list")
-
-        # Update the chat context in the database
-        await self._collection.update_one(
-            {"guild_id": self.guild_id},
-            {"$set": {"chat_context": context}}
-        )
-
-    async def clear_history(self):
-        # Fail if initialize is not called
-        if not hasattr(self, "_db_conn_client") and type(self._db_conn_client) != motor.motor_asyncio.AsyncIOMotorClient:
-            raise ConnectionError("Database connection not initialized, please call `initialize` method first")
+    async def clear_history(self, skip_init = False):
+        if not skip_init:
+            # Automatically initialize the database
+            await self.initialize()
 
         # Remove the chat history from the database
-        await self._collection.delete_one({"guild_id": self.guild_id})
+        async with aiosqlite.connect(self.history_db) as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute("DELETE FROM chat_history WHERE guild_id = ?", (self.guild_id,))
+                await conn.commit()
 
-    async def set_config(self, tool="code_execution"):
-        # Fail if initialize is not called
-        if not hasattr(self, "_db_conn_client") and type(self._db_conn_client) != motor.motor_asyncio.AsyncIOMotorClient:
-            raise ConnectionError("Database connection not initialized, please call `initialize` method first")
+    async def set_config(self, tool="code_execution", skip_init = False):
+        if not skip_init:
+            # Automatically initialize the database
+            await self.initialize()
 
-        # Set the tool use configuration
-        await self._collection.update_one(
-            {"guild_id": self.guild_id},
-            {"$set": {"tool_use": tool}}
-        )
+        async with aiosqlite.connect(self.history_db) as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    "UPDATE chat_history SET tool_use = ? WHERE guild_id = ?",
+                    (tool, self.guild_id)
+                )
+                await conn.commit()
+
+    async def get_config(self, skip_init = False):
+        if not skip_init:
+            # Automatically initialize the database
+            await self.initialize()
+
+        async with aiosqlite.connect(self.history_db) as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute("SELECT tool_use FROM chat_history WHERE guild_id = ?", (self.guild_id,))
+                _result = await cursor.fetchone()
+                if _result is not None:
+                    _tool_use = _result[0]
         
-    async def get_config(self):
-        # Fail if initialize is not called
-        if not hasattr(self, "_db_conn_client") and type(self._db_conn_client) != motor.motor_asyncio.AsyncIOMotorClient:
-            raise ConnectionError("Database connection not initialized, please call `initialize` method first")
-
-        # Get the tool use configuration
-        return (await self._collection.find_one({"guild_id": self.guild_id}))["tool_use"]
+        return _tool_use
