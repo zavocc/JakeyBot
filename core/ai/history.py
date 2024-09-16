@@ -1,110 +1,79 @@
 from os import environ
-import jsonpickle
-import aiosqlite
+import motor.motor_asyncio
 
 # A class that is responsible for managing and manipulating the chat history
 class HistoryManagement:
-    def __init__(self, guild_id):
-        # Defaults
-        self.context_history = {"prompt_history": [], "chat_history": None}
+    def __init__(self, guild_id, db_conn: motor.motor_asyncio.AsyncIOMotorClient = None, chat_data = None):
         self.guild_id = guild_id
-        self.history_db = environ.get("CHAT_HISTORY_DB", "chat_history.db")
+        self._db_conn = db_conn
+
+        if db_conn is None:
+            raise ConnectionError("Please set MONGO_DB_URL in dev.env")
 
     async def initialize(self):
-        # Establish connection with SQLite
-        #self.conn = await aiosqlite.connect(self.history_db)
-        #self.cursor = await self.conn.cursor()
+        # Create a new database if it doesn't exist, access chat_history database
+        self._db = self._db_conn["chat_history"]
 
-        # Create table if not exists
-        async with aiosqlite.connect(self.history_db) as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS chat_history (
-                        guild_id INTEGER PRIMARY KEY,
-                        context_history TEXT,
-                        tool_use TEXT
-                    )
-                """)
-                await conn.commit()
+        # _genertative_ai_gemini collection
+        self._collection = self._db["_genertative_ai_gemini"]
 
-                # Check if the 'tool_use' column exists
-                await cursor.execute("PRAGMA table_info(chat_history)")
-                columns = [column[1] for column in await cursor.fetchall()]
+        # create an index for the guild_id field
+        await self._collection.create_index("guild_id", unique=True)
 
-                # Add the 'tool_use' column if it doesn't exist
-                if 'tool_use' not in columns:
-                    await cursor.execute("ALTER TABLE chat_history ADD COLUMN tool_use TEXT")
-                    # for each columns set the default value of the tool_use in every row IF the value doesn't exist
-                    await cursor.execute("UPDATE chat_history SET tool_use = ? WHERE tool_use IS NULL", ("code_execution",))
-                    await conn.commit()
-
-                # check if the guild id exists in the database and set defaults
-                _history = await cursor.execute("SELECT guild_id FROM chat_history WHERE guild_id = ?", (self.guild_id,))
-                if await _history.fetchone() is None:
-                    await _history.execute("INSERT OR IGNORE INTO chat_history (guild_id, context_history, tool_use) VALUES (?, ?, ?)", (self.guild_id, jsonpickle.dumps(self.context_history), "code_execution"))
-                    await conn.commit()
+        # Create a document if it doesn't exist
+        self._collection.update_one({
+                "guild_id": self.guild_id,
+                "prompt_history": [],
+                "chat_context": None,
+                "tool_use": "code_execution"
+        }, upsert=True)
 
 
-    async def load_history(self, check_length = False):
+    async def load_history(self):
         # Initialize chat history for loading and saving
         await self.initialize()
 
-        # Load the context history from the database associated with the guild_id
-        async with aiosqlite.connect(self.history_db) as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute("SELECT context_history FROM chat_history WHERE guild_id = ?", (self.guild_id,))
-                self.context_history = jsonpickle.loads((await cursor.fetchone())[0])
+        # Load the document
+        _document = await self._collection.find_one({"guild_id": self.guild_id})
             
-                if check_length:
-                    # Check context history size
-                    if len(self.context_history["prompt_history"]) >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
-                        raise ValueError("Maximum history reached! Clear the conversation")
+        # Return the prompt history and chat context
+        return _document["prompt_history"], _document["chat_context"]
 
-    async def save_history(self, skip_init = False):
-        if not skip_init:
-            # Initialize chat history for loading and saving
-            await self.initialize()
+    async def save_history(self, chat_data, prompt_history = []):
+        # Initialize chat history for loading and saving
+        await self.initialize()
 
-        # Save the context history to the database
-        async with aiosqlite.connect(self.history_db) as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute("UPDATE chat_history SET context_history = ? WHERE guild_id = ?", (jsonpickle.dumps(self.context_history), self.guild_id))
-                await conn.commit()
+        # Update the document
+        await self._collection.update_one({"guild_id": self.guild_id}, {
+            "$set": {
+                "prompt_history": prompt_history,
+                "chat_context": chat_data
+            }
+        },
+        upsert=True
+        )
 
-    async def clear_history(self, skip_init = False):
-        if not skip_init:
-            # Automatically initialize the database
-            await self.initialize()
+    async def clear_history(self):
+        # Automatically initialize the database
+        await self.initialize()
 
-        # Remove the chat history from the database
-        async with aiosqlite.connect(self.history_db) as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute("DELETE FROM chat_history WHERE guild_id = ?", (self.guild_id,))
-                await conn.commit()
+        # Remove the document
+        await self._collection.delete_one({"guild_id": self.guild_id})
 
-    async def set_config(self, tool="code_execution", skip_init = False):
-        if not skip_init:
-            # Automatically initialize the database
-            await self.initialize()
+    async def set_config(self, tool="code_execution"):
+        # Automatically initialize the database
+        await self.initialize()
 
-        async with aiosqlite.connect(self.history_db) as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute(
-                    "UPDATE chat_history SET tool_use = ? WHERE guild_id = ?",
-                    (tool, self.guild_id)
-                )
-                await conn.commit()
+        # Update tool use
+        await self._collection.update_one({"guild_id": self.guild_id}, {
+            "$set": {
+                "tool_use": tool
+            }
+        },
+        upsert=True
+        )
 
-    async def get_config(self, skip_init = False):
-        if not skip_init:
-            # Automatically initialize the database
-            await self.initialize()
+    async def get_config(self):
+        await self.initialize()
+        return (await self._collection.find_one({"guild_id": self.guild_id}))["tool_use"]
 
-        async with aiosqlite.connect(self.history_db) as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute("SELECT tool_use FROM chat_history WHERE guild_id = ?", (self.guild_id,))
-                _result = await cursor.fetchone()
-                if _result is not None:
-                    _tool_use = _result[0]
-        
-        return _tool_use

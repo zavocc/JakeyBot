@@ -30,6 +30,8 @@ class ChatMgmt(commands.Cog):
     )
     async def sweep(self, ctx):
         """Clear the context history of the conversation"""
+        await ctx.response.defer()
+
         # Check if SHARED_CHAT_HISTORY is enabled
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
             guild_id = ctx.guild.id if ctx.guild else ctx.author.id
@@ -45,11 +47,11 @@ class ChatMgmt(commands.Cog):
                 return  
 
         # Initialize history
-        HistoryManagement = histmgmt(guild_id)
+        HistoryManagement = histmgmt(guild_id, db_conn=self.bot._mongo_conn)
         _feature = await HistoryManagement.get_config()
 
         # Clear and set feature
-        await HistoryManagement.clear_history(skip_init=True)
+        await HistoryManagement.clear_history()
         await HistoryManagement.set_config(_feature)
 
         await ctx.respond("✅ Chat history reset!")
@@ -81,6 +83,8 @@ class ChatMgmt(commands.Cog):
     )
     async def feature(self, ctx, capability: str):
         """Enhance your chat with capabilities! Some are in BETA so things may not always pick up"""
+        # Defer
+        await ctx.response.defer()
 
         # Check if SHARED_CHAT_HISTORY is enabled
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
@@ -97,16 +101,15 @@ class ChatMgmt(commands.Cog):
                 return  
 
         # Initialize history
-        HistoryManagement = histmgmt(guild_id)
+        HistoryManagement = histmgmt(guild_id, db_conn=self.bot._mongo_conn)
 
         # if tool use is the same, do not clear history
-        #print(await HistoryManagement.get_config())
         _feature = await HistoryManagement.get_config()
         if _feature == capability:
             await ctx.respond("✅ Feature already enabled!")
         else:
             # clear and reinitialize history
-            await HistoryManagement.clear_history(skip_init=True)
+            await HistoryManagement.clear_history()
 
             # set config
             await HistoryManagement.set_config(capability)

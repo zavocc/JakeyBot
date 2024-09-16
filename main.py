@@ -6,6 +6,7 @@ from inspect import cleandoc
 #import datetime
 import discord
 import importlib
+import motor.motor_asyncio
 import yaml
 
 # Go to project root directory
@@ -50,6 +51,13 @@ async def on_ready():
     print(f"{bot.user} is ready and online!")
     #https://stackoverflow.com/a/65780398 - for multiple statuses
     await bot.change_presence(activity=discord.Game("/ask me anything or $help"))
+
+    # MongoDB database connection for chat history
+    try:
+        bot._mongo_conn =  motor.motor_asyncio.AsyncIOMotorClient(environ.get("MONGO_DB_URL"))
+    except Exception as e:
+        print(f"Failed to connect to MongoDB: {e}...\n expect errors later")
+        bot._mongo_conn = None
 
     # start wavelink setup if playback support is enabled
     if wavelink is not None:

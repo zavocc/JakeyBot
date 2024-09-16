@@ -13,6 +13,7 @@ import aiofiles
 import asyncio
 import discord
 import inspect
+import jsonpickle
 import random
 import yaml
 
@@ -61,16 +62,11 @@ class AI(commands.Cog):
         required=False
     )
     @discord.option(
-        "json_mode",
-        description="Configures the response whether to format it in JSON",
-        default=False,
-    )
-    @discord.option(
         "append_history",
         description="Store the conversation to chat history? (This option is void with json_mode)",
         default=True
     )
-    async def ask(self, ctx, prompt: str, attachment: discord.Attachment, model: str, json_mode: bool,
+    async def ask(self, ctx, prompt: str, attachment: discord.Attachment, model: str,
         append_history: bool):
         """Ask a question using Gemini-based AI"""
         await ctx.response.defer()
@@ -105,16 +101,14 @@ class AI(commands.Cog):
                 return
 
         # Load the context history and initialize the HistoryManagement class
-        HistoryManagement = histmgmt(guild_id)
+        HistoryManagement = histmgmt(guild_id, self.bot._mongo_conn)
+        _prompts_history, _chat_data = await HistoryManagement.load_history()
 
-        try:
-            await HistoryManagement.load_history(check_length=True)
-        except ValueError:
-            await ctx.respond("⚠️ Maximum history reached! Please wipe the conversation using `/sweep` command")
-            return
-        
-        # Set context_history
-        context_history = HistoryManagement.context_history
+        # Deserialize the chat data
+        _chat_data = jsonpickle.loads(_chat_data) if _chat_data is not None else []
+
+        if len(_prompts_history) >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
+            raise MemoryError("Maximum history reached! Clear the conversation")
 
         # Initialize GenAIConfigDefaults
         genai_configs = GenAIConfigDefaults()
@@ -125,18 +119,12 @@ class AI(commands.Cog):
         # tool use
         tools_functions = BaseFunctions(self.bot, ctx)
 
-        # Check whether to output as JSON and disable code execution
-        if not json_mode:
-            # enable plugins
-
-            # check if its a code_execution
-            if (await HistoryManagement.get_config()) == "code_execution":
-                enabled_tools = "code_execution"
-            else:
-                enabled_tools = getattr(tools_functions, (await HistoryManagement.get_config()))
+        # enable plugins
+        # check if its a code_execution
+        if (await HistoryManagement.get_config()) == "code_execution":
+            enabled_tools = "code_execution"
         else:
-            genai_configs.generation_config.update({"response_mime_type": "application/json"})
-            enabled_tools = None
+            enabled_tools = getattr(tools_functions, (await HistoryManagement.get_config()))
             
         # Model configuration - the default model is flash
         model_to_use = genai.GenerativeModel(model_name=model, safety_settings=genai_configs.safety_settings_config, generation_config=genai_configs.generation_config, system_instruction=assistants_system_prompt.jakey_system_prompt, tools=enabled_tools)
@@ -199,71 +187,68 @@ class AI(commands.Cog):
         # Answer generation
         ###############################################
         final_prompt = [_xfile_uri, f'{prompt}'] if _xfile_uri is not None else f'{prompt}'
-        chat_session = model_to_use.start_chat(history=context_history["chat_history"])
+        chat_session = model_to_use.start_chat(history=_chat_data)
 
-        if not json_mode:
-            # Re-write the history if an error has occured
-            # For now this is the only workaround that I could find to re-write the history if there are dead file references causing PermissionDenied exception
-            # when trying to access the deleted file uploaded using Files API. See:
-            # https://discuss.ai.google.dev/t/what-is-the-best-way-to-persist-chat-history-into-file/3804/6?u=zavocc306
+        # Re-write the history if an error has occured
+        # For now this is the only workaround that I could find to re-write the history if there are dead file references causing PermissionDenied exception
+        # when trying to access the deleted file uploaded using Files API. See:
+        # https://discuss.ai.google.dev/t/what-is-the-best-way-to-persist-chat-history-into-file/3804/6?u=zavocc306
+        try:
+            answer = await chat_session.send_message_async(final_prompt)
+        #  Retry the response if an error has occured
+        except google.api_core.exceptions.PermissionDenied:
+            _chat_data = [
+                {"role": x.role, "parts": [y.text]} 
+                for x in chat_session.history 
+                for y in x.parts 
+                if x.role and y.text
+            ]
+
+            # Notify the user that the chat session has been re-initialized
+            await ctx.send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
+
+            # Re-initialize the chat session
+            chat_session = model_to_use.start_chat(history=_chat_data)
+            answer = await chat_session.send_message_async(final_prompt)
+
+        # Call tools
+        # DEBUG: content.parts[0] is the first step message and content.parts[1] is the function calling data that is STOPPED
+        # print(answer.candidates[0].content)
+        _candidates = answer.candidates[0]
+
+        if 'function_call' in _candidates.content.parts[-1]:
+            _func_call = _candidates.content.parts[-1].function_call
+
+            # Call the function through their callables with getattr
             try:
-                answer = await chat_session.send_message_async(final_prompt)
-            #  Retry the response if an error has occured
-            except google.api_core.exceptions.PermissionDenied:
-                context_history["chat_history"] = [
-                    {"role": x.role, "parts": [y.text]} 
-                    for x in chat_session.history 
-                    for y in x.parts 
-                    if x.role and y.text
-                ]
+                _result = await getattr(tools_functions, f"_callable_{_func_call.name}")(**_func_call.args)
+            except AttributeError as e:
+                await ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
+                # Also print the error to the console
+                print(e)
+                return
 
-                # Notify the user that the chat session has been re-initialized
-                await ctx.send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
-
-                # Re-initialize the chat session
-                chat_session = model_to_use.start_chat(history=context_history["chat_history"])
-                answer = await chat_session.send_message_async(final_prompt)
-
-            # Call tools
-            # DEBUG: content.parts[0] is the first step message and content.parts[1] is the function calling data that is STOPPED
-            # print(answer.candidates[0].content)
-            _candidates = answer.candidates[0]
-
-            if 'function_call' in _candidates.content.parts[-1]:
-                _func_call = _candidates.content.parts[-1].function_call
-
-                # Call the function through their callables with getattr
-                try:
-                    _result = await getattr(tools_functions, f"_callable_{_func_call.name}")(**_func_call.args)
-                except AttributeError as e:
-                    await ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
-                    # Also print the error to the console
-                    print(e)
-                    return
-
-                # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
-                answer = await chat_session.send_message_async(
-                    genai.protos.Content(
-                        parts=[
-                            genai.protos.Part(
-                                function_response = genai.protos.FunctionResponse(
-                                    name = _func_call.name,
-                                    response = {"response": _result}
-                                )
+            # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
+            answer = await chat_session.send_message_async(
+                genai.protos.Content(
+                    parts=[
+                        genai.protos.Part(
+                            function_response = genai.protos.FunctionResponse(
+                                name = _func_call.name,
+                                response = {"response": _result}
                             )
-                        ]
-                    ),
-                    safety_settings={
-                        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE
-                    }
-                )
+                        )
+                    ]
+                ),
+                safety_settings={
+                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE
+                }
+            )
 
-                await ctx.send(f"Used: **{_func_call.name}**")
-        else:
-            answer = await model_to_use.generate_content_async(final_prompt)
+            await ctx.send(f"Used: **{_func_call.name}**")
     
         # Embed the response if the response is more than 2000 characters
         # Check to see if this message is more than 2000 characters which embeds will be used for displaying the message
@@ -286,18 +271,16 @@ class AI(commands.Cog):
         else:
             await ctx.respond(answer.text)
 
-        # Append the context history if JSON mode is not enabled
-        if not json_mode:
-            # Append the prompt to prompts history
-            context_history["prompt_history"].append(prompt)
-            # Also save the ChatSession.history attribute to the context history chat history key so it will be saved through pickle
-            context_history["chat_history"] = chat_session.history
+        # Append the prompt to prompts history
+        _prompts_history.append(prompt)
+        # Also save the ChatSession.history attribute to the context history chat history key so it will be saved through pickle
+        _chat_data = jsonpickle.dumps(chat_session.history, indent=4)
 
         # Print context size and model info
-        if not json_mode and append_history:
-            await HistoryManagement.save_history()
+        if append_history:
+            await HistoryManagement.save_history(chat_data=_chat_data, prompt_history=_prompts_history)
             await ctx.send(inspect.cleandoc(f"""
-                           > 📃 Context size: **{len(context_history["prompt_history"])}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
+                           > 📃 Context size: **{len(_prompts_history)}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
                            > ✨ Model used: **{model}**
                            """))
         else:
