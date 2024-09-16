@@ -3,7 +3,7 @@ import motor.motor_asyncio
 
 # A class that is responsible for managing and manipulating the chat history
 class HistoryManagement:
-    def __init__(self, guild_id, db_conn: motor.motor_asyncio.AsyncIOMotorClient = None, chat_data = None):
+    def __init__(self, guild_id, db_conn: motor.motor_asyncio.AsyncIOMotorClient = None, chat_thread = None):
         self.guild_id = guild_id
         self._db_conn = db_conn
 
@@ -24,7 +24,7 @@ class HistoryManagement:
         self._collection.update_one({
                 "guild_id": self.guild_id,
                 "prompt_history": [],
-                "chat_context": None,
+                "chat_thread": None,
                 "tool_use": "code_execution"
         }, upsert=True)
 
@@ -37,9 +37,9 @@ class HistoryManagement:
         _document = await self._collection.find_one({"guild_id": self.guild_id})
             
         # Return the prompt history and chat context
-        return _document["prompt_history"], _document["chat_context"]
+        return _document["prompt_history"], _document["chat_thread"]
 
-    async def save_history(self, chat_data, prompt_history = []):
+    async def save_history(self, chat_thread, prompt_history = []):
         # Initialize chat history for loading and saving
         await self.initialize()
 
@@ -47,7 +47,7 @@ class HistoryManagement:
         await self._collection.update_one({"guild_id": self.guild_id}, {
             "$set": {
                 "prompt_history": prompt_history,
-                "chat_context": chat_data
+                "chat_thread": chat_thread
             }
         },
         upsert=True

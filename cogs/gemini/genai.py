@@ -102,10 +102,10 @@ class AI(commands.Cog):
 
         # Load the context history and initialize the HistoryManagement class
         HistoryManagement = histmgmt(guild_id, self.bot._mongo_conn)
-        _prompts_history, _chat_data = await HistoryManagement.load_history()
+        _prompts_history, _chat_thread = await HistoryManagement.load_history()
 
         # Deserialize the chat data
-        _chat_data = jsonpickle.loads(_chat_data) if _chat_data is not None else []
+        _chat_thread = jsonpickle.loads(_chat_thread) if _chat_thread is not None else []
 
         if len(_prompts_history) >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
             raise MemoryError("Maximum history reached! Clear the conversation")
@@ -187,7 +187,7 @@ class AI(commands.Cog):
         # Answer generation
         ###############################################
         final_prompt = [_xfile_uri, f'{prompt}'] if _xfile_uri is not None else f'{prompt}'
-        chat_session = model_to_use.start_chat(history=_chat_data)
+        chat_session = model_to_use.start_chat(history=_chat_thread)
 
         # Re-write the history if an error has occured
         # For now this is the only workaround that I could find to re-write the history if there are dead file references causing PermissionDenied exception
@@ -197,7 +197,7 @@ class AI(commands.Cog):
             answer = await chat_session.send_message_async(final_prompt)
         #  Retry the response if an error has occured
         except google.api_core.exceptions.PermissionDenied:
-            _chat_data = [
+            _chat_thread = [
                 {"role": x.role, "parts": [y.text]} 
                 for x in chat_session.history 
                 for y in x.parts 
@@ -208,7 +208,7 @@ class AI(commands.Cog):
             await ctx.send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
 
             # Re-initialize the chat session
-            chat_session = model_to_use.start_chat(history=_chat_data)
+            chat_session = model_to_use.start_chat(history=_chat_thread)
             answer = await chat_session.send_message_async(final_prompt)
 
         # Call tools
@@ -274,11 +274,11 @@ class AI(commands.Cog):
         # Append the prompt to prompts history
         _prompts_history.append(prompt)
         # Also save the ChatSession.history attribute to the context history chat history key so it will be saved through pickle
-        _chat_data = jsonpickle.dumps(chat_session.history, indent=4)
+        _chat_thread = jsonpickle.dumps(chat_session.history, indent=4)
 
         # Print context size and model info
         if append_history:
-            await HistoryManagement.save_history(chat_data=_chat_data, prompt_history=_prompts_history)
+            await HistoryManagement.save_history(chat_thread=_chat_thread, prompt_history=_prompts_history)
             await ctx.send(inspect.cleandoc(f"""
                            > 📃 Context size: **{len(_prompts_history)}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
                            > ✨ Model used: **{model}**
