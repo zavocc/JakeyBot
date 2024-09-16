@@ -21,12 +21,12 @@ class HistoryManagement:
         await self._collection.create_index("guild_id", unique=True)
 
         # Create a document if it doesn't exist
-        self._collection.update_one({
+        self._collection.update_one({"guild_id": self.guild_id},{"$set": {
                 "guild_id": self.guild_id,
                 "prompt_history": [],
                 "chat_thread": None,
                 "tool_use": "code_execution"
-        }, upsert=True)
+        }}, upsert=True)
 
 
     async def load_history(self):

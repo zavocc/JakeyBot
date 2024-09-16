@@ -40,6 +40,13 @@ intents.members = True
 # Bot
 bot = bridge.Bot(command_prefix=commands.when_mentioned_or("$"), intents = intents)
 
+# MongoDB database connection for chat history
+try:
+    bot._mongo_conn =  motor.motor_asyncio.AsyncIOMotorClient(environ.get("MONGO_DB_URL"))
+except Exception as e:
+    print(f"Failed to connect to MongoDB: {e}...\n expect errors later")
+    bot._mongo_conn = None
+
 ###############################################
 # ON READY
 ###############################################
@@ -51,13 +58,6 @@ async def on_ready():
     print(f"{bot.user} is ready and online!")
     #https://stackoverflow.com/a/65780398 - for multiple statuses
     await bot.change_presence(activity=discord.Game("/ask me anything or $help"))
-
-    # MongoDB database connection for chat history
-    try:
-        bot._mongo_conn =  motor.motor_asyncio.AsyncIOMotorClient(environ.get("MONGO_DB_URL"))
-    except Exception as e:
-        print(f"Failed to connect to MongoDB: {e}...\n expect errors later")
-        bot._mongo_conn = None
 
     # start wavelink setup if playback support is enabled
     if wavelink is not None:
@@ -91,25 +91,6 @@ async def on_ready():
     else:
         environ["TEMP_DIR"] = "temp"
         mkdir(environ.get("TEMP_DIR"))
-
-###############################################
-# ON GUILD JOIN
-###############################################
-# TODO: Implement SYSTEM_MESSAGE_ONJOIN in dev.env
-#@bot.event
-#async def on_member_join(member):
-#    if datetime.datetime.now().hour < 12:
-#        await member.send(
-#            f'Good morning **{member.mention}**! Enjoy your stay in **{member.guild.name}**!'
-#        )
-#    elif datetime.datetime.now().hour < 18:
-#        await member.send(
-#            f'Good afternoon **{member.mention}**! Enjoy your stay in **{member.guild.name}**'
-#        )
-#    else:
-#        await member.send(
-#            f'Good evening **{member.mention}**! Enjoy your stay in **{member.guild.name}**'
-#        )
 
 
 ###############################################
