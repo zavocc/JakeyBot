@@ -1,6 +1,6 @@
 from core.ai.assistants import Assistants
 from core.ai.core import GenAIConfigDefaults
-from core.ai.history import HistoryManagement as histmgmt
+from core.ai.history import History
 from core.ai.tools import BaseFunctions
 from discord.ext import commands
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
@@ -101,11 +101,11 @@ class AI(commands.Cog):
                 return
 
         # Load the context history and initialize the HistoryManagement class
-        HistoryManagement = histmgmt(guild_id, self.bot._mongo_conn)
+        HistoryManagement = History(guild_id, self.bot._mongo_conn)
         _prompts_history, _chat_thread = await HistoryManagement.load_history()
 
         # Deserialize the chat data
-        _chat_thread = jsonpickle.loads(_chat_thread) if _chat_thread is not None else []
+        _chat_thread = jsonpickle.decode(_chat_thread, keys=True) if _chat_thread is not None else []
 
         if len(_prompts_history) >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
             raise MemoryError("Maximum history reached! Clear the conversation")
@@ -274,15 +274,15 @@ class AI(commands.Cog):
         # Append the prompt to prompts history
         _prompts_history.append(prompt)
         # Also save the ChatSession.history attribute to the context history chat history key so it will be saved through pickle
-        _chat_thread = jsonpickle.dumps(chat_session.history, indent=4)
+        _chat_thread = jsonpickle.encode(chat_session.history, indent=4, keys=True)
 
         # Print context size and model info
         if append_history:
-            await HistoryManagement.save_history(chat_thread=_chat_thread, prompt_history=_prompts_history)
             await ctx.send(inspect.cleandoc(f"""
                            > 📃 Context size: **{len(_prompts_history)}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
                            > ✨ Model used: **{model}**
                            """))
+            await HistoryManagement.save_history(chat_thread=_chat_thread, prompt_history=_prompts_history)
         else:
             await ctx.send(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{model}**")
 

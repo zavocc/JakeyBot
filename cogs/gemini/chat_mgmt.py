@@ -1,4 +1,4 @@
-from core.ai.history import HistoryManagement as histmgmt
+from core.ai.history import History
 from discord.ext import commands
 from os import environ
 import discord
@@ -47,7 +47,7 @@ class ChatMgmt(commands.Cog):
                 return  
 
         # Initialize history
-        HistoryManagement = histmgmt(guild_id, db_conn=self.bot._mongo_conn)
+        HistoryManagement = History(guild_id, db_conn=self.bot._mongo_conn)
         _feature = await HistoryManagement.get_config()
 
         # Clear and set feature
@@ -101,7 +101,7 @@ class ChatMgmt(commands.Cog):
                 return  
 
         # Initialize history
-        HistoryManagement = histmgmt(guild_id, db_conn=self.bot._mongo_conn)
+        HistoryManagement = History(guild_id, db_conn=self.bot._mongo_conn)
 
         # if tool use is the same, do not clear history
         _feature = await HistoryManagement.get_config()
