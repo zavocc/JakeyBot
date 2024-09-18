@@ -1,5 +1,5 @@
 from core.ai.assistants import Assistants
-from core.ai.core import GenAIConfigDefaults
+from core.ai.core import GenAIConfigDefaults, ModelsList
 from discord.ext import commands
 from os import environ
 import google.generativeai as genai
@@ -7,20 +7,6 @@ import datetime
 import discord
 import inspect
 import random
-import yaml
-
-# Load the models list from YAML file
-with open("data/models.yaml", "r") as models:
-    _internal_model_data = yaml.safe_load(models)
-
-# Iterate through the models and merge them as dictionary
-# It has to be put here instead of the init class since decorators doesn't seem to reference self class attributes
-_model_choices = [
-    discord.OptionChoice(f"{model['name']} - {model['description']}", model['model'])
-    for model in _internal_model_data['gemini_models']
-]
-
-del _internal_model_data
 
 class GenAITools(commands.Cog):
     def __init__(self, bot):
@@ -65,7 +51,7 @@ class GenAITools(commands.Cog):
     @discord.option(
         "model",
         description="Choose a model to use for summaries - flash is the default model",
-        choices=_model_choices,
+        choices=ModelsList.get_models_list(),
         default="gemini-1.5-flash-001",
         required=False
     )

@@ -21,6 +21,9 @@ class ChatMgmt(commands.Cog):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
+        # Load the database and initialize the HistoryManagement class
+        self.HistoryManagement = History(db_conn=self.bot._mongo_conn)
+
     ###############################################
     # Clear context command
     ###############################################
@@ -47,12 +50,11 @@ class ChatMgmt(commands.Cog):
                 return  
 
         # Initialize history
-        HistoryManagement = History(guild_id, db_conn=self.bot._mongo_conn)
-        _feature = await HistoryManagement.get_config()
+        _feature = await self.HistoryManagement.get_config(guild_id=guild_id)
 
         # Clear and set feature
-        await HistoryManagement.clear_history()
-        await HistoryManagement.set_config(_feature)
+        await self.HistoryManagement.clear_history(guild_id=guild_id)
+        await self.HistoryManagement.set_config(guild_id=guild_id, tool=_feature)
 
         await ctx.respond("✅ Chat history reset!")
 
@@ -98,21 +100,15 @@ class ChatMgmt(commands.Cog):
             # https://docs.pycord.dev/en/stable/api/models.html#discord.AuthorizingIntegrationOwners
             if ctx.interaction.authorizing_integration_owners.guild == None:
                 await ctx.respond("🚫 This commmand can only be used in DMs or authorized guilds!")
-                return  
-
-        # Initialize history
-        HistoryManagement = History(guild_id, db_conn=self.bot._mongo_conn)
+                return
 
         # if tool use is the same, do not clear history
-        _feature = await HistoryManagement.get_config()
+        _feature = await self.HistoryManagement.get_config(guild_id=guild_id)
         if _feature == capability:
             await ctx.respond("✅ Feature already enabled!")
         else:
-            # clear and reinitialize history
-            await HistoryManagement.clear_history()
-
             # set config
-            await HistoryManagement.set_config(capability)
+            await self.HistoryManagement.set_config(guild_id=guild_id, tool=capability)
             await ctx.respond(f"✅ Feature **{capability}** enabled successfully and chat is reset to reflect the changes")
         
     # Handle errors

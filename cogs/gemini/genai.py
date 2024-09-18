@@ -1,5 +1,5 @@
 from core.ai.assistants import Assistants
-from core.ai.core import GenAIConfigDefaults
+from core.ai.core import GenAIConfigDefaults, ModelsList
 from core.ai.history import History
 from core.ai.tools import BaseFunctions
 from discord.ext import commands
@@ -7,7 +7,7 @@ from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from os import environ, remove
 from pathlib import Path
 import google.generativeai as genai
-import google.api_core.exceptions #import PermissionDenied, InternalServerError
+import google.api_core.exceptions
 import aiohttp
 import aiofiles
 import asyncio
@@ -15,25 +15,15 @@ import discord
 import inspect
 import jsonpickle
 import random
-import yaml
 
-# Load the models list from YAML file
-with open("data/models.yaml", "r") as models:
-    _internal_model_data = yaml.safe_load(models)
-
-# Iterate through the models and merge them as dictionary
-# It has to be put here instead of the init class since decorators doesn't seem to reference self class attributes
-_model_choices = [
-    discord.OptionChoice(f"{model['name']} - {model['description']}", model['model'])
-    for model in _internal_model_data['gemini_models']
-]
-
-del _internal_model_data
 
 class AI(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
+
+        # Load the database and initialize the HistoryManagement class
+        self.HistoryManagement = History(db_conn=self.bot._mongo_conn)
 
     ###############################################
     # Ask command
@@ -57,7 +47,7 @@ class AI(commands.Cog):
     @discord.option(
         "model",
         description="Choose a model to use for the conversation - flash is the default model",
-        choices=_model_choices,
+        choices=ModelsList.get_models_list(),
         default="gemini-1.5-flash-001",
         required=False
     )
@@ -100,9 +90,8 @@ class AI(commands.Cog):
                 await ctx.respond("🚫 This commmand can only be used in DMs or authorized guilds!")
                 return
 
-        # Load the context history and initialize the HistoryManagement class
-        HistoryManagement = History(guild_id, self.bot._mongo_conn)
-        _prompts_history, _chat_thread = await HistoryManagement.load_history()
+        
+        _prompts_history, _chat_thread = await self.HistoryManagement.load_history(guild_id=guild_id)
 
         # Deserialize the chat data
         _chat_thread = jsonpickle.decode(_chat_thread, keys=True) if _chat_thread is not None else []
@@ -121,10 +110,10 @@ class AI(commands.Cog):
 
         # enable plugins
         # check if its a code_execution
-        if (await HistoryManagement.get_config()) == "code_execution":
+        if (await self.HistoryManagement.get_config(guild_id=guild_id)) == "code_execution":
             enabled_tools = "code_execution"
         else:
-            enabled_tools = getattr(tools_functions, (await HistoryManagement.get_config()))
+            enabled_tools = getattr(tools_functions, (await self.HistoryManagement.get_config(guild_id=guild_id)))
             
         # Model configuration - the default model is flash
         model_to_use = genai.GenerativeModel(model_name=model, safety_settings=genai_configs.safety_settings_config, generation_config=genai_configs.generation_config, system_instruction=assistants_system_prompt.jakey_system_prompt, tools=enabled_tools)
@@ -282,7 +271,7 @@ class AI(commands.Cog):
                            > 📃 Context size: **{len(_prompts_history)}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
                            > ✨ Model used: **{model}**
                            """))
-            await HistoryManagement.save_history(chat_thread=_chat_thread, prompt_history=_prompts_history)
+            await self.HistoryManagement.save_history(guild_id=guild_id, chat_thread=_chat_thread, prompt_history=_prompts_history)
         else:
             await ctx.send(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{model}**")
 
