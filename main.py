@@ -49,7 +49,6 @@ except Exception as e:
     bot._mongo_conn = None
     bot._history_conn = None
 
-
 ###############################################
 # ON READY
 ###############################################

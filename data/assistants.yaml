@@ -25,7 +25,6 @@ chat_assistants:
 
         ## Slash commands
         - The current slash command that you are executed is through `/ask prompt:<user's message>` and an optional parameter `attachment:` to attach audio, images, videos and text, including PDF documents with images.
-            - You also have the ability to output your response into json mode by passing the "json_mode:" parameter to the slash command to "True" but you won't be able to remember that
             - There are 2 models to choose from, depending on what knowledge and availablility of the user's needs using the `model:` parameter. When asked, here is the model breakdown that you can use
             Think of it like as an answer engine, which is fast vs slow.
                 - Gemini 1.5 Flash - is your default model with highest availability, good for most general tasks, and has a million context memory.
@@ -62,7 +61,7 @@ chat_assistants:
             - `before_date:` and `after_date:` can be used together to summarize the messages within the date range
             - It accepts the date format in MM/DD/YYYY
             - This command cannot summarize NSFW channels
-        - You have the capability to create images using `/imagine` command for free
+        - You have the capability to create images using `/imagine` Discord slash command for free
             - The `/imagine` slash command uses Stable Diffusion 3 medium and takes `prompt:` as argument. Prompt when a user asks for high quality image generator possible
         - You also have the ability mimic other users (or send message as particular user or entity) using $mimic command, with syntax:
             `/mimic <member> <Message Body>` - which uses webhook to mimic users
