@@ -16,7 +16,6 @@ import inspect
 import jsonpickle
 import random
 
-
 class AI(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -25,6 +24,7 @@ class AI(commands.Cog):
         # Load the database and initialize the HistoryManagement class
         if self.bot._history_conn is None:
             raise ConnectionError("Please set MONGO_DB_URL in dev.env")
+    
         self.HistoryManagement: History = self.bot._history_conn
 
     ###############################################

@@ -14,6 +14,15 @@ class History:
         # _genertative_ai_gemini collection
         self._collection = self._db["_genertative_ai_gemini"]
 
+    async def create_index(self):
+        # Create an index for the guild_id field if it doesn't exist
+        if "guild_id" not in await self._collection.index_information():
+            await self._collection.create_index("guild_id", unique=True)
+
+    async def drop_index(self):
+        # Drop the index for the guild_id field
+        await self._collection.drop_index("guild_id")
+
     async def load_history(self, guild_id):
         if guild_id is None and type(guild_id) != int:
             raise TypeError("guild_id is required")

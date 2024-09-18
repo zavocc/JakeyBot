@@ -41,7 +41,7 @@ bot = bridge.Bot(command_prefix=commands.when_mentioned_or("$"), intents = inten
 
 # MongoDB database connection for chat history
 try:
-    bot._mongo_conn =  motor.motor_asyncio.AsyncIOMotorClient(environ.get("MONGO_DB_URL"))
+    bot._mongo_conn = motor.motor_asyncio.AsyncIOMotorClient(environ.get("MONGO_DB_URL"))
     # If no errors, initialize the history connection
     bot._history_conn = History(db_conn=bot._mongo_conn)
 except Exception as e:
@@ -49,13 +49,14 @@ except Exception as e:
     bot._mongo_conn = None
     bot._history_conn = None
 
+    # Prepare temporary directory
+
 ###############################################
 # ON READY
 ###############################################
 @bot.event
 async def on_ready():
     global wavelink
-    await bot.wait_until_ready()
 
     print(f"{bot.user} is ready and online!")
     #https://stackoverflow.com/a/65780398 - for multiple statuses
@@ -83,7 +84,9 @@ async def on_ready():
             print(f"Failed to setup wavelink: {e}... Disabling playback support")
             wavelink = None
 
-    # Prepare temporary directory
+    if hasattr(bot, "_mongo_conn") and bot._mongo_conn is not None:
+        await bot._history_conn.create_index()
+
     if environ.get("TEMP_DIR") is not None:
         if Path(environ.get("TEMP_DIR")).exists():
             for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
