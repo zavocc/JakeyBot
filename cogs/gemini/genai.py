@@ -92,10 +92,8 @@ class AI(commands.Cog):
                 await ctx.respond("🚫 This commmand can only be used in DMs or authorized guilds!")
                 return
 
-        
+        # Load and deserialize the chat data
         _prompts_history, _chat_thread = await self.HistoryManagement.load_history(guild_id=guild_id)
-
-        # Deserialize the chat data
         _chat_thread = jsonpickle.decode(_chat_thread, keys=True) if _chat_thread is not None else []
 
         if len(_prompts_history) >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
