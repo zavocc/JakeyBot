@@ -39,7 +39,7 @@ intents.members = True
 # Bot
 bot = bridge.Bot(command_prefix=commands.when_mentioned_or("$"), intents = intents)
 
-# MongoDB database connection for chat history
+# MongoDB database connection for chat history and possibly for other things
 try:
     bot._mongo_conn = motor.motor_asyncio.AsyncIOMotorClient(environ.get("MONGO_DB_URL"))
     # If no errors, initialize the history connection
@@ -48,8 +48,6 @@ except Exception as e:
     print(f"Failed to connect to MongoDB: {e}...\n expect errors later")
     bot._mongo_conn = None
     bot._history_conn = None
-
-    # Prepare temporary directory
 
 ###############################################
 # ON READY
@@ -86,7 +84,8 @@ async def on_ready():
 
     if hasattr(bot, "_mongo_conn") and bot._mongo_conn is not None:
         await bot._history_conn.create_index()
-
+    
+    # Prepare temporary directory
     if environ.get("TEMP_DIR") is not None:
         if Path(environ.get("TEMP_DIR")).exists():
             for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():

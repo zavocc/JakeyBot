@@ -55,7 +55,7 @@ class AI(commands.Cog):
     )
     @discord.option(
         "append_history",
-        description="Store the conversation to chat history? (This option is void with json_mode)",
+        description="Store the conversation to chat history?",
         default=True
     )
     async def ask(self, ctx, prompt: str, attachment: discord.Attachment, model: str,
