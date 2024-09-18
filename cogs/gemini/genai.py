@@ -23,7 +23,9 @@ class AI(commands.Cog):
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
         # Load the database and initialize the HistoryManagement class
-        self.HistoryManagement = History(db_conn=self.bot._mongo_conn)
+        if self.bot._history_conn is None:
+            raise ConnectionError("Please set MONGO_DB_URL in dev.env")
+        self.HistoryManagement: History = self.bot._history_conn
 
     ###############################################
     # Ask command

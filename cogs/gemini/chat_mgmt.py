@@ -1,20 +1,8 @@
+from core.ai.core import ModelsList
 from core.ai.history import History
 from discord.ext import commands
 from os import environ
 import discord
-import yaml
-
-# Load the tools list from YAML file
-with open("data/tools.yaml", "r") as models:
-    _tools_list = yaml.safe_load(models)
-
-# Load tools metadata
-_tool_choices = [
-    discord.OptionChoice(tools["ui_name"], tools['tool_name'])
-    for tools in _tools_list
-]
-
-del _tools_list
 
 class ChatMgmt(commands.Cog):
     def __init__(self, bot):
@@ -22,7 +10,9 @@ class ChatMgmt(commands.Cog):
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
         # Load the database and initialize the HistoryManagement class
-        self.HistoryManagement = History(db_conn=self.bot._mongo_conn)
+        if self.bot._history_conn is None:
+            raise ConnectionError("Please set MONGO_DB_URL in dev.env")
+        self.HistoryManagement: History = self.bot._history_conn
 
     ###############################################
     # Clear context command
@@ -81,7 +71,7 @@ class ChatMgmt(commands.Cog):
     @discord.option(
         "capability",
         description = "Integrate tools to chat! Setting chat features will clear your history!",
-        choices=_tool_choices
+        choices=ModelsList.get_tools_list(),
     )
     async def feature(self, ctx, capability: str):
         """Enhance your chat with capabilities! Some are in BETA so things may not always pick up"""

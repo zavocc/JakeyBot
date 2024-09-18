@@ -48,3 +48,17 @@ class ModelsList:
         ]
 
         return _model_choices
+    
+    @staticmethod
+    def get_tools_list():
+        # Load the tools list from YAML file
+        with open("data/tools.yaml", "r") as models:
+            _tools_list = yaml.safe_load(models)
+
+        # Load tools metadata
+        _tool_choices = [
+            discord.OptionChoice(tools["ui_name"], tools['tool_name'])
+            for tools in _tools_list
+        ]
+
+        return _tool_choices
