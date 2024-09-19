@@ -11,11 +11,11 @@ The only non-Gemini models are for other tools like image generation which uses 
 ### How can I be ensured that my data is safe and to comply with Discord ToS for bot developers
 As a developer, it's suggested to enable billing in AI studio if you're ready to deploy this bot for production, so it adheres under [Google's Gemini API Terms](https://ai.google.dev/gemini-api/terms). Only use free plan for prototyping purposes as it serves for playground for prompts and token calculations without compromising your budget, but prompt data is sent to Google. 
 
-When storing your chat history, the host has no direct access to your conversations, and it is not stored in plaintext/JSON. It is encoded with pickle (through JSONPickle) so it involves steps to decode every objects and read your history. The chat history is encoded as [ChatSession.history](https://ai.google.dev/api/python/google/generativeai/ChatSession) object and is pickled, then it is saved on a database file using SQLite API but this can change as the bot grows. See below how your chat history is stored for technical users.
+When storing your chat history, the host has no direct access to your conversations, and it is not stored in plaintext/JSON. It is encoded with pickle (through JSONPickle) so it involves steps to decode every objects and read your history. The chat history is encoded as [ChatSession.history](https://ai.google.dev/api/python/google/generativeai/ChatSession) object and is pickled, then it is saved on a database file using MongoDB API but this can change as the bot grows. See below how your chat history is stored for technical users.
 
 See [this gist](https://gist.github.com/zavocc/36b5c28072a541493c404ede164ff1c3#file-genai_lowlevel_protos-py-L39-L54) for lower-level overview of `ChatSession.history` object syntax. The history consists of [genai.protos.Content](https://ai.google.dev/api/python/google/generativeai/protos/Content)([genai.protos.Part](https://ai.google.dev/api/python/google/generativeai/protos/Part)) objects which contains the information of function calling result record, multimodal data, and user/model interaction, in order to maintain conversational consistency and context.
 
-To keep them in persistence, a database is used which stores chat history per guild. Since SQLite or similar does not support Python object data, it is pickled and encoded in JSON/base64 format using [JSONPickle](https://pypi.org/project/jsonpickle/) which returns `str` with JSON data inline which is then inserted into database.
+To keep them in persistence, a database is used which stores chat history per guild. Since MongoDB or similar does not support Python object data, it is pickled and encoded in JSON/base64 format using [JSONPickle](https://pypi.org/project/jsonpickle/) which returns `str` with JSON data inline which is then inserted into database.
 
 For users, avoid sending your personal data to the chatbot. Basic security and privacy principle of not selling out your data to random strangers should be followed, Should the host morally follows data handling from users? Vulnerable host can make a compromise (e.g. sloppy and shady cloud hosting is used for this bot hosting).
 
@@ -44,7 +44,7 @@ JAKEY.(GUILD_ID.RANDOMINT).filename
 Use `delete_file()` to manually delete files from the API but this breaks all multimodal inputs.
 
 ### I've looked into the source code and the chat history is being pickled, don't you think it would be mature to use SQL/no-SQL database? Also is it insecure?
-The [ChatSession.history](https://ai.google.dev/api/python/google/generativeai/ChatSession) object is being snapshotted and pickle encoded, then it is saved to a single database file using SQLite.
+The [ChatSession.history](https://ai.google.dev/api/python/google/generativeai/ChatSession) object is being snapshotted and pickle encoded, then it is saved to a database using MongoDB.
 
 The way how chat history is being saved is being discussed by me here: https://discuss.ai.google.dev/t/what-is-the-best-way-to-persist-chat-history-into-file
 
