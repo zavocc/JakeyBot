@@ -81,9 +81,6 @@ async def on_ready():
         except wavelink.WavelinkException as e:
             print(f"Failed to setup wavelink: {e}... Disabling playback support")
             wavelink = None
-
-    if hasattr(bot, "_mongo_conn") and bot._mongo_conn is not None:
-        await bot._history_conn.create_index()
     
     # Prepare temporary directory
     if environ.get("TEMP_DIR") is not None:

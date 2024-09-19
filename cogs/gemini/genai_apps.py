@@ -16,6 +16,12 @@ class GenAIApps(commands.Cog):
 
         genai.configure(api_key=environ.get("GOOGLE_AI_TOKEN"))
 
+        # Default generative model settings
+        self._genai_configs = GenAIConfigDefaults()
+
+        # Assistants
+        self._system_prompt = Assistants()
+
     ###############################################
     # Rephrase command
     ###############################################
@@ -27,15 +33,9 @@ class GenAIApps(commands.Cog):
     async def rephrase(self, ctx, message: discord.Message):
         """Rephrase this message"""
         await ctx.response.defer(ephemeral=True)
-
-        # Default generative model settings
-        genai_configs = GenAIConfigDefaults()
-
-        # Assistants
-        system_prompt = Assistants()
         
         # Generative model settings
-        model = genai.GenerativeModel(model_name=genai_configs.model_config, system_instruction=system_prompt.message_rephraser_prompt, generation_config=genai_configs.generation_config)
+        model = genai.GenerativeModel(model_name=self._genai_configs.model_config, system_instruction=self._system_prompt.message_rephraser_prompt, generation_config=self._genai_configs.generation_config)
         answer = await model.generate_content_async(f"Rephrase this message:\n{str(message.content)}")
 
         # Send message in an embed format
@@ -75,15 +75,9 @@ class GenAIApps(commands.Cog):
     async def explain(self, ctx, message: discord.Message):
         """Explain this message"""
         await ctx.response.defer(ephemeral=True)
-        
-        # Default generative model settings
-        genai_configs = GenAIConfigDefaults()
-
-        # Assistants
-        system_prompt = Assistants()
 
         # Generative model settings
-        model = genai.GenerativeModel(model_name=genai_configs.model_config, system_instruction=system_prompt.message_summarizer_prompt, generation_config=genai_configs.generation_config)
+        model = genai.GenerativeModel(model_name=self._genai_configs.model_config, system_instruction=self._system_prompt.message_summarizer_prompt, generation_config=self._genai_configs.generation_config)
         answer = await model.generate_content_async(f"Explain and summarize:\n{str(message.content)}")
 
         # Send message in an embed format
@@ -124,15 +118,9 @@ class GenAIApps(commands.Cog):
     async def suggest(self, ctx, message: discord.Message):
         """Suggest a response based on this message"""
         await ctx.response.defer(ephemeral=True)
-        
-        # Default generative model settings
-        genai_configs = GenAIConfigDefaults()
-
-        # Assistants
-        system_prompt = Assistants()
 
         # Generative model settings
-        model = genai.GenerativeModel(model_name=genai_configs.model_config, system_instruction=system_prompt.message_suggestions_prompt, generation_config=genai_configs.generation_config)
+        model = genai.GenerativeModel(model_name=self._genai_configs.model_config, system_instruction=self._system_prompt.message_suggestions_prompt, generation_config=self._genai_configs.generation_config)
         answer = await model.generate_content_async(f"Suggest a response:\n{str(message.content)}")
 
         # To protect privacy, send the message to the user

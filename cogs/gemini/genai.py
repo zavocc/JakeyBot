@@ -24,8 +24,18 @@ class AI(commands.Cog):
         # Load the database and initialize the HistoryManagement class
         if self.bot._history_conn is None:
             raise ConnectionError("Please set MONGO_DB_URL in dev.env")
-    
         self.HistoryManagement: History = self.bot._history_conn
+
+        # Check for gemini API keys
+        if environ.get("GOOGLE_AI_TOKEN") is None or environ.get("GOOGLE_AI_TOKEN") == "INSERT_API_KEY":
+            raise Exception("GOOGLE_AI_TOKEN is not configured in the dev.env file. Please configure it and try again.")
+        genai.configure(api_key=environ.get("GOOGLE_AI_TOKEN"))
+
+        # Initialize GenAIConfigDefaults
+        self._genai_configs = GenAIConfigDefaults()
+
+        # default system prompt - load assistants
+        self._assistants_system_prompt = Assistants()
 
     ###############################################
     # Ask command
@@ -63,15 +73,6 @@ class AI(commands.Cog):
         """Ask a question using Gemini-based AI"""
         await ctx.response.defer()
 
-        ###############################################
-        # Model configuration
-        ###############################################
-        # Check for gemini API keys
-        if environ.get("GOOGLE_AI_TOKEN") is None or environ.get("GOOGLE_AI_TOKEN") == "INSERT_API_KEY":
-            raise Exception("GOOGLE_AI_TOKEN is not configured in the dev.env file. Please configure it and try again.")
-
-        genai.configure(api_key=environ.get("GOOGLE_AI_TOKEN"))
-
         # Message history
         # Since pycord 2.6, user apps support is implemented. But in order for this command to work in DMs, it has to be installed as user app
         # Which also exposes the command to the guilds the user joined where the bot is not authorized to send commands. This can cause partial function succession with MissingAccess error
@@ -99,12 +100,6 @@ class AI(commands.Cog):
         if len(_prompts_history) >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
             raise MemoryError("Maximum history reached! Clear the conversation")
 
-        # Initialize GenAIConfigDefaults
-        genai_configs = GenAIConfigDefaults()
-
-        # default system prompt - load assistants
-        assistants_system_prompt = Assistants()
-
         # tool use
         tools_functions = BaseFunctions(self.bot, ctx)
 
@@ -116,7 +111,7 @@ class AI(commands.Cog):
             enabled_tools = getattr(tools_functions, (await self.HistoryManagement.get_config(guild_id=guild_id)))
             
         # Model configuration - the default model is flash
-        model_to_use = genai.GenerativeModel(model_name=model, safety_settings=genai_configs.safety_settings_config, generation_config=genai_configs.generation_config, system_instruction=assistants_system_prompt.jakey_system_prompt, tools=enabled_tools)
+        model_to_use = genai.GenerativeModel(model_name=model, safety_settings=self._genai_configs.safety_settings_config, generation_config=self._genai_configs.generation_config, system_instruction=self._assistants_system_prompt.jakey_system_prompt, tools=enabled_tools)
 
         ###############################################
         # File attachment processing

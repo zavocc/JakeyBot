@@ -46,7 +46,7 @@ class ModelsList:
             discord.OptionChoice(f"{model['name']} - {model['description']}", model['model'])
             for model in _internal_model_data['gemini_models']
         ]
-
+        del _internal_model_data
         return _model_choices
     
     @staticmethod
@@ -60,5 +60,5 @@ class ModelsList:
             discord.OptionChoice(tools["ui_name"], tools['tool_name'])
             for tools in _tools_list
         ]
-
+        del _tools_list
         return _tool_choices
