@@ -120,7 +120,7 @@ class BaseChat(commands.Cog):
             _Tool.tool_schema = "code_execution"
 
         # Model configuration - the default model is flash
-        model_to_use = genai.GenerativeModel(model_name=model, safety_settings=self._genai_configs.safety_settings_config, generation_config=self._genai_configs.generation_config, system_instruction=self._assistants_system_prompt.jakey_system_prompt, tools=_Tool.tool_schema, tool_config=_Tool.tool_config)
+        model_to_use = genai.GenerativeModel(model_name=model, safety_settings=self._genai_configs.safety_settings_config, generation_config=self._genai_configs.generation_config, system_instruction=self._assistants_system_prompt.jakey_system_prompt, tools=_Tool.tool_schema)
 
         ###############################################
         # File attachment processing
@@ -187,7 +187,7 @@ class BaseChat(commands.Cog):
         # when trying to access the deleted file uploaded using Files API. See:
         # https://discuss.ai.google.dev/t/what-is-the-best-way-to-persist-chat-history-into-file/3804/6?u=zavocc306
         try:
-            answer = await chat_session.send_message_async(final_prompt)
+            answer = await chat_session.send_message_async(final_prompt, tool_config=_Tool.tool_config)
         #  Retry the response if an error has occured
         except google.api_core.exceptions.PermissionDenied:
             _chat_thread = [
@@ -202,7 +202,7 @@ class BaseChat(commands.Cog):
 
             # Re-initialize the chat session
             chat_session = model_to_use.start_chat(history=_chat_thread)
-            answer = await chat_session.send_message_async(final_prompt)
+            answer = await chat_session.send_message_async(final_prompt, tool_config=_Tool.tool_config)
 
         # Call tools
         # DEBUG: content.parts[0] is the first step message and content.parts[1] is the function calling data that is STOPPED
@@ -222,14 +222,13 @@ class BaseChat(commands.Cog):
                 return
 
             # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
-            _s = Struct()
             answer = await chat_session.send_message_async(
                 genai.protos.Content(
                     parts=[
                         genai.protos.Part(
                             function_response = genai.protos.FunctionResponse(
                                 name = _func_call.name,
-                                response = _s.update({"_result":_result})
+                                response = {"_result":_result}
                             )
                         )
                     ]
