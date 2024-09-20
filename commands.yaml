@@ -2,7 +2,6 @@
 - admin
 - fun
 - gemini.chat
-- gemini.chat_mgmt
 - gemini.message_actions
 - gemini.summarize
 - huggingface.genai
