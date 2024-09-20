@@ -1,6 +1,5 @@
 from core.ai.core import ModelsList
-from core.ai.history import History
-from cogs.gemini.base_chat import BaseChat
+from cogs.gemini.generative import BaseChat
 from discord.ext import commands
 from os import environ
 import discord

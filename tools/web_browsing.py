@@ -83,7 +83,7 @@ class Tool:
                 for url in links:
                     try:
                         # Perform a request
-                        async with session.get(url, allow_redirects=True, timeout=10) as request:
+                        async with session.get(url, allow_redirects=True, timeout=max_results) as request:
                             _page_text = await request.text()
                     except Exception:
                         await self.ctx.send(f"⚠️ Failed to browse: **<{url}>**")

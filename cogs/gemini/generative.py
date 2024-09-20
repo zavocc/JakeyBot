@@ -102,10 +102,10 @@ class BaseChat(commands.Cog):
                 return
 
         # Load and deserialize the chat data
-        _prompts_history, _chat_thread = await self.HistoryManagement.load_history(guild_id=guild_id)
+        _prompt_count, _chat_thread = await self.HistoryManagement.load_history(guild_id=guild_id)
         _chat_thread = jsonpickle.decode(_chat_thread, keys=True) if _chat_thread is not None else []
 
-        if len(_prompts_history) >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
+        if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
             raise MemoryError("Maximum history reached! Clear the conversation")
 
         # Import tool
@@ -260,8 +260,8 @@ class BaseChat(commands.Cog):
         else:
             await ctx.respond(answer.text)
 
-        # Append the prompt to prompts history
-        _prompts_history.append(prompt)
+        # Increment the prompt count
+        _prompt_count += 1
         # Also save the ChatSession.history attribute to the context history chat history key so it will be saved through pickle
         _chat_thread = jsonpickle.encode(chat_session.history, indent=4, keys=True)
 
@@ -269,12 +269,12 @@ class BaseChat(commands.Cog):
         if show_stats:
             if append_history:
                 await ctx.send(inspect.cleandoc(f"""
-                            > 📃 Context size: **{len(_prompts_history)}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
+                            > 📃 Context size: **{_prompt_count}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
                             > ✨ Model used: **{model}**
                             """))
             else:
                 await ctx.send(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{model}**")
-        await self.HistoryManagement.save_history(guild_id=guild_id, chat_thread=_chat_thread, prompt_history=_prompts_history)
+        await self.HistoryManagement.save_history(guild_id=guild_id, chat_thread=_chat_thread, prompt_count=_prompt_count)
 
     # Handle all unhandled exceptions through error event, handled exceptions are currently image analysis safety settings
     @ask.error
@@ -297,6 +297,8 @@ class BaseChat(commands.Cog):
         # For failed downloads from attachments
         elif isinstance(error, aiohttp.ClientError):
             await ctx.respond("⚠️ Uh oh! Something went wrong while processing file attachment! Please try again later.")
+        elif isinstance(error, MemoryError):
+            await ctx.respond("📝 Sorry, the chat thread has reached its maximum capacity, please clear the chat history to continue using `/sweep`")
         else:
             await ctx.respond(f"⚠️ Uh oh! I couldn't answer your question, something happend to our end!\nHere is the logs for reference and troubleshooting:\n ```{error}```")
         

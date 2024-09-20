@@ -23,7 +23,7 @@ class History:
             # Create a document if it doesn't exist
             await self._collection.update_one({"guild_id": guild_id},{"$set": {
                     "guild_id": guild_id,
-                    "prompt_history": [],
+                    "prompt_count": 0,
                     "chat_thread": None,
                     "tool_use": "code_execution"
             }}, upsert=True)
@@ -32,9 +32,9 @@ class History:
         _document = await self._collection.find_one({"guild_id": guild_id})
             
         # Return the prompt history and chat context
-        return _document["prompt_history"], _document["chat_thread"]
+        return _document["prompt_count"], _document["chat_thread"]
 
-    async def save_history(self, guild_id, chat_thread, prompt_history = []):
+    async def save_history(self, guild_id, chat_thread, prompt_count = 0):
         if guild_id is None and type(guild_id) != int:
             raise TypeError("guild_id is required")
 
@@ -42,7 +42,7 @@ class History:
             # Create a document if it doesn't exist
             await self._collection.update_one({"guild_id": guild_id},{"$set": {
                     "guild_id": guild_id,
-                    "prompt_history": [],
+                    "prompt_count": 0,
                     "chat_thread": None,
                     "tool_use": "code_execution"
             }}, upsert=True)
@@ -50,7 +50,7 @@ class History:
         # Update the document
         await self._collection.update_one({"guild_id": guild_id}, {
             "$set": {
-                "prompt_history": prompt_history,
+                "prompt_count": prompt_count,
                 "chat_thread": chat_thread
             }
         })
@@ -73,7 +73,7 @@ class History:
         await self.clear_history(guild_id)
         await self._collection.update_one({"guild_id": guild_id},{"$set": {
                 "guild_id": guild_id,
-                "prompt_history": [],
+                "prompt_count": 0,
                 "chat_thread": None,
                 "tool_use": tool
         }}, upsert=True)
@@ -86,7 +86,7 @@ class History:
             # Create a document if it doesn't exist
             await self._collection.update_one({"guild_id": guild_id},{"$set": {
                     "guild_id": guild_id,
-                    "prompt_history": [],
+                    "prompt_count": 0,
                     "chat_thread": None,
                     "tool_use": "code_execution"
             }}, upsert=True)
