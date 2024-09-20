@@ -1,4 +1,3 @@
-# Built in Tools
 from core.ai.embeddings import GeminiDocumentRetrieval
 from google_labs_html_chunker.html_chunker import HtmlChunker
 import google.generativeai as genai
@@ -8,33 +7,33 @@ import importlib
 import os
 import yaml
 
-class ToolsDefinitions:
-    # Web Browsing
-    web_browsing = genai.protos.Tool(
-        function_declarations=[
-            genai.protos.FunctionDeclaration(
-                name = "web_browsing",
-                description = "Search the web from information around the world powered by DuckDuckGo",
-                parameters=genai.protos.Schema(
-                    type=genai.protos.Type.OBJECT,
-                    properties={
-                        'query':genai.protos.Schema(type=genai.protos.Type.STRING),
-                        'max_results':genai.protos.Schema(type=genai.protos.Type.NUMBER)
-                    },
-                    required=['query']
-                )
-            )
-        ]
-    )
-
-
 # Function implementations
-class ToolImpl(ToolsDefinitions):
+class Tool:
+    tool_human_name = "Browsing with DuckDuckGo"
+    tool_name = "web_browsing"
     def __init__(self, bot, ctx):
         self.bot = bot
         self.ctx = ctx
 
-    async def _web_browsing(self, query: str, max_results: int):
+        self.tool_schema = genai.protos.Tool(
+            function_declarations=[
+                genai.protos.FunctionDeclaration(
+                    name = "web_browsing",
+                    description = "Search the web from information around the world powered by DuckDuckGo",
+                    parameters=genai.protos.Schema(
+                        type=genai.protos.Type.OBJECT,
+                        properties={
+                            'query':genai.protos.Schema(type=genai.protos.Type.STRING),
+                            'max_results':genai.protos.Schema(type=genai.protos.Type.NUMBER)
+                        },
+                        required=['query']
+                    )
+                )
+            ]
+        )
+
+
+    async def _tool_function(self, query: str, max_results: int):
         # Limit searches upto 6 results due to context length limits
         max_results = min(max_results, 6)
 

@@ -1,7 +1,6 @@
 from core.ai.assistants import Assistants
 from core.ai.core import GenAIConfigDefaults, ModelsList
 from core.ai.history import History
-from core.ai.tools import BaseFunctions
 from discord.ext import commands
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from os import environ, remove
@@ -12,6 +11,7 @@ import aiohttp
 import aiofiles
 import asyncio
 import discord
+import importlib
 import inspect
 import jsonpickle
 import motor.motor_asyncio
@@ -108,18 +108,15 @@ class AI(commands.Cog):
         if len(_prompts_history) >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
             raise MemoryError("Maximum history reached! Clear the conversation")
 
-        # tool use
-        tools_functions = BaseFunctions(self.bot, ctx)
+        # Import tool
+        _Tool = importlib.import_module(f"tools.{(await self.HistoryManagement.get_config(guild_id=guild_id))}").Tool(self.bot, ctx)
 
-        # enable plugins
         # check if its a code_execution
-        if (await self.HistoryManagement.get_config(guild_id=guild_id)) == "code_execution":
-            enabled_tools = "code_execution"
-        else:
-            enabled_tools = getattr(tools_functions, (await self.HistoryManagement.get_config(guild_id=guild_id)))
-            
+        if _Tool.tool_name == "code_execution":
+            _Tool.tool_schema = "code_execution"
+        
         # Model configuration - the default model is flash
-        model_to_use = genai.GenerativeModel(model_name=model, safety_settings=self._genai_configs.safety_settings_config, generation_config=self._genai_configs.generation_config, system_instruction=self._assistants_system_prompt.jakey_system_prompt, tools=enabled_tools)
+        model_to_use = genai.GenerativeModel(model_name=model, safety_settings=self._genai_configs.safety_settings_config, generation_config=self._genai_configs.generation_config, system_instruction=self._assistants_system_prompt.jakey_system_prompt, tools=_Tool.tool_schema)
 
         ###############################################
         # File attachment processing
@@ -213,8 +210,8 @@ class AI(commands.Cog):
 
             # Call the function through their callables with getattr
             try:
-                _result = await getattr(tools_functions, f"_callable_{_func_call.name}")(**_func_call.args)
-            except AttributeError as e:
+                _result = await _Tool._tool_function(**_func_call.args)
+            except (AttributeError, TypeError) as e:
                 await ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
                 # Also print the error to the console
                 print(e)
@@ -240,7 +237,7 @@ class AI(commands.Cog):
                 }
             )
 
-            await ctx.send(f"Used: **{_func_call.name}**")
+            await ctx.send(f"Used: **{_Tool.tool_human_name}**")
     
         # Embed the response if the response is more than 2000 characters
         # Check to see if this message is more than 2000 characters which embeds will be used for displaying the message
