@@ -71,7 +71,9 @@ It is recommended to have some Python knowledge involving OOP, functions and asy
 ### Step 1: Creating your tool outline
 All tools along with their implementation are in `tools/` directory within project's root. Its recommended and suggested to declare your tools in a new Python file (as module).
 
-The outline of your tools (`tools/example.py`):
+Example tool: Multiply (`tools/multiply.py`)
+
+> Filename must be the same as function/tool name
 ```py
 import google.generativeai as genai
 import importlib
@@ -141,7 +143,8 @@ The second and final step is to make it visble to Discord UI for users to activa
 
 On the file [`data/tools.yaml`](/data/tools.yaml). Register your tools definition for the model to use and human readable description of your tool
 ```yaml
-# tool_name is your function name from the schema as the model will use it
+# tool_name is your function name as defined from the schema as the model will use it
+# This is also used to "import" the tool from `tools/` directory (as import tools.multiply)
 - tool_name: multiply
 # human readable description where the tool choice is visible to Discord UI within the `/feature` command
   ui_name: Muliply with Python
