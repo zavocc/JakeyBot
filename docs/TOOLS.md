@@ -108,7 +108,7 @@ class Tool:
         return a * b * c
 ```
 Recommendations:
-- Its recommended to handle errors with try-except block and return the status as string if the operation was failed or successful. Since, it is still being executed normally inside [`cogs/gemini/genai.py`](../cogs/gemini/genai.py#L226) and whatever exception occured inside the tool function can affect the execution of `/ask` command as a whole, causing partial execution.
+- Its recommended to handle errors with try-except block and return the status as string if the operation was failed or successful. Since, it is still being executed normally inside and whatever exception occured inside the tool function can affect the execution of `/ask` command as a whole, causing partial execution.
 
 For unpredictable errors, you can use the `except Exception as e` clause inside your function and tell the model the reason for context
 ```python
