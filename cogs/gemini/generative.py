@@ -111,12 +111,15 @@ class BaseChat(commands.Cog):
         # Import tool
         _Tool = importlib.import_module(f"tools.{(await self.HistoryManagement.get_config(guild_id=guild_id))}").Tool(self.bot, ctx)
 
+        if hasattr(_Tool, "attachments_required") and attachment is not None:
+            _Tool.file_url = attachment.url
+
         # check if its a code_execution
         if _Tool.tool_name == "code_execution":
             _Tool.tool_schema = "code_execution"
-        
+
         # Model configuration - the default model is flash
-        model_to_use = genai.GenerativeModel(model_name=model, safety_settings=self._genai_configs.safety_settings_config, generation_config=self._genai_configs.generation_config, system_instruction=self._assistants_system_prompt.jakey_system_prompt, tools=_Tool.tool_schema)
+        model_to_use = genai.GenerativeModel(model_name=model, safety_settings=self._genai_configs.safety_settings_config, generation_config=self._genai_configs.generation_config, system_instruction=self._assistants_system_prompt.jakey_system_prompt, tools=_Tool.tool_schema, tool_config=_Tool.tool_config)
 
         ###############################################
         # File attachment processing

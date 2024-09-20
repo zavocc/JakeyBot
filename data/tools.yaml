@@ -1,5 +1,7 @@
 - tool_name: code_execution
   ui_name: Code Execution with Python
+- tool_name: background_remover
+  ui_name: Background Removal
 - tool_name: image_generator
   ui_name: Image Generator with Stable Diffusion 3
 - tool_name: randomreddit
