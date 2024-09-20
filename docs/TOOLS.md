@@ -145,6 +145,7 @@ On the file [`data/tools.yaml`](/data/tools.yaml). Register your tools definitio
 ```yaml
 # tool_name is your function name as defined from the schema as the model will use it
 # This is also used to "import" the tool from `tools/` directory (as import tools.multiply)
+# Please make sure the filename must be the same as this as mentioned above
 - tool_name: multiply
 # human readable description where the tool choice is visible to Discord UI within the `/feature` command
   ui_name: Muliply with Python
