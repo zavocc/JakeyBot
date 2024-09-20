@@ -34,7 +34,7 @@ class Tool:
         )
 
     # Image generator
-    async def _tool_function(self, *args, **kwargs):
+    async def _tool_function(self, prompt):
         print(self.file_url)
         if self.file_url is None:
             return "Please add images to your prompt"

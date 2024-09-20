@@ -3,6 +3,7 @@ from core.ai.core import GenAIConfigDefaults, ModelsList
 from core.ai.history import History
 from discord.ext import commands
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
+from google.protobuf.struct_pb2 import Struct
 from os import environ, remove
 from pathlib import Path
 import google.generativeai as genai
@@ -221,13 +222,14 @@ class BaseChat(commands.Cog):
                 return
 
             # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
+            _s = Struct()
             answer = await chat_session.send_message_async(
                 genai.protos.Content(
                     parts=[
                         genai.protos.Part(
                             function_response = genai.protos.FunctionResponse(
                                 name = _func_call.name,
-                                response = {"response": _result}
+                                response = _s.update({"_result":_result})
                             )
                         )
                     ]
