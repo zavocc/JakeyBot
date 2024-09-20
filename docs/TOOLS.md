@@ -15,7 +15,7 @@ It uses [Function calling](https://github.com/google-gemini/cookbook/blob/main/q
 
 Jakey already has few tools since its initial implementation, first-party built-in tools include:
 - Code execution (default) - Executes Python code and performs calculations but it cannot exchange unstructured data, this has been used by default before Jakey Tools are implemented.
-- Image generation with Stable Diffusion 3 - Calls Huggingface spaces endpoints to generate an image within using the space from [stabilityai/stable-diffusion-3-medium](https://huggingface.co/spaces/stabilityai/stable-diffusion-3-medium) but the model can only pass `prompt`, `width` and `height` parameters unlike `/imagine` command and caps to 1344x1344 resolution at max. Since we're using public space endpoints, this is much slower than managed plans. This tool sends the image output to the current Discord thread where you have the permission or Jakey to send messages.
+- Image generation with Stable Diffusion 3 - Calls Huggingface spaces endpoints to generate an image within using the space from [stabilityai/stable-diffusion-3-medium](https://huggingface.co/spaces/stabilityai/stable-diffusion-3-medium) but the model can only pass `prompt`, `width` and `height` parameters unlike `/imagine` command and caps to 1344x1344 resolution at max. Since we're using public space endpoints, this is much slower than dedicated solutions. This tool sends the image output to the current Discord thread where you have the permission or Jakey to send messages.
 
     Dependencies required: `gradio_client`
 
