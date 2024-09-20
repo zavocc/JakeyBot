@@ -1,4 +1,3 @@
-from core.ai.history import History
 from discord.ext import bridge, commands
 from dotenv import load_dotenv
 from inspect import cleandoc
@@ -6,7 +5,6 @@ from os import chdir, environ, mkdir
 from pathlib import Path
 import discord
 import importlib
-import motor.motor_asyncio
 import yaml
 
 # Go to project root directory
@@ -38,16 +36,6 @@ intents.members = True
 
 # Bot
 bot = bridge.Bot(command_prefix=commands.when_mentioned_or("$"), intents = intents)
-
-# MongoDB database connection for chat history and possibly for other things
-try:
-    bot._mongo_conn = motor.motor_asyncio.AsyncIOMotorClient(environ.get("MONGO_DB_URL"))
-    # If no errors, initialize the history connection
-    bot._history_conn = History(db_conn=bot._mongo_conn)
-except Exception as e:
-    print(f"Failed to connect to MongoDB: {e}...\n expect errors later")
-    bot._mongo_conn = None
-    bot._history_conn = None
 
 ###############################################
 # ON READY

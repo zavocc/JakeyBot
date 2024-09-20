@@ -14,6 +14,7 @@ import asyncio
 import discord
 import inspect
 import jsonpickle
+import motor.motor_asyncio
 import random
 
 class AI(commands.Cog):
@@ -22,9 +23,11 @@ class AI(commands.Cog):
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
         # Load the database and initialize the HistoryManagement class
-        if self.bot._history_conn is None:
-            raise ConnectionError("Please set MONGO_DB_URL in dev.env")
-        self.HistoryManagement: History = self.bot._history_conn
+        # MongoDB database connection for chat history and possibly for other things
+        try:
+            self.HistoryManagement: History = History(db_conn=motor.motor_asyncio.AsyncIOMotorClient(environ.get("MONGO_DB_URL")))
+        except Exception as e:
+            raise e(f"Failed to connect to MongoDB: {e}...\n\nPlease set MONGO_DB_URL in dev.env")
 
         # Check for gemini API keys
         if environ.get("GOOGLE_AI_TOKEN") is None or environ.get("GOOGLE_AI_TOKEN") == "INSERT_API_KEY":
@@ -68,8 +71,13 @@ class AI(commands.Cog):
         description="Store the conversation to chat history?",
         default=True
     )
+    @discord.option(
+        "show_stats",
+        description="Show the context usage and model information",
+        default=False
+    )
     async def ask(self, ctx, prompt: str, attachment: discord.Attachment, model: str,
-        append_history: bool):
+        append_history: bool, show_stats: bool):
         """Ask a question using Gemini-based AI"""
         await ctx.response.defer()
 
@@ -261,14 +269,15 @@ class AI(commands.Cog):
         _chat_thread = jsonpickle.encode(chat_session.history, indent=4, keys=True)
 
         # Print context size and model info
-        if append_history:
-            await ctx.send(inspect.cleandoc(f"""
-                           > 📃 Context size: **{len(_prompts_history)}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
-                           > ✨ Model used: **{model}**
-                           """))
-            await self.HistoryManagement.save_history(guild_id=guild_id, chat_thread=_chat_thread, prompt_history=_prompts_history)
-        else:
-            await ctx.send(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{model}**")
+        if show_stats:
+            if append_history:
+                await ctx.send(inspect.cleandoc(f"""
+                            > 📃 Context size: **{len(_prompts_history)}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
+                            > ✨ Model used: **{model}**
+                            """))
+            else:
+                await ctx.send(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{model}**")
+        await self.HistoryManagement.save_history(guild_id=guild_id, chat_thread=_chat_thread, prompt_history=_prompts_history)
 
     # Handle all unhandled exceptions through error event, handled exceptions are currently image analysis safety settings
     @ask.error

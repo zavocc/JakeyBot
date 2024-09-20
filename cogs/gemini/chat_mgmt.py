@@ -3,6 +3,7 @@ from core.ai.history import History
 from discord.ext import commands
 from os import environ
 import discord
+import motor.motor_asyncio
 
 class ChatMgmt(commands.Cog):
     def __init__(self, bot):
@@ -10,9 +11,11 @@ class ChatMgmt(commands.Cog):
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
         # Load the database and initialize the HistoryManagement class
-        if self.bot._history_conn is None:
-            raise ConnectionError("Please set MONGO_DB_URL in dev.env")
-        self.HistoryManagement: History = self.bot._history_conn
+        # MongoDB database connection for chat history and possibly for other things
+        try:
+            self.HistoryManagement: History = History(db_conn=motor.motor_asyncio.AsyncIOMotorClient(environ.get("MONGO_DB_URL")))
+        except Exception as e:
+            raise e(f"Failed to connect to MongoDB: {e}...\n\nPlease set MONGO_DB_URL in dev.env")
 
     ###############################################
     # Clear context command

@@ -1,3 +1,4 @@
+from os import environ
 import motor.motor_asyncio
 
 # A class that is responsible for managing and manipulating the chat history
@@ -9,7 +10,7 @@ class History:
             raise ConnectionError("Please set MONGO_DB_URL in dev.env")
         
         # Create a new database if it doesn't exist, access chat_history database
-        self._db = self._db_conn["chat_history"]
+        self._db = self._db_conn[environ.get("MONGO_DB_NAME", "chat_history_prod")]
 
         # _genertative_ai_gemini collection
         self._collection = self._db["_genertative_ai_gemini"]
