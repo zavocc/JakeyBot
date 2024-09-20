@@ -13,7 +13,7 @@ class History:
         self._db = self._db_conn[environ.get("MONGO_DB_NAME", "chat_history_prod")]
 
         # _genertative_ai_gemini collection
-        self._collection = self._db["_genertative_ai_gemini"]
+        self._collection = self._db["_generative_ai_gemini"]
 
     async def load_history(self, guild_id):
         if guild_id is None and type(guild_id) != int:
