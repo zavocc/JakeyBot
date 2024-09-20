@@ -11,9 +11,9 @@ Jakey AI is available as Discord Bot. Standalone UI is coming soon
 ## Features
 - It uses the latest and greatest Gemini 1.5 models with extensive multimodal 
 capabilties, this chatbot can accept text, images, video, and text files to input. With models to choose from
-- Enables and exposes AI tools and features such as JSON mode, code execution, function calling, and system instructions for personality
+- Supports and uses code execution for accurate math, function call tools, and system instructions for personality
 - It can summarize messages and integrate to Discord
-- Chat history per guild or user session (chat history is stored under pickle that snapshots the Gemini API chat history objects)
+- Chat history
 - Gemini API requests are asynchronous
 
 ## Installation
@@ -30,7 +30,7 @@ Core dependencies is Python with PIP, depending on your distribution, pip must b
 
 ### Required dependencies
 - Python 3.10+ with pip \
-    If you use Linux distros, I strongly require you to install Python with venv support due to [PEP 0668](https://peps.python.org/pep-0668/) and [PEP 453](https://peps.python.org/pep-0453/) for rationale.
+    If you use Linux distros, I strongly require you to install Python with venv support due to [PEP 0668](https://peps.python.org/pep-0668/) and [PEP 0453](https://peps.python.org/pep-0453/) for rationale.
 
 ### Optional dependencies
 - OpenJDK 17 with ffmpeg \
@@ -58,6 +58,7 @@ Required fields to configure:
 - `TOKEN` - Your Discord Bot Token
 - `GOOGLE_AI_TOKEN` - Gemini API token, please see [this link](https://aistudio.google.com/app/apikey) to obtain API keys (Its free)
 - `SYSTEM_USER_ID` - Its strongly advisable you to use your Discord user ID for administrative commands like eval. You probably don't want me to control your infrastructure 😉
+- `MONGO_DB_URL` - MongoDB Connection String to store data
 
 Please see [CONFIG.md](./docs/CONFIG.md) for more information about configuration.
 
@@ -83,8 +84,8 @@ Jakey provides commands such as:
 - `/ask` - Ask Jakey anything!
   - Get started by asking `/ask` `prompt:` `Hey Jakey, I'm new, tell me your commands, features, and capabilities`
   - Accepts file attachments in image, video, audio, text files, and PDFs (with images) by passing `attachment:` parameter
-  - JSON mode with `json_mode:True`
   - Ephemeral conversation with `append_hist:True`
+  - Show conversation and model info with `show_stats:True`
   - You can choose between **Gemini 1.5 Flash** or **Gemini 1.5 Pro** using `model:` parameter
 - `/sweep` - Clear the conversation
 - `/feature` - Extend Jakey skills by activating chat tools! (Clears conversation when feature are set)
