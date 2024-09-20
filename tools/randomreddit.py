@@ -6,6 +6,7 @@ import importlib
 class Tool:
     tool_human_name = "Random Reddit"
     tool_name = "randomreddit"
+    tool_config = "AUTO"
     def __init__(self, bot, ctx):
         self.bot = bot
         self.ctx = ctx

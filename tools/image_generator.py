@@ -8,6 +8,7 @@ import importlib
 class Tool:
     tool_human_name = "Image Generator with Stable Diffusion 3"
     tool_name = "image_generator"
+    tool_config = "AUTO"
     def __init__(self, bot, ctx):
         self.bot = bot
         self.ctx = ctx

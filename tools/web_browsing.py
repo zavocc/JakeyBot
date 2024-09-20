@@ -11,6 +11,7 @@ import yaml
 class Tool:
     tool_human_name = "Browsing with DuckDuckGo"
     tool_name = "web_browsing"
+    tool_config = "AUTO"
     def __init__(self, bot, ctx):
         self.bot = bot
         self.ctx = ctx

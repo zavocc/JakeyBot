@@ -4,8 +4,8 @@
   - [Using Tools](#using-tools)
   - [Opting out of Tools](#opting-out-of-tools)
   - [Limitations](#limitations)
-  - [Forking and development (for developers)](#forking-and-development-for-developers)
-    - [Step 1: Creating your tool outline](#step-1-creating-your-tool-outline)
+  - [Creating a spec (for developers)](#creating-a-spec-for-developers)
+    - [Step 1: Creating your tool spec](#step-1-creating-your-tool-spec)
     - [Step 2: Registering your tools](#step-2-registering-your-tools)
 
 # JakeyBot Tools
@@ -49,13 +49,9 @@ The only way to opt out of tools is to use Code Execution. Since its a native ca
     While output data is still limited to supported types mentioned, all of the unstructured data outputs can utilize Discord API (pycord) inside the function for yielding the result by sending the attachment and the only data that is going to be returned to the model is the result/status. Meaning, the model has no idea what it actually outputs and only assumes whether if it was successful or not.
 - Only one tool can be used at a time.
 
-## Forking and development (for developers)
-> ⚠️ CAUTION: This documentation will change at anytime as Tools are in beta, follow at your own risk! If you don't know what you're doing and you just want to request new tool or feature, just create a new issue from this repository.
+## Creating a spec (for developers)
+> ⚠️ CAUTION: This documentation and spec may change at anytime as Tools are in beta, follow at your own risk! If you don't know what you're doing and you just want to request new tool or feature, just create a new issue from this repository.
 > 
-> Syntax and the structure of this code are subject to change.
->
-> in the future, we can think of ways to simplify these process
->
 > this documentation contains the concepts of registering tools, use this as a guide than a step-by-step tutorial.
 
 When forking or creating a PR to add and integrate your function or tool, you must follow the guidelines how to add your tools
@@ -68,7 +64,7 @@ For inspiration, you can refer to the files above.
 
 It is recommended to have some Python knowledge involving OOP, functions and asynchronous programming, including the [Gemini API function calling](https://github.com/google-gemini/cookbook/blob/main/quickstarts/Function_calling.ipynb#Manual_Function_Calling) and some Discord API in python knowledge (pycord) when dealing with unstructured data output or Discord-related interactions. If you want to request tool ideas, you can instead create an issue.
 
-### Step 1: Creating your tool outline
+### Step 1: Creating your tool spec
 All tools along with their implementation are in `tools/` directory within project's root. Its recommended and suggested to declare your tools in a new Python file (as module).
 
 Example tool: Multiply (`tools/multiply.py`)

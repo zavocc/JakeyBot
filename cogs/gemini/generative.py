@@ -184,7 +184,7 @@ class BaseChat(commands.Cog):
         # when trying to access the deleted file uploaded using Files API. See:
         # https://discuss.ai.google.dev/t/what-is-the-best-way-to-persist-chat-history-into-file/3804/6?u=zavocc306
         try:
-            answer = await chat_session.send_message_async(final_prompt)
+            answer = await chat_session.send_message_async(final_prompt, tool_config=_Tool.tool_config)
         #  Retry the response if an error has occured
         except google.api_core.exceptions.PermissionDenied:
             _chat_thread = [
@@ -198,7 +198,7 @@ class BaseChat(commands.Cog):
             await ctx.send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
 
             # Re-initialize the chat session
-            chat_session = model_to_use.start_chat(history=_chat_thread)
+            chat_session = model_to_use.start_chat(history=_chat_thread, tool_config=_Tool.tool_config)
             answer = await chat_session.send_message_async(final_prompt)
 
         # Call tools
@@ -225,7 +225,7 @@ class BaseChat(commands.Cog):
                         genai.protos.Part(
                             function_response = genai.protos.FunctionResponse(
                                 name = _func_call.name,
-                                response = {"response": _result}
+                                response = {"result": _result}
                             )
                         )
                     ]
