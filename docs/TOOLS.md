@@ -78,6 +78,7 @@ import importlib
 class Tool:
     tool_human_name = "Multiply numbers" # This will be shown as interstital to indicate the tool is used
     tool_name = "multiply" # Required property
+    tool_config = "AUTO" # AUTO - let model decide, ANY - force calling this tool, NONE - disable tool call
     def __init__(self, bot, ctx):
         # For interacting with current text channel (this init is required, but you don't need to utilize this)
         self.bot = bot
