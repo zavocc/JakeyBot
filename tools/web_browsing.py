@@ -18,7 +18,7 @@ class Tool:
         self.tool_schema = genai.protos.Tool(
             function_declarations=[
                 genai.protos.FunctionDeclaration(
-                    name = "web_browsing",
+                    name = self.tool_name,
                     description = "Search the web from information around the world powered by DuckDuckGo",
                     parameters=genai.protos.Schema(
                         type=genai.protos.Type.OBJECT,

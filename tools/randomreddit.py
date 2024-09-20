@@ -14,7 +14,7 @@ class Tool:
         self.tool_schema = genai.protos.Tool(
             function_declarations=[
                 genai.protos.FunctionDeclaration(
-                    name = "randomreddit",
+                    name = self.tool_name,
                     description = "Fetch random subreddits",
                     parameters=genai.protos.Schema(
                         type=genai.protos.Type.OBJECT,

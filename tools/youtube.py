@@ -14,7 +14,7 @@ class Tool:
         self.tool_schema = genai.protos.Tool(
             function_declarations=[
                 genai.protos.FunctionDeclaration(
-                    name = "youtube",
+                    name = self.tool_name,
                     description = "Search videos on YouTube",
                     parameters=genai.protos.Schema(
                         type=genai.protos.Type.OBJECT,

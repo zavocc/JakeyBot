@@ -16,7 +16,7 @@ class Tool:
         self.tool_schema = genai.protos.Tool(
             function_declarations=[
                 genai.protos.FunctionDeclaration(
-                    name = "image_generator",
+                    name = self.tool_name,
                     description = "Generate or restyle images using natural language or from description",
                     parameters=genai.protos.Schema(
                         type=genai.protos.Type.OBJECT,

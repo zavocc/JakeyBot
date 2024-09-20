@@ -7,7 +7,6 @@
   - [Forking and development (for developers)](#forking-and-development-for-developers)
     - [Step 1: Creating your tool outline](#step-1-creating-your-tool-outline)
     - [Step 2: Registering your tools](#step-2-registering-your-tools)
-    - [Step 3: Making your tool visible to Discord UI](#step-3-making-your-tool-visible-to-discord-ui)
 
 # JakeyBot Tools
 JakeyBot has tools that connects to the outside world and call functions outside text generation process. It is similar to [ChatGPT plugins](https://openai.com/index/chatgpt-plugins/) or [Gemini Extensions](https://support.google.com/gemini/answer/13695044) extending the functionality of the JakeyBot beyond its purpose.
@@ -55,14 +54,13 @@ The only way to opt out of tools is to use Code Execution. Since its a native ca
 > 
 > Syntax and the structure of this code are subject to change.
 >
-> in the future, we can think of ways to simplify these process (e.g. JSON or YAML based registration)
+> in the future, we can think of ways to simplify these process
 >
-> Due to the complexity of this documentation, use this as a guide than a step-by-step tutorial.
+> this documentation contains the concepts of registering tools, use this as a guide than a step-by-step tutorial.
 
 When forking or creating a PR to add and integrate your function or tool, you must follow the guidelines how to add your tools
 
 Files involved:
-- `core/ai/tools.py`
 - `data/tools.yaml`
 - `tools/*.py`
 
@@ -75,55 +73,40 @@ All tools along with their implementation are in `tools/` directory within proje
 
 The outline of your tools (`tools/example.py`):
 ```py
-import google.generativeai as genai # required
-import discord # optional
+import google.generativeai as genai
+import importlib
 
 # This is where you can declare your all your tools information to be converted as schema. The function you're declaring must have an implementation (python function)
-class ToolsDefinitions:
-    # Multiply
-    multiply = genai.protos.Tool(
-        function_declarations=[
-            genai.protos.FunctionDeclaration(
-                # the model will understand the name, description, and parameters
-                # For best result, choose a descriptive but not conflicting name and concise description.
-                name = "multiply",
-                description = "Multiply numbers",
-                parameters=genai.protos.Schema(
-                    type=genai.protos.Type.OBJECT,
-                    properties={
-                        # See https://github.com/google-gemini/generative-ai-python/blob/main/docs/api/google/generativeai/protos/Type.md for supported types
-
-                        # When dealing with multiline strings, its recommended to chunk them or consolidate them into single line of string. Since it can trigger 500 errors (if grpc transport is used) and escape sequences may not be passed correctly. WIP to sanitize data properly within /cogs/gemini/genai.py#ask.
-                        'a':genai.protos.Schema(type=genai.protos.Type.NUMBER),
-                        'b':genai.protos.Schema(type=genai.protos.Type.NUMBER)
-                        # Optional
-                        'c':genai.protos.Schema(type=genai.protos.Type.NUMBER)
-                    },
-                    required=['a', 'b'] # If having optional parameters, you must have default value in your function signature and it should be named parameters in ORDER from required -> optional with default values.
-                )
-            )
-        ]
-    )
-
-
-# This extends ToolsDefinitions
-# While technically the above class may not be necessarily need inheritance and directly putting them all here in this class is valid. It organizes the code this way.
-# This is where
-class ToolImpl(ToolsDefinitions):
-    # The init constructor
-    # If your functions doesnt need to interact with Discord (using discord.ext.commands.Context and discord.bot), you can remove this constructor.
+class Tool:
+    tool_human_name = "Multiply numbers" # This will be shown as interstital to indicate the tool is used
+    tool_name = "multiply" # Required property
     def __init__(self, bot, ctx):
+        # For interacting with current text channel (this init is required, but you don't need to utilize this)
         self.bot = bot
         self.ctx = ctx
 
-    # All functions must be in async even if there's nothing to be awaited, and all functions must have a return statement
-
-    # The signature must be in order according to the schema
-    # and the method name must not be the same as attribute name from the schema to prevent confusion
-    async def _multiply(self, a, b, c):
-        # Return types must be from the supported types as
-        # https://github.com/google-gemini/generative-ai-python/blob/main/docs/api/google/generativeai/protos/Type.md
-        return a*b*c
+        # Schema (required)
+        self.tool_schema = genai.protos.Tool(
+            function_declarations=[
+                genai.protos.FunctionDeclaration(
+                    name = self.tool_name, # Use self.tool_name
+                    description = "Multiply numbers",
+                    parameters=genai.protos.Schema(
+                        type=genai.protos.Type.OBJECT,
+                        properties={
+                            'a':genai.protos.Schema(type=genai.protos.Type.INTEGER),
+                            'b':genai.protos.Schema(type=genai.protos.Type.INTEGER),
+                            'c':genai.protos.Schema(type=genai.protos.Type.INTEGER)
+                        },
+                        required=['a', 'b']
+                    )
+                )
+            ]
+        )
+    
+    # The function must always be async, for best result, use async compatible libraries!
+    async def _tool_function(self, a, b, c = 1):
+        return a * b * c
 ```
 Recommendations:
 - Its recommended to handle errors with try-except block and return the status as string if the operation was failed or successful. Since, it is still being executed normally inside [`cogs/gemini/genai.py`](../cogs/gemini/genai.py#L226) and whatever exception occured inside the tool function can affect the execution of `/ask` command as a whole, causing partial execution.
@@ -154,34 +137,7 @@ except ModuleNotFoundError:
 ```
 
 ### Step 2: Registering your tools
-Once you created your own tool with necessary function implmenetations on how your tool works. Register your tools in [`core/ai/tools.py`](../core/ai/tools.py) which uses compositions
-```python
-import tools.example
-
-# This class is used to call functions in cogs/gemini.genai.py
-class BaseFunctions:
-    def __init__(self, bot, ctx):
-        # From tools/example.py within ToolImpl class inherited from ToolsDefinitions class
-        self.example = tools.example.ToolImpl(bot, ctx)
-
-        # self.<ModuleName>.<FunctionToolName>
-        # This is from the ToolsDefinitions class as the Gemini API will parse the schema
-        self.multiply = self.example.multiply
-        
-
-    # Tool methods, the signature must be in order according to the schema
-    # required -> optional with defaults (for optional arguments, you must provide defaults)
-    #
-    # Must be in this syntax and the method name must exactly start with _callable_ and your function name
-    # _callable_yourtoolname
-    #
-    # You just need to specify your function name and signature with default values for optional params in order
-    async def _callable_multiply(self, a, b, c = 1):
-        return await self.example._multiply(a, b, c)
-```
-
-### Step 3: Making your tool visible to Discord UI
-The last step is to make it visble to Discord UI for users to activate the tool.
+The second and final step is to make it visble to Discord UI for users to activate the tool.
 
 On the file [`data/tools.yaml`](/data/tools.yaml). Register your tools definition for the model to use and human readable description of your tool
 ```yaml
