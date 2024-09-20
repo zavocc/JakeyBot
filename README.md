@@ -17,7 +17,7 @@ capabilties, this chatbot can accept text, images, video, and text files to inpu
 - Gemini API requests are asynchronous
 
 ## Installation
-Core dependencies is Python with PIP, depending on your distribution, pip must be installed separately along with venv. If you want to enable music chatbot mode, you'll also need to install ffmpeg/openjdk
+Core dependencies is Python with PIP, depending on your distribution, pip must be installed separately along with venv.
 
 ### Required permissions for Discord bot
 - Read message history (see [#faq](#faq) for privacy implications)
@@ -31,10 +31,6 @@ Core dependencies is Python with PIP, depending on your distribution, pip must b
 ### Required dependencies
 - Python 3.10+ with pip \
     If you use Linux distros, I strongly require you to install Python with venv support due to [PEP 0668](https://peps.python.org/pep-0668/) and [PEP 0453](https://peps.python.org/pep-0453/) for rationale.
-
-### Optional dependencies
-- OpenJDK 17 with ffmpeg \
-    Needed for voice commands (wavelink/lavalink) if needing to self-host lavalink server
 
 There may be other dependencies needed for some operations such as tools. Please see [TOOLS.md](./docs/TOOLS.md) for rationale.
 
@@ -62,15 +58,19 @@ Required fields to configure:
 
 Please see [CONFIG.md](./docs/CONFIG.md) for more information about configuration.
 
-### Voice commands configuration:
+### Music command configuration:
+#### Serverless lavalink
+Alternatively, you can use the list of 3rd party servers from and use servers from https://lavalink.darrennathanael.com/NoSSL/lavalink-without-ssl/ and skip the installation step above and configure the `dev.env` file pointing the third party Lavalink servers, no installation required... Please see [CONFIG.md#voice](./docs/CONFIG.md#voice) for more information.
+
+---
+
 #### Your own LavaLink server
+You must install `OpenJDK` for this with `java` on your `PATH`.
+
 You can enable VC-related commands such as `/voice play` (which plays videos from YouTube and other supported sources) by downloading [Lavalink jar file](https://github.com/lavalink-devs/Lavalink/releases) and placing it as `wavelink/Lavalink.jar` in project's root directory.
 
 Activate voice by placing `Lavalink.jar` from lavalink releases and rename `application.yml.template` to `application.yml` and run `java -jar Lavalink.jar` in separate session before starting the bot.
 
----
-#### Serverless lavalink
-Alternatively, you can use the list of 3rd party servers from and use servers from https://lavalink.darrennathanael.com/NoSSL/lavalink-without-ssl/ and skip the installation step above and configure the `dev.env` file pointing the third party Lavalink servers, no installation required... Please see [CONFIG.md#voice](./docs/CONFIG.md#voice) for more information.
 
 ## Running the server
 After everything is configured, you can run `main.py`
