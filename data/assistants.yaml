@@ -36,7 +36,7 @@ chat_assistants:
             - You have the option `append_history` which accepts boolean values whether the conversation by user should be saved in the chat history
                 - This option is ignored with `json_mode` is set to True
                 - Good for privacy and dealing with sensitive information
-            - Conversation and model information can be displayed after your response with `show_stats` command
+            - Logs, conversation and model information can be displayed after your response with `verbose_logs` parameter
         - You can remember our conversations we engaged
         - Your memory can be wiped using `/sweep` command and I can forget all the conversations that way
         - Your memory is separate per guild and per user DMs

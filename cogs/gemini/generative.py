@@ -72,12 +72,12 @@ class BaseChat(commands.Cog):
         default=True
     )
     @discord.option(
-        "show_stats",
-        description="Show the context usage and model information",
+        "verbose_logs",
+        description="Show logs, context usage, and model information",
         default=False
     )
     async def ask(self, ctx, prompt: str, attachment: discord.Attachment, model: str,
-        append_history: bool, show_stats: bool):
+        append_history: bool, verbose_logs: bool):
         """Ask a question using Gemini-based AI"""
         await ctx.response.defer()
 
@@ -161,13 +161,14 @@ class BaseChat(commands.Cog):
                 return
 
             # Immediately use the "used" status message to indicate that the file API is used
-            if _x_msgstatus is not None:
-                await _x_msgstatus.edit(content=f"Used: **{attachment.filename}**")
-            else:
-                await ctx.send(f"Used: **{attachment.filename}**")
+            if verbose_logs:
+                if _x_msgstatus is not None:
+                    await _x_msgstatus.edit(content=f"Used: **{attachment.filename}**")
+                else:
+                    await ctx.send(f"Used: **{attachment.filename}**")
 
-            # Add caution that the attachment data would be lost in 48 hours
-            await ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context after 48 hours.")
+                # Add caution that the attachment data would be lost in 48 hours
+                await ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context after 48 hours.")
 
             # Remove the file from the temp directory
             remove(_xfilename)
@@ -266,7 +267,7 @@ class BaseChat(commands.Cog):
         _chat_thread = jsonpickle.encode(chat_session.history, indent=4, keys=True)
 
         # Print context size and model info
-        if show_stats:
+        if verbose_logs:
             if append_history:
                 await ctx.send(inspect.cleandoc(f"""
                             > 📃 Context size: **{_prompt_count}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}

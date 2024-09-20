@@ -85,7 +85,7 @@ Jakey provides commands such as:
   - Get started by asking `/ask` `prompt:` `Hey Jakey, I'm new, tell me your commands, features, and capabilities`
   - Accepts file attachments in image, video, audio, text files, and PDFs (with images) by passing `attachment:` parameter
   - Ephemeral conversation with `append_hist:True`
-  - Show conversation and model info with `show_stats:True`
+  - Show logs, conversation and model info with `verbose_logs:True`
   - You can choose between **Gemini 1.5 Flash** or **Gemini 1.5 Pro** using `model:` parameter
 - `/sweep` - Clear the conversation
 - `/feature` - Extend Jakey skills by activating chat tools! (Clears conversation when feature are set)
