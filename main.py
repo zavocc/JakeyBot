@@ -1,9 +1,8 @@
 from discord.ext import bridge, commands
 from dotenv import load_dotenv
+from inspect import cleandoc
 from os import chdir, environ, mkdir
 from pathlib import Path
-from inspect import cleandoc
-#import datetime
 import discord
 import importlib
 import yaml
@@ -22,9 +21,8 @@ except ModuleNotFoundError as e:
     wavelink = None
 
 # Check if TOKEN is set
-if "TOKEN" in environ and (environ.get("TOKEN") == "INSERT_DISCORD_TOKEN") and (environ.get("TOKEN") is not None) or (environ.get("TOKEN") == ""):
-    print("Please insert a valid Discord bot token")
-    exit(2)
+if "TOKEN" in environ and (environ.get("TOKEN") == "INSERT_DISCORD_TOKEN") or (environ.get("TOKEN") is None) or (environ.get("TOKEN") == ""):
+    raise Exception("Please insert a valid Discord bot token")
 
 # Check for system user ID else abort
 # This is used for eval commands
@@ -45,7 +43,6 @@ bot = bridge.Bot(command_prefix=commands.when_mentioned_or("$"), intents = inten
 @bot.event
 async def on_ready():
     global wavelink
-    await bot.wait_until_ready()
 
     print(f"{bot.user} is ready and online!")
     #https://stackoverflow.com/a/65780398 - for multiple statuses
@@ -72,7 +69,7 @@ async def on_ready():
         except wavelink.WavelinkException as e:
             print(f"Failed to setup wavelink: {e}... Disabling playback support")
             wavelink = None
-
+    
     # Prepare temporary directory
     if environ.get("TEMP_DIR") is not None:
         if Path(environ.get("TEMP_DIR")).exists():
@@ -83,25 +80,6 @@ async def on_ready():
     else:
         environ["TEMP_DIR"] = "temp"
         mkdir(environ.get("TEMP_DIR"))
-
-###############################################
-# ON GUILD JOIN
-###############################################
-# TODO: Implement SYSTEM_MESSAGE_ONJOIN in dev.env
-#@bot.event
-#async def on_member_join(member):
-#    if datetime.datetime.now().hour < 12:
-#        await member.send(
-#            f'Good morning **{member.mention}**! Enjoy your stay in **{member.guild.name}**!'
-#        )
-#    elif datetime.datetime.now().hour < 18:
-#        await member.send(
-#            f'Good afternoon **{member.mention}**! Enjoy your stay in **{member.guild.name}**'
-#        )
-#    else:
-#        await member.send(
-#            f'Good evening **{member.mention}**! Enjoy your stay in **{member.guild.name}**'
-#        )
 
 
 ###############################################
@@ -124,7 +102,8 @@ async def on_message(message):
                                             - You can access my apps by **tapping and holding any message** or **clicking the three-dots menu** and click **Apps** to see the list of apps I have
                                             
                                             If you have any questions, you can visit my [documentation or contact at](https://zavocc.github.io)"""))
-        
+
+
 with open('commands.yaml', 'r') as file:
     cog_commands = yaml.safe_load(file)
     for command in cog_commands:
@@ -139,7 +118,7 @@ with open('commands.yaml', 'r') as file:
             print(f"\ncogs.{command} failed to load, skipping... The following error of the cog is shown below:\n")
             print(e, end="\n\n")
             continue
-    
+
 # Initialize custom help
 class CustomHelp(commands.MinimalHelpCommand):
     def __init__(self):

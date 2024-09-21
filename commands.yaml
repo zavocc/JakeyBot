@@ -1,9 +1,8 @@
 # A list of commands to be initialized from cogs directory
 - admin
 - fun
-- gemini.chat_mgmt
-- gemini.genai
-- gemini.genai_apps
-- gemini.genai_tools
+- gemini.chat
+- gemini.message_actions
+- gemini.summarize
 - huggingface.genai
 - voice

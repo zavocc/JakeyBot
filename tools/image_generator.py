@@ -4,12 +4,20 @@ import asyncio
 import discord
 import importlib
 
-class ToolsDefinitions:
-    # Image generator
-    image_generator = genai.protos.Tool(
+# Function implementations
+class Tool:
+    tool_human_name = "Image Generator with Stable Diffusion 3"
+    tool_name = "image_generator"
+    tool_config = "AUTO"
+    def __init__(self, bot, ctx):
+        self.bot = bot
+        self.ctx = ctx
+
+        # Image generator
+        self.tool_schema = genai.protos.Tool(
             function_declarations=[
                 genai.protos.FunctionDeclaration(
-                    name = "image_generator",
+                    name = self.tool_name,
                     description = "Generate or restyle images using natural language or from description",
                     parameters=genai.protos.Schema(
                         type=genai.protos.Type.OBJECT,
@@ -24,14 +32,8 @@ class ToolsDefinitions:
             ]
         )
 
-# Function implementations
-class ToolImpl(ToolsDefinitions):
-    def __init__(self, bot, ctx):
-        self.bot = bot
-        self.ctx = ctx
-
     # Image generator
-    async def _image_generator(self, image_description: str, width: int, height: int):
+    async def _tool_function(self, image_description: str, width: int, height: int):
         # Validate parameters, width and height should not exceed 1344 and should not be set to 0
         if width > 1344 or width == 0 or height > 1344 or height == 0:
             height, width = 1024, 1024

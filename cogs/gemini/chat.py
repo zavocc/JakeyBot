@@ -1,25 +1,12 @@
-from core.ai.history import HistoryManagement as histmgmt
+from core.ai.core import ModelsList
+from cogs.gemini.generative import BaseChat
 from discord.ext import commands
 from os import environ
 import discord
-import yaml
 
-# Load the tools list from YAML file
-with open("data/tools.yaml", "r") as models:
-    _tools_list = yaml.safe_load(models)
-
-# Load tools metadata
-_tool_choices = [
-    discord.OptionChoice(tools["ui_name"], tools['tool_name'])
-    for tools in _tools_list
-]
-
-del _tools_list
-
-class ChatMgmt(commands.Cog):
+class Chat(BaseChat):
     def __init__(self, bot):
-        self.bot = bot
-        self.author = environ.get("BOT_NAME", "Jakey Bot")
+        super().__init__(bot)
 
     ###############################################
     # Clear context command
@@ -30,6 +17,8 @@ class ChatMgmt(commands.Cog):
     )
     async def sweep(self, ctx):
         """Clear the context history of the conversation"""
+        await ctx.response.defer()
+
         # Check if SHARED_CHAT_HISTORY is enabled
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
             guild_id = ctx.guild.id if ctx.guild else ctx.author.id
@@ -45,12 +34,11 @@ class ChatMgmt(commands.Cog):
                 return  
 
         # Initialize history
-        HistoryManagement = histmgmt(guild_id)
-        _feature = await HistoryManagement.get_config()
+        _feature = await self.HistoryManagement.get_config(guild_id=guild_id)
 
         # Clear and set feature
-        await HistoryManagement.clear_history(skip_init=True)
-        await HistoryManagement.set_config(_feature)
+        await self.HistoryManagement.clear_history(guild_id=guild_id)
+        await self.HistoryManagement.set_config(guild_id=guild_id, tool=_feature)
 
         await ctx.respond("✅ Chat history reset!")
 
@@ -77,10 +65,12 @@ class ChatMgmt(commands.Cog):
     @discord.option(
         "capability",
         description = "Integrate tools to chat! Setting chat features will clear your history!",
-        choices=_tool_choices
+        choices=ModelsList.get_tools_list(),
     )
     async def feature(self, ctx, capability: str):
         """Enhance your chat with capabilities! Some are in BETA so things may not always pick up"""
+        # Defer
+        await ctx.response.defer()
 
         # Check if SHARED_CHAT_HISTORY is enabled
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
@@ -94,22 +84,15 @@ class ChatMgmt(commands.Cog):
             # https://docs.pycord.dev/en/stable/api/models.html#discord.AuthorizingIntegrationOwners
             if ctx.interaction.authorizing_integration_owners.guild == None:
                 await ctx.respond("🚫 This commmand can only be used in DMs or authorized guilds!")
-                return  
-
-        # Initialize history
-        HistoryManagement = histmgmt(guild_id)
+                return
 
         # if tool use is the same, do not clear history
-        #print(await HistoryManagement.get_config())
-        _feature = await HistoryManagement.get_config()
+        _feature = await self.HistoryManagement.get_config(guild_id=guild_id)
         if _feature == capability:
             await ctx.respond("✅ Feature already enabled!")
         else:
-            # clear and reinitialize history
-            await HistoryManagement.clear_history(skip_init=True)
-
             # set config
-            await HistoryManagement.set_config(capability)
+            await self.HistoryManagement.set_config(guild_id=guild_id, tool=capability)
             await ctx.respond(f"✅ Feature **{capability}** enabled successfully and chat is reset to reflect the changes")
         
     # Handle errors
@@ -119,4 +102,4 @@ class ChatMgmt(commands.Cog):
         raise error
 
 def setup(bot):
-    bot.add_cog(ChatMgmt(bot))
+    bot.add_cog(Chat(bot))

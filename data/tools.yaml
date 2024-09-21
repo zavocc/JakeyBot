@@ -5,6 +5,6 @@
 - tool_name: randomreddit
   ui_name: Random Reddit
 - tool_name: web_browsing
-  ui_name: Web Browsing with DuckDuckGo
+  ui_name: Browsing with DuckDuckGo
 - tool_name: youtube
   ui_name: YouTube Search

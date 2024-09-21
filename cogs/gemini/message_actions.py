@@ -1,5 +1,5 @@
 from core.ai.assistants import Assistants
-from core.ai.core import GenAIConfigDefaults
+from core.ai.core import GenAIConfigDefaults, ModelsList
 from discord.ext import commands
 from os import environ
 import google.generativeai as genai
@@ -7,20 +7,6 @@ import datetime
 import discord
 import inspect
 import random
-import yaml
-
-# Load the models list from YAML file
-with open("data/models.yaml", "r") as models:
-    _internal_model_data = yaml.safe_load(models)
-
-# Iterate through the models and merge them as dictionary
-# It has to be put here instead of the init class since decorators doesn't seem to reference self class attributes
-_model_choices = [
-    discord.OptionChoice(f"{model['name']} - {model['description']}", model['model'])
-    for model in _internal_model_data['gemini_models']
-]
-
-del _internal_model_data
 
 class GenAITools(commands.Cog):
     def __init__(self, bot):
@@ -32,6 +18,15 @@ class GenAITools(commands.Cog):
             raise Exception("GOOGLE_AI_TOKEN is not configured in the dev.env file. Please configure it and try again.")
 
         genai.configure(api_key=environ.get("GOOGLE_AI_TOKEN"))
+
+        # Initialize GenAIConfigDefaults
+        self._genai_configs = GenAIConfigDefaults()
+
+        # default system prompt - load assistants
+        self._assistants_system_prompt = Assistants()
+
+        # constrain token limit output to 4096 tokens
+        self._genai_configs.generation_config.update({"max_output_tokens": 4096})
 
    ###############################################
     # Summarize discord messages
@@ -65,7 +60,7 @@ class GenAITools(commands.Cog):
     @discord.option(
         "model",
         description="Choose a model to use for summaries - flash is the default model",
-        choices=_model_choices,
+        choices=ModelsList.get_models_list(),
         default="gemini-1.5-flash-001",
         required=False
     )
@@ -119,17 +114,8 @@ class GenAITools(commands.Cog):
         #################
         # MODEL
         #################
-        # Initialize GenAIConfigDefaults
-        genai_configs = GenAIConfigDefaults()
-
-        # default system prompt - load assistants
-        assistants_system_prompt = Assistants()
-
-        # strain token limit output to 3024 tokens
-        genai_configs.generation_config.update({"max_output_tokens": 4096})
-
         # set model
-        model_to_use = genai.GenerativeModel(model_name=model, safety_settings=genai_configs.safety_settings_config, generation_config=genai_configs.generation_config, system_instruction=assistants_system_prompt.discord_msg_summarizer_prompt["initial_prompt"])
+        model_to_use = genai.GenerativeModel(model_name=model, safety_settings=self._genai_configs.safety_settings_config, generation_config=self._genai_configs.generation_config, system_instruction=self._assistants_system_prompt.discord_msg_summarizer_prompt["initial_prompt"])
 
         _summary = await model_to_use.generate_content_async(inspect.cleandoc(f"""
             You are currently interacting as a user to give personalized responses based on their activity if applicable:
@@ -140,7 +126,7 @@ class GenAITools(commands.Cog):
                                         
             Date today is {datetime.datetime.now().strftime('%m/%d/%Y')}
 
-            {assistants_system_prompt.discord_msg_summarizer_prompt["supplemental_prompt_format"]}
+            {self._assistants_system_prompt.discord_msg_summarizer_prompt["supplemental_prompt_format"]}
 
             ****************************************************
             OK, now generate summaries for me:

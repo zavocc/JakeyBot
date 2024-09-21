@@ -18,12 +18,16 @@ You can skip the installation step above and use servers from https://lavalink.d
 
 Please do not use this module in production unless you're serving it yourself or other remote content than YouTube. Never verify your bot with YouTube playback or you'll risk violating terms in both parties.
 
+## Database
+for chat history and other settings, this may be required.
+- `MONGO_DB_URL` - Connection string for MongoDB database server (for storing chat history and other persistent data)
+- `MONGO_DB_NAME` - Name of the database to put all the data or collections inside (defaults to `prod` database name). Changing the DB name would cause the current settings and other data to be changed until you revert the name back to desired database. Its recommended to set this for prod and dev purposes.
+
 ## Misc
 - `GOOGLE_AI_TOKEN` - Set the Gemini API token, get one at [Google AI Studio](https://aistudio.google.com/app/apikey). If left blank, generative features will be disabled.
 
 - `SYSTEM_USER_ID` - If you're hosting a bot, please set your Discord user ID to adminisrate the bot even if you're not the administrator of the server. With great power coems great responsibility! This is used for commands like `$admin_execute` (`$eval` as alias) to do tasks like `$eval git pull --rebase` or `$eval free -h`
 
-- `CHAT_HISTORY_DB` - Path to the SQLite database file to store chat history. Defaults to `chat_history.db` in the current directory if not set.
 
 - `TEMP_DIR` - Path to store temporary uploaded/downloaded attachments for multimodal use. Defaults to `temp/` in the cuurent directory if not set. Files are always deleted on every execution regardless if its successful or not, or when the bot is restared.
 

@@ -11,13 +11,13 @@ Jakey AI is available as Discord Bot. Standalone UI is coming soon
 ## Features
 - It uses the latest and greatest Gemini 1.5 models with extensive multimodal 
 capabilties, this chatbot can accept text, images, video, and text files to input. With models to choose from
-- Enables and exposes AI tools and features such as JSON mode, code execution, function calling, and system instructions for personality
+- Supports and uses code execution for accurate math, function call tools, and system instructions for personality
 - It can summarize messages and integrate to Discord
-- Chat history per guild or user session (chat history is stored under pickle that snapshots the Gemini API chat history objects)
+- Chat history
 - Gemini API requests are asynchronous
 
 ## Installation
-Core dependencies is Python with PIP, depending on your distribution, pip must be installed separately along with venv. If you want to enable music chatbot mode, you'll also need to install ffmpeg/openjdk
+Core dependencies is Python with PIP, depending on your distribution, pip must be installed separately along with venv.
 
 ### Required permissions for Discord bot
 - Read message history (see [#faq](#faq) for privacy implications)
@@ -30,11 +30,7 @@ Core dependencies is Python with PIP, depending on your distribution, pip must b
 
 ### Required dependencies
 - Python 3.10+ with pip \
-    If you use Linux distros, I strongly require you to install Python with venv support due to [PEP 0668](https://peps.python.org/pep-0668/) and [PEP 453](https://peps.python.org/pep-0453/) for rationale.
-
-### Optional dependencies
-- OpenJDK 17 with ffmpeg \
-    Needed for voice commands (wavelink/lavalink) if needing to self-host lavalink server
+    If you use Linux distros, I strongly require you to install Python with venv support due to [PEP 0668](https://peps.python.org/pep-0668/) and [PEP 0453](https://peps.python.org/pep-0453/) for rationale.
 
 There may be other dependencies needed for some operations such as tools. Please see [TOOLS.md](./docs/TOOLS.md) for rationale.
 
@@ -58,18 +54,23 @@ Required fields to configure:
 - `TOKEN` - Your Discord Bot Token
 - `GOOGLE_AI_TOKEN` - Gemini API token, please see [this link](https://aistudio.google.com/app/apikey) to obtain API keys (Its free)
 - `SYSTEM_USER_ID` - Its strongly advisable you to use your Discord user ID for administrative commands like eval. You probably don't want me to control your infrastructure 😉
+- `MONGO_DB_URL` - MongoDB Connection String to store data
 
 Please see [CONFIG.md](./docs/CONFIG.md) for more information about configuration.
 
-### Voice commands configuration:
+### Music command configuration:
+#### Serverless lavalink
+Alternatively, you can use the list of 3rd party servers from and use servers from https://lavalink.darrennathanael.com/NoSSL/lavalink-without-ssl/ and skip the installation step above and configure the `dev.env` file pointing the third party Lavalink servers, no installation required... Please see [CONFIG.md#voice](./docs/CONFIG.md#voice) for more information.
+
+---
+
 #### Your own LavaLink server
+You must install `OpenJDK` for this with `java` on your `PATH`.
+
 You can enable VC-related commands such as `/voice play` (which plays videos from YouTube and other supported sources) by downloading [Lavalink jar file](https://github.com/lavalink-devs/Lavalink/releases) and placing it as `wavelink/Lavalink.jar` in project's root directory.
 
 Activate voice by placing `Lavalink.jar` from lavalink releases and rename `application.yml.template` to `application.yml` and run `java -jar Lavalink.jar` in separate session before starting the bot.
 
----
-#### Serverless lavalink
-Alternatively, you can use the list of 3rd party servers from and use servers from https://lavalink.darrennathanael.com/NoSSL/lavalink-without-ssl/ and skip the installation step above and configure the `dev.env` file pointing the third party Lavalink servers, no installation required... Please see [CONFIG.md#voice](./docs/CONFIG.md#voice) for more information.
 
 ## Running the server
 After everything is configured, you can run `main.py`
@@ -83,8 +84,8 @@ Jakey provides commands such as:
 - `/ask` - Ask Jakey anything!
   - Get started by asking `/ask` `prompt:` `Hey Jakey, I'm new, tell me your commands, features, and capabilities`
   - Accepts file attachments in image, video, audio, text files, and PDFs (with images) by passing `attachment:` parameter
-  - JSON mode with `json_mode:True`
   - Ephemeral conversation with `append_hist:True`
+  - Show logs, conversation and model info with `verbose_logs:True`
   - You can choose between **Gemini 1.5 Flash** or **Gemini 1.5 Pro** using `model:` parameter
 - `/sweep` - Clear the conversation
 - `/feature` - Extend Jakey skills by activating chat tools! (Clears conversation when feature are set)
