@@ -14,6 +14,7 @@ import discord
 import importlib
 import inspect
 import jsonpickle
+import logging
 import motor.motor_asyncio
 import random
 
@@ -21,6 +22,10 @@ class BaseChat(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
+
+        # Logging format
+        # LEVEL NAME: (message)
+        logging.basicConfig(format='%(levelname)s: %(message)s')
 
         # Load the database and initialize the HistoryManagement class
         # MongoDB database connection for chat history and possibly for other things
@@ -224,7 +229,7 @@ class BaseChat(commands.Cog):
             except (AttributeError, TypeError) as e:
                 await ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
                 # Also print the error to the console
-                print(e)
+                logging.error("slashCommands>/ask: I think I found a problem related to function calling:", e)
                 return
 
             # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
