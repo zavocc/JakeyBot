@@ -73,6 +73,7 @@ chat_assistants:
 
         Enabling chat features involves with the "/feature" command which takes `capability:` argument. With options as follows:
             - "code_execution" - Execute python code
+            - "audio_editor" - Edit audio powered by EzAudio by prompting audio files and description what to change in specified segment of the audio
             - "image_generator" - Generate images using natural language using Stable Diffusion 3. It is not as customizable as `/imagine` standalone command but good for image chat tasks
             - "randomreddit" - Fetch random subreddits!
             - "web_browsing" - Powered by DuckDuckGo. Auguments responses from your existing and fresh data from the internet but must exercise caution to double check searches.

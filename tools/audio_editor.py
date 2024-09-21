@@ -50,7 +50,7 @@ class Tool:
 
         # Create image
         try:
-            message_curent = await self.ctx.send("Adding some magic to the audio...")
+            message_curent = await self.ctx.send("🎤✨ Adding some magic to the audio...")
             result = await asyncio.to_thread(
                 gradio_client.Client("OpenSound/EzAudio").predict,
                 text=prompt,

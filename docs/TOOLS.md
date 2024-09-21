@@ -44,7 +44,7 @@ The only way to opt out of tools is to use Code Execution. Since its a native ca
 
 ## Limitations
 - Jakey may not always call the tool especially on first conversation. You can always explicitly ask Jakey a follow up question to use that particular feature (e.g. "Search it using YouTube tool"), refine your prompt, or clear your chat history (as it may influence how it should call tools). For best results, its suggested to use the 1.5 Pro model to better call function automatically in some cases.
-- Any unstructured data (e.g. attachments) cannot be passed within functions as [the schema only allows certain input and output types](https://github.com/google-gemini/generative-ai-python/blob/main/docs/api/google/generativeai/protos/Type.md) and preferrably inline input parameters (subject to change as more tools are going to be implemented). 
+- Any unstructured data (e.g. attachments) cannot be passed within functions natively as [the schema only allows certain input and output types](https://github.com/google-gemini/generative-ai-python/blob/main/docs/api/google/generativeai/protos/Type.md) and preferrably inline input parameters (subject to change as more tools are going to be implemented). Instead, for passing non-textual data to the tool function you must add a line `file_uri = ""` attribute onto the `Tool` class.
 
     While output data is still limited to supported types mentioned, all of the unstructured data outputs can utilize Discord API (pycord) inside the function for yielding the result by sending the attachment and the only data that is going to be returned to the model is the result/status. Meaning, the model has no idea what it actually outputs and only assumes whether if it was successful or not.
 - Only one tool can be used at a time.
@@ -79,6 +79,11 @@ class Tool:
     tool_human_name = "Multiply numbers" # This will be shown as interstital to indicate the tool is used
     tool_name = "multiply" # Required property
     tool_config = "AUTO" # AUTO - let model decide, ANY - force calling this tool, NONE - disable tool call
+
+    # If your tool spec needs image, audio, or other file input. You must add this line so discord.Attachment.url will be passed here
+    # Setting this attribute manually is useless
+    file_uri = ""
+
     def __init__(self, bot, ctx):
         # For interacting with current text channel (this init is required, but you don't need to utilize this)
         self.bot = bot
@@ -105,6 +110,13 @@ class Tool:
     
     # The function must always be async, for best result, use async compatible libraries!
     async def _tool_function(self, a, b, c = 1):
+        # If file_uri is specified, create an image and send it
+        # if file_uri:
+        #     _file = ImageCreate(file_uri)
+        #
+        #     # See below to refer how to display the modified content based on attachment here.
+        #     await self.ctx.send(file=discord.File(fp="<file path or file-like object>"))
+
         return a * b * c
 ```
 Recommendations:
