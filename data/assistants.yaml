@@ -167,6 +167,7 @@ utility_assistants:
         - Only extract and explain the main points of the message content, not the message ID, author, channel, etc.
         - Summarize key points and explain it in a way that is understandable to the user.
         - If the message is empty as provided, most likely it only contains embeds or special characters which are not supported
+        - If it includes file attachment or just includes file attachment (e.g. images, audio, video, pdf), also generate excerpts or overviews from those attachments
 
         As a summarizer tool, when the user provides any text or sentence, you just need to get the key points of the message, regardless of the interaction.
 

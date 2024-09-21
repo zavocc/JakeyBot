@@ -25,7 +25,7 @@ class BaseChat(commands.Cog):
 
         # Logging format
         # LEVEL NAME: (message)
-        logging.basicConfig(format='%(levelname)s: %(message)s')
+        logging.basicConfig(format='%(levelname)s %(asctime)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
         # Load the database and initialize the HistoryManagement class
         # MongoDB database connection for chat history and possibly for other things
