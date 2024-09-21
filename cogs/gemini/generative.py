@@ -123,7 +123,11 @@ class BaseChat(commands.Cog):
         ###############################################
         _xfile_uri = None
         # Enable multimodal support if an attachment is provided
-        if attachment is not None:
+        if attachment:
+            # Pass attachment URL to the tool
+            if hasattr(_Tool, "file_uri"):
+                _Tool.file_uri = attachment.url
+
             # Download the attachment
             _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{guild_id}.{random.randint(5000, 6000)}.{attachment.filename}"
             try:
@@ -172,6 +176,9 @@ class BaseChat(commands.Cog):
 
             # Remove the file from the temp directory
             remove(_xfilename)
+
+        if not attachment and hasattr(_Tool, "file_uri"):
+            _Tool.tool_config = "NONE"
 
         ###############################################
         # Answer generation
