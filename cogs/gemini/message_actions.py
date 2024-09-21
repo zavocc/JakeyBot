@@ -176,7 +176,7 @@ class GenAIApps(commands.Cog):
         await ctx.response.defer(ephemeral=True)
 
         # Download attachments
-        _attachment_data = ["By the way, here are additional attachments that you can refer to:"]
+        _attachment_data = ["Attached files within the message:"]
         if message.attachments and len(message.attachments) > 0:
             for _x in message.attachments:
                 _filename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(5000, 6000)}.{_x.filename}"

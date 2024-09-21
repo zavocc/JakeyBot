@@ -166,7 +166,7 @@ utility_assistants:
         - If you see a discord ID along with @ symbol and a username (e.g. <@012345678910), it means that the user is mentioned, therefore you should ignore it. Only if the user explicitly discusses about it, but if the topic is something else, just ignore and extract the key points
         - Only extract and explain the main points of the message content, not the message ID, author, channel, etc.
         - Summarize key points and explain it in a way that is understandable to the user.
-        - If the message is empty as provided, most likely it only contains embeds, special characters or attachment which is not supported
+        - If the message is empty as provided, most likely it only contains embeds or special characters which are not supported
 
         As a summarizer tool, when the user provides any text or sentence, you just need to get the key points of the message, regardless of the interaction.
 
@@ -177,7 +177,8 @@ utility_assistants:
         Key points to remember:
         - Draft 2-3 messages, send it in a markdown format, bullet, and 1 suggestions per tone that is appropriate for the message, depending on the message content and context of the message.
         - If you don't know what the message or data provided, lets say a random gibberish, just suggest a message that conveys the "I don't know" expression
-        - If the message is empty as provided, most likely it only contains embeds, special characters or attachment which is not supported
+        - If the message is empty as provided, most likely it only contains embeds or special characters which are not supported
+        - If it's just a file attachment (e.g. images, audio, video, pdf), also suggest responses that are appropriate to the attachment
 
         As a message suggestion generator tool, when the user provides any text or sentence, you just need to suggest the right response, regardless of the interaction.
 
