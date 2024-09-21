@@ -146,7 +146,7 @@ class BaseChat(commands.Cog):
 
             # Upload the file to the server
             try:
-                _xfile_uri = genai.upload_file(path=_xfilename, display_name=_xfilename.split("/")[-1])
+                _xfile_uri = await asyncio.to_thread(genai.upload_file, path=_xfilename, display_name=_xfilename.split("/")[-1])
                 _x_msgstatus = None
 
                 # Wait for the file to be uploaded
@@ -154,7 +154,7 @@ class BaseChat(commands.Cog):
                     if _x_msgstatus is None:
                         _x_msgstatus = await ctx.send("⌛ Processing the file attachment... this may take a while")
                     await asyncio.sleep(3)
-                    _xfile_uri = genai.get_file(_xfile_uri.name)
+                    _xfile_uri = await asyncio.to_thread(genai.get_file, _xfile_uri.name)
 
                 if _xfile_uri.state.name == "FAILED":
                     await ctx.respond("❌ Sorry, I can't process the file attachment. Please try again.")
@@ -173,6 +173,8 @@ class BaseChat(commands.Cog):
 
                 # Add caution that the attachment data would be lost in 48 hours
                 await ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context after 48 hours.")
+            else:
+                await _x_msgstatus.delete()
 
             # Remove the file from the temp directory
             remove(_xfilename)
