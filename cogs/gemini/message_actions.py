@@ -91,13 +91,13 @@ class GenAIApps(commands.Cog):
             await ctx.respond("❌ Sorry, this feature is not supported in DMs, please use this command inside the guild.")
             return
         
-         # Check for safety or blocked prompt errors
-        _exceptions = [genai.types.BlockedPromptException, genai.types.StopCandidateException, ValueError]
+        # Check for safety or blocked prompt errors
+        #_exceptions = [genai.types.BlockedPromptException, genai.types.StopCandidateException, ValueError]
 
         # Get original exception from the DiscordException.original attribute
-        error = getattr(error, "original", error)
-        if any(_iter for _iter in _exceptions if isinstance(error, _iter)):
-            await ctx.respond("❌ Sorry, I couldn't rephrase that message. I'm still learning!")
+        #error = getattr(error, "original", error)
+        #if any(_iter for _iter in _exceptions if isinstance(error, _iter)):
+        await ctx.respond("❌ Sorry, I couldn't rephrase that message. I'm still learning!")
         
         raise error
 
@@ -131,10 +131,18 @@ class GenAIApps(commands.Cog):
 
         # Generative model settings
         _model = genai.GenerativeModel(model_name=self._genai_configs.model_config, system_instruction=self._system_prompt.message_summarizer_prompt, generation_config=self._genai_configs.generation_config)
-        _answer = await _model.generate_content_async(
-            _attachment_data if len(_attachment_data) > 1 else [] +
-            [f"Explain and summarize:\n{str(message.content)}"]
-        )
+        _answer = await _model.generate_content_async([
+            {
+                "role":"user",
+                "parts": _attachment_data + ["Attachments in this message"]
+            } if len(_attachment_data) > 0 else {"role":"user","parts":["..."]},
+            {
+                "role":"user",
+                "parts":[
+                    f"Explain and summarize based on this message:\n{str(message.content)}"
+                ]
+            }
+        ])
 
         # Send message in an embed format
         _embed = discord.Embed(
@@ -152,13 +160,13 @@ class GenAIApps(commands.Cog):
             await ctx.respond("❌ Sorry, this feature is not supported in DMs, please use this command inside the guild.")
             return
         
-         # Check for safety or blocked prompt errors
-        _exceptions = [genai.types.BlockedPromptException, genai.types.StopCandidateException, ValueError]
+        # Check for safety or blocked prompt errors
+        #_exceptions = [genai.types.BlockedPromptException, genai.types.StopCandidateException, ValueError]
 
         # Get original exception from the DiscordException.original attribute
-        error = getattr(error, "original", error)
-        if any(_iter for _iter in _exceptions if isinstance(error, _iter)):
-            await ctx.respond("❌ Sorry, I couldn't explain that message. I'm still learning!")
+        #error = getattr(error, "original", error)
+        #if any(_iter for _iter in _exceptions if isinstance(error, _iter)):
+        await ctx.respond("❌ Sorry, I couldn't explain that message. I'm still learning!")
         
         raise error
 
@@ -176,13 +184,13 @@ class GenAIApps(commands.Cog):
         await ctx.response.defer(ephemeral=True)
 
         # Download attachments
-        _attachment_data = ["Attached files within the message:"]
+        _attachment_data = []
         if message.attachments and len(message.attachments) > 0:
             for _x in message.attachments:
                 _filename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(5000, 6000)}.{_x.filename}"
 
                 # Max files is 5
-                if len(_attachment_data) > 6:
+                if len(_attachment_data) > 5:
                     break
 
                 try:
@@ -193,10 +201,18 @@ class GenAIApps(commands.Cog):
 
         # Generative model settings
         _model = genai.GenerativeModel(model_name=self._genai_configs.model_config, system_instruction=self._system_prompt.message_suggestions_prompt, generation_config=self._genai_configs.generation_config)
-        _answer = await _model.generate_content_async(
-            _attachment_data if len(_attachment_data) > 1 else [] +
-            [f"Suggest a response:\n{str(message.content)}"]
-        )
+        _answer = await _model.generate_content_async([
+            {
+                "role":"user",
+                "parts": _attachment_data + ["Attachments in this message"]
+            } if len(_attachment_data) > 0 else {"role":"user","parts":["..."]},
+            {
+                "role":"user",
+                "parts":[
+                    f"Suggest a response based on this message:\n{str(message.content)}"
+                ]
+            }
+        ])
 
         # To protect privacy, send the message to the user
         # Send message in an embed format
@@ -216,12 +232,12 @@ class GenAIApps(commands.Cog):
             return
         
          # Check for safety or blocked prompt errors
-        _exceptions = [genai.types.BlockedPromptException, genai.types.StopCandidateException, ValueError]
+        #_exceptions = [genai.types.BlockedPromptException, genai.types.StopCandidateException, ValueError]
 
         # Get original exception from the DiscordException.original attribute
-        error = getattr(error, "original", error)
-        if any(_iter for _iter in _exceptions if isinstance(error, _iter)):
-            await ctx.respond("❌ Sorry, this is embarrasing but I couldn't suggest good responses. I'm still learning!")
+        #error = getattr(error, "original", error)
+        #if any(_iter for _iter in _exceptions if isinstance(error, _iter)):
+        await ctx.respond("❌ Sorry, this is embarrasing but I couldn't suggest good responses. I'm still learning!")
         
         raise error
     
