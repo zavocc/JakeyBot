@@ -114,13 +114,13 @@ class GenAIApps(commands.Cog):
         await ctx.response.defer(ephemeral=True)
 
         # Download attachments
-        _attachment_data = ["Attachments in this message:"]
+        _attachment_data = []
         if message.attachments and len(message.attachments) > 0:
             for _x in message.attachments:
                 _filename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(5000, 6000)}.{_x.filename}"
 
                 # Max files is 5
-                if len(_attachment_data) > 6:
+                if len(_attachment_data) > 5:
                     break
 
                 try:
