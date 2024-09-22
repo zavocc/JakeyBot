@@ -281,15 +281,16 @@ class BaseChat(commands.Cog):
         _chat_thread = jsonpickle.encode(chat_session.history, indent=4, keys=True)
 
         # Print context size and model info
-        if verbose_logs:
-            if append_history:
+        if append_history:
+            await self.HistoryManagement.save_history(guild_id=guild_id, chat_thread=_chat_thread, prompt_count=_prompt_count)
+            if verbose_logs:
                 await ctx.send(inspect.cleandoc(f"""
                             > 📃 Context size: **{_prompt_count}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
                             > ✨ Model used: **{model}**
                             """))
-            else:
+        else:
+            if verbose_logs:
                 await ctx.send(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{model}**")
-        await self.HistoryManagement.save_history(guild_id=guild_id, chat_thread=_chat_thread, prompt_count=_prompt_count)
 
     # Handle all unhandled exceptions through error event, handled exceptions are currently image analysis safety settings
     @ask.error
