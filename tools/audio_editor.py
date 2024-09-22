@@ -47,7 +47,6 @@ class Tool:
         except ModuleNotFoundError:
             return "This tool is not available at the moment"
 
-        # Create image
         try:
             message_curent = await self.ctx.send("🎤✨ Adding some magic to the audio...")
             result = await asyncio.to_thread(
