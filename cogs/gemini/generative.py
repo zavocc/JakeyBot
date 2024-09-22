@@ -178,7 +178,6 @@ class BaseChat(commands.Cog):
 
                 # Add caution that the attachment data would be lost in 48 hours
                 await ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context after 48 hours.")
-            else:
                 await _x_msgstatus.delete()
 
             # Remove the file from the temp directory
