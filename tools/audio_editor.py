@@ -17,7 +17,6 @@ class Tool:
         self.bot = bot
         self.ctx = ctx
 
-        # Image generator
         self.tool_schema = genai.protos.Tool(
             function_declarations=[
                 genai.protos.FunctionDeclaration(
