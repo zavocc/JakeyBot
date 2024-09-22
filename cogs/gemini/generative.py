@@ -313,6 +313,8 @@ class BaseChat(commands.Cog):
         # For failed downloads from attachments
         elif isinstance(error, aiohttp.ClientError):
             await ctx.respond("⚠️ Uh oh! Something went wrong while processing file attachment! Please try again later.")
+        elif isinstance(error, ModuleNotFoundError):
+            await ctx.respond("⚠️ Uh oh! The tool is not available at the moment at our side, please try again later or change tools using `/feature`.")
         elif isinstance(error, MemoryError):
             await ctx.respond("📝 Sorry, the chat thread has reached its maximum capacity, please clear the chat history to continue using `/sweep`")
         else:
