@@ -5,6 +5,7 @@ from os import chdir, environ, mkdir
 from pathlib import Path
 import discord
 import importlib
+import logging
 import yaml
 
 # Go to project root directory
@@ -13,11 +14,14 @@ chdir(Path(__file__).parent.resolve())
 # Load environment variables
 load_dotenv("dev.env")
 
+# Logging
+logging.basicConfig(format='%(levelname)s %(asctime)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+
 # Playback support
 try:
     wavelink = importlib.import_module("wavelink")
 except ModuleNotFoundError as e:
-    print(f"Playback support is disabled: {e}")
+    logging.warning("Playback support is disabled: %s", e)
     wavelink = None
 
 # Check if TOKEN is set
@@ -44,10 +48,6 @@ bot = bridge.Bot(command_prefix=commands.when_mentioned_or("$"), intents = inten
 async def on_ready():
     global wavelink
 
-    print(f"{bot.user} is ready and online!")
-    #https://stackoverflow.com/a/65780398 - for multiple statuses
-    await bot.change_presence(activity=discord.Game("/ask me anything or $help"))
-
     # start wavelink setup if playback support is enabled
     if wavelink is not None:
         try:
@@ -67,7 +67,7 @@ async def on_ready():
                 nodes=[node]
             )
         except wavelink.WavelinkException as e:
-            print(f"Failed to setup wavelink: {e}... Disabling playback support")
+            logging.error(f"Failed to setup wavelink: {e}... Disabling playback support")
             wavelink = None
     
     # Prepare temporary directory
@@ -81,6 +81,9 @@ async def on_ready():
         environ["TEMP_DIR"] = "temp"
         mkdir(environ.get("TEMP_DIR"))
 
+    #https://stackoverflow.com/a/65780398 - for multiple statuses
+    await bot.change_presence(activity=discord.Game("/ask me anything or $help"))
+    print(f"{bot.user} is ready and online!")
 
 ###############################################
 # ON USER MESSAGE
@@ -109,14 +112,13 @@ with open('commands.yaml', 'r') as file:
     for command in cog_commands:
         # Disable voice commands if playback support is not enabled
         if "voice" in command and not wavelink:
-           print(f"Skipping {command}... Playback support is disabled")
+           logging.warning(f"Skipping {command}... Playback support is disabled")
            continue
 
         try:
             bot.load_extension(f'cogs.{command}')
         except Exception as e:
-            print(f"\ncogs.{command} failed to load, skipping... The following error of the cog is shown below:\n")
-            print(e, end="\n\n")
+            logging.ERROR(f"\ncogs.{command} failed to load, skipping... The following error of the cog: %s", e)
             continue
 
 # Initialize custom help

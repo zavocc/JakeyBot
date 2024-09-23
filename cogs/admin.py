@@ -8,6 +8,17 @@ class Admin(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    # Shutdown command
+    @commands.command(aliases=['exit', 'stop', 'quit', 'shutdown'])
+    async def admin_shutdown(self, ctx):
+        """Shuts down the bot"""
+        if ctx.author.id != int(environ.get("SYSTEM_USER_ID")):
+            await ctx.respond("Only my master can do that >:(")
+            return
+
+        await ctx.send("Shutting down...")
+        await self.bot.close()
+
     # Execute command
     @commands.command(aliases=['eval', 'evaluate'])
     async def admin_execute(self, ctx, *shell_command):

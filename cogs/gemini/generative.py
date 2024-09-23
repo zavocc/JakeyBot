@@ -20,13 +20,12 @@ import random
 
 class BaseChat(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: discord.Bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
-        # Logging format
-        # LEVEL NAME: (message)
-        logging.basicConfig(format='%(levelname)s %(asctime)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+        self.bot.loop.create_task(self._initialize())
 
+    async def _initialize(self):
         # Load the database and initialize the HistoryManagement class
         # MongoDB database connection for chat history and possibly for other things
         try:
@@ -46,11 +45,11 @@ class BaseChat(commands.Cog):
         self._assistants_system_prompt = Assistants()
 
         # Media download shared session
-        self._download_session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl_context=None, ssl=False))
+        self._download_session = aiohttp.ClientSession()
 
     def cog_unload(self):
-        # Cleanup
-        asyncio.create_task(self._download_session.close())
+        # Close media download session
+        self.bot.loop.create_task(self._media_download_session.close())
 
     ###############################################
     # Ask command
@@ -143,7 +142,7 @@ class BaseChat(commands.Cog):
             # Download the attachment
             _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{guild_id}.{random.randint(5000, 6000)}.{attachment.filename}"
             try:
-                async with self._download_session.get(attachment.url, allow_redirects=True) as _xattachments:
+                async with self._download_session.get(attachment.url, allow_redirects=True, ssl=False) as _xattachments:
                     # write to file with random number ID
                     async with aiofiles.open(_xfilename, "wb") as filepath:
                         async for _chunk in _xattachments.content.iter_chunked(8192):

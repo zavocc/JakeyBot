@@ -12,13 +12,14 @@ import random
 
 class GenAIApps(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: discord.Bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
-        # Logging format
-        # LEVEL NAME: (message)
-        logging.basicConfig(format='%(levelname)s %(asctime)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+        # Run _initialize function using the discord.Bot.loop.create_task which seems to be the proper way to run async functions
+        # In constructor
+        self.bot.loop.create_task(self._initialize())
 
+    async def _initialize(self):
         # Check for gemini API keys
         if environ.get("GOOGLE_AI_TOKEN") is None or environ.get("GOOGLE_AI_TOKEN") == "INSERT_API_KEY":
             raise Exception("GOOGLE_AI_TOKEN is not configured in the dev.env file. Please configure it and try again.")
@@ -32,11 +33,11 @@ class GenAIApps(commands.Cog):
         self._system_prompt = Assistants()
 
         # Media download shared session
-        self._media_download_session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl_context=None, ssl=False))
+        self._media_download_session = aiohttp.ClientSession()
 
     def cog_unload(self):
-        # Cleanup
-        asyncio.create_task(self._media_download_session.close())
+        # Close media download session
+        self.bot.loop.create_task(self._media_download_session.close())
 
     async def _media_download(self, url, save_path):
         # Check if the file size is too large (max 3MB)
@@ -48,7 +49,7 @@ class GenAIApps(commands.Cog):
             if int(_file_size) > 3 * 1024 * 1024:
                 raise MemoryError("File size is too large to download")
 
-        async with self._media_download_session.get(url, allow_redirects=True) as _xattachments:
+        async with self._media_download_session.get(url, allow_redirects=True, ssl=False) as _xattachments:
             # write to file with random number ID
             async with aiofiles.open(save_path, "wb") as filepath:
                 async for _chunk in _xattachments.content.iter_chunked(8192):
