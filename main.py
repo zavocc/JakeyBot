@@ -118,7 +118,7 @@ with open('commands.yaml', 'r') as file:
         try:
             bot.load_extension(f'cogs.{command}')
         except Exception as e:
-            logging.ERROR(f"\ncogs.{command} failed to load, skipping... The following error of the cog: %s", e)
+            logging.error(f"\ncogs.{command} failed to load, skipping... The following error of the cog: %s", e)
             continue
 
 # Initialize custom help
