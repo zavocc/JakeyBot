@@ -32,7 +32,7 @@ class GenAIApps(commands.Cog):
         self._system_prompt = Assistants()
 
         # Media download shared session
-        self._media_download_session = aiohttp.ClientSession()
+        self._media_download_session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl_context=None, ssl=False))
 
     def cog_unload(self):
         # Cleanup

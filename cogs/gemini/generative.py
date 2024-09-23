@@ -46,7 +46,7 @@ class BaseChat(commands.Cog):
         self._assistants_system_prompt = Assistants()
 
         # Media download shared session
-        self._download_session = aiohttp.ClientSession()
+        self._download_session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl_context=None, ssl=False))
 
     def cog_unload(self):
         # Cleanup
