@@ -45,6 +45,13 @@ class BaseChat(commands.Cog):
         # default system prompt - load assistants
         self._assistants_system_prompt = Assistants()
 
+        # Media download shared session
+        self._download_session = aiohttp.ClientSession()
+
+    def cog_unload(self):
+        # Cleanup
+        asyncio.create_task(self._download_session.close())
+
     ###############################################
     # Ask command
     ###############################################
@@ -108,7 +115,7 @@ class BaseChat(commands.Cog):
 
         # Load and deserialize the chat data
         _prompt_count, _chat_thread = await self.HistoryManagement.load_history(guild_id=guild_id)
-        _chat_thread = jsonpickle.decode(_chat_thread, keys=True) if _chat_thread is not None else []
+        _chat_thread = await asyncio.to_thread(jsonpickle.decode, _chat_thread, keys=True) if _chat_thread is not None else []
 
         if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
             raise MemoryError("Maximum history reached! Clear the conversation")
@@ -136,12 +143,11 @@ class BaseChat(commands.Cog):
             # Download the attachment
             _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{guild_id}.{random.randint(5000, 6000)}.{attachment.filename}"
             try:
-                async with aiohttp.ClientSession(raise_for_status=True) as session:
-                    async with session.get(attachment.url, allow_redirects=True) as _xattachments:
-                        # write to file with random number ID
-                        async with aiofiles.open(_xfilename, "wb") as filepath:
-                            async for _chunk in _xattachments.content.iter_chunked(8192):
-                                await filepath.write(_chunk)
+                async with self._download_session.get(attachment.url, allow_redirects=True) as _xattachments:
+                    # write to file with random number ID
+                    async with aiofiles.open(_xfilename, "wb") as filepath:
+                        async for _chunk in _xattachments.content.iter_chunked(8192):
+                            await filepath.write(_chunk)
             except aiohttp.ClientError as httperror:
                 # Remove the file if it exists ensuring no data persists even on failure
                 if Path(_xfilename).exists():
@@ -156,8 +162,9 @@ class BaseChat(commands.Cog):
 
                 # Wait for the file to be uploaded
                 while _xfile_uri.state.name == "PROCESSING":
-                    if _x_msgstatus is None:
-                        _x_msgstatus = await ctx.send("⌛ Processing the file attachment... this may take a while")
+                    if verbose_logs:
+                        if _x_msgstatus is None:
+                            _x_msgstatus = await ctx.send("⌛ Processing the file attachment... this may take a while")
                     await asyncio.sleep(3)
                     _xfile_uri = await asyncio.to_thread(genai.get_file, _xfile_uri.name)
 
@@ -166,8 +173,9 @@ class BaseChat(commands.Cog):
                     raise ValueError(_xfile_uri.state.name)
             except Exception as e:
                 await ctx.respond(f"❌ An error has occured when uploading the file or the file format is not supported\nLog:\n```{e}```")
-                remove(_xfilename)
                 return
+            finally:
+                remove(_xfilename)
 
             # Immediately use the "used" status message to indicate that the file API is used
             if verbose_logs:
@@ -179,9 +187,6 @@ class BaseChat(commands.Cog):
                 # Add caution that the attachment data would be lost in 48 hours
                 await ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context after 48 hours.")
                 await _x_msgstatus.delete()
-
-            # Remove the file from the temp directory
-            remove(_xfilename)
 
         if not attachment and hasattr(_Tool, "file_uri"):
             _Tool.tool_config = "NONE"
