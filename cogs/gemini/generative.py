@@ -282,7 +282,7 @@ class BaseChat(commands.Cog):
         # Increment the prompt count
         _prompt_count += 1
         # Also save the ChatSession.history attribute to the context history chat history key so it will be saved through pickle
-        _chat_thread = jsonpickle.encode(chat_session.history, indent=4, keys=True)
+        _chat_thread = asyncio.to_thread(jsonpickle.encode, chat_session.history, indent=4, keys=True)
 
         # Print context size and model info
         if append_history:
