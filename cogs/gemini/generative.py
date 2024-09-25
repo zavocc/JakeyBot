@@ -49,7 +49,7 @@ class BaseChat(commands.Cog):
 
     def cog_unload(self):
         # Close media download session
-        self.bot.loop.create_task(self._media_download_session.close())
+        self.bot.loop.create_task(self._download_session.close())
 
     ###############################################
     # Ask command
