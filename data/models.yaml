@@ -1,8 +1,8 @@
 gemini_models:
-  - model: gemini-1.5-pro-001
+  - model: gemini-1.5-pro-002
     name: Gemini 1.5 Pro (2M)
     description: Advanced chat tasks with low availability
-  - model: gemini-1.5-flash-001
+  - model: gemini-1.5-flash-002
     name: Gemini 1.5 Flash (1M)
     description: General purpose with high availability
   - model: gemini-1.5-pro-exp-0827
@@ -11,6 +11,6 @@ gemini_models:
   - model: gemini-1.5-flash-exp-0827
     name: Gemini 1.5 Flash (Experimental 0827 version)
     description: Latest and greatest
-  - model: gemini-1.5-flash-8b-exp-0827
+  - model: gemini-1.5-flash-8b-exp-0924
     name: Gemini 1.5 Flash 8B (Experimental)
     description: smaller parameter version of the flash model
