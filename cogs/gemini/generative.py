@@ -9,6 +9,7 @@ import google.generativeai as genai
 import google.api_core.exceptions
 import aiohttp
 import aiofiles
+import aiofiles.os
 import asyncio
 import discord
 import importlib
@@ -23,9 +24,6 @@ class BaseChat(commands.Cog):
         self.bot: discord.Bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
-        self.bot.loop.create_task(self._initialize())
-
-    async def _initialize(self):
         # Load the database and initialize the HistoryManagement class
         # MongoDB database connection for chat history and possibly for other things
         try:
@@ -45,11 +43,7 @@ class BaseChat(commands.Cog):
         self._assistants_system_prompt = Assistants()
 
         # Media download shared session
-        self._download_session = aiohttp.ClientSession()
-
-    def cog_unload(self):
-        # Close media download session
-        self.bot.loop.create_task(self._download_session.close())
+        self._download_session: aiohttp.ClientSession = self.bot._aiohttp_session
 
     ###############################################
     # Ask command
@@ -150,7 +144,7 @@ class BaseChat(commands.Cog):
             except aiohttp.ClientError as httperror:
                 # Remove the file if it exists ensuring no data persists even on failure
                 if Path(_xfilename).exists():
-                    remove(_xfilename)
+                    await aiofiles.os.remove(_xfilename)
                 # Raise exception
                 raise httperror
 
@@ -174,7 +168,7 @@ class BaseChat(commands.Cog):
                 await ctx.respond(f"❌ An error has occured when uploading the file or the file format is not supported\nLog:\n```{e}```")
                 return
             finally:
-                remove(_xfilename)
+                await aiofiles.os.remove(_xfilename)
 
             # Immediately use the "used" status message to indicate that the file API is used
             if verbose_logs:
@@ -185,7 +179,6 @@ class BaseChat(commands.Cog):
 
                 # Add caution that the attachment data would be lost in 48 hours
                 await ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context after 48 hours.")
-                await _x_msgstatus.delete()
 
         if not attachment and hasattr(_Tool, "file_uri"):
             _Tool.tool_config = "NONE"
@@ -262,8 +255,8 @@ class BaseChat(commands.Cog):
         if len(answer.text) > 4096:
             # Send the response as file
             response_file = f"{environ.get('TEMP_DIR')}/response{random.randint(6000,7000)}.md"
-            with open(response_file, "w+") as f:
-                f.write(answer.text)
+            async with aiofiles.open(response_file, "w+") as f:
+                await f.write(answer.text)
             await ctx.respond("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(response_file, "response.md"))
         elif len(answer.text) > 2000:
             embed = discord.Embed(
@@ -281,7 +274,7 @@ class BaseChat(commands.Cog):
         # Increment the prompt count
         _prompt_count += 1
         # Also save the ChatSession.history attribute to the context history chat history key so it will be saved through pickle
-        _chat_thread = asyncio.to_thread(jsonpickle.encode, chat_session.history, indent=4, keys=True)
+        _chat_thread = await asyncio.to_thread(jsonpickle.encode, chat_session.history, indent=4, keys=True)
 
         # Print context size and model info
         if append_history:

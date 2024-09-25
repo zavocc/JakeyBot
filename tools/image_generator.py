@@ -1,5 +1,6 @@
 # Huggingface spaces endpoints 
 import google.generativeai as genai
+import aiofiles.os
 import asyncio
 import discord
 import importlib
@@ -70,5 +71,5 @@ class Tool:
         await self.ctx.send(file=discord.File(fp=result[0]))
 
         # Cleanup
-        os.remove(result[0])
+        await aiofiles.os.remove(result[0])
         return "Image generation success and the file should be sent automatically"

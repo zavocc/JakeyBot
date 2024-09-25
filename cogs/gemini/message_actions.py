@@ -15,11 +15,6 @@ class GenAIApps(commands.Cog):
         self.bot: discord.Bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
-        # Run _initialize function using the discord.Bot.loop.create_task which seems to be the proper way to run async functions
-        # In constructor
-        self.bot.loop.create_task(self._initialize())
-
-    async def _initialize(self):
         # Check for gemini API keys
         if environ.get("GOOGLE_AI_TOKEN") is None or environ.get("GOOGLE_AI_TOKEN") == "INSERT_API_KEY":
             raise Exception("GOOGLE_AI_TOKEN is not configured in the dev.env file. Please configure it and try again.")
@@ -33,11 +28,7 @@ class GenAIApps(commands.Cog):
         self._system_prompt = Assistants()
 
         # Media download shared session
-        self._media_download_session = aiohttp.ClientSession()
-
-    def cog_unload(self):
-        # Close media download session
-        self.bot.loop.create_task(self._media_download_session.close())
+        self._media_download_session: aiohttp.ClientSession = self.bot._aiohttp_session
 
     async def _media_download(self, url, save_path):
         # Check if the file size is too large (max 3MB)

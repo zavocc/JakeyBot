@@ -1,8 +1,10 @@
+import aiofiles
+import aiofiles.os
 import discord
 import random
 import subprocess
 from discord.ext import commands
-from os import environ, mkdir, remove
+from os import environ
 
 class Admin(commands.Cog):
     def __init__(self, bot):
@@ -17,6 +19,10 @@ class Admin(commands.Cog):
             return
 
         await ctx.send("Shutting down...")
+        # Shutdown aiohttp client and the bot
+        if hasattr(self.bot, "_aiohttp_session"):   
+            await self.bot._aiohttp_session.close()
+
         await self.bot.close()
 
     # Execute command
@@ -48,13 +54,13 @@ class Admin(commands.Cog):
         if output.stdout:
             # If the output exceeds 2000 characters, send it as a file
             if len(output.stdout.decode('utf-8')) > 2000:
-                with open(_xfilepath, "w+") as f:
-                    f.write(output.stdout.decode('utf-8'))
+                async with aiofiles.open(_xfilepath, "w+") as f:
+                    await f.write(output.stdout.decode('utf-8'))
 
                 await ctx.respond(f"I executed `{pretty_shell_command}` and got:", file=discord.File(_xfilepath, "output.txt"))
 
                 # Delete the file
-                remove(_xfilepath)
+                await aiofiles.os.remove(_xfilepath)
             else:
                 await ctx.respond(f"I executed `{pretty_shell_command}` and got:")
                 await ctx.send(f"```{output.stdout.decode('utf-8')}```")
@@ -62,45 +68,5 @@ class Admin(commands.Cog):
             await ctx.respond(f"I executed `{pretty_shell_command}` and got no output")
 
 
-    # TODO: To write a better implementation of "eval" command, this code is very buggy
-    # Evaluate command
-    #@commands.command()
-    #async def admin_evaluate(self, ctx, *python_expression):
-    #    """Evaluates a python code (owner only)"""
-    #    if ctx.author.id != 1039885147761283113:
-    #        await ctx.respond("Only my master can do that >:(")
-    #        return
-    #    
-    #    # Check for arguments
-    #   if not python_expression or len(python_expression) == 0:
-    #        await ctx.respond("You need to provide a inline python expression to evaluate")
-    #        return
-    #
-    #    # Tuple to string as inline f-string doesn't work with these expressions
-    #   pretty_py_exec = " ".join(python_expression)
-    #
-    #    try:
-    #        output = eval(f"{pretty_py_exec}")
-    #    except Exception as e:
-    #        await ctx.respond(f"I executed `{pretty_py_exec}` and got an error:\n{e}")
-    #        return
-    #
-    #   # Print the output
-    #    if output is not None:
-    #        # Send the output to file if it exceeds 2000 characters
-    #       if len(str(output)) > 2000:
-    #            # Check if temp folder exists
-    #            if not Path("temp").exists(): mkdir("temp")
-    #
-    #            with open("temp/py_output.txt", "w+") as f:
-    #                f.write(output)
-    #
-    #            await ctx.respond(f"I executed `{pretty_py_exec}` and got:", file=File(_xfilepath, "output.txt"))
-    #
-    #            # Delete the file
-    #            remove("temp/py_output.txt")
-    #        else:
-    #            await ctx.respond(f"I executed `{pretty_py_exec}` and got:\n```{str(output)}```")
-    
 def setup(bot):
     bot.add_cog(Admin(bot))

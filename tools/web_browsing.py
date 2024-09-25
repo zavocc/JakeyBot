@@ -1,6 +1,7 @@
 from core.ai.embeddings import GeminiDocumentRetrieval
 from google_labs_html_chunker.html_chunker import HtmlChunker
 import google.generativeai as genai
+import aiofiles
 import asyncio
 import discord
 import importlib
@@ -54,7 +55,7 @@ class Tool:
         links = []
 
         # Load excluded urls list
-        with open("data/excluded_urls.yaml") as x:
+        async with aiofiles.open("data/excluded_urls.yaml") as x:
             excluded_url_list = yaml.safe_load(x)
 
         # Iterate

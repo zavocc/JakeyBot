@@ -1,5 +1,6 @@
 # Huggingface spaces endpoints 
 import google.generativeai as genai
+import aiofiles.os
 import asyncio
 import discord
 import importlib
@@ -74,5 +75,5 @@ class Tool:
         await self.ctx.send(file=discord.File(fp=result))
 
         # Cleanup
-        os.remove(result)
+        await aiofiles.os.remove(result)
         return "Audio editing success"
