@@ -6,7 +6,7 @@ class GenAIConfigDefaults:
         self.generation_config = {
             "temperature": 0.5,
             "top_p": 1,
-            "top_k": 64,
+            "top_k": 32,
             "max_output_tokens": 8192,
         }
 
