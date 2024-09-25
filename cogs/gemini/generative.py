@@ -74,7 +74,7 @@ class BaseChat(commands.Cog):
         "model",
         description="Choose a model to use for the conversation - flash is the default model",
         choices=ModelsList.get_models_list(),
-        default="gemini-1.5-flash-001",
+        default="gemini-1.5-flash-002",
         required=False
     )
     @discord.option(

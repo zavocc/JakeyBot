@@ -6,7 +6,7 @@ class GenAIConfigDefaults:
         self.generation_config = {
             "temperature": 0.5,
             "top_p": 1,
-            "top_k": 32,
+            "top_k": 64,
             "max_output_tokens": 8192,
         }
 
@@ -30,7 +30,7 @@ class GenAIConfigDefaults:
         ]
 
         # Default model
-        self.model_config = "gemini-1.5-flash-001"
+        self.model_config = "gemini-1.5-flash-002"
 
         
 class ModelsList:
