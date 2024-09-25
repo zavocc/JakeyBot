@@ -1,12 +1,12 @@
+import discord
+import random
 import subprocess
 from discord.ext import commands
-from discord import File
 from os import environ, mkdir, remove
-from pathlib import Path
 
 class Admin(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: discord.Bot = bot
 
     # Shutdown command
     @commands.command(aliases=['exit', 'stop', 'quit', 'shutdown'])
@@ -44,19 +44,17 @@ class Admin(commands.Cog):
             await ctx.respond(f"Cannot execute `{pretty_shell_command}`, no such file or directory.")
         
         # Check if we should send the output to file 
+        _xfilepath = f"{environ.get('TEMP_DIR')}/output{random.randint(3928,10029)}.txt"
         if output.stdout:
             # If the output exceeds 2000 characters, send it as a file
             if len(output.stdout.decode('utf-8')) > 2000:
-                # Check if temp folder exists
-                if not Path("temp").exists(): mkdir("temp")
-
-                with open("temp/output.txt", "w+") as f:
+                with open(_xfilepath, "w+") as f:
                     f.write(output.stdout.decode('utf-8'))
 
-                await ctx.respond(f"I executed `{pretty_shell_command}` and got:", file=File("temp/output.txt", "output.txt"))
+                await ctx.respond(f"I executed `{pretty_shell_command}` and got:", file=discord.File(_xfilepath, "output.txt"))
 
                 # Delete the file
-                remove("temp/output.txt")
+                remove(_xfilepath)
             else:
                 await ctx.respond(f"I executed `{pretty_shell_command}` and got:")
                 await ctx.send(f"```{output.stdout.decode('utf-8')}```")
@@ -97,7 +95,7 @@ class Admin(commands.Cog):
     #            with open("temp/py_output.txt", "w+") as f:
     #                f.write(output)
     #
-    #            await ctx.respond(f"I executed `{pretty_py_exec}` and got:", file=File("temp/output.txt", "output.txt"))
+    #            await ctx.respond(f"I executed `{pretty_py_exec}` and got:", file=File(_xfilepath, "output.txt"))
     #
     #            # Delete the file
     #            remove("temp/py_output.txt")
