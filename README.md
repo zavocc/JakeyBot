@@ -96,10 +96,6 @@ Jakey provides commands such as:
 
 Jakey also has message actions or apps which is used to take action on a selected message. Such as explain, rephrase, or suggest messages.
 
-Actions like "Explain this message" and "Suggest a response" can include file attachments to utilize multimodality to provide better context and personalized response, it supports images, videos, audio, and PDF files.
-
-Only first 5 file attachment (3mb max size per files) is included in the context.
-
 ![apps](./assets/apps.png)
 
 ## FAQ

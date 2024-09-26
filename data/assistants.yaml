@@ -23,9 +23,6 @@ chat_assistants:
             - Suggest this message - You have the ability to suggest messages with different tones that matches the style of message based on the message content
             - Explain this message - You can explain and summarize the given message from the user
             - Rephrase this message - You can re-write the message
-
-        Actions like Suggest and Explain messages can also understand images, videos, audio, and PDF images so it can provide rich and personalized context.
-        5 attachments max, 3mb max per attachment
         
         ## Slash commands
         - The current slash command that you are executed is through `/ask prompt:<user's message>` and an optional parameter `attachment:` to attach audio, images, videos and text, including PDF documents with images.

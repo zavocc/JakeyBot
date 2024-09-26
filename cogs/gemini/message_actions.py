@@ -27,34 +27,6 @@ class GenAIApps(commands.Cog):
         # Assistants
         self._system_prompt = Assistants()
 
-    async def _media_download(self, url, save_path, session=None):
-        # Check if the file size is too large (max 3MB)
-        async with session.head(url) as _xattachments:
-            async with _xattachments.head(url) as _xattachments:
-                _file_size = int(_xattachments.headers.get("Content-Length", None))
-                if _file_size is None:
-                    raise ValueError("File size is not available")
-
-                if int(_file_size) > 3 * 1024 * 1024:
-                    raise MemoryError("File size is too large to download")
-
-            async with _xattachments.get(url, allow_redirects=True) as _xattachments:
-                # write to file with random number ID
-                async with aiofiles.open(save_path, "wb") as filepath:
-                    async for _chunk in _xattachments.content.iter_chunked(8192):
-                        await filepath.write(_chunk)
-
-        _uploaded_file = await asyncio.to_thread(genai.upload_file, save_path)
-         # Wait for the file to be uploaded
-        while _uploaded_file.state.name == "PROCESSING":
-            await asyncio.sleep(2.75)
-            _uploaded_file = await asyncio.to_thread(genai.get_file, _uploaded_file.name)
-
-        if _uploaded_file.state.name == "FAILED":
-            raise SystemError("File upload failed")
-        
-        return _uploaded_file
-
     ###############################################
     # Rephrase command
     ###############################################
@@ -108,33 +80,10 @@ class GenAIApps(commands.Cog):
         """Explain this message"""
         await ctx.response.defer(ephemeral=True)
 
-        # Download attachments
-        _attachment_data = []
-
-        async with aiohttp.ClientSession() as session:
-            _batches = {}
-            if message.attachments and len(message.attachments) > 0:
-                for _x in message.attachments:
-                    _batches.update({_x.url: f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(5000, 6000)}.{_x.filename}"})
-
-                    # Max files is 5
-                    if len(_batches) > 5:
-                        break
-
-            # Download attachments and save it to _attachment_data
-            try:
-                # This will return all values as list (Future[list]) from the function
-                _attachment_data = await asyncio.gather(*[self._media_download(_urls, _batches[_urls], session=session) for _urls in _batches])
-            except Exception as e:
-                logging.warning("apps>Explain this message: I cannot upload or attach files reason %s", e)
 
         # Generative model settings
         _model = genai.GenerativeModel(model_name=self._genai_configs.model_config, system_instruction=self._system_prompt.message_summarizer_prompt, generation_config=self._genai_configs.generation_config)
         _answer = await _model.generate_content_async([
-            {
-                "role":"user",
-                "parts": _attachment_data + ["Attachments in this message"]
-            } if len(_attachment_data) > 0 else {"role":"user","parts":["..."]},
             {
                 "role":"user",
                 "parts":[
@@ -168,7 +117,6 @@ class GenAIApps(commands.Cog):
         await ctx.respond("❌ Sorry, I couldn't explain that message. I'm still learning!")
         raise error
 
-
     ###############################################
     # Suggestions command
     ###############################################
@@ -183,31 +131,25 @@ class GenAIApps(commands.Cog):
 
         # Download attachments
         _attachment_data = []
+        _batches = {}
+        if message.attachments and len(message.attachments) > 0:
+            for _x in message.attachments:
+                _batches.update({_x.url: f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(5000, 6000)}.{_x.filename}"})
 
-        async with aiohttp.ClientSession() as session:
-            _batches = {}
-            if message.attachments and len(message.attachments) > 0:
-                for _x in message.attachments:
-                    _batches.update({_x.url: f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(5000, 6000)}.{_x.filename}"})
+                # Max files is 5
+                if len(_batches) > 5:
+                    break
 
-                    # Max files is 5
-                    if len(_batches) > 5:
-                        break
-
-            # Download attachments and save it to _attachment_data
-            try:
-                # This will return all values as list (Future[list]) from the function
-                _attachment_data = await asyncio.gather(*[self._media_download(_urls, _batches[_urls], session=session) for _urls in _batches])
-            except Exception as e:
-                logging.warning("apps>Suggest this message: I cannot upload or attach files reason %s", e)
+        # Download attachments and save it to _attachment_data
+        try:
+            # This will return all values as list (Future[list]) from the function
+            _attachment_data = await asyncio.gather(*[self._media_download(_urls, _batches[_urls]) for _urls in _batches])
+        except Exception as e:
+            logging.warning("apps>Suggest this message: I cannot upload or attach files reason %s", e)
 
         # Generative model settings
         _model = genai.GenerativeModel(model_name=self._genai_configs.model_config, system_instruction=self._system_prompt.message_suggestions_prompt, generation_config=self._genai_configs.generation_config)
         _answer = await _model.generate_content_async([
-            {
-                "role":"user",
-                "parts": _attachment_data + ["Attachments in this message"]
-            } if len(_attachment_data) > 0 else {"role":"user","parts":["..."]},
             {
                 "role":"user",
                 "parts":[
