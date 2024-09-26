@@ -206,8 +206,8 @@ class BaseChat(commands.Cog):
             await ctx.send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
 
             # Re-initialize the chat session
-            chat_session = model_to_use.start_chat(history=_chat_thread, tool_config={'function_calling_config':_Tool.tool_config})
-            answer = await chat_session.send_message_async(final_prompt)
+            chat_session = model_to_use.start_chat(history=_chat_thread)
+            answer = await chat_session.send_message_async(final_prompt, tool_config={'function_calling_config':_Tool.tool_config})
 
         # Call tools
         # DEBUG: content.parts[0] is the first step message and content.parts[1] is the function calling data that is STOPPED
