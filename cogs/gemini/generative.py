@@ -42,9 +42,6 @@ class BaseChat(commands.Cog):
         # default system prompt - load assistants
         self._assistants_system_prompt = Assistants()
 
-        # Media download shared session
-        self._download_session: aiohttp.ClientSession = self.bot._aiohttp_session
-
     ###############################################
     # Ask command
     ###############################################
@@ -136,11 +133,12 @@ class BaseChat(commands.Cog):
             # Download the attachment
             _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{guild_id}.{random.randint(5000, 6000)}.{attachment.filename}"
             try:
-                async with self._download_session.get(attachment.url, allow_redirects=True, ssl=False) as _xattachments:
-                    # write to file with random number ID
-                    async with aiofiles.open(_xfilename, "wb") as filepath:
-                        async for _chunk in _xattachments.content.iter_chunked(8192):
-                            await filepath.write(_chunk)
+                async with aiohttp.ClientSession() as _download_session:
+                    async with _download_session.get(attachment.url, allow_redirects=True) as _xattachments:
+                        # write to file with random number ID
+                        async with aiofiles.open(_xfilename, "wb") as filepath:
+                            async for _chunk in _xattachments.content.iter_chunked(8192):
+                                await filepath.write(_chunk)
             except aiohttp.ClientError as httperror:
                 # Remove the file if it exists ensuring no data persists even on failure
                 if Path(_xfilename).exists():

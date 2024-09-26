@@ -20,8 +20,8 @@ class Admin(commands.Cog):
 
         await ctx.send("Shutting down...")
         # Shutdown aiohttp client and the bot
-        if hasattr(self.bot, "_aiohttp_session"):   
-            await self.bot._aiohttp_session.close()
+        #if hasattr(self.bot, "_aiohttp_session"):   
+        #    await self.bot._aiohttp_session.close()
 
         await self.bot.close()
 

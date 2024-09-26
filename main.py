@@ -41,8 +41,6 @@ intents.members = True
 
 # Bot
 bot = bridge.Bot(command_prefix=commands.when_mentioned_or("$"), intents = intents)
-# aiohttp session
-bot._aiohttp_session = aiohttp.ClientSession(loop=bot.loop)
 
 ###############################################
 # ON READY
