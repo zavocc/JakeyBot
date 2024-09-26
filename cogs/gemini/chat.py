@@ -8,10 +8,6 @@ class Chat(BaseChat):
     def __init__(self, bot):
         super().__init__(bot)
 
-    def cog_unload(self):
-        # Close media download session
-        super().cog_unload()
-
     ###############################################
     # Clear context command
     ###############################################
