@@ -27,7 +27,7 @@ class GenAIApps(commands.Cog):
         # Assistants
         self._system_prompt = Assistants()
 
-    async def _media_download(self, url, save_path, session=aiohttp.ClientSession()):
+    async def _media_download(self, url, save_path, session=None):
         # Check if the file size is too large (max 3MB)
         async with session.head(url) as _xattachments:
             async with _xattachments.head(url) as _xattachments:
@@ -111,7 +111,7 @@ class GenAIApps(commands.Cog):
         # Download attachments
         _attachment_data = []
 
-        with aiohttp.ClientSession(loop=self.bot.loop) as session:
+        async with aiohttp.ClientSession() as session:
             _batches = {}
             if message.attachments and len(message.attachments) > 0:
                 for _x in message.attachments:
