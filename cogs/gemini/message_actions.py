@@ -111,7 +111,7 @@ class GenAIApps(commands.Cog):
         # Download attachments
         _attachment_data = []
 
-        with aiohttp.ClientSession() as session:
+        with aiohttp.ClientSession(loop=self.bot.loop) as session:
             _batches = {}
             if message.attachments and len(message.attachments) > 0:
                 for _x in message.attachments:
@@ -184,7 +184,7 @@ class GenAIApps(commands.Cog):
         # Download attachments
         _attachment_data = []
 
-        with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession() as session:
             _batches = {}
             if message.attachments and len(message.attachments) > 0:
                 for _x in message.attachments:
