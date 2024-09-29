@@ -212,11 +212,21 @@ class BaseChat(commands.Cog):
         # Call tools
         # DEBUG: content.parts[0] is the first step message and content.parts[1] is the function calling data that is STOPPED
         # print(answer.candidates[0].content)
-        _candidates = answer.candidates[0]
 
-        if 'function_call' in _candidates.content.parts[-1]:
-            _func_call = _candidates.content.parts[-1].function_call
+        # answer.parts is equivalent to answer.candidates[0].   content.parts[0] but it is a shorthand alias
+        _candidates = answer.parts
+        _func_call = None
 
+        for _part in _candidates:
+            if _part.code_execution_result:
+                await ctx.send(f"Used: **{_Tool.tool_human_name}**")
+                continue
+
+            if _part.function_call:
+                _func_call = _part.function_call
+                break
+
+        if _func_call:
             # Call the function through their callables with getattr
             try:
                 _result = await _Tool._tool_function(**_func_call.args)
