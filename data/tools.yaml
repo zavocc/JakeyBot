@@ -4,6 +4,8 @@
   ui_name: Audio Editor with EzAudio
 - tool_name: image_generator
   ui_name: Image Generator with Stable Diffusion 3
+- tool_name: image_to_linedrawing
+  ui_name: Image to Line drawing
 - tool_name: randomreddit
   ui_name: Random Reddit
 - tool_name: web_browsing
