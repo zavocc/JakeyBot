@@ -291,10 +291,11 @@ class BaseChat(commands.Cog):
                 await ctx.send(inspect.cleandoc(f"""
                             > 📃 Context size: **{_prompt_count}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
                             > ✨ Model used: **{model}**
+                            > 🅰️ Chat token count: **{answer.usage_metadata.total_token_count}**
                             """))
         else:
             if verbose_logs:
-                await ctx.send(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{model}**")
+                await ctx.send(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{model}**\n> 🅰️ Chat token count: **{answer.usage_metadata.total_token_count}**")
 
     # Handle all unhandled exceptions through error event, handled exceptions are currently image analysis safety settings
     @ask.error
