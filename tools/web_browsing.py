@@ -55,8 +55,8 @@ class Tool:
         links = []
 
         # Load excluded urls list
-        async with aiofiles.open("data/excluded_urls.yaml") as x:
-            excluded_url_list = yaml.safe_load(x)
+        async with aiofiles.open("data/excluded_urls.yaml", "r") as x:
+            excluded_url_list = yaml.safe_load((await x.read()))
 
         # Iterate
         excluded_urls = " ".join([f"-site:{x}" for x in excluded_url_list])
