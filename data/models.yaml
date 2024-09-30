@@ -5,6 +5,12 @@ gemini_models:
   - model: gemini-1.5-flash-002
     name: Gemini 1.5 Flash (1M)
     description: General purpose with high availability
+  - model: gemini-1.5-pro-001
+    name: Gemini 1.5 Pro (2M) v1
+    description: Oldstable version
+  - model: gemini-1.5-flash-001
+    name: Gemini 1.5 Flash (1M) v1
+    description: Oldstable version
   - model: gemini-1.5-pro-exp-0827
     name: Gemini 1.5 Pro (Experimental 0827 version)
     description: Latest and greatest
