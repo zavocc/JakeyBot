@@ -1,0 +1,7 @@
+gemini_models:
+  - model: gpt-4o
+    name: GPT-4o
+    description: Advanced multimodal model
+  - model: gpt-4o-mini
+    name: GPT-4o Mini
+    description: Cost effective version of GPT-4o

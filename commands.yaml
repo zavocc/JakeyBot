@@ -5,4 +5,5 @@
 - gemini.message_actions
 - gemini.summarize
 - huggingface.genai
+- openai.chat
 - voice
