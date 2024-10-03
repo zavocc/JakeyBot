@@ -2,21 +2,16 @@ from core.ai.assistants import Assistants
 from core.ai.core import ModelsList
 from core.ai.history import History
 from discord.ext import commands
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from os import environ, remove
-from pathlib import Path
 import google.generativeai as genai
 import google.api_core.exceptions
 import core.ai.models.gemini.infer
 import aiohttp
 import aiofiles
 import aiofiles.os
-import asyncio
 import discord
 import importlib
 import inspect
-import jsonpickle
-import logging
 import motor.motor_asyncio
 import random
 
@@ -102,9 +97,10 @@ class BaseChat(commands.Cog):
                 return
 
         # Configure infer
-        _infer: core.ai.models.gemini.infer.Completions = importlib.import_module(f"core.ai.models.{model.split("__")[1]}.infer").Completions(
+        _model = model.split("__")
+        _infer: core.ai.models.gemini.infer.Completions = importlib.import_module(f"core.ai.models.{_model[1]}.infer").Completions(
             guild_id=guild_id,
-            model=model.split("__")[-1],
+            model={"model_provider": _model[1], "model_name": _model[-1]},
             db_conn = self.DBConn,
             _discord_bot=self.bot,
             _discord_ctx=ctx
@@ -148,11 +144,11 @@ class BaseChat(commands.Cog):
             if verbose_logs:
                 await ctx.send(inspect.cleandoc(f"""
                             > 📃 Context size: **{_result["prompt_count"]}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
-                            > ✨ Model used: **{model}**
+                            > ✨ Model used: **{_model[-1]}**
                             """))
         else:
             if verbose_logs:
-                await ctx.send(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{model}**")
+                await ctx.send(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{model[-1]}**")
 
     # Handle all unhandled exceptions through error event, handled exceptions are currently image analysis safety settings
     @ask.error

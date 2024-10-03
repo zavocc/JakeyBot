@@ -43,7 +43,7 @@ class ModelsList:
         # Iterate through the models and merge them as dictionary
         # It has to be put here instead of the init class since decorators doesn't seem to reference self class attributes
         _model_choices = [
-            discord.OptionChoice(f"{model['name']} - {model['description']}", model["name"])
+            discord.OptionChoice(f"{model['name']} - {model['description']}", model["model"])
             for model in _internal_model_data['models']
         ]
         del _internal_model_data

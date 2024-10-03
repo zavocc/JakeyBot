@@ -43,7 +43,9 @@ class GenAIConfigDefaults:
 
 
 class Completions(GenAIConfigDefaults):
-    def __init__(self, guild_id, model = "gemini-1.5-flash-002", db_conn = None, **kwargs):
+    def __init__(self, guild_id, 
+                 model = {"model_provider": "gemini", "model_name": "gemini-1.5-flash-002"}, 
+                 db_conn = None, **kwargs):
         super().__init__()
 
         # Optional
@@ -56,12 +58,13 @@ class Completions(GenAIConfigDefaults):
         self._Tool_use = None
         self.__attachment_data = None
 
-        self._model = model
+        self._model_name = model["model_name"]
+        self._model_provider = model["model_provider"]
         self._guild_id = guild_id
         self._history_management = db_conn
         
     async def _init_tool_setup(self):
-        self._Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id, collection_name="gemini_chat_history"))}").Tool(self.__discord_bot, self.__discord_ctx)
+        self._Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self.__discord_bot, self.__discord_ctx)
 
         if self._Tool_use.tool_name == "code_execution":
             self._Tool_use.tool_schema = "code_execution"
@@ -127,7 +130,7 @@ class Completions(GenAIConfigDefaults):
             await self._init_tool_setup()
 
         _genai_client = genai.GenerativeModel(
-            model_name=self._model,
+            model_name=self._model_name,
             safety_settings=self.safety_settings_config,
             generation_config=self.generation_config,
             system_instruction=system_instruction,
@@ -135,7 +138,7 @@ class Completions(GenAIConfigDefaults):
         )
 
         # Load history
-        _prompt_count, _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, collection_name="gemini_chat_history")
+        _prompt_count, _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider)
         _chat_thread = await asyncio.to_thread(jsonpickle.decode, _chat_thread, keys=True) if _chat_thread is not None else []
 
         if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
@@ -217,4 +220,4 @@ class Completions(GenAIConfigDefaults):
 
     async def save_to_history(self, chat_thread = None, prompt_count = 0):
         _encoded = await asyncio.to_thread(jsonpickle.encode, chat_thread, indent=4, keys=True)
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=_encoded, prompt_count=prompt_count, collection_name="gemini_chat_history")
+        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=_encoded, prompt_count=prompt_count, model_provider=self._model_provider)
