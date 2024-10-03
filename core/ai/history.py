@@ -12,16 +12,18 @@ class History:
         # Create a new database if it doesn't exist, access chat_history database
         self._db = self._db_conn[environ.get("MONGO_DB_NAME", "chat_history_prod")]
 
-        # _genertative_ai_gemini collection
-        self._collection = self._db["_generative_ai_gemini"]
+    async def load_history(self, guild_id, collection_name = None):
+        if collection_name is None:
+            raise ConnectionError("Please set a collection name")
 
-    async def load_history(self, guild_id):
         if guild_id is None and type(guild_id) != int:
             raise TypeError("guild_id is required")
+        
+        _collection = self._db[collection_name]
 
-        if (await self._collection.find_one({"guild_id": guild_id})) is None:
+        if (await _collection.find_one({"guild_id": guild_id})) is None:
             # Create a document if it doesn't exist
-            await self._collection.update_one({"guild_id": guild_id},{"$set": {
+            await _collection.update_one({"guild_id": guild_id},{"$set": {
                     "guild_id": guild_id,
                     "prompt_count": 0,
                     "chat_thread": None,
@@ -29,18 +31,23 @@ class History:
             }}, upsert=True)
 
         # Load the document
-        _document = await self._collection.find_one({"guild_id": guild_id})
+        _document = await _collection.find_one({"guild_id": guild_id})
             
         # Return the prompt history and chat context
         return _document["prompt_count"], _document["chat_thread"]
 
-    async def save_history(self, guild_id, chat_thread, prompt_count = 0):
+    async def save_history(self, guild_id, chat_thread, prompt_count = 0, collection_name = None):
+        if collection_name is None:
+            raise ConnectionError("Please set a collection name")
+
         if guild_id is None and type(guild_id) != int:
             raise TypeError("guild_id is required")
+        
+        _collection = self._db[collection_name]
 
-        if (await self._collection.find_one({"guild_id": guild_id})) is None:
+        if (await _collection.find_one({"guild_id": guild_id})) is None:
             # Create a document if it doesn't exist
-            await self._collection.update_one({"guild_id": guild_id},{"$set": {
+            await _collection.update_one({"guild_id": guild_id},{"$set": {
                     "guild_id": guild_id,
                     "prompt_count": 0,
                     "chat_thread": None,
@@ -48,43 +55,58 @@ class History:
             }}, upsert=True)
 
         # Update the document
-        await self._collection.update_one({"guild_id": guild_id}, {
+        await _collection.update_one({"guild_id": guild_id}, {
             "$set": {
                 "prompt_count": prompt_count,
                 "chat_thread": chat_thread
             }
         })
 
-    async def clear_history(self, guild_id):
+    async def clear_history(self, guild_id, collection_name = None):
+        if collection_name is None:
+            raise ConnectionError("Please set a collection name")
+
         if guild_id is None and type(guild_id) != int:
             raise TypeError("guild_id is required and must be an integer")
         
+        _collection = self._db[collection_name]
+
         # Check if the document exists
-        if (await self._collection.find_one({"guild_id": guild_id})) is None:
+        if (await _collection.find_one({"guild_id": guild_id})) is None:
             return
 
         # Remove the document
-        await self._collection.delete_one({"guild_id": guild_id})
+        await _collection.delete_one({"guild_id": guild_id})
 
-    async def set_config(self, guild_id, tool="code_execution"):
+    async def set_config(self, guild_id, tool="code_execution", collection_name = None):
+        if collection_name is None:
+            raise ConnectionError("Please set a collection name")
+        
         if guild_id is None and type(guild_id) != int:
             raise TypeError("guild_id is required")
+        
+        _collection = self._db[collection_name]
 
         await self.clear_history(guild_id)
-        await self._collection.update_one({"guild_id": guild_id},{"$set": {
+        await _collection.update_one({"guild_id": guild_id},{"$set": {
                 "guild_id": guild_id,
                 "prompt_count": 0,
                 "chat_thread": None,
                 "tool_use": tool
         }}, upsert=True)
 
-    async def get_config(self, guild_id):
+    async def get_config(self, guild_id, collection_name = None):
+        if collection_name is None:
+            raise ConnectionError("Please set a collection name")
+
         if guild_id is None and type(guild_id) != int:
             raise TypeError("guild_id is required")
         
-        if (await self._collection.find_one({"guild_id": guild_id})) is None:
+        _collection = self._db[collection_name]
+        
+        if (await _collection.find_one({"guild_id": guild_id})) is None:
             # Create a document if it doesn't exist
-            await self._collection.update_one({"guild_id": guild_id},{"$set": {
+            await _collection.update_one({"guild_id": guild_id},{"$set": {
                     "guild_id": guild_id,
                     "prompt_count": 0,
                     "chat_thread": None,
@@ -93,5 +115,5 @@ class History:
 
             return "code_execution"
 
-        return (await self._collection.find_one({"guild_id": guild_id}))["tool_use"]
+        return (await _collection.find_one({"guild_id": guild_id}))["tool_use"]
 

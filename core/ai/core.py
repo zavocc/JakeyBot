@@ -43,8 +43,8 @@ class ModelsList:
         # Iterate through the models and merge them as dictionary
         # It has to be put here instead of the init class since decorators doesn't seem to reference self class attributes
         _model_choices = [
-            discord.OptionChoice(f"{model['name']} - {model['description']}", model['model'])
-            for model in _internal_model_data['gemini_models']
+            discord.OptionChoice(f"{model['name']} - {model['description']}", model["name"])
+            for model in _internal_model_data['models']
         ]
         del _internal_model_data
         return _model_choices
@@ -52,8 +52,8 @@ class ModelsList:
     @staticmethod
     def get_tools_list():
         # Load the tools list from YAML file
-        with open("data/tools.yaml", "r") as models:
-            _tools_list = yaml.safe_load(models)
+        with open("data/tools.yaml", "r") as tools:
+            _tools_list = yaml.safe_load(tools)
 
         # Load tools metadata
         _tool_choices = [
