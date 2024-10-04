@@ -12,13 +12,13 @@ class Completions:
         # Optional
         # To be set as
         # self.__discord_bot = bot
-        if kwargs.get("_discord_bot") is not None and kwargs.get("_discord_ctx") is not None:
-            self.__discord_bot: discord.Bot = kwargs.get("_discord_bot")
-            self.__discord_ctx: discord.ApplicationContext = kwargs.get("_discord_ctx")
+        #if kwargs.get("_discord_bot") is not None and kwargs.get("_discord_ctx") is not None:
+        #    self.__discord_bot: discord.Bot = kwargs.get("_discord_bot")
+        #    self.__discord_ctx: discord.ApplicationContext = kwargs.get("_discord_ctx")
 
         #self._Tool_use = None
         self.__discord_attachment_data = None
-        self.__discord_attachment_uri = None
+        #self.__discord_attachment_uri = None
 
         self._model_name = model["model_name"]
         self._model_provider = model["model_provider"]
@@ -45,7 +45,7 @@ class Completions:
             }
 
         # Set the attachment variable
-        self.__discord_attachment_uri = attachment.url
+        #self.__discord_attachment_uri = attachment.url
         self.__discord_attachment_data = _attachment_data
 
     async def chat_completion(self, prompt, system_instruction: str = None):
