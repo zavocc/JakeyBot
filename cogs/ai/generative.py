@@ -153,25 +153,8 @@ class BaseChat(commands.Cog):
             await ctx.respond(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
             return
 
-        # Check for safety or blocked prompt errors
-        _exceptions = [genai.types.BlockedPromptException, genai.types.StopCandidateException, ValueError]
+        await ctx.respond("❌ Sorry, I couldn't answer your question at the moment, please check the console logs for details.")
 
-        # Get original exception from the DiscordException.original attribute
-        error = getattr(error, "original", error)
-        if any(_iter for _iter in _exceptions if isinstance(error, _iter)):
-            await ctx.respond("❌ Sorry, I can't answer that question! Please try asking another question.")
-        # Check if the error is InternalServerError
-        elif isinstance(error, google.api_core.exceptions.InternalServerError):
-            await ctx.respond("⚠️ Something went wrong (500) and its not your fault but its mostly you! If that's the case, please retry or try changing the model or rewrite your prompt.")
-        # For failed downloads from attachments
-        elif isinstance(error, aiohttp.ClientError):
-            await ctx.respond("⚠️ Uh oh! Something went wrong while processing file attachment! Please try again later.")
-        elif isinstance(error, ModuleNotFoundError):
-            await ctx.respond("⚠️ Uh oh! The tool is not available at the moment at our side, please try again later or change tools using `/feature`.")
-        elif isinstance(error, MemoryError):
-            await ctx.respond("📝 Sorry, the chat thread has reached its maximum capacity, please clear the chat history to continue using `/sweep`")
-        else:
-            await ctx.respond(f"⚠️ Uh oh! I couldn't answer your question, something happend to our end!\nHere is the logs for reference and troubleshooting:\n ```{error}```")
-        
         # Raise error
-        raise error
+        _error = getattr(error, "original", error)
+        raise _error
