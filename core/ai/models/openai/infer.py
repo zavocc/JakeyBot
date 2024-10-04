@@ -1,3 +1,4 @@
+from core.exceptions import ChatHistoryFull
 from os import environ
 import discord
 import openai
@@ -72,7 +73,7 @@ class Completions:
             }]
 
         if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
-            raise MemoryError("Maximum history reached! Clear the conversation")
+            raise ChatHistoryFull("Maximum history reached! Clear the conversation")
         
         # Craft prompt
         _chat_thread.append(

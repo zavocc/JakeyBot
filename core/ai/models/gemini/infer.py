@@ -1,3 +1,4 @@
+from core.exceptions import ChatHistoryFull
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from os import environ
 from pathlib import Path
@@ -170,7 +171,7 @@ class Completions(GenAIConfigDefaults):
         _chat_thread = await asyncio.to_thread(jsonpickle.decode, _chat_thread, keys=True) if _chat_thread is not None else []
 
         if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
-            raise MemoryError("Maximum history reached! Clear the conversation")
+            raise ChatHistoryFull("Maximum history reached! Clear the conversation")
         
         # Craft prompt
         final_prompt = [self.__discord_attachment_data, f'{prompt}'] if self.__discord_attachment_data is not None else f'{prompt}'

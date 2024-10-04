@@ -1,12 +1,11 @@
 from core.ai.assistants import Assistants
 from core.ai.core import ModelsList
 from core.ai.history import History
+from core.exceptions import ChatHistoryFull, MultiModalUnavailable
 from discord.ext import commands
 from os import environ, remove
 import google.generativeai as genai
-import google.api_core.exceptions
 import core.ai.models.gemini.infer
-import aiohttp
 import aiofiles
 import aiofiles.os
 import discord
@@ -152,8 +151,10 @@ class BaseChat(commands.Cog):
         # Cooldown error
         if isinstance(_error, commands.CommandOnCooldown):
             await ctx.respond(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
-        elif isinstance(_error, MemoryError):
+        elif isinstance(_error, ChatHistoryFull):
             await ctx.respond("📚 Maximum context history reached! Clear the conversation using `/sweep` to continue")
+        elif isinstance(_error, MultiModalUnavailable):
+            await ctx.respond("🚫 This model cannot process files, choose another model to continue")
         else:
             await ctx.respond("❌ Sorry, I couldn't answer your question at the moment, please check the console logs for details.")
 
