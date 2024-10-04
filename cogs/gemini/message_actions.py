@@ -3,18 +3,11 @@ from core.ai.assistants import Assistants
 from discord.ext import commands
 from os import environ
 import discord
-import google.generativeai as genai
 
 class GenAIApps(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
-
-        # Check for gemini API keys
-        if environ.get("GOOGLE_AI_TOKEN") is None or environ.get("GOOGLE_AI_TOKEN") == "INSERT_API_KEY":
-            raise Exception("GOOGLE_AI_TOKEN is not configured in the dev.env file. Please configure it and try again.")
-
-        genai.configure(api_key=environ.get("GOOGLE_AI_TOKEN"))
 
         # Assistants
         self._system_prompt = Assistants()

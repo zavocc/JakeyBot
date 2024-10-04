@@ -63,6 +63,11 @@ class Completions(GenAIConfigDefaults):
         self._model_provider = model["model_provider"]
         self._guild_id = guild_id
         self._history_management = db_conn
+
+        if environ.get("GOOGLE_AI_TOKEN") is None or environ.get("GOOGLE_AI_TOKEN") == "INSERT_API_KEY":
+            raise Exception("GOOGLE_AI_TOKEN is not configured in the dev.env file. Please configure it and try again.")
+
+        genai.configure(api_key=environ.get("GOOGLE_AI_TOKEN"), transport="grpc_asyncio")
         
     async def _init_tool_setup(self):
         self._Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self.__discord_bot, self.__discord_ctx)
@@ -142,6 +147,16 @@ class Completions(GenAIConfigDefaults):
         if self.__discord_bot is not None and self._history_management is not None:
             await self._init_tool_setup()
 
+        if self._Tool_use:
+            tool_config = {'function_calling_config':self._Tool_use.tool_config}
+
+            if hasattr(self._Tool_use, "file_uri") and self.__discord_attachment_uri is not None:
+                self._Tool_use.file_uri = self.__discord_attachment_uri
+            else:
+                tool_config = {'function_calling_config':"NONE"}
+        else:
+            tool_config = None
+
         _genai_client = genai.GenerativeModel(
             model_name=self._model_name,
             safety_settings=self.safety_settings_config,
@@ -160,16 +175,6 @@ class Completions(GenAIConfigDefaults):
         # Craft prompt
         final_prompt = [self.__discord_attachment_data, f'{prompt}'] if self.__discord_attachment_data is not None else f'{prompt}'
         chat_session = _genai_client.start_chat(history=_chat_thread if _chat_thread else None)
-
-        if self._Tool_use:
-            tool_config = {'function_calling_config':self._Tool_use.tool_config}
-
-            if hasattr(self._Tool_use, "file_uri") and self.__discord_attachment_uri is not None:
-                self._Tool_use.file_uri = self.__discord_attachment_uri
-            else:
-                tool_config = {'function_calling_config':"NONE"}
-        else:
-            tool_config = None
 
         # Re-write the history if an error has occured
         # For now this is the only workaround that I could find to re-write the history if there are dead file references causing PermissionDenied exception

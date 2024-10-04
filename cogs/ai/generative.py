@@ -27,11 +27,6 @@ class BaseChat(commands.Cog):
         except Exception as e:
             raise e(f"Failed to connect to MongoDB: {e}...\n\nPlease set MONGO_DB_URL in dev.env")
 
-        # Check for gemini API keys
-        if environ.get("GOOGLE_AI_TOKEN") is None or environ.get("GOOGLE_AI_TOKEN") == "INSERT_API_KEY":
-            raise Exception("GOOGLE_AI_TOKEN is not configured in the dev.env file. Please configure it and try again.")
-        genai.configure(api_key=environ.get("GOOGLE_AI_TOKEN"))
-
         # default system prompt - load assistants
         self._assistants_system_prompt = Assistants()
 
@@ -115,7 +110,7 @@ class BaseChat(commands.Cog):
         ###############################################
         # Answer generation
         ###############################################
-        _result = await _infer.chat_completion(prompt=prompt, system_instruction=self._assistants_system_prompt.jakey_system_prompt, chat=True)
+        _result = await _infer.chat_completion(prompt=prompt, system_instruction=self._assistants_system_prompt.jakey_system_prompt)
     
         # Embed the response if the response is more than 2000 characters
         # Check to see if this message is more than 2000 characters which embeds will be used for displaying the message

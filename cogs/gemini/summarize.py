@@ -14,12 +14,6 @@ class GenAITools(commands.Cog):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
-        # Check for gemini API keys
-        if environ.get("GOOGLE_AI_TOKEN") is None or environ.get("GOOGLE_AI_TOKEN") == "INSERT_API_KEY":
-            raise Exception("GOOGLE_AI_TOKEN is not configured in the dev.env file. Please configure it and try again.")
-
-        genai.configure(api_key=environ.get("GOOGLE_AI_TOKEN"))
-
         # default system prompt - load assistants
         self._assistants_system_prompt = Assistants()
 
