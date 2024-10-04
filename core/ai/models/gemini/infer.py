@@ -56,7 +56,8 @@ class Completions(GenAIConfigDefaults):
             self.__discord_ctx: discord.ApplicationContext = kwargs.get("_discord_ctx")
 
         self._Tool_use = None
-        self.__attachment_data = None
+        self.__discord_attachment_data = None
+        self.__discord_attachment_uri = None
 
         self._model_name = model["model_name"]
         self._model_provider = model["model_provider"]
@@ -70,9 +71,6 @@ class Completions(GenAIConfigDefaults):
             self._Tool_use.tool_schema = "code_execution"
 
     async def multimodal_setup(self, attachment: discord.Attachment, **kwargs):
-        if hasattr(self._Tool_use, "file_uri"):
-            self._Tool_use.file_uri = attachment.url
-
         # Download the attachment
         _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{self._guild_id}.{random.randint(5000, 6000)}.{attachment.filename}"
         try:
@@ -101,18 +99,14 @@ class Completions(GenAIConfigDefaults):
                         _msgstatus = await self.__discord_ctx.send("⌛ Processing the file attachment... this may take a while")
                 await asyncio.sleep(3)
                 _file_uri = await asyncio.to_thread(genai.get_file, _file_uri.name)
-
-            if _file_uri.state.name == "FAILED":
-                await self.__discord_ctx.respond("❌ Sorry, I can't process the file attachment. Please try again.")
-                raise ValueError(_file_uri.state.name)
         except Exception as e:
-            await self.__discord_ctx.respond(f"❌ An error has occured when uploading the file or the file format is not supported\nLog:\n```{e}```")
-            return
+            await self.__discord_ctx.respond(f"❌ Sorry, I can't process the file attachment, please see console logs for more details")
+            raise e
         finally:
             await aiofiles.os.remove(_xfilename)
 
         # Immediately use the "used" status message to indicate that the file API is used
-        if kwargs.get("verbose_logs") is not None:
+        if kwargs.get("verbose_logs") == True:
             if _msgstatus is not None:
                 await _msgstatus.edit(content=f"Used: **{attachment.filename}**")
             else:
@@ -120,9 +114,12 @@ class Completions(GenAIConfigDefaults):
 
             # Add caution that the attachment data would be lost in 48 hours
             await self.__discord_ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context after 48 hours.")
+        else:
+            if _msgstatus is not None: await _msgstatus.delete()
 
         # Set the attachment variable
-        self.__attachment_data = _file_uri
+        self.__discord_attachment_uri = attachment.url
+        self.__discord_attachment_data = _file_uri
 
     async def completion(self, prompt, system_instruction: str = None):
         # Setup model
@@ -145,9 +142,18 @@ class Completions(GenAIConfigDefaults):
             raise MemoryError("Maximum history reached! Clear the conversation")
         
         # Craft prompt
-        final_prompt = [self.__attachment_data, f'{prompt}'] if self.__attachment_data is not None else f'{prompt}'
+        final_prompt = [self.__discord_attachment_data, f'{prompt}'] if self.__discord_attachment_data is not None else f'{prompt}'
         chat_session = _genai_client.start_chat(history=_chat_thread if _chat_thread else None)
-        tool_config = {'function_calling_config':self._Tool_use.tool_config} if self._Tool_use else None
+
+        if self._Tool_use:
+            tool_config = {'function_calling_config':self._Tool_use.tool_config}
+
+            if hasattr(self._Tool_use, "file_uri") and self.__discord_attachment_uri is not None:
+                self._Tool_use.file_uri = self.__discord_attachment_uri
+            else:
+                tool_config = {'function_calling_config':"NONE"}
+        else:
+            tool_config = None
 
         # Re-write the history if an error has occured
         # For now this is the only workaround that I could find to re-write the history if there are dead file references causing PermissionDenied exception
