@@ -103,7 +103,6 @@ class Completions:
         )
 
         # AI response
-        print(_response.choices[0].message.content)
         _answer = _response.choices[0].message.content
 
         # Append to chat thread

@@ -137,24 +137,25 @@ class BaseChat(commands.Cog):
         if append_history:
             await _infer.save_to_history(chat_thread=_result["chat_thread"], prompt_count=_result["prompt_count"])
             if verbose_logs:
-                await ctx.send(inspect.cleandoc(f"""
+                await ctx.respond(inspect.cleandoc(f"""
                             > 📃 Context size: **{_result["prompt_count"]}** of {environ.get("MAX_CONTEXT_HISTORY", 20)}
                             > ✨ Model used: **{_model[-1]}**
-                            """))
+                            """), ephemeral=True)
         else:
             if verbose_logs:
-                await ctx.send(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{model[-1]}**")
+                await ctx.respond(f"> 📃 Responses isn't be saved\n> ✨ Model used: **{model[-1]}**", ephemeral=True)
 
     # Handle all unhandled exceptions through error event, handled exceptions are currently image analysis safety settings
     @ask.error
     async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
+        _error = getattr(error, "original", error)
         # Cooldown error
-        if isinstance(error, commands.CommandOnCooldown):
+        if isinstance(_error, commands.CommandOnCooldown):
             await ctx.respond(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
-            return
-
-        await ctx.respond("❌ Sorry, I couldn't answer your question at the moment, please check the console logs for details.")
+        elif isinstance(_error, MemoryError):
+            await ctx.respond("📚 Maximum context history reached! Clear the conversation using `/sweep` to continue")
+        else:
+            await ctx.respond("❌ Sorry, I couldn't answer your question at the moment, please check the console logs for details.")
 
         # Raise error
-        _error = getattr(error, "original", error)
         raise _error
