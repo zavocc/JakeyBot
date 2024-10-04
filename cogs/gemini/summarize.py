@@ -139,7 +139,7 @@ class GenAITools(commands.Cog):
             async with aiofiles.open(response_file, "a+") as f:
                 await f.write(_app_title + "\n----------\n")
                 await f.write(_summary)
-            await ctx.respond(f"Here is the summary generated for this channel\n>✨ Model used: {model}", file=discord.File(response_file, "response.md"))
+            await ctx.respond(f"Here is the summary generated for this channel", file=discord.File(response_file, "response.md"))
         else:
             _embed = discord.Embed(
                     title=_app_title,
