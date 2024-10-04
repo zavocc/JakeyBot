@@ -1,5 +1,5 @@
 from core.ai.core import ModelsList
-from cogs.gemini.generative import BaseChat
+from cogs.ai.generative import BaseChat
 from discord.ext import commands
 from os import environ
 import discord

@@ -43,7 +43,7 @@ class GenAIConfigDefaults:
 
 
 class Completions(GenAIConfigDefaults):
-    def __init__(self, guild_id, 
+    def __init__(self, guild_id = None, 
                  model = {"model_provider": "gemini", "model_name": "gemini-1.5-flash-002"}, 
                  db_conn = None, **kwargs):
         super().__init__()
@@ -72,7 +72,7 @@ class Completions(GenAIConfigDefaults):
 
     async def multimodal_setup(self, attachment: discord.Attachment, **kwargs):
         # Download the attachment
-        _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{self._guild_id}.{random.randint(5000, 6000)}.{attachment.filename}"
+        _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(518301839, 6582482111)}.{attachment.filename}"
         try:
             async with aiohttp.ClientSession() as _download_session:
                 async with _download_session.get(attachment.url, allow_redirects=True) as _xattachments:
@@ -122,6 +122,22 @@ class Completions(GenAIConfigDefaults):
         self.__discord_attachment_data = _file_uri
 
     async def completion(self, prompt, system_instruction: str = None):
+        _genai_client = genai.GenerativeModel(
+            model_name=self._model_name,
+            safety_settings=self.safety_settings_config,
+            generation_config=self.generation_config,
+            system_instruction=system_instruction,
+        )
+
+        answer = await _genai_client.generate_content_async({
+                "role":"user",
+                "parts":[
+                    prompt
+                ]
+            })
+        return answer.text
+
+    async def chat_completion(self, prompt, system_instruction: str = None):
         # Setup model
         if self.__discord_bot is not None and self._history_management is not None:
             await self._init_tool_setup()

@@ -115,7 +115,7 @@ class BaseChat(commands.Cog):
         ###############################################
         # Answer generation
         ###############################################
-        _result = await _infer.completion(prompt=prompt, system_instruction=self._assistants_system_prompt.jakey_system_prompt)
+        _result = await _infer.chat_completion(prompt=prompt, system_instruction=self._assistants_system_prompt.jakey_system_prompt, chat=True)
     
         # Embed the response if the response is more than 2000 characters
         # Check to see if this message is more than 2000 characters which embeds will be used for displaying the message
