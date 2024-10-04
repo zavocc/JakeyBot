@@ -65,6 +65,9 @@ class Completions:
 
         # Load history
         _prompt_count, _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider)
+        if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
+            raise ChatHistoryFull("Maximum history reached! Clear the conversation")
+        
         if _chat_thread is None:
             # Begin with system prompt
             _chat_thread = [{
@@ -72,8 +75,6 @@ class Completions:
                 "content": system_instruction   
             }]
 
-        if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
-            raise ChatHistoryFull("Maximum history reached! Clear the conversation")
         
         # Craft prompt
         _chat_thread.append(

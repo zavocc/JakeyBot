@@ -168,10 +168,11 @@ class Completions(GenAIConfigDefaults):
 
         # Load history
         _prompt_count, _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider)
-        _chat_thread = await asyncio.to_thread(jsonpickle.decode, _chat_thread, keys=True) if _chat_thread is not None else []
-
         if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
             raise ChatHistoryFull("Maximum history reached! Clear the conversation")
+
+        _chat_thread = await asyncio.to_thread(jsonpickle.decode, _chat_thread, keys=True) if _chat_thread is not None else []
+
         
         # Craft prompt
         final_prompt = [self.__discord_attachment_data, f'{prompt}'] if self.__discord_attachment_data is not None else f'{prompt}'
