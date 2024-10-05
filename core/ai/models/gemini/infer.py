@@ -68,7 +68,7 @@ class Completions(GenAIConfigDefaults):
         if environ.get("GOOGLE_AI_TOKEN") is None or environ.get("GOOGLE_AI_TOKEN") == "INSERT_API_KEY":
             raise Exception("GOOGLE_AI_TOKEN is not configured in the dev.env file. Please configure it and try again.")
 
-        genai.configure(api_key=environ.get("GOOGLE_AI_TOKEN"), transport="grpc_asyncio")
+        genai.configure(api_key=environ.get("GOOGLE_AI_TOKEN"))
         
     async def _init_tool_setup(self):
         self._Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self.__discord_bot, self.__discord_ctx)
@@ -113,15 +113,10 @@ class Completions(GenAIConfigDefaults):
 
         # Immediately use the "used" status message to indicate that the file API is used
         if kwargs.get("verbose_logs") == True:
-            if _msgstatus is not None:
-                await _msgstatus.edit(content=f"Used: **{attachment.filename}**")
-            else:
-                await self.__discord_ctx.send(f"Used: **{attachment.filename}**")
-
             # Add caution that the attachment data would be lost in 48 hours
             await self.__discord_ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context after 48 hours.")
-        else:
-            if _msgstatus is not None: await _msgstatus.delete()
+        
+        if _msgstatus is not None: await _msgstatus.delete()
 
         # Set the attachment variable
         self.__discord_attachment_uri = attachment.url
