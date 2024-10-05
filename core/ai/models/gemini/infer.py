@@ -75,7 +75,7 @@ class Completions(GenAIConfigDefaults):
         if self._Tool_use.tool_name == "code_execution":
             self._Tool_use.tool_schema = "code_execution"
 
-    async def multimodal_setup(self, attachment: discord.Attachment, **kwargs):
+    async def input_file(self, attachment: discord.Attachment, **kwargs):
         # Download the attachment
         _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(518301839, 6582482111)}.{attachment.filename}"
         try:

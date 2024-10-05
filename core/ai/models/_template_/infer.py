@@ -35,7 +35,7 @@ class Completions():
         if self._Tool_use.tool_name == "code_execution":
             raise ValueError("Code execution is not supported in this model")
 
-    async def multimodal_setup(self, attachment: discord.Attachment, **kwargs):
+    async def input_file(self, attachment: discord.Attachment, **kwargs):
         pass
 
 
