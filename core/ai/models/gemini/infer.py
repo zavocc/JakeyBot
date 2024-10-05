@@ -44,9 +44,13 @@ class GenAIConfigDefaults:
 
 
 class Completions(GenAIConfigDefaults):
-    def __init__(self, guild_id = None, 
+    def __init__(self, client_session = None, guild_id = None, 
                  model = {"model_provider": "gemini", "model_name": "gemini-1.5-flash-002"}, 
                  db_conn = None, **kwargs):
+        # This could only mean a problem has occured
+        if client_session is None:
+            raise AttributeError("Client session has not started")
+
         super().__init__()
 
         # Optional
@@ -64,11 +68,6 @@ class Completions(GenAIConfigDefaults):
         self._model_provider = model["model_provider"]
         self._guild_id = guild_id
         self._history_management = db_conn
-
-        if environ.get("GOOGLE_AI_TOKEN") is None or environ.get("GOOGLE_AI_TOKEN") == "INSERT_API_KEY":
-            raise Exception("GOOGLE_AI_TOKEN is not configured in the dev.env file. Please configure it and try again.")
-
-        genai.configure(api_key=environ.get("GOOGLE_AI_TOKEN"))
         
     async def _init_tool_setup(self):
         self._Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self.__discord_bot, self.__discord_ctx)
@@ -140,7 +139,9 @@ class Completions(GenAIConfigDefaults):
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Setup model
-        if self.__discord_bot is not None and self._history_management is not None:
+        if self.__discord_bot is not None \
+            and self.__discord_ctx is not None \
+            and self._history_management is not None:
             await self._init_tool_setup()
 
         if self._Tool_use:

@@ -1,3 +1,4 @@
+from core.ai._runtime_client import AIClientSession
 from discord.ext import bridge, commands
 from dotenv import load_dotenv
 from inspect import cleandoc
@@ -40,6 +41,7 @@ intents.members = True
 
 # Bot
 bot = bridge.Bot(command_prefix=commands.when_mentioned_or("$"), intents = intents)
+bot._ai_client_session = AIClientSession()
 
 ###############################################
 # ON READY

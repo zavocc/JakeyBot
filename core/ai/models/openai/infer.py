@@ -4,10 +4,11 @@ import discord
 import openai
 
 class Completions:
-    def __init__(self, guild_id = None, 
+    def __init__(self, client_session = None, guild_id = None, 
                  model = {"model_provider": "openai", "model_name": "gpt-4o-mini"}, 
                  db_conn = None, **kwargs):
-        super().__init__()
+        if client_session is None or not hasattr(client_session, "_oaiclient"):
+            raise AttributeError("OpenAI client session has not been set or initialized")
 
         # Optional
         # To be set as
@@ -28,7 +29,7 @@ class Completions:
         if environ.get("OPENAI_API_KEY") is None:
             raise Exception("OpenAI API key is not configured. Please configure it and try again.")
 
-        self._oaiclient = openai.AsyncClient(base_url=environ.get("__OAI_ENDPOINT"))
+        self.__oaiclient: openai.AsyncClient = client_session._oaiclient
         
     #async def _init_tool_setup(self):
     #    self._Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self.__discord_bot, self.__discord_ctx)
@@ -94,7 +95,7 @@ class Completions:
             _chat_thread[-1]["content"].append(self.__discord_attachment_data)
 
         # Generate completion
-        _response = await self._oaiclient.chat.completions.create(
+        _response = await self.__oaiclient.chat.completions.create(
             messages=_chat_thread,
             model=self._model_name,
             max_tokens=3024,
