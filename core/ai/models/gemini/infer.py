@@ -55,13 +55,13 @@ class Completions(GenAIConfigDefaults):
 
         # Optional
         # To be set as
-        # self.__discord_bot = bot
+        # self._discord_bot = bot
         if kwargs.get("_discord_bot") is not None and kwargs.get("_discord_ctx") is not None:
-            self.__discord_bot: discord.Bot = kwargs.get("_discord_bot")
-            self.__discord_ctx: discord.ApplicationContext = kwargs.get("_discord_ctx")
+            self._discord_bot: discord.Bot = kwargs.get("_discord_bot")
+            self._discord_ctx: discord.ApplicationContext = kwargs.get("_discord_ctx")
 
-        self.__discord_attachment_data = None
-        self.__discord_attachment_uri = None
+        self._file_data = None
+        self._file_source_url = None
 
         self._model_name = model["model_name"]
         self._model_provider = model["model_provider"]
@@ -95,11 +95,11 @@ class Completions(GenAIConfigDefaults):
             while _file_uri.state.name == "PROCESSING":
                 if kwargs.get("verbose_logs") is not None:
                     if _msgstatus is None:
-                        _msgstatus = await self.__discord_ctx.send("⌛ Processing the file attachment... this may take a while")
+                        _msgstatus = await self._discord_ctx.send("⌛ Processing the file attachment... this may take a while")
                 await asyncio.sleep(3)
                 _file_uri = await asyncio.to_thread(genai.get_file, _file_uri.name)
         except Exception as e:
-            await self.__discord_ctx.respond(f"❌ Sorry, I can't process the file attachment, please see console logs for more details")
+            await self._discord_ctx.respond(f"❌ Sorry, I can't process the file attachment, please see console logs for more details")
             raise e
         finally:
             await aiofiles.os.remove(_xfilename)
@@ -107,13 +107,13 @@ class Completions(GenAIConfigDefaults):
         # Immediately use the "used" status message to indicate that the file API is used
         if kwargs.get("verbose_logs") == True:
             # Add caution that the attachment data would be lost in 48 hours
-            await self.__discord_ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context after 48 hours.")
+            await self._discord_ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context after 48 hours.")
         
         if _msgstatus is not None: await _msgstatus.delete()
 
         # Set the attachment variable
-        self.__discord_attachment_uri = attachment.url
-        self.__discord_attachment_data = _file_uri
+        self._file_source_url = attachment.url
+        self._file_data = _file_uri
 
     async def completion(self, prompt, system_instruction: str = None):
         _genai_client = genai.GenerativeModel(
@@ -133,8 +133,8 @@ class Completions(GenAIConfigDefaults):
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Setup model and tools
-        if self.__discord_bot is not None and self.__discord_ctx is not None and self._history_management is not None:
-            _Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self.__discord_bot, self.__discord_ctx)
+        if self._discord_bot is not None and self._discord_ctx is not None and self._history_management is not None:
+            _Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self._discord_bot, self._discord_ctx)
 
             if _Tool_use.tool_name == "code_execution":
                 _Tool_use.tool_schema = "code_execution"
@@ -143,8 +143,8 @@ class Completions(GenAIConfigDefaults):
             tool_config = {'function_calling_config':_Tool_use.tool_config}
 
             if hasattr(_Tool_use, "file_uri"):
-                if self.__discord_attachment_uri is not None:
-                    _Tool_use.file_uri = self.__discord_attachment_uri
+                if self._file_source_url is not None:
+                    _Tool_use.file_uri = self._file_source_url
                 else:
                     tool_config = {'function_calling_config':"NONE"}
         else:
@@ -166,7 +166,7 @@ class Completions(GenAIConfigDefaults):
         _chat_thread = await asyncio.to_thread(jsonpickle.decode, _chat_thread, keys=True) if _chat_thread is not None else []
 
         # Craft prompt
-        final_prompt = [self.__discord_attachment_data, f'{prompt}'] if self.__discord_attachment_data is not None else f'{prompt}'
+        final_prompt = [self._file_data, f'{prompt}'] if self._file_data is not None else f'{prompt}'
         chat_session = _genai_client.start_chat(history=_chat_thread if _chat_thread else None)
 
         # Re-write the history if an error has occured
@@ -197,7 +197,7 @@ class Completions(GenAIConfigDefaults):
                     _chat_parts.parts.pop(0)
 
             # Notify the user that the chat session has been re-initialized
-            await self.__discord_ctx.send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
+            await self._discord_ctx.send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
 
             # Re-send the message
             answer = await chat_session.send_message_async(final_prompt, tool_config=tool_config)
@@ -208,7 +208,7 @@ class Completions(GenAIConfigDefaults):
 
         for _part in _candidates:
             if _part.code_execution_result:
-                await self.__discord_ctx.send(f"Used: **{_Tool_use.tool_human_name}**")
+                await self._discord_ctx.send(f"Used: **{_Tool_use.tool_human_name}**")
                 continue
 
             if _part.function_call:
@@ -219,7 +219,7 @@ class Completions(GenAIConfigDefaults):
                 try:
                     _result = await _Tool_use._tool_function(**_func_call.args)
                 except (AttributeError, TypeError) as e:
-                    await self.__discord_ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
+                    await self._discord_ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
                     # Also print the error to the console
                     logging.error("slashCommands>/ask: I think I found a problem related to function calling:", e)
                     return
@@ -244,7 +244,7 @@ class Completions(GenAIConfigDefaults):
                     }
                 )
 
-                await self.__discord_ctx.send(f"Used: **{_Tool_use.tool_human_name}**")
+                await self._discord_ctx.send(f"Used: **{_Tool_use.tool_human_name}**")
 
         return {"answer":answer.text, "prompt_count":_prompt_count+1, "chat_thread": chat_session.history}
 

@@ -10,7 +10,7 @@ class Completions:
         if client_session is None or not hasattr(client_session, "_oaiclient"):
             raise AttributeError("OpenAI client session has not been set or initialized")
 
-        self.__discord_attachment_data = None
+        self._file_data = None
 
         self._model_name = model["model_name"]
         self._model_provider = model["model_provider"]
@@ -23,14 +23,14 @@ class Completions:
         self.__oaiclient: openai.AsyncClient = client_session._oaiclient
 
     async def input_files(self, attachment: discord.Attachment, **kwargs):
-        _attachment_data = {
+        prompt_w_attachment = {
             "type":"image_url",
             "image_url": {
                     "url": attachment.url
                 }
             }
 
-        self.__discord_attachment_data = _attachment_data
+        self._file_data = prompt_w_attachment
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Load history
