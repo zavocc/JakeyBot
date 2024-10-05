@@ -29,13 +29,15 @@ class Completions:
         # System prompt
         # Check if codestral-latest model is used since it's not necessary to put system instructions as its designed for code
         # And to prevent tokens from being depleted quickly
-        if _chat_thread is None and not self._model_name == "codestral-latest":
-            _chat_thread = [{
-                "role": "system",
-                "content": system_instruction   
-            }]
-        else:
-            _chat_thread = []
+        if _chat_thread is None:
+            if not self._model_name == "codestral-latest":
+                _chat_thread = [{
+                    "role": "system",
+                    "content": system_instruction   
+                }]
+            else:
+                _chat_thread = []
+    
         
         # User prompt
         _chat_thread.append(
