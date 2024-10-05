@@ -20,4 +20,10 @@ models:
   - model: __openai__gpt-4o-mini
     name: GPT-4o Mini
     description: A smaller version of GPT-4o for speed and cost with multimodal capabilities
+  - model: __mistralai__mistral-large-latest
+    name: Mistral Large 2
+    description: Mistral's premier model for multilingual and with similar performance to GPT-4o
+  - model: __mistralai__codestral-latest
+    name: Codestral
+    description: Language model specialized for coding tasks
 

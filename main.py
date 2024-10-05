@@ -41,7 +41,7 @@ intents.members = True
 
 # Bot
 bot = bridge.Bot(command_prefix=commands.when_mentioned_or("$"), intents = intents)
-bot._ai_client_session = AIClientSession()
+bot._ai_client_session = None
 
 ###############################################
 # ON READY
@@ -86,6 +86,9 @@ async def on_ready():
     #https://stackoverflow.com/a/65780398 - for multiple statuses
     await bot.change_presence(activity=discord.Game("/ask me anything or $help"))
     print(f"{bot.user} is ready and online!")
+
+    # We load this after the bot is ready so other commands are readily available
+    bot._ai_client_session = AIClientSession()
 
 ###############################################
 # ON USER MESSAGE

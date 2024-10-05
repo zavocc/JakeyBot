@@ -22,6 +22,6 @@ class AIClientSession:
         # Mistral
         try:
             mistralai = importlib.import_module("mistralai")
-            self._mistralclient = mistralai.Mistral(api_key=environ.get("MISTRAL_API_KEY"))
+            self._mistral_client = mistralai.Mistral(api_key=environ.get("MISTRAL_API_KEY"))
         except Exception as e:
             logging.error("Failed to configure Mistral API: %s\nexpect errors later", e)

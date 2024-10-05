@@ -1,3 +1,4 @@
+# type: ignore
 from core.exceptions import ChatHistoryFull
 import importlib
 import discord
