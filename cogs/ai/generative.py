@@ -163,7 +163,7 @@ class BaseChat(commands.Cog):
         elif isinstance(_error, MultiModalUnavailable):
             await ctx.respond("🚫 This model cannot process files, choose another model to continue")
         else:
-            await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, reason:\n {_error}")
+            await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, reason:\n ```{_error}```")
 
         # Raise error
         raise _error
