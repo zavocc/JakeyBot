@@ -106,6 +106,9 @@ class BaseChat(commands.Cog):
         # File attachment processing
         ###############################################
         if attachment is not None:
+            if not hasattr(_infer, "multimodal_setup"):
+                raise MultiModalUnavailable(f"Multimodal is not available for this model: {_model_name}")
+
             await _infer.multimodal_setup(attachment=attachment, verbose_logs=verbose_logs)
             if verbose_logs:
                 await ctx.send(f"Used: **{attachment.filename}**")
