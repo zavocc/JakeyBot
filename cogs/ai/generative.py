@@ -99,7 +99,7 @@ class BaseChat(commands.Cog):
             guild_id=guild_id,
             model={"model_provider": _model_provider, "model_name": _model_name},
             db_conn = self.DBConn,
-            _discord_bot=self.bot,
+            _discord_bot=self.bot, # These are used for tools which are not part of its parameters
             _discord_ctx=ctx
         )
 
