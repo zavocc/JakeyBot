@@ -22,7 +22,7 @@ class Completions:
 
         self.__oaiclient: openai.AsyncClient = client_session._oaiclient
 
-    async def multimodal_setup(self, attachment: discord.Attachment, **kwargs):
+    async def input_files(self, attachment: discord.Attachment, **kwargs):
         _attachment_data = {
             "type":"image_url",
             "image_url": {
