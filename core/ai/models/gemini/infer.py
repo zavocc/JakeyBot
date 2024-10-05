@@ -49,7 +49,7 @@ class Completions(GenAIConfigDefaults):
                  db_conn = None, **kwargs):
         # This could only mean a problem has occured
         if client_session is None:
-            raise AttributeError("Client session has not started")
+            raise AttributeError("Client session has not been started")
 
         super().__init__()
 
