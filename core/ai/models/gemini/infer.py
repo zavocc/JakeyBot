@@ -60,7 +60,6 @@ class Completions(GenAIConfigDefaults):
             self.__discord_bot: discord.Bot = kwargs.get("_discord_bot")
             self.__discord_ctx: discord.ApplicationContext = kwargs.get("_discord_ctx")
 
-        self._Tool_use = None
         self.__discord_attachment_data = None
         self.__discord_attachment_uri = None
 
@@ -69,11 +68,6 @@ class Completions(GenAIConfigDefaults):
         self._guild_id = guild_id
         self._history_management = db_conn
         
-    async def _init_tool_setup(self):
-        self._Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self.__discord_bot, self.__discord_ctx)
-
-        if self._Tool_use.tool_name == "code_execution":
-            self._Tool_use.tool_schema = "code_execution"
 
     async def input_file(self, attachment: discord.Attachment, **kwargs):
         # Download the attachment
@@ -138,19 +132,21 @@ class Completions(GenAIConfigDefaults):
         return answer.text
 
     async def chat_completion(self, prompt, system_instruction: str = None):
-        # Setup model
-        if self.__discord_bot is not None \
-            and self.__discord_ctx is not None \
-            and self._history_management is not None:
-            await self._init_tool_setup()
+        # Setup model and tools
+        if self.__discord_bot is not None and self.__discord_ctx is not None and self._history_management is not None:
+            _Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self.__discord_bot, self.__discord_ctx)
 
-        if self._Tool_use:
-            tool_config = {'function_calling_config':self._Tool_use.tool_config}
+            if _Tool_use.tool_name == "code_execution":
+                _Tool_use.tool_schema = "code_execution"
 
-            if hasattr(self._Tool_use, "file_uri") and self.__discord_attachment_uri is not None:
-                self._Tool_use.file_uri = self.__discord_attachment_uri
-            else:
-                tool_config = {'function_calling_config':"NONE"}
+        if _Tool_use:
+            tool_config = {'function_calling_config':_Tool_use.tool_config}
+
+            if hasattr(_Tool_use, "file_uri"):
+                if self.__discord_attachment_uri is not None:
+                    _Tool_use.file_uri = self.__discord_attachment_uri
+                else:
+                    tool_config = {'function_calling_config':"NONE"}
         else:
             tool_config = None
 
@@ -159,7 +155,7 @@ class Completions(GenAIConfigDefaults):
             safety_settings=self.safety_settings_config,
             generation_config=self.generation_config,
             system_instruction=system_instruction,
-            tools=self._Tool_use.tool_schema if self._Tool_use else None
+            tools=_Tool_use.tool_schema if _Tool_use else None
         )
 
         # Load history
@@ -169,7 +165,6 @@ class Completions(GenAIConfigDefaults):
 
         _chat_thread = await asyncio.to_thread(jsonpickle.decode, _chat_thread, keys=True) if _chat_thread is not None else []
 
-        
         # Craft prompt
         final_prompt = [self.__discord_attachment_data, f'{prompt}'] if self.__discord_attachment_data is not None else f'{prompt}'
         chat_session = _genai_client.start_chat(history=_chat_thread if _chat_thread else None)
@@ -182,18 +177,29 @@ class Completions(GenAIConfigDefaults):
             answer = await chat_session.send_message_async(final_prompt, tool_config=tool_config)
         #  Retry the response if an error has occured
         except google.api_core.exceptions.PermissionDenied:
-            _chat_thread = [
-                {"role": x.role, "parts": [y.text]} 
-                for x in chat_session.history 
-                for y in x.parts 
-                if x.role and y.text
-            ]
+            # Iterate over chat_session.history
+            # Due to the uncanny use of protobuf objects but when iterating, each contains the format similar to this
+
+            # {
+            #    "role": "user",
+            #    "parts": [
+            #       "file_data": {
+            #          "name": "file_name",
+            #          "uri": "file_uri",
+            #       },
+            #       "text": "message"
+            #    ]
+            # }
+
+            for _chat_parts in chat_session.history:
+                # Remove the parts that contain "file_data"
+                if _chat_parts.parts[0].file_data:
+                    _chat_parts.parts.pop(0)
 
             # Notify the user that the chat session has been re-initialized
             await self.__discord_ctx.send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
 
-            # Re-initialize the chat session
-            chat_session = _genai_client.start_chat(history=_chat_thread)
+            # Re-send the message
             answer = await chat_session.send_message_async(final_prompt, tool_config=tool_config)
 
         # answer.parts is equivalent to answer.candidates[0].   content.parts[0] but it is a shorthand alias
@@ -202,44 +208,43 @@ class Completions(GenAIConfigDefaults):
 
         for _part in _candidates:
             if _part.code_execution_result:
-                await self.__discord_ctx.send(f"Used: **{self._Tool_use.tool_human_name}**")
+                await self.__discord_ctx.send(f"Used: **{_Tool_use.tool_human_name}**")
                 continue
 
             if _part.function_call:
                 _func_call = _part.function_call
-                break
 
-        if _func_call:
-            # Call the function through their callables with getattr
-            try:
-                _result = await self._Tool_use._tool_function(**_func_call.args)
-            except (AttributeError, TypeError) as e:
-                await self.__discord_ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
-                # Also print the error to the console
-                logging.error("slashCommands>/ask: I think I found a problem related to function calling:", e)
-                return
+            if _func_call:
+                # Call the function through their callables with getattr
+                try:
+                    _result = await _Tool_use._tool_function(**_func_call.args)
+                except (AttributeError, TypeError) as e:
+                    await self.__discord_ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
+                    # Also print the error to the console
+                    logging.error("slashCommands>/ask: I think I found a problem related to function calling:", e)
+                    return
 
-            # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
-            answer = await chat_session.send_message_async(
-                genai.protos.Content(
-                    parts=[
-                        genai.protos.Part(
-                            function_response = genai.protos.FunctionResponse(
-                                name = _func_call.name,
-                                response = {"result": _result}
+                # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
+                answer = await chat_session.send_message_async(
+                    genai.protos.Content(
+                        parts=[
+                            genai.protos.Part(
+                                function_response = genai.protos.FunctionResponse(
+                                    name = _func_call.name,
+                                    response = {"result": _result}
+                                )
                             )
-                        )
-                    ]
-                ),
-                safety_settings={
-                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE
-                }
-            )
+                        ]
+                    ),
+                    safety_settings={
+                        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE
+                    }
+                )
 
-            await self.__discord_ctx.send(f"Used: **{self._Tool_use.tool_human_name}**")
+                await self.__discord_ctx.send(f"Used: **{_Tool_use.tool_human_name}**")
 
         return {"answer":answer.text, "prompt_count":_prompt_count+1, "chat_thread": chat_session.history}
 
