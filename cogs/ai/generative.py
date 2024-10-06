@@ -3,7 +3,7 @@ from core.ai.core import ModelsList
 from core.ai.history import History
 from core.exceptions import ChatHistoryFull, MultiModalUnavailable
 from discord.ext import commands
-from os import environ, remove
+from os import environ
 import core.ai.models.gemini.infer
 import aiofiles
 import aiofiles.os
@@ -129,7 +129,9 @@ class BaseChat(commands.Cog):
             _system_embed = discord.Embed()
 
         _system_embed.add_field(name="Model used", value=_model_name)
-        _system_embed.add_field(name="Chat turns left", value=f"{_result["prompt_count"]} of {environ.get('MAX_CONTEXT_HISTORY', 20)}")
+
+        # Only report context size information if history is enabled
+        if append_history: _system_embed.add_field(name="Chat turns left", value=f"{_result["prompt_count"]} of {environ.get('MAX_CONTEXT_HISTORY', 20)}")
 
         # Tool use
         if hasattr(_infer, "_used_tool_name"): _system_embed.add_field(name="Tool used", value=_infer._used_tool_name)
