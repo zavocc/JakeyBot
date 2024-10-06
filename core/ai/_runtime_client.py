@@ -31,7 +31,7 @@ class AIClientSession:
                 raise ValueError("Please configure OPENROUTER_API_KEY in dev.env")
 
             openai = importlib.import_module("openai")
-            self._orouter = openai.AsyncClient(base_url=environ.get("__OPENROUTER_ENDPOINT"), api_key=environ.get("OPENROUTER_API_KEY"))
+            self._orouter = openai.AsyncClient(base_url="https://openrouter.ai/api/v1", api_key=environ.get("OPENROUTER_API_KEY"))
         except Exception as e:
             logging.error("Failed to configure OpenRouter (using OpenAI SDK) API: %s\nexpect errors later", e)
 
