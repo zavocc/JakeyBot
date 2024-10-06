@@ -1,14 +1,14 @@
 from core.exceptions import ChatHistoryFull
 from os import environ
-import discord
 import openai
 
+# OpenAI O1 model
 class Completions:
     def __init__(self, client_session = None, guild_id = None, 
-                 model = {"model_provider": "openai", "model_name": "gpt-4o-mini"}, 
+                 model = {"model_provider": "openai_openrouter", "model_name": "o1-mini"}, 
                  db_conn = None, **kwargs):
-        if client_session is None or not hasattr(client_session, "_oaiclient"):
-            raise AttributeError("OpenAI client session has not been set or initialized")
+        if client_session is None or not hasattr(client_session, "_orouter"):
+            raise AttributeError("OpenRouter client session has not been set or initialized")
 
         self._file_data = None
 
@@ -17,32 +17,17 @@ class Completions:
         self._guild_id = guild_id
         self._history_management = db_conn
 
-        self.__oaiclient: openai.AsyncClient = client_session._oaiclient
+        self.__oaiclient: openai.AsyncClient = client_session._orouter
 
-    async def input_files(self, attachment: discord.Attachment, **kwargs):
-        prompt_w_attachment = {
-            "type":"image_url",
-            "image_url": {
-                    "url": attachment.url
-                }
-            }
-
-        self._file_data = prompt_w_attachment
-
-    async def chat_completion(self, prompt, system_instruction: str = None):
+    async def chat_completion(self, prompt, **kwargs):
         # Load history
         _prompt_count, _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider)
         if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
             raise ChatHistoryFull("Maximum history reached! Clear the conversation")
-        
-        if _chat_thread is None:
-            # Begin with system prompt
-            _chat_thread = [{
-                "role": "system",
-                "content": system_instruction   
-            }]
 
-        
+        if _chat_thread is None:
+            _chat_thread = []
+
         # Craft prompt
         _chat_thread.append(
              {
@@ -56,15 +41,11 @@ class Completions:
             }
         )
 
-        # Check if we have an attachment
-        if self._file_data is not None:
-            _chat_thread[-1]["content"].append(self._file_data)
-
         # Generate completion
         _response = await self.__oaiclient.chat.completions.create(
             messages=_chat_thread,
             model=self._model_name,
-            max_tokens=3024,
+            max_tokens=1024,
             temperature=0.7,
             response_format={
                 "type":"text"

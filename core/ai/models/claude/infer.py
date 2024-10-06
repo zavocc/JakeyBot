@@ -5,9 +5,9 @@ import openai
 
 class Completions:
     def __init__(self, client_session = None, guild_id = None, 
-                 model = {"model_provider": "openai", "model_name": "gpt-4o-mini"}, 
+                 model = {"model_provider": "claude", "model_name": "claude-3-haiku"}, 
                  db_conn = None, **kwargs):
-        if client_session is None or not hasattr(client_session, "_oaiclient"):
+        if client_session is None or not hasattr(client_session, "_orouter"):
             raise AttributeError("OpenAI client session has not been set or initialized")
 
         self._file_data = None
@@ -17,7 +17,7 @@ class Completions:
         self._guild_id = guild_id
         self._history_management = db_conn
 
-        self.__oaiclient: openai.AsyncClient = client_session._oaiclient
+        self.__oaiclient: openai.AsyncClient = client_session._orouter
 
     async def input_files(self, attachment: discord.Attachment, **kwargs):
         prompt_w_attachment = {
@@ -39,7 +39,15 @@ class Completions:
             # Begin with system prompt
             _chat_thread = [{
                 "role": "system",
-                "content": system_instruction   
+                "content": [
+                    {
+                        "type": "text",
+                        "text": system_instruction,
+                        "cache_control": {
+                            "type": "ephemeral"
+                        }
+                    }
+                ] 
             }]
 
         
@@ -63,7 +71,7 @@ class Completions:
         # Generate completion
         _response = await self.__oaiclient.chat.completions.create(
             messages=_chat_thread,
-            model=self._model_name,
+            model=f"anthropic/{self._model_name}",
             max_tokens=3024,
             temperature=0.7,
             response_format={

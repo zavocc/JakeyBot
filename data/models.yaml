@@ -1,4 +1,5 @@
 models:
+  # Hosted through Gemini API
   - model: __gemini__gemini-1.5-pro-002
     name: Gemini 1.5 Pro (2M)
     description: Advanced chat tasks with low availability
@@ -14,16 +15,33 @@ models:
   - model: __gemini__gemini-1.5-flash-8b
     name: Gemini 1.5 Flash 8B (1M)
     description: Lighter and faster version of Gemini 1.5 Flash 
+
+  # Hosted through OpenAI API
   - model: __openai__gpt-4o
     name: GPT-4o
     description: OpenAI's flagship multimodal model for advanced tasks
   - model: __openai__gpt-4o-mini
     name: GPT-4o Mini
     description: A smaller version of GPT-4o for speed and cost with multimodal capabilities
-  - model: __mistralai__mistral-large-latest
-    name: Mistral Large 2
-    description: Mistral's premier model for multilingual and with similar performance to GPT-4o
-  - model: __mistralai__codestral-latest
-    name: Codestral
-    description: Language model specialized for coding tasks
 
+  # Claude models hosted through OpenRouter
+  - model: __claude__claude-3.5-sonnet
+    name: Claude 3.5 Sonnet
+    description: Top notch intelligence with balanced speed and accuracy
+  - model: __claude__claude-3-opus
+    name: Claude 3 Opus
+    description: For creative and complex tasks
+  - model: __claude__claude-3-haiku
+    name: Claude 3 Haiku
+    description: Lightning fast chat with low accuracy
+    
+  # These models are hosted through OpenRouter
+  - model: __openai_openrouter__o1-preview
+    name: O1 Preview
+    description: Broad reasoning capabilities
+  - model: __openai_openrouter__o1-mini
+    name: O1 Mini
+    description: Reasons at math, science, and coding tasks with exceptional performance
+
+  
+  
