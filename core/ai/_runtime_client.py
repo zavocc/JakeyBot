@@ -7,6 +7,9 @@ class AIClientSession:
     def __init__(self):
         # Gemini
         try:
+            if not environ.get("GOOGLE_AI_TOKEN"):
+                raise ValueError("Please configure GOOGLE_AI_TOKEN in dev.env")
+
             gemini = importlib.import_module("google.generativeai")
             gemini.configure(api_key=environ.get("GOOGLE_AI_TOKEN"))
         except Exception as e:
@@ -14,13 +17,29 @@ class AIClientSession:
 
         # OpenAI
         try:
+            if not environ.get("OPENAI_API_KEY"):
+                raise ValueError("Please configure OPENAI_API_KEY in dev.env")
+
             openai = importlib.import_module("openai")
             self._oaiclient = openai.AsyncClient(base_url=environ.get("__OAI_ENDPOINT"), api_key=environ.get("OPENAI_API_KEY"))
         except Exception as e:
             logging.error("Failed to configure OpenAI API: %s\nexpect errors later", e)
 
+        # O1 models
+        try:
+            if not environ.get("OPENROUTER_API_KEY"):
+                raise ValueError("Please configure OPENROUTER_API_KEY in dev.env")
+
+            openai = importlib.import_module("openai")
+            self._oaiclient = openai.AsyncClient(base_url=environ.get("__OPENROUTER_ENDPOINT"), api_key=environ.get("OPENROUTER_API_KEY"))
+        except Exception as e:
+            logging.error("Failed to configure OpenAI API: %s\nexpect errors later", e)
+
         # Mistral
         try:
+            if not environ.get("MISTRAL_API_KEY"):
+                raise ValueError("Please configure MISTRAL_API_KEY in dev.env")
+
             mistralai = importlib.import_module("mistralai")
             self._mistral_client = mistralai.Mistral(api_key=environ.get("MISTRAL_API_KEY"))
         except Exception as e:
