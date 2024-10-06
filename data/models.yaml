@@ -42,6 +42,3 @@ models:
   - model: __openai_openrouter__o1-mini
     name: O1 Mini
     description: Reasons at math, science, and coding tasks with exceptional performance
-
-  
-  
