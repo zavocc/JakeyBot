@@ -17,9 +17,6 @@ class Completions:
         self._guild_id = guild_id
         self._history_management = db_conn
 
-        if environ.get("OPENAI_API_KEY") is None:
-            raise Exception("OpenAI API key is not configured. Please configure it and try again.")
-
         self.__oaiclient: openai.AsyncClient = client_session._oaiclient
 
     async def input_files(self, attachment: discord.Attachment, **kwargs):

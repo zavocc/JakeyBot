@@ -15,9 +15,6 @@ class Completions:
         self._guild_id = guild_id
         self._history_management = db_conn
 
-        if environ.get("MISTRAL_API_KEY") is None:
-            raise Exception("Mistral API key is not configured. Please configure it and try again.")
-
         self.__mistral_client: mistralai.Mistral = client_session._mistral_client
 
     async def chat_completion(self, prompt, system_instruction: str = None):
