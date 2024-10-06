@@ -70,6 +70,10 @@ class Completions:
 
         # Generate completion
         _response = await self.__oaiclient.chat.completions.create(
+            extra_headers={
+                "HTTP-Referer": "https://github.com/zavocc/JakeyBot",
+                "X-Title": environ.get("BOT_NAME", "JakeyBot")
+            },
             messages=_chat_thread,
             model=f"anthropic/{self._model_name}",
             max_tokens=3024,
