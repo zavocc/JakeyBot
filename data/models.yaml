@@ -28,9 +28,6 @@ models:
   - model: __claude__claude-3.5-sonnet
     name: Claude 3.5 Sonnet
     description: Top notch intelligence with balanced speed and accuracy
-  - model: __claude__claude-3-opus
-    name: Claude 3 Opus
-    description: For creative and complex tasks
   - model: __claude__claude-3-haiku
     name: Claude 3 Haiku
     description: Lightning fast chat with low accuracy
