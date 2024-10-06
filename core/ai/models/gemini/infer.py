@@ -69,7 +69,7 @@ class Completions(GenAIConfigDefaults):
         self._history_management = db_conn
         
 
-    async def input_file(self, attachment: discord.Attachment, **kwargs):
+    async def input_files(self, attachment: discord.Attachment, **kwargs):
         # Download the attachment
         _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(518301839, 6582482111)}.{attachment.filename}"
         try:
@@ -244,7 +244,8 @@ class Completions(GenAIConfigDefaults):
                     }
                 )
 
-                await self._discord_ctx.send(f"Used: **{_Tool_use.tool_human_name}**")
+                #await self._discord_ctx.send(f"Used: **{_Tool_use.tool_human_name}**")
+                self._used_tool_name = _Tool_use.tool_human_name
 
         return {"answer":answer.text, "prompt_count":_prompt_count+1, "chat_thread": chat_session.history}
 
