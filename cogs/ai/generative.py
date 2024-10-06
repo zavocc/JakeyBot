@@ -4,13 +4,11 @@ from core.ai.history import History
 from core.exceptions import ChatHistoryFull, MultiModalUnavailable
 from discord.ext import commands
 from os import environ, remove
-import google.generativeai as genai
 import core.ai.models.gemini.infer
 import aiofiles
 import aiofiles.os
 import discord
 import importlib
-import inspect
 import motor.motor_asyncio
 import random
 
@@ -107,10 +105,10 @@ class BaseChat(commands.Cog):
         # File attachment processing
         ###############################################
         if attachment is not None:
-            if not hasattr(_infer, "input_file"):
+            if not hasattr(_infer, "input_files"):
                 raise MultiModalUnavailable(f"Multimodal is not available for this model: {_model_name}")
 
-            await _infer.input_file(attachment=attachment, verbose_logs=verbose_logs)
+            await _infer.input_files(attachment=attachment, verbose_logs=verbose_logs)
             if verbose_logs:
                 await ctx.send(f"Used: **{attachment.filename}**")
 
