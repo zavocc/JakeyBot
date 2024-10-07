@@ -24,6 +24,10 @@ models:
     name: GPT-4o Mini
     description: A smaller version of GPT-4o for speed and cost with multimodal capabilities
 
+
+  ############################################
+  # OpenRouter models
+  ############################################
   # Claude models hosted through OpenRouter
   - model: __claude__claude-3.5-sonnet
     name: Claude 3.5 Sonnet
@@ -32,10 +36,10 @@ models:
     name: Claude 3 Haiku
     description: Lightning fast chat with low accuracy
     
-  # These models are hosted through OpenRouter
-  - model: __openai_openrouter__o1-preview
+  # O1 models are hosted through OpenRouter
+  - model: __openai_o1__o1-preview
     name: O1 Preview
     description: Broad reasoning capabilities
-  - model: __openai_openrouter__o1-mini
+  - model: __openai_o1__o1-mini
     name: O1 Mini
     description: Reasons at math, science, and coding tasks with exceptional performance
