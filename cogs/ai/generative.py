@@ -4,7 +4,7 @@ from core.ai.history import History
 from core.exceptions import ChatHistoryFull, MultiModalUnavailable
 from discord.ext import commands
 from os import environ
-import core.ai.models.gemini.infer
+import core.ai.models._template_.infer # For type hinting
 import aiofiles
 import aiofiles.os
 import discord
@@ -34,7 +34,7 @@ class BaseChat(commands.Cog):
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
     )
-    @commands.cooldown(3, 6, commands.BucketType.user) # Add cooldown so GenerativeLanguage API won't hit rate limits in one's Google cloud account.
+    @commands.cooldown(3, 6, commands.BucketType.user) # Add cooldown to prevent abuse
     @discord.option(
         "prompt",
         description="Enter your prompt, ask real questions, or provide a context for the model to generate a response",
@@ -60,12 +60,12 @@ class BaseChat(commands.Cog):
     )
     @discord.option(
         "verbose_logs",
-        description="Show logs, context usage, and model information",
+        description="Display more logs along with the response depending on the model",
         default=False
     )
     async def ask(self, ctx, prompt: str, attachment: discord.Attachment, model: str,
         append_history: bool, verbose_logs: bool):
-        """Ask a question using Gemini-based AI"""
+        """Ask a question using Gemini and models from OpenAI, Anthropic, and more!"""
         await ctx.response.defer()
 
         # Message history
@@ -92,7 +92,7 @@ class BaseChat(commands.Cog):
         _model = model.split("__")
         _model_provider = _model[1]
         _model_name = _model[-1]
-        _infer: core.ai.models.gemini.infer.Completions = importlib.import_module(f"core.ai.models.{_model[1]}.infer").Completions(
+        _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model[1]}.infer").Completions(
             client_session=self.bot._ai_client_session, # this is disregarded in the Gemini model
             guild_id=guild_id,
             model={"model_provider": _model_provider, "model_name": _model_name},
@@ -109,8 +109,6 @@ class BaseChat(commands.Cog):
                 raise MultiModalUnavailable(f"Multimodal is not available for this model: {_model_name}")
 
             await _infer.input_files(attachment=attachment, verbose_logs=verbose_logs)
-            #if verbose_logs:
-            #    await ctx.send(f"Used: **{attachment.filename}**")
 
         ###############################################
         # Answer generation
@@ -127,15 +125,16 @@ class BaseChat(commands.Cog):
             )
         else:
             _system_embed = discord.Embed()
-
+        # Model used
         _system_embed.add_field(name="Model used", value=_model_name)
-
         # Only report context size information if history is enabled
-        if append_history: _system_embed.add_field(name="Chat turns left", value=f"{_result["prompt_count"]} of {environ.get('MAX_CONTEXT_HISTORY', 20)}")
-
+        if append_history: 
+            _system_embed.add_field(name="Chat turns left", value=f"{_result["prompt_count"]} of {environ.get('MAX_CONTEXT_HISTORY', 20)}")
+        else:
+            _system_embed.add_field(name="Chat turns left", value="This chat isn't saved")
+            
         # Tool use
         if hasattr(_infer, "_used_tool_name"): _system_embed.add_field(name="Tool used", value=_infer._used_tool_name)
-
         # Files used
         if attachment is not None: _system_embed.add_field(name="File used", value=attachment.filename)
 
@@ -168,7 +167,7 @@ class BaseChat(commands.Cog):
         elif isinstance(_error, ChatHistoryFull):
             await ctx.respond("📚 Maximum context history reached! Clear the conversation using `/sweep` to continue")
         elif isinstance(_error, MultiModalUnavailable):
-            await ctx.respond("🚫 This model cannot process files, choose another model to continue")
+            await ctx.respond("🚫 This model cannot process certain files, choose another model to continue")
         else:
             await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, reason:\n```{_error}```")
 

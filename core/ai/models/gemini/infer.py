@@ -68,7 +68,6 @@ class Completions(GenAIConfigDefaults):
         self._guild_id = guild_id
         self._history_management = db_conn
         
-
     async def input_files(self, attachment: discord.Attachment, **kwargs):
         # Download the attachment
         _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(518301839, 6582482111)}.{attachment.filename}"
@@ -93,12 +92,12 @@ class Completions(GenAIConfigDefaults):
 
             # Wait for the file to be uploaded
             while _file_uri.state.name == "PROCESSING":
-                if kwargs.get("verbose_logs") is not None:
-                    if _msgstatus is None:
-                        _msgstatus = await self._discord_ctx.send("⌛ Processing the file attachment... this may take a while")
+                if _msgstatus is None:
+                    _msgstatus = await self._discord_ctx.send("⌛ Processing the file attachment... this may take a while")
                 await asyncio.sleep(3)
                 _file_uri = await asyncio.to_thread(genai.get_file, _file_uri.name)
         except Exception as e:
+            if _msgstatus: await _msgstatus.delete()
             await self._discord_ctx.respond(f"❌ Sorry, I can't process the file attachment, please see console logs for more details")
             raise e
         finally:

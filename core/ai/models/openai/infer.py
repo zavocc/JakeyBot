@@ -1,4 +1,4 @@
-from core.exceptions import ChatHistoryFull
+from core.exceptions import MultiModalUnavailable, ChatHistoryFull
 from os import environ
 import discord
 import openai
@@ -20,6 +20,10 @@ class Completions:
         self.__oaiclient: openai.AsyncClient = client_session._oaiclient
 
     async def input_files(self, attachment: discord.Attachment, **kwargs):
+        # Check if the attachment is an image
+        if not attachment.content_type.startswith("image"):
+            raise MultiModalUnavailable("Only images are supported for this model")
+
         prompt_w_attachment = {
             "type":"image_url",
             "image_url": {
