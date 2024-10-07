@@ -24,14 +24,14 @@ class Completions:
         if not attachment.content_type.startswith("image"):
             raise MultiModalUnavailable("Only images are supported for this model")
 
-        prompt_w_attachment = {
+        _attachment_prompt = {
             "type":"image_url",
             "image_url": {
                     "url": attachment.url
                 }
             }
 
-        self._file_data = prompt_w_attachment
+        self._file_data = _attachment_prompt
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Load history

@@ -1,66 +1,68 @@
-# FAQ for technical users
-### [1] Will you add more AI models in the future
-Cheaper and better models is preferred, notably open source ones like LLAMA-3, Mixtral, or Command-R plus and commercial models like Claude 3.5 Sonnet, GPT-4o. Avoiding outdated and EOLed GPT-3.5 altogether (a year older model recieved no revisions). Expecting optimizations or distillations while providing quality and cost reduction in the future.
+# FAQ
+### How can I make Jakey answer responses to its pure form?
+To provide such experiece, Jakey has a system instruction set to refer to itself, its features, and other knowledge with human-like response vibes
 
-Gemini API is preferred because of easy access to 1.5 models for free or [cheaper with context caching](https://ai.google.dev/gemini-api/docs/caching) for extensive/repetitive token usage. While adding value such as long context windows, multimodality, code execution support.
+Currently there's no option to change this this as system instructions are part of the context history and the instructions are cached.
 
-Services can be looked out for, such as [Groq Cloud](https://groq.com/) and HuggingFace API endpoints. As soon as this bot becomes less and less dependent with Gemini through code modularization.
+### What model should I choose?
+Its recommended to use Gemini 1.5 model to benefit from full multimodality, web search, tools, and fraction of a price.
 
-The only non-Gemini models are for other tools like image generation which uses HuggingFace spaces API endpoints.
+### Are models free to use?
+Gemini models can be used for free provided you have [an API key](https://aistudio.google.com/app/apikey) for it without billing enabled.
 
-### How can I be ensured that my data is safe and to comply with Discord ToS for bot developers
-As a developer, it's suggested to enable billing in AI studio if you're ready to deploy this bot for production, so it adheres under [Google's Gemini API Terms](https://ai.google.dev/gemini-api/terms). Only use free plan for prototyping purposes as it serves for playground for prompts and token calculations without compromising your budget, but prompt data is sent to Google. 
+For other models, you will need to purchase credits either from [OpenAI](https://help.openai.com/en/articles/8264644-how-can-i-set-up-prepaid-billing) for GPT-4o models or [OpenRouter](https://openrouter.ai) for everything else, and use an API key.
 
-When storing your chat history, the host has no direct access to your conversations, and it is not stored in plaintext/JSON. It is encoded with pickle (through JSONPickle) so it involves steps to decode every objects and read your history. The chat history is encoded as [ChatSession.history](https://ai.google.dev/api/python/google/generativeai/ChatSession) object and is pickled, then it is saved on a database file using MongoDB API but this can change as the bot grows. See below how your chat history is stored for technical users.
+### What is the default model used?
+Gemini 1.5 Flash is the default model due to low cost and versatility, but can be changed when using `/ask` command with different providers
 
-See [this gist](https://gist.github.com/zavocc/36b5c28072a541493c404ede164ff1c3#file-genai_lowlevel_protos-py-L39-L54) for lower-level overview of `ChatSession.history` object syntax. The history consists of [genai.protos.Content](https://ai.google.dev/api/python/google/generativeai/protos/Content)([genai.protos.Part](https://ai.google.dev/api/python/google/generativeai/protos/Part)) objects which contains the information of function calling result record, multimodal data, and user/model interaction, in order to maintain conversational consistency and context.
+For most commands like `/summarize` or message actions, Gemini 1.5 Flash is used.
 
-To keep them in persistence, a database is used which stores chat history per guild. Since MongoDB or similar does not support Python object data, it is pickled and encoded in JSON/base64 format using [JSONPickle](https://pypi.org/project/jsonpickle/) which returns `str` with JSON data inline which is then inserted into database.
+### What type of files I can provide along with my prompt
+Not all models are inherently multimodal and capabilities.
 
-For users, avoid sending your personal data to the chatbot. Basic security and privacy principle of not selling out your data to random strangers should be followed, Should the host morally follows data handling from users? Vulnerable host can make a compromise (e.g. sloppy and shady cloud hosting is used for this bot hosting).
+Gemini 1.5 models benefits from full multimodality, you can provide files like images, videos, audio, text files like source files, and PDFs with its non-textual data retained... and only lasts within the context for 48 hours
 
-Use `append_history:False` in `/ask` command to prevent the conversation history from being recorded. No charge when using this, privacy is respected.
+OpenAI and Claude models can only accept images at this time.
 
-Commands like `Rephrase this message`, `Summarize this message`, `Suggest a response` and `/summarize` commands does NOT retain any data to the host (not stored in chat history).
+### Can it search the internet?
+> *This feature is currently only supports Gemini models*
 
-See the [HistoryManagement class](./core/ai/history.py) how the history is handled with set of methods.
+Web Search (beta) can be used by enabling it under `/feature` command capability named "Web Search with DuckDuckGo" and ask queries with keywords like "Search the web"
 
-### Where does the uploaded files go
-When you submit the file to the model (`/ask prompt:Summarize this file attachment:file.md`), the data goes in the server locally first to process and upload to [Gemini API files API](https://ai.google.dev/gemini-api/docs/prompting_with_media?lang=python). Once uploaded, it is stored within the one's associated Google cloud account project under [Generative Language API](https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/) and provides free 20GB of storage per project. But files uploaded are not retrievable by any means and will automatically be deleted in 48 hours thus all the multimodal data in chat history becomes void. Locally processed data is automatically deleted asynchronously in every successful and unsuccessful execution or when the bot is restarted.
+Web search performs in two steps
+1. It searches the query through DuckDuckGo API and collects the links needed for page summarization
+2. The list of URLs is then being scrapped and agregates them so the model can understand them
 
-`bytesIO` serves as a volatile way to submit files, but is not used because it requires more than average desktop consumer memory to store downloaded files at once on memory especially when the command is e.g. used by 100+ users asynchonously submitting files beyond 25MB with Nitro. Instead, file is transiently stored on disk and it is expected to be deleted on any events including if `requests.exception.HTTPError` was thrown. The file is chunked and touches the disk, this is done so anybody can host their own bots without memory constraints when using multimodal capabilities.
+Keep in mind that web search is slow.
 
-The Generative Language API project storage stores the files in unstructured way, the only management performed is `google.generativeai.get_file()`, `google.generativeai.list_files() -> Iterable`, and `google.generativeai.delete_file()`. Ref: https://ai.google.dev/api/files. URLs returned by `get_file()` are not normally downloadable.
+The maximum number of queries can be used is 6 to prevent tokens from depleting so quickly due to large articles and causing slower responses as context builds up and performs batch chunks of webpage scrapping its contents before the response get sent from the model.
 
-The organization of the files within that storage is by file naming conventions, the submitted files are renamed as:
-```
-JAKEY.(GUILD_ID.RANDOMINT).filename
-```
-`JAKEY` is the prefix filename, the `GUILD_ID` is where the files are associated within specific guild or user ID (DM) context, `RANDOMINT` are random 4-digit numbers to distinguish similar file names.
+Its recommended to use Gemini 1.5 Pro to better utilize Tool use but Flash also works. Keep in mind that the model sometimes cannot pick up the tool schema needed to perform web search action, if it fabricates its responses, explicitly tell the model to search the web, or improve your prompt.
 
-Use `delete_file()` to manually delete files from the API but this breaks all multimodal inputs.
+Using web search can affect the response overall performance as chat history grows, however the webpages are embedded, chunked, and stores the embeddings through temporary vector database to efficiently provide and extract relevant context to the model from the large batch of chunked corpuses of webpage contents. By default, its using its default text transformer model to embed texts locally. Its recommended to use web search sparingly if you want the model to be aware with certain information. You can also tell the model how many searches it can perform (but queries are maximum to 6) optimally 2-3 searches.
 
-### I've looked into the source code and the chat history is being pickled, don't you think it would be mature to use SQL/no-SQL database? Also is it insecure?
-The [ChatSession.history](https://ai.google.dev/api/python/google/generativeai/ChatSession) object is being snapshotted and pickle encoded, then it is saved to a database using MongoDB.
+Depending on a website, some pages may not be used for responses that does not have extractable textual data.
 
-The way how chat history is being saved is being discussed by me here: https://discuss.ai.google.dev/t/what-is-the-best-way-to-persist-chat-history-into-file
+You can also attach HTML files manually as part of attachment if you want a single page summarization
+![img](../assets/internet.png)
 
-Databases like MongoDB combined with `jsonpickle` instead of `pickle` should allow better controls and history management combined with DB credentials would make it secure.
+### I get some error when using JakeyBot in DMs
+You can use `/ask`, `/imagine` and `/sweep` commands in the bot's DM once you install this app by tapping "Add app" in its profile card and clicking "Try it yourself" otherwise you will get "Integration error" when directly using these commands in DMs.
 
-JSONPickle is used because it encodes python objects to base64 and yields a JSON data as string. Which is suitable for standardized database storage for chat histories that is being stored per guild/user DMs. It is the solid first choice for storing the exact `ChatSession.history` object for now.
+### When I use ask command in other servers, I get an error saying "This commmand can only be used in DMs or authorized guilds!"
+When you authorize your app to be usable in DMs as mentioned [above](#i-get-some-error-when-using-jakeybot-in-dms) but you cannot use it outside servers where JakeyBot isn't fully authorized
 
-If security is concern, only `ChatSession.history` is preserved. Consists of protobuf objects. And it is loaded as if the chat history is still stored on memory. If incompatibilities are suspected, chat history database can be purged or disabled at will. The only security concern is would be the python object itself.
+https://support.discord.com/hc/en-us/articles/23957313048343-Moderating-Apps-on-Discord#h_01HZQQQEADYVN2CM4AX4EZGKHM
 
-### [2] JakeyBot code looks a mess, yucky, inefficient, and disgustingly works.
-Nobody is perfect, so does when writing code for the first time as a hobby :)
+The reason for this as Jakey ask command uses `ctx.send` which is not allowed with user-installable apps, which causes the command to prematurely end.
 
-Instead of judging people's code bad as a whole, please provide a constructive feedback and elaborate suggestion how to improve the code, I've started writing Jakey Bot since Sept 2023 and first code looked bad, and has hardcoded values, and inefficient way of storing API keys. Now, as I push this code to public, I try my best to modularize some code to make it clean and maintainable.
+### When I switch models, GPT-4o doesn't remember what we discussed with Gemini model and vice versa
+This is a normal behavior, your chat session gets divided per model provider. So, when you talk to Gemini, it will have its own memory, similarly to Claude which it has its own memory.
 
-PR would be awesome, please make sure it can also be maintained by me as you finished "fixing" my code.
+### Will you support locally hosted or open source models soon like OLLAMA?
+Soon, but right now it only supports flagship models that most people use.
 
-AI can be used sparingly, but be cautious what AI model you use due to knowledge cutoff when fixing this code, AI models can barely knew newer libraries from late 2023, and its also bad at following and creating new code from the internet documentation. But, contributors who has knowledge to Python programming is always valuable, there is no point contributing if all work was done by AI.
+### How is my data handled?
+Your data isn't used to train the models or used for specific purposes that is outside of the bot's purpose and functionality. Chat history is stored and located in MongoDB database, its recommended to add authentication to the database to ensure the privacy and safety of the users.
 
-### [3] Why not use Langchain, Llamaindex, or other LLM frameworks to power Jakey Bot to solve [1] and [2]?
-Without being dependent to Gemini/PaLM API in the first place the first time I wrote Jakey. This would have been easily used. But there are more than one reason to use these
-1. I want to keep it simple by using the Gemini API directly than adding additional abstraction and learning new API, thus lesser and more control of dependencies.
-2. It may fall behind LLM provider's API features and has specific dependency requirement with older versions of `google-generativeai`, for example, Gemini API provides [Code execution (function call)](https://ai.google.dev/gemini-api/docs/code-execution), [File API](https://ai.google.dev/gemini-api/docs/vision?lang=python), and [Document Processing](https://ai.google.dev/gemini-api/docs/document-processing?lang=python) while LLM frameworks implement their own solutions.
+For files attached, it always gets deleted on our side afterwards, on startup, every command execution with or without exceptions, and on bot's shutdown. We take measures to protect your privacy.

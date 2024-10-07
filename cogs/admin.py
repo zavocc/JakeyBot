@@ -5,6 +5,7 @@ import random
 import subprocess
 from discord.ext import commands
 from os import environ
+from pathlib import Path
 
 class Admin(commands.Cog):
     def __init__(self, bot):
@@ -22,6 +23,11 @@ class Admin(commands.Cog):
         # Shutdown aiohttp client and the bot
         #if hasattr(self.bot, "_aiohttp_session"):   
         #    await self.bot._aiohttp_session.close()
+
+        # Remove temp files
+        if Path(environ.get("TEMP_DIR", "temp")).exists():
+            for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
+                await aiofiles.os.remove(file)
 
         await self.bot.close()
 
