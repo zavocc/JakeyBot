@@ -41,15 +41,10 @@ class Tool:
         # Import required libs
         try:
             aiohttp = importlib.import_module("aiohttp")
-
-            # For relevance and similarity
             chromadb = importlib.import_module("chromadb")
             ddg = importlib.import_module("duckduckgo_search")
-
-            # Needed for some websites
-            importlib.import_module("brotli")
-        except ModuleNotFoundError:
-            return "This tool is not available at the moment"
+        except ModuleNotFoundError as e:
+            return f"This tool is not available at the moment, reason: {e}"
 
         links = []
 
@@ -100,18 +95,11 @@ class Tool:
         if len(page_contents) == 0 and type(page_contents) != list:
             return f"No pages were scrapped and no data is provided"
 
-        result = None
         # Perform vector similarity search
         try:
             _msgstatus = await self.ctx.send("📄 Extracting relevant details...")
 
-            # check if we can connect to chroma server
-            _chroma_http_host = os.environ.get("CHROMA_HTTP_HOST")
-            _chroma_http_port = os.environ.get("CHROMA_HTTP_PORT")
-            if not _chroma_http_host and not _chroma_http_port:
-                return f"A chroma server is not running, I cannot perform web search"
-
-            _chroma_client = await chromadb.AsyncHttpClient(host=_chroma_http_host, port=_chroma_http_port)
+            _chroma_client = await chromadb.AsyncHttpClient(host=os.environ.get("CHROMA_HTTP_HOST", "localhost"), port=os.environ.get("CHROMA_HTTP_PORT", 6400))
 
             # collection name
             _cln = f"{importlib.import_module('random').randint(50000, 60000)}_jakeybot_db_query_search"
@@ -161,9 +149,7 @@ class Tool:
 
             # delete collection
             await _chroma_client.delete_collection(name=_cln)
-
             await _msgstatus.delete()
-
         except Exception as e:
             return f"An error has occured during relevance similarity step: {e}"
 

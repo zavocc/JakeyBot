@@ -10,3 +10,10 @@ pymongo==4.8.0
 python-dotenv==1.0.0
 PyYAML==6.0.1
 # wavelink==3.4.1
+
+# For web_browsing
+# chromadb
+# duckduckgo-search
+
+# For image generation and AI tools using huggingface
+# gradio_client

@@ -207,44 +207,44 @@ class Completions(GenAIConfigDefaults):
 
         for _part in _candidates:
             if _part.code_execution_result:
-                await self._discord_ctx.send(f"Used: **{_Tool_use.tool_human_name}**")
+                self._used_tool_name = _Tool_use.tool_human_name
                 continue
 
             if _part.function_call:
                 _func_call = _part.function_call
 
-            if _func_call:
-                # Call the function through their callables with getattr
-                try:
-                    _result = await _Tool_use._tool_function(**_func_call.args)
-                except (AttributeError, TypeError) as e:
-                    await self._discord_ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
-                    # Also print the error to the console
-                    logging.error("slashCommands>/ask: I think I found a problem related to function calling:", e)
-                    return
+                if _func_call:
+                    # Call the function through their callables with getattr
+                    try:
+                        _result = await _Tool_use._tool_function(**_func_call.args)
+                    except (AttributeError, TypeError) as e:
+                        await self._discord_ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
+                        # Also print the error to the console
+                        logging.error("Slash Commands > /ask: I think I found a problem related to function calling:", e)
+                        return
 
-                # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
-                answer = await chat_session.send_message_async(
-                    genai.protos.Content(
-                        parts=[
-                            genai.protos.Part(
-                                function_response = genai.protos.FunctionResponse(
-                                    name = _func_call.name,
-                                    response = {"result": _result}
+                    # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
+                    answer = await chat_session.send_message_async(
+                        genai.protos.Content(
+                            parts=[
+                                genai.protos.Part(
+                                    function_response = genai.protos.FunctionResponse(
+                                        name = _func_call.name,
+                                        response = {"result": _result}
+                                    )
                                 )
-                            )
-                        ]
-                    ),
-                    safety_settings={
-                        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE
-                    }
-                )
+                            ]
+                        ),
+                        safety_settings={
+                            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE
+                        }
+                    )
 
-                #await self._discord_ctx.send(f"Used: **{_Tool_use.tool_human_name}**")
-                self._used_tool_name = _Tool_use.tool_human_name
+                    #await self._discord_ctx.send(f"Used: **{_Tool_use.tool_human_name}**")
+                    self._used_tool_name = _Tool_use.tool_human_name
 
         return {"answer":answer.text, "prompt_count":_prompt_count+1, "chat_thread": chat_session.history}
 

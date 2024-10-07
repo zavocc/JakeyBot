@@ -49,7 +49,7 @@ class Completions:
             },
             messages=_chat_thread,
             model=self._model_name,
-            max_tokens=1024,
+            max_tokens=3024,
             temperature=0.7,
             response_format={
                 "type":"text"
