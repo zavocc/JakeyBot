@@ -1,38 +1,5 @@
 import discord
 import yaml
-# Defaults
-class GenAIConfigDefaults:
-    def __init__(self):
-        self.generation_config = {
-            "temperature": 0.5,
-            "top_p": 1,
-            "top_k": 32,
-            "max_output_tokens": 8192,
-        }
-
-        self.safety_settings_config = [
-            {
-                "category": "HARM_CATEGORY_HARASSMENT",
-                "threshold": "BLOCK_ONLY_HIGH"
-            },
-            {
-                "category": "HARM_CATEGORY_HATE_SPEECH",
-                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                "threshold": "BLOCK_ONLY_HIGH"
-            },
-            {
-                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                "threshold": "BLOCK_ONLY_HIGH"
-            },
-        ]
-
-        # Default model
-        self.model_config = "gemini-1.5-flash-002"
-
-        
 class ModelsList:
     @staticmethod
     def get_models_list():
@@ -43,8 +10,8 @@ class ModelsList:
         # Iterate through the models and merge them as dictionary
         # It has to be put here instead of the init class since decorators doesn't seem to reference self class attributes
         _model_choices = [
-            discord.OptionChoice(f"{model['name']} - {model['description']}", model['model'])
-            for model in _internal_model_data['gemini_models']
+            discord.OptionChoice(f"{model['name']} - {model['description']}", model["model"])
+            for model in _internal_model_data['models']
         ]
         del _internal_model_data
         return _model_choices
@@ -52,8 +19,8 @@ class ModelsList:
     @staticmethod
     def get_tools_list():
         # Load the tools list from YAML file
-        with open("data/tools.yaml", "r") as models:
-            _tools_list = yaml.safe_load(models)
+        with open("data/tools.yaml", "r") as tools:
+            _tools_list = yaml.safe_load(tools)
 
         # Load tools metadata
         _tool_choices = [

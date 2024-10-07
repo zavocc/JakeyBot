@@ -1,22 +1,45 @@
-gemini_models:
-  - model: gemini-1.5-pro-002
+models:
+  # Hosted through Gemini API
+  - model: __gemini__gemini-1.5-pro-002
     name: Gemini 1.5 Pro (2M)
     description: Advanced chat tasks with low availability
-  - model: gemini-1.5-flash-002
+  - model: __gemini__gemini-1.5-flash-002
     name: Gemini 1.5 Flash (1M)
     description: General purpose with high availability
-  - model: gemini-1.5-pro-001
-    name: Gemini 1.5 Pro (2M) v1
+  - model: __gemini__gemini-1.5-pro-001
+    name: Gemini 1.5 Pro 001 (2M)
     description: Oldstable version
-  - model: gemini-1.5-flash-001
-    name: Gemini 1.5 Flash (1M) v1
+  - model: __gemini__gemini-1.5-flash-001
+    name: Gemini 1.5 Flash 001 (1M)
     description: Oldstable version
-  - model: gemini-1.5-pro-exp-0827
-    name: Gemini 1.5 Pro (Experimental 0827 version)
-    description: Latest and greatest
-  - model: gemini-1.5-flash-exp-0827
-    name: Gemini 1.5 Flash (Experimental 0827 version)
-    description: Latest and greatest
-  - model: gemini-1.5-flash-8b-exp-0924
-    name: Gemini 1.5 Flash 8B (Experimental)
-    description: smaller parameter version of the flash model
+  - model: __gemini__gemini-1.5-flash-8b
+    name: Gemini 1.5 Flash 8B (1M)
+    description: Lighter and faster version of Gemini 1.5 Flash 
+
+  # Hosted through OpenAI API
+  - model: __openai__gpt-4o
+    name: GPT-4o
+    description: OpenAI's flagship multimodal model for advanced tasks
+  - model: __openai__gpt-4o-mini
+    name: GPT-4o Mini
+    description: A smaller version of GPT-4o for speed and cost with multimodal capabilities
+
+
+  ############################################
+  # OpenRouter models
+  ############################################
+  # Claude models hosted through OpenRouter
+  - model: __claude__claude-3.5-sonnet
+    name: Claude 3.5 Sonnet
+    description: Top notch intelligence with balanced speed and accuracy
+  - model: __claude__claude-3-haiku
+    name: Claude 3 Haiku
+    description: Lightning fast chat with low accuracy
+    
+  # O1 models are hosted through OpenRouter
+  - model: __openai_o1__o1-preview
+    name: O1 Preview
+    description: Broad reasoning capabilities
+  - model: __openai_o1__o1-mini
+    name: O1 Mini
+    description: Reasons at math, science, and coding tasks with exceptional performance

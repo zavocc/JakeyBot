@@ -1,9 +1,9 @@
+from core.ai._runtime_client import AIClientSession
 from discord.ext import bridge, commands
 from dotenv import load_dotenv
 from inspect import cleandoc
 from os import chdir, environ, mkdir
 from pathlib import Path
-import aiohttp
 import discord
 import importlib
 import logging
@@ -40,7 +40,8 @@ intents.message_content = True
 intents.members = True
 
 # Bot
-bot = bridge.Bot(command_prefix=commands.when_mentioned_or("$"), intents = intents)
+bot = bridge.Bot(command_prefix=commands.when_mentioned_or(environ.get("BOT_PREFIX", "$")), intents = intents)
+bot._ai_client_session = None
 
 ###############################################
 # ON READY
@@ -83,8 +84,11 @@ async def on_ready():
         mkdir(environ.get("TEMP_DIR"))
 
     #https://stackoverflow.com/a/65780398 - for multiple statuses
-    await bot.change_presence(activity=discord.Game("/ask me anything or $help"))
+    await bot.change_presence(activity=discord.Game(f"/ask me anything or {environ.get("BOT_PREFIX", "$")}help"))
     print(f"{bot.user} is ready and online!")
+
+    # We load this after the bot is ready so other commands are readily available
+    bot._ai_client_session = AIClientSession()
 
 ###############################################
 # ON USER MESSAGE
@@ -102,7 +106,7 @@ async def on_message(message):
                                             I am an AI bot and I can also make your server fun and entertaining! 🎉
                                             
                                             - You can ask me anything by typing **/ask** and get started
-                                            - You can access most of my useful commands with **/**slash commands or use `$help` to see the list prefixed commands I have.
+                                            - You can access most of my useful commands with **/**slash commands or use `{environ.get("BOT_PREFIX", "$")}help` to see the list prefixed commands I have.
                                             - You can access my apps by **tapping and holding any message** or **clicking the three-dots menu** and click **Apps** to see the list of apps I have
                                             
                                             If you have any questions, you can visit my [documentation or contact at](https://zavocc.github.io)"""))

@@ -1,5 +1,5 @@
 from core.ai.core import ModelsList
-from cogs.gemini.generative import BaseChat
+from cogs.ai.generative import BaseChat
 from discord.ext import commands
 from os import environ
 import discord
@@ -34,11 +34,11 @@ class Chat(BaseChat):
                 return  
 
         # Initialize history
-        _feature = await self.HistoryManagement.get_config(guild_id=guild_id)
+        _feature = await self.DBConn.get_config(guild_id=guild_id)
 
         # Clear and set feature
-        await self.HistoryManagement.clear_history(guild_id=guild_id)
-        await self.HistoryManagement.set_config(guild_id=guild_id, tool=_feature)
+        await self.DBConn.clear_history(guild_id=guild_id)
+        await self.DBConn.set_config(guild_id=guild_id, tool=_feature)
 
         await ctx.respond("✅ Chat history reset!")
 
@@ -87,12 +87,12 @@ class Chat(BaseChat):
                 return
 
         # if tool use is the same, do not clear history
-        _feature = await self.HistoryManagement.get_config(guild_id=guild_id)
+        _feature = await self.DBConn.get_config(guild_id=guild_id)
         if _feature == capability:
             await ctx.respond("✅ Feature already enabled!")
         else:
             # set config
-            await self.HistoryManagement.set_config(guild_id=guild_id, tool=capability)
+            await self.DBConn.set_config(guild_id=guild_id, tool=capability)
             await ctx.respond(f"✅ Feature **{capability}** enabled successfully and chat is reset to reflect the changes")
         
     # Handle errors
