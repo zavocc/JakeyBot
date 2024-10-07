@@ -1,4 +1,3 @@
-from core.ai.embeddings import GeminiDocumentRetrieval
 from google_labs_html_chunker.html_chunker import HtmlChunker
 import google.generativeai as genai
 import aiofiles
