@@ -8,7 +8,7 @@ class Completions:
                  model = {"model_provider": "claude", "model_name": "claude-3-haiku"}, 
                  db_conn = None, **kwargs):
         if client_session is None or not hasattr(client_session, "_orouter"):
-            raise AttributeError("OpenAI client session has not been set or initialized")
+            raise AttributeError("OpenRouter (using OpenAI SDK) client session has not been set or initialized")
 
         self._file_data = None
 
@@ -17,7 +17,7 @@ class Completions:
         self._guild_id = guild_id
         self._history_management = db_conn
 
-        self.__oaiclient: openai.AsyncClient = client_session._orouter
+        self.__orouter_client: openai.AsyncClient = client_session._orouter
 
     async def input_files(self, attachment: discord.Attachment, **kwargs):
         prompt_w_attachment = {
@@ -69,7 +69,7 @@ class Completions:
             _chat_thread[-1]["content"].append(self._file_data)
 
         # Generate completion
-        _response = await self.__oaiclient.chat.completions.create(
+        _response = await self.__orouter_client.chat.completions.create(
             extra_headers={
                 "HTTP-Referer": "https://github.com/zavocc/JakeyBot",
                 "X-Title": environ.get("BOT_NAME", "JakeyBot")
