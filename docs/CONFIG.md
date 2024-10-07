@@ -22,7 +22,11 @@ for chat history and other settings, this may be required.
 
 ## Generative AI features
 - `GOOGLE_AI_TOKEN` - Set the Gemini API token, get one at [Google AI Studio](https://aistudio.google.com/app/apikey). If left blank, generative features powered by Gemini will be disabled.
-- `OPENAI_API_KEY` - 
+- `OPENAI_API_KEY` - Set the OpenAI API key, obtain one from [OpenAI Platform](https://platform.openai.com/api-keys)
+  - `__OAI_ENDPOINT` - Sets the base URL if you use GPT-4o models outside of OpenAI platform (e.g. GitHub models marketplace, Azure AI, or brokers/proxy like OpenRouter)
+    - Setting to non-openai endpoints that doesn't have GPT-4o and GPT-4o mini would not work.
+- `OPENROUTER_API_KEY` - Set the key from OpenRouter, without it, you cannot use models like Claude or O1-preview/O1-mini.
+  - You can also use your OpenRouter API key to `OPENAI_API_KEY` and the `__OAI_ENDPOINT` to OpenRouter endpoint if you decide to use OpenRouter as your main platform.
 
 
 ## Administrative
