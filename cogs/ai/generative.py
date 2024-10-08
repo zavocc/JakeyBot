@@ -119,6 +119,7 @@ class BaseChat(commands.Cog):
         # Answer generation
         ###############################################
         _result = await _infer.chat_completion(prompt=prompt, system_instruction=self._assistants_system_prompt.jakey_system_prompt)
+        _formatted_response = _result["answer"].rstrip()
 
         # Model usage and context size
         if len(_result["answer"]) > 2000 and len(_result["answer"]) < 4096:
@@ -133,6 +134,7 @@ class BaseChat(commands.Cog):
                 _system_embed = discord.Embed()
             else:
                 _system_embed = None
+                _formatted_response = f"{_result['answer'].rstrip()}\n-# {_model_name.upper()}"
 
         if not _system_embed is None:
             # Model used
@@ -151,16 +153,16 @@ class BaseChat(commands.Cog):
 
         # Embed the response if the response is more than 2000 characters
         # Check to see if this message is more than 2000 characters which embeds will be used for displaying the message
-        if len(_result["answer"]) > 4096:
+        if len(_formatted_response) > 4096:
             # Send the response as file
             response_file = f"{environ.get('TEMP_DIR')}/response{random.randint(6000,7000)}.md"
             async with aiofiles.open(response_file, "w+") as f:
-                await f.write(_result["answer"])
+                await f.write(_formatted_response)
             await ctx.respond("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(response_file, "response.md"), embed=_system_embed)
-        elif len(_result["answer"]) > 2000:
+        elif len(_formatted_response) > 2000:
             await ctx.respond(embed=_system_embed)
         else:
-            await ctx.respond(_result["answer"], embed=_system_embed)
+            await ctx.respond(_formatted_response, embed=_system_embed)
 
         # Save to chat history
         if append_history:
