@@ -1,22 +1,23 @@
 from core.exceptions import MultiModalUnavailable, ChatHistoryFull
 from os import environ
 import discord
-import litellm
+import openai
 
 class Completions:
     def __init__(self, client_session = None, guild_id = None, 
                  model = {"model_provider": "openai", "model_name": "gpt-4o-mini"}, 
                  db_conn = None, **kwargs):
-        if client_session is None or not hasattr(client_session, "_model_prefix_openai"):
-            raise AttributeError("OpenAI API keys are not configured")
+        if client_session is None or not hasattr(client_session, "_oaiclient"):
+            raise AttributeError("OpenAI client session has not been set or initialized")
 
         self._file_data = None
 
-        self._model_name = f"{client_session._model_prefix_openai}/{model['model_name']}"
-        self._model_provider = model["model_provider"] # For chat history
-
+        self._model_name = model["model_name"]
+        self._model_provider = model["model_provider"]
         self._guild_id = guild_id
         self._history_management = db_conn
+
+        self.__oaiclient: openai.AsyncClient = client_session._oaiclient
 
     async def input_files(self, attachment: discord.Attachment, **kwargs):
         # Check if the attachment is an image
@@ -64,13 +65,14 @@ class Completions:
             _chat_thread[-1]["content"].append(self._file_data)
 
         # Generate completion
-        _response = await litellm.acompletion(
+        _response = await self.__oaiclient.chat.completions.create(
             messages=_chat_thread,
-            model=self._model_name.split("/")[-1] if environ.get("AZURE_OAI_ENDPOINT") is not None else self._model_name,
+            model=self._model_name,
             max_tokens=3024,
             temperature=0.7,
-            base_url=environ.get("AZURE_OAI_ENDPOINT") if environ.get("AZURE_OAI_ENDPOINT") is not None else None,
-            api_key=environ.get("OPENAI_API_KEY")
+            response_format={
+                "type":"text"
+            }
         )
 
         # AI response

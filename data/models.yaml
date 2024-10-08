@@ -28,11 +28,11 @@ models:
   ############################################
   # OpenRouter models
   ############################################
-  # Claude models
-  - model: __anthropic__claude-3.5-sonnet
+  # Claude models hosted through OpenRouter
+  - model: __claude__claude-3.5-sonnet
     name: Claude 3.5 Sonnet
     description: Top notch intelligence with balanced speed and accuracy
-  - model: __anthropic__claude-3-haiku
+  - model: __claude__claude-3-haiku
     name: Claude 3 Haiku
     description: Lightning fast chat with low accuracy
     

@@ -16,55 +16,32 @@ class AIClientSession:
             logging.error("Failed to configure Gemini API: %s\nexpect errors later", e)
 
         # OpenAI
-        if environ.get("OPENAI_API_KEY"):
-            if environ.get("AZURE_OAI_ENDPOINT"):
-                self._model_prefix_openai = "azure/openai"
-                logging.info("OpenAI models are configured with Azure OpenAI service endpoint and using OPENAI_API_KEY")
-            else:
-                self._model_prefix_openai = "openai"
-                logging.info("OpenAI models are configured through OPENAI_API_KEY")
-        else:
-            # Check if we can use the OpenRouter keys instead
-            if environ.get("OPENROUTER_API_KEY"):
-                self._model_prefix_openai = "openrouter/openai"
-                logging.info("OpenAI models are configured through OPENROUTER_API_KEY")
-            else:
-                logging.error("OpenAI models are not configured... expect errors later")
+        try:
+            if not environ.get("OPENAI_API_KEY"):
+                raise ValueError("Please configure OPENAI_API_KEY in dev.env")
 
-        # OpenAI o1 models
-        if environ.get("OPENAI_O1_API_KEY"):
-            self._model_prefix_openai_o1 = ""
-            logging.info("OpenAI O1 models are configured through OPENAI_O1_API_KEY")
-        else:
-            # Check if we can use the OpenRouter keys instead
-            if environ.get("OPENROUTER_API_KEY"):
-                self._model_prefix_openai_o1 = "openrouter/openai"
-                logging.info("OpenAI O1 models are configured through OPENROUTER_API_KEY")
-            else:
-                logging.error("OpenAI O1 models are not configured... expect errors later")
+            openai = importlib.import_module("openai")
+            self._oaiclient = openai.AsyncClient(base_url=environ.get("__OAI_ENDPOINT"), api_key=environ.get("OPENAI_API_KEY"))
+        except Exception as e:
+            logging.error("Failed to configure OpenAI API: %s\nexpect errors later", e)
+
+        # OpenRouter hosted models
+        try:
+            if not environ.get("OPENROUTER_API_KEY"):
+                raise ValueError("Please configure OPENROUTER_API_KEY in dev.env")
+
+            openai = importlib.import_module("openai")
+            self._orouter = openai.AsyncClient(base_url="https://openrouter.ai/api/v1", api_key=environ.get("OPENROUTER_API_KEY"))
+        except Exception as e:
+            logging.error("Failed to configure OpenRouter (using OpenAI SDK) API: %s\nexpect errors later", e)
+
 
         # Mistral
-        if environ.get("MISTRAL_API_KEY"):
-            self._model_prefix_mistral = "mistral"
-            logging.info("Mistral models are configured through MISTRAL_API_KEY")
-        else:
-            # Check if we can use the OpenRouter keys instead
-            if environ.get("OPENROUTER_API_KEY"):
-                self._model_prefix_mistral = "openrouter/mistralai"
-                logging.info("Mistral models are configured through OPENROUTER_API_KEY")
-            else:
-                logging.error("Mistral models are not configured... expect errors later")
+        # try:
+        #     if not environ.get("MISTRAL_API_KEY"):
+        #         raise ValueError("Please configure MISTRAL_API_KEY in dev.env")
 
-        # Anthropic
-        if environ.get("ANTHROPIC_API_KEY"):
-            self._model_prefix_anthropic = "anthropic"
-            logging.info("Anthropic models are configured through ANTHROPIC_API_KEY")
-        else:
-            # Check if we can use the OpenRouter keys instead
-            if environ.get("OPENROUTER_API_KEY"):
-                self._model_prefix_anthropic = "openrouter/anthropic"
-                logging.info("Anthropic models are configured through OPENROUTER_API_KEY")
-            else:
-                logging.error("Anthropic models are not configured... expect errors later")
-
-        
+        #     mistralai = importlib.import_module("mistralai")
+        #     self._mistral_client = mistralai.Mistral(api_key=environ.get("MISTRAL_API_KEY"))
+        # except Exception as e:
+        #     logging.error("Failed to configure Mistral API: %s\nexpect errors later", e)
