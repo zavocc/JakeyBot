@@ -1,23 +1,22 @@
 from core.exceptions import MultiModalUnavailable, ChatHistoryFull
 from os import environ
 import discord
-import openai
+import litellm
 
 class Completions:
     def __init__(self, client_session = None, guild_id = None, 
                  model = {"model_provider": "claude", "model_name": "claude-3-haiku"}, 
                  db_conn = None, **kwargs):
-        if client_session is None or not hasattr(client_session, "_orouter"):
-            raise AttributeError("OpenRouter (using OpenAI SDK) client session has not been set or initialized")
+        if client_session is None or not hasattr(client_session, "_model_prefix_anthropic"):
+            raise AttributeError("Anthropic API keys are not configured")
 
         self._file_data = None
 
-        self._model_name = model["model_name"]
-        self._model_provider = model["model_provider"]
+        self._model_name = f"{client_session._model_prefix_anthropic}/{model['model_name']}"
+        self._model_provider = model["model_provider"] # For chat history
+    
         self._guild_id = guild_id
         self._history_management = db_conn
-
-        self.__orouter_client: openai.AsyncClient = client_session._orouter
 
     async def input_files(self, attachment: discord.Attachment, **kwargs):
         # Check if the attachment is an image
@@ -73,18 +72,11 @@ class Completions:
             _chat_thread[-1]["content"].append(self._file_data)
 
         # Generate completion
-        _response = await self.__orouter_client.chat.completions.create(
-            extra_headers={
-                "HTTP-Referer": "https://github.com/zavocc/JakeyBot",
-                "X-Title": environ.get("BOT_NAME", "JakeyBot")
-            },
+        _response = await litellm.acompletion(
             messages=_chat_thread,
-            model=f"anthropic/{self._model_name}",
+            model=self._model_name,
             max_tokens=3024,
             temperature=0.7,
-            response_format={
-                "type":"text"
-            }
         )
 
         # AI response
