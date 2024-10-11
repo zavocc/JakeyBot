@@ -15,7 +15,7 @@ chdir(Path(__file__).parent.resolve())
 load_dotenv("dev.env")
 
 # Logging
-logging.basicConfig(format='%(levelname)s %(asctime)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+logging.basicConfig(format='%(levelname)s %(asctime)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 
 # Playback support
 try:

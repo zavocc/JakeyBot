@@ -7,7 +7,7 @@ import discord
 class Completions():
     def __init__(self, guild_id = None, 
                  model_name = "agi-5-latest",
-                 model_provider = "company"
+                 model_provider = "company",
                  db_conn = None, **kwargs):
         # Used for tools and interacting with the Discord APIs
         if kwargs.get("_discord_bot") is not None and kwargs.get("_discord_ctx") is not None:

@@ -1,7 +1,8 @@
 from core.exceptions import MultiModalUnavailable, ChatHistoryFull
 from os import environ
 import discord
-import openai
+import litellm
+import logging
 
 class Completions:
     def __init__(self, guild_id = None, 
@@ -10,7 +11,21 @@ class Completions:
                  db_conn = None, **kwargs):
         self._file_data = None
 
-        self._model_name = model_name
+        if environ.get("OPENAI_API_KEY"):
+            # Set endpoint if OPENAI_API_ENDPOINT is set
+            if environ.get("OPENAI_API_ENDPOINT"):
+                self._oai_endpoint = environ.get("OPENAI_API_ENDPOINT")
+                logging.info(f"Using OpenAI API endpoint: {self._oai_endpoint}")
+            else:
+                self._oai_endpoint = None
+                logging.info("Using default OpenAI API endpoint")
+            self._model_name = "openai/" + model_name
+        elif environ.get("OPENROUTER_API_KEY"):
+            logging.info("Using OpenRouter API for OpenAI")
+            self._model_name = "openrouter/openai" + model_name
+        else:
+            raise ValueError("No OpenAI API key was set, this model isn't available")
+
         self._model_provider = model_provider
         self._guild_id = guild_id
         self._history_management = db_conn
@@ -61,14 +76,12 @@ class Completions:
             _chat_thread[-1]["content"].append(self._file_data)
 
         # Generate completion
-        _response = await self.__oaiclient.chat.completions.create(
+        _response = await litellm.acompletion(
             messages=_chat_thread,
             model=self._model_name,
             max_tokens=3024,
             temperature=0.7,
-            response_format={
-                "type":"text"
-            }
+            base_url=self._oai_endpoint
         )
 
         # AI response
