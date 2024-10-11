@@ -21,7 +21,7 @@ for chat history and other settings, this may be required.
 - `MONGO_DB_NAME` - Name of the database to put all the data or collections inside (defaults to `prod` database name). Changing the DB name would cause the current settings and other data to be changed until you revert the name back to desired database. Its recommended to set this for prod and dev purposes.
 
 ## Generative AI features
-- `GOOGLE_AI_TOKEN` - Set the Gemini API token, get one at [Google AI Studio](https://aistudio.google.com/app/apikey). If left blank, generative features powered by Gemini will be disabled.
+- `GEMINI_API_KEY` - Set the Gemini API token, get one at [Google AI Studio](https://aistudio.google.com/app/apikey). If left blank, generative features powered by Gemini will be disabled.
 - `OPENAI_API_KEY` - Set the OpenAI API key, obtain one from [OpenAI Platform](https://platform.openai.com/api-keys)
   - `__OAI_ENDPOINT` - Sets the base URL if you use GPT-4o models outside of OpenAI platform (e.g. GitHub models marketplace, Azure AI, or brokers/proxy like OpenRouter)
     - Setting to non-openai endpoints that doesn't have GPT-4o and GPT-4o mini would not work.

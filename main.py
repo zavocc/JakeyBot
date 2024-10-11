@@ -88,7 +88,7 @@ async def on_ready():
     # Check if we can load gemini api
     try:
         _genai = importlib.import_module("google.generativeai")
-        _genai.configure(api_key=environ.get("GOOGLE_AI_TOKEN"))
+        _genai.configure(api_key=environ.get("GEMINI_API_KEY"))
     except Exception as e:
         logging.error("Failed to configure Gemini API: %s\nexpect errors later", e)
     else:
