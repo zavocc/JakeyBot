@@ -11,7 +11,6 @@ class Completions:
                  db_conn = None, **kwargs):
         
         if environ.get("MISTRAL_API_KEY"):
-            # Set endpoint if OPENAI_API_ENDPOINT is set
             logging.info("Using default Mistral API endpoint")
             self._model_name = "mistral/" + model_name
         elif environ.get("OPENROUTER_API_KEY"):

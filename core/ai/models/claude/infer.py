@@ -13,7 +13,6 @@ class Completions:
         self._file_data = None
 
         if environ.get("ANTHROPIC_API_KEY"):
-            # Set endpoint if OPENAI_API_ENDPOINT is set
             logging.info("Using default Anthropic API endpoint")
             self._model_name = "anthropic/" + model_name
         elif environ.get("OPENROUTER_API_KEY"):
