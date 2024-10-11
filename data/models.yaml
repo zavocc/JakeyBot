@@ -25,12 +25,7 @@ models:
   - model: __openai__gpt-4o-mini
     name: GPT-4o Mini
     description: A smaller version of GPT-4o for speed and cost with multimodal capabilities
-  - model: __openai_o1__o1-preview
-    name: O1 Preview
-    description: Broad reasoning capabilities
-  - model: __openai_o1__o1-mini
-    name: O1 Mini
-    description: Reasons at math, science, and coding tasks with exceptional performance
+  
 
   ############################################
   # Claude models
