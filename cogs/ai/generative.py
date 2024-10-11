@@ -100,7 +100,6 @@ class BaseChat(commands.Cog):
         _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
             guild_id=guild_id,
             model_name=_model_name,
-            model_provider=_model_provider,
             db_conn = self.DBConn,
             _discord_bot=self.bot, # These are used for tools which are not part of its parameters
             _discord_ctx=ctx

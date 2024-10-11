@@ -5,9 +5,10 @@ import discord
 
 # A base template for other models
 class Completions():
+    _model_provider_thread = "ai_provider_company"
+
     def __init__(self, guild_id = None, 
                  model_name = "agi-5-latest",
-                 model_provider = "company",
                  db_conn = None, **kwargs):
         # Used for tools and interacting with the Discord APIs
         if kwargs.get("_discord_bot") is not None and kwargs.get("_discord_ctx") is not None:
@@ -20,7 +21,6 @@ class Completions():
 
         # This is required - DO NOT MODIFY
         self._model_name = model["model_name"]
-        self._model_provider = model["model_provider"]
         self._guild_id = guild_id
         self._history_management = db_conn
         
@@ -49,4 +49,4 @@ class Completions():
         return {"answer":"A quick brown fox jumps over a lazy dog", "prompt_count":1+1, "chat_thread": []}
 
     async def save_to_history(self, chat_thread = None, prompt_count = 0):
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=_encoded, prompt_count=prompt_count, model_provider=self._model_provider)
+        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=_encoded, prompt_count=prompt_count, model_provider=self._model_provider_thread)

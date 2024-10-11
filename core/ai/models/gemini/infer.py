@@ -44,9 +44,10 @@ class GenAIConfigDefaults:
 
 
 class Completions(GenAIConfigDefaults):
+    _model_provider_thread = "gemini"
+
     def __init__(self, guild_id = None, 
                  model_name = "gemini-1.5-flash-002",
-                 model_provider = "gemini",
                  db_conn = None, **kwargs):
         super().__init__()
 
@@ -61,7 +62,6 @@ class Completions(GenAIConfigDefaults):
         self._file_source_url = None
 
         self._model_name = model_name
-        self._model_provider = model_provider
         self._guild_id = guild_id
         self._history_management = db_conn
         
@@ -155,7 +155,7 @@ class Completions(GenAIConfigDefaults):
         )
 
         # Load history
-        _prompt_count, _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider)
+        _prompt_count, _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
         if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
             raise ChatHistoryFull("Maximum history reached! Clear the conversation")
 
@@ -247,4 +247,4 @@ class Completions(GenAIConfigDefaults):
 
     async def save_to_history(self, chat_thread = None, prompt_count = 0):
         _encoded = await asyncio.to_thread(jsonpickle.encode, chat_thread, indent=4, keys=True)
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=_encoded, prompt_count=prompt_count, model_provider=self._model_provider)
+        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=_encoded, prompt_count=prompt_count, model_provider=self._model_provider_thread)

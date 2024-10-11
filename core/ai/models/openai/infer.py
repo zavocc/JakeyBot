@@ -5,9 +5,10 @@ import litellm
 import logging
 
 class Completions:
+    _model_provider_thread = "openai"
+
     def __init__(self, guild_id = None, 
                  model_name = "gpt-4o-mini",
-                 model_provider = "openai",
                  db_conn = None, **kwargs):
         self._file_data = None
 
@@ -27,7 +28,6 @@ class Completions:
         else:
             raise ValueError("No OpenAI API key was set, this model isn't available")
 
-        self._model_provider = model_provider
         self._guild_id = guild_id
         self._history_management = db_conn
 
@@ -47,7 +47,7 @@ class Completions:
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Load history
-        _prompt_count, _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider)
+        _prompt_count, _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
         if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
             raise ChatHistoryFull("Maximum history reached! Clear the conversation")
         
@@ -104,4 +104,4 @@ class Completions:
         return {"answer":_answer, "prompt_count":_prompt_count+1, "chat_thread": _chat_thread}
 
     async def save_to_history(self, chat_thread = None, prompt_count = 0):
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=chat_thread, prompt_count=prompt_count, model_provider=self._model_provider)
+        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=chat_thread, prompt_count=prompt_count, model_provider=self._model_provider_thread)
