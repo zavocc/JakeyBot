@@ -5,13 +5,9 @@ import discord
 
 # A base template for other models
 class Completions():
-    def __init__(self, client_session = None, guild_id = None, 
+    def __init__(self, guild_id = None, 
                  model = {"model_provider": "company", "model_name": "agi-5-latest"}, 
                  db_conn = None, **kwargs):
-        # This could only mean a problem has occured
-        if client_session is None:
-            raise AttributeError("Client session has not been started")
-
         # Used for tools and interacting with the Discord APIs
         if kwargs.get("_discord_bot") is not None and kwargs.get("_discord_ctx") is not None:
             self._discord_bot: discord.Bot = kwargs.get("_discord_bot")

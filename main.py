@@ -1,4 +1,3 @@
-from core.ai._runtime_client import AIClientSession
 from discord.ext import bridge, commands
 from dotenv import load_dotenv
 from inspect import cleandoc
@@ -41,7 +40,6 @@ intents.members = True
 
 # Bot
 bot = bridge.Bot(command_prefix=commands.when_mentioned_or(environ.get("BOT_PREFIX", "$")), intents = intents)
-bot._ai_client_session = None
 
 ###############################################
 # ON READY
@@ -87,8 +85,14 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(f"/ask me anything or {environ.get("BOT_PREFIX", "$")}help"))
     print(f"{bot.user} is ready and online!")
 
-    # We load this after the bot is ready so other commands are readily available
-    bot._ai_client_session = AIClientSession()
+    # Check if we can load gemini api
+    try:
+        _genai = importlib.import_module("google.generativeai")
+        _genai.configure(api_key=environ.get("GOOGLE_AI_TOKEN"))
+    except Exception as e:
+        logging.error("Failed to configure Gemini API: %s\nexpect errors later", e)
+    else:
+        logging.info("Gemini API is ready")
 
 ###############################################
 # ON USER MESSAGE

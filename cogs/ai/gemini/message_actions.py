@@ -25,7 +25,7 @@ class GenAIApps(commands.Cog):
         await ctx.response.defer(ephemeral=True)
         
         # Generative model settings
-        _completion = Completions(client_session=self.bot._ai_client_session)
+        _completion = Completions()
         _answer = await _completion.completion(f"Rephrase this message with variety to choose from:\n{str(message.content)}", system_instruction=self._system_prompt.message_rephraser_prompt)
 
         # Send message in an embed format
@@ -66,7 +66,7 @@ class GenAIApps(commands.Cog):
         await ctx.response.defer(ephemeral=True)
 
         # Generative model settings
-        _completion = Completions(client_session=self.bot._ai_client_session)
+        _completion = Completions()
         _answer = await _completion.completion(f"Explain and summarize based on this message:\n{str(message.content)}", system_instruction=self._system_prompt.message_summarizer_prompt)
 
         # Send message in an embed format
@@ -107,7 +107,7 @@ class GenAIApps(commands.Cog):
         await ctx.response.defer(ephemeral=True)
 
         # Generative model settings
-        _completion = Completions(client_session=self.bot._ai_client_session)
+        _completion = Completions()
         _answer = await _completion.completion(f"Suggest a response based on this message:\n{str(message.content)}", system_instruction=self._system_prompt.message_suggestions_prompt)
 
         # To protect privacy, send the message to the user

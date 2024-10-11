@@ -4,20 +4,15 @@ import discord
 import openai
 
 class Completions:
-    def __init__(self, client_session = None, guild_id = None, 
+    def __init__(self, guild_id = None, 
                  model = {"model_provider": "openai", "model_name": "gpt-4o-mini"}, 
                  db_conn = None, **kwargs):
-        if client_session is None or not hasattr(client_session, "_oaiclient"):
-            raise AttributeError("OpenAI client session has not been set or initialized")
-
         self._file_data = None
 
         self._model_name = model["model_name"]
         self._model_provider = model["model_provider"]
         self._guild_id = guild_id
         self._history_management = db_conn
-
-        self.__oaiclient: openai.AsyncClient = client_session._oaiclient
 
     async def input_files(self, attachment: discord.Attachment, **kwargs):
         # Check if the attachment is an image

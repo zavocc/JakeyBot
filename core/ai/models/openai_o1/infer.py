@@ -4,20 +4,15 @@ import openai
 
 # OpenAI O1 model
 class Completions:
-    def __init__(self, client_session = None, guild_id = None, 
+    def __init__(self, guild_id = None, 
                  model = {"model_provider": "openai_openrouter", "model_name": "o1-mini"}, 
                  db_conn = None, **kwargs):
-        if client_session is None or not hasattr(client_session, "_orouter"):
-            raise AttributeError("OpenRouter client session has not been set or initialized")
-
         self._file_data = None
 
         self._model_name = model["model_name"]
         self._model_provider = model["model_provider"]
         self._guild_id = guild_id
         self._history_management = db_conn
-
-        self.__oaiclient: openai.AsyncClient = client_session._orouter
 
     async def chat_completion(self, prompt, **kwargs):
         # Load history

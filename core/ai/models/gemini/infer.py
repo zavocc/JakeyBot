@@ -44,13 +44,9 @@ class GenAIConfigDefaults:
 
 
 class Completions(GenAIConfigDefaults):
-    def __init__(self, client_session = None, guild_id = None, 
+    def __init__(self, guild_id = None, 
                  model = {"model_provider": "gemini", "model_name": "gemini-1.5-flash-002"}, 
                  db_conn = None, **kwargs):
-        # This is needed since it gets the state from core.ai._runtime_client.AIClientSession
-        if client_session is None:
-            raise AttributeError("Client session has not been started")
-
         super().__init__()
 
         # Optional

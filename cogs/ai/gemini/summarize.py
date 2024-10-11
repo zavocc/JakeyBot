@@ -97,7 +97,7 @@ class GenAITools(commands.Cog):
         # MODEL
         #################
         # set model
-        _completions = Completions(client_session=self.bot._ai_client_session)
+        _completions = Completions()
 
         _summary = await _completions.completion(inspect.cleandoc(f"""
             You are currently interacting as a user to give personalized responses based on their activity if applicable:

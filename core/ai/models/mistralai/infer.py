@@ -4,18 +4,12 @@ import mistralai
 
 class Completions:
     def __init__(self, guild_id = None, 
-                 client_session = None,
                  model = {"model_provider": "mistralai", "model_name": "mistral-large-latest"}, 
                  db_conn = None, **kwargs):
-        if client_session is None or not hasattr(client_session, "_mistral_client"):
-            raise AttributeError("Mistral client session has not been set or initialized")
-
         self._model_name = model["model_name"]
         self._model_provider = model["model_provider"]
         self._guild_id = guild_id
         self._history_management = db_conn
-
-        self.__mistral_client: mistralai.Mistral = client_session._mistral_client
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Load history
