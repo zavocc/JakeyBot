@@ -5,12 +5,13 @@ import openai
 # OpenAI O1 model
 class Completions:
     def __init__(self, guild_id = None, 
-                 model = {"model_provider": "openai_openrouter", "model_name": "o1-mini"}, 
+                 model_name = "o1-mini",
+                 model_provider = "openai_o1", 
                  db_conn = None, **kwargs):
         self._file_data = None
 
-        self._model_name = model["model_name"]
-        self._model_provider = model["model_provider"]
+        self._model_name = model_name
+        self._model_provider = model_provider
         self._guild_id = guild_id
         self._history_management = db_conn
 

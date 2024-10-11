@@ -45,7 +45,8 @@ class GenAIConfigDefaults:
 
 class Completions(GenAIConfigDefaults):
     def __init__(self, guild_id = None, 
-                 model = {"model_provider": "gemini", "model_name": "gemini-1.5-flash-002"}, 
+                 model_name = "gemini-1.5-flash-002",
+                 model_provider = "gemini",
                  db_conn = None, **kwargs):
         super().__init__()
 
@@ -59,8 +60,8 @@ class Completions(GenAIConfigDefaults):
         self._file_data = None
         self._file_source_url = None
 
-        self._model_name = model["model_name"]
-        self._model_provider = model["model_provider"]
+        self._model_name = model_name
+        self._model_provider = model_provider
         self._guild_id = guild_id
         self._history_management = db_conn
         

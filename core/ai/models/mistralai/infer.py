@@ -3,11 +3,12 @@ from os import environ
 import mistralai
 
 class Completions:
-    def __init__(self, guild_id = None, 
-                 model = {"model_provider": "mistralai", "model_name": "mistral-large-latest"}, 
+    def __init__(self, guild_id = None,
+                 model_name = "mistral-large-latest",
+                 model_provider = "mistralai",
                  db_conn = None, **kwargs):
-        self._model_name = model["model_name"]
-        self._model_provider = model["model_provider"]
+        self._model_name = model_name
+        self._model_provider = model_provider
         self._guild_id = guild_id
         self._history_management = db_conn
 

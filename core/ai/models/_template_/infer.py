@@ -6,7 +6,8 @@ import discord
 # A base template for other models
 class Completions():
     def __init__(self, guild_id = None, 
-                 model = {"model_provider": "company", "model_name": "agi-5-latest"}, 
+                 model_name = "agi-5-latest",
+                 model_provider = "company"
                  db_conn = None, **kwargs):
         # Used for tools and interacting with the Discord APIs
         if kwargs.get("_discord_bot") is not None and kwargs.get("_discord_ctx") is not None:
