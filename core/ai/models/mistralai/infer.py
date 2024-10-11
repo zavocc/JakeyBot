@@ -1,13 +1,24 @@
 from core.exceptions import ChatHistoryFull
 from os import environ
-import mistralai
+import litellm
+import logging
 
 class Completions:
     def __init__(self, guild_id = None,
-                 model_name = "mistral-large-latest",
+                 model_name = "mistral-large-2407",
                  model_provider = "mistralai",
                  db_conn = None, **kwargs):
-        self._model_name = model_name
+        
+        if environ.get("MISTRAL_API_KEY"):
+            # Set endpoint if OPENAI_API_ENDPOINT is set
+            logging.info("Using default Mistral API endpoint")
+            self._model_name = "mistral/" + model_name
+        elif environ.get("OPENROUTER_API_KEY"):
+            logging.info("Using OpenRouter API for Mistral")
+            self._model_name = "openrouter/mistralai/" + model_name
+        else:
+            raise ValueError("No Mistral API key was set, this model isn't available")
+
         self._model_provider = model_provider
         self._guild_id = guild_id
         self._history_management = db_conn
@@ -22,7 +33,7 @@ class Completions:
         # Check if codestral-latest model is used since it's not necessary to put system instructions as its designed for code
         # And to prevent tokens from being depleted quickly
         if _chat_thread is None:
-            if not self._model_name == "codestral-latest":
+            if not "codestral-latest" in self._model_name:
                 _chat_thread = [{
                     "role": "system",
                     "content": system_instruction   
@@ -45,9 +56,11 @@ class Completions:
         )
 
         # Generate completion
-        _response = await self.__mistral_client.chat.complete_async(
+        _response = await litellm.acompletion(
+            messages=_chat_thread,
             model=self._model_name,
-            messages=_chat_thread
+            max_tokens=3024,
+            temperature=0.7,
         )
 
         # AI response

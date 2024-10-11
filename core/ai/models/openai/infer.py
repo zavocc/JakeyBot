@@ -22,7 +22,8 @@ class Completions:
             self._model_name = "openai/" + model_name
         elif environ.get("OPENROUTER_API_KEY"):
             logging.info("Using OpenRouter API for OpenAI")
-            self._model_name = "openrouter/openai" + model_name
+            self._model_name = "openrouter/openai/" + model_name
+            self._oai_endpoint = None
         else:
             raise ValueError("No OpenAI API key was set, this model isn't available")
 

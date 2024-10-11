@@ -97,7 +97,7 @@ class BaseChat(commands.Cog):
         _model = model.split("__")
         _model_provider = _model[1]
         _model_name = _model[-1]
-        _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model[1]}.infer").Completions(
+        _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
             guild_id=guild_id,
             model_name=_model_name,
             model_provider=_model_provider,

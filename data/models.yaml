@@ -1,32 +1,39 @@
 models:
   # Hosted through Gemini API
   - model: __gemini__gemini-1.5-pro-002
-    name: Gemini 1.5 Pro (2M)
+    name: Gemini 1.5 Pro
     description: Advanced chat tasks with low availability
   - model: __gemini__gemini-1.5-flash-002
-    name: Gemini 1.5 Flash (1M)
+    name: Gemini 1.5 Flash
     description: General purpose with high availability
   - model: __gemini__gemini-1.5-pro-001
-    name: Gemini 1.5 Pro 001 (2M)
+    name: Gemini 1.5 Pro 001 
     description: Oldstable version
   - model: __gemini__gemini-1.5-flash-001
-    name: Gemini 1.5 Flash 001 (1M)
+    name: Gemini 1.5 Flash 001
     description: Oldstable version
   - model: __gemini__gemini-1.5-flash-8b
-    name: Gemini 1.5 Flash 8B (1M)
+    name: Gemini 1.5 Flash 8B
     description: Lighter and faster version of Gemini 1.5 Flash 
 
-  # Hosted through OpenAI API
+  ############################################
+  # OpenAI models
+  ############################################
   - model: __openai__gpt-4o
     name: GPT-4o
     description: OpenAI's flagship multimodal model for advanced tasks
   - model: __openai__gpt-4o-mini
     name: GPT-4o Mini
     description: A smaller version of GPT-4o for speed and cost with multimodal capabilities
-
+  - model: __openai_o1__o1-preview
+    name: O1 Preview
+    description: Broad reasoning capabilities
+  - model: __openai_o1__o1-mini
+    name: O1 Mini
+    description: Reasons at math, science, and coding tasks with exceptional performance
 
   ############################################
-  # OpenRouter models
+  # Claude models
   ############################################
   # Claude models hosted through OpenRouter
   - model: __claude__claude-3.5-sonnet
@@ -35,11 +42,15 @@ models:
   - model: __claude__claude-3-haiku
     name: Claude 3 Haiku
     description: Lightning fast chat with low accuracy
+
+  ############################################
+  # Mistral models
+  ############################################
+  - model: __mistralai__mistral-large-2407
+    name: Mistral Large 2
+    description: Advanced multilingual model with top reasoning capabilities
+  - model: __mistralai__codestral-latest
+    name: Codestral
+    description: Optimized for code chat
     
-  # O1 models are hosted through OpenRouter
-  - model: __openai_o1__o1-preview
-    name: O1 Preview
-    description: Broad reasoning capabilities
-  - model: __openai_o1__o1-mini
-    name: O1 Mini
-    description: Reasons at math, science, and coding tasks with exceptional performance
+
