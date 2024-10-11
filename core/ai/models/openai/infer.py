@@ -28,6 +28,10 @@ class Completions:
         else:
             raise ValueError("No OpenAI API key was set, this model isn't available")
 
+        if kwargs.get("_discord_bot") is not None and kwargs.get("_discord_ctx") is not None:
+            self._discord_bot: discord.Bot = kwargs.get("_discord_bot")
+            self._discord_ctx: discord.ApplicationContext = kwargs.get("_discord_ctx")
+
         self._guild_id = guild_id
         self._history_management = db_conn
 
@@ -77,16 +81,30 @@ class Completions:
             _chat_thread[-1]["content"].append(self._file_data)
 
         # Generate completion
-        _response = await litellm.acompletion(
+        _response_stream = await litellm.acompletion(
             messages=_chat_thread,
             model=self._model_name,
             max_tokens=3024,
             temperature=0.7,
-            base_url=self._oai_endpoint
+            base_url=self._oai_endpoint,
+            stream=True
         )
 
         # AI response
-        _answer = _response.choices[0].message.content
+        _answer = ""
+        _res = None
+        async for _chunk in _response_stream:
+            if _chunk.choices[0].delta.content is not None:
+                _answer += _chunk.choices[0].delta.content
+            
+                # Animate
+                if len(_chunk.choices[0].delta.content) >= 7:
+                    if _res is None:
+                        _res = await self._discord_ctx.send(_answer)
+                    else:
+                        await _res.edit(content=_answer)
+
+        await _res.delete() if _res is not None else None
 
         # Append to chat thread
         _chat_thread.append(
