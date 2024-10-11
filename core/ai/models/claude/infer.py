@@ -1,7 +1,8 @@
 from core.exceptions import MultiModalUnavailable, ChatHistoryFull
 from os import environ
 import discord
-import openai
+import logging
+import litellm
 
 class Completions:
     _model_provider_thread = "claude"
@@ -11,7 +12,16 @@ class Completions:
                  db_conn = None, **kwargs):
         self._file_data = None
 
-        self._model_name = model_name
+        if environ.get("ANTHROPIC_API_KEY"):
+            # Set endpoint if OPENAI_API_ENDPOINT is set
+            logging.info("Using default Anthropic API endpoint")
+            self._model_name = "anthropic/" + model_name
+        elif environ.get("OPENROUTER_API_KEY"):
+            logging.info("Using OpenRouter API for Anthropic")
+            self._model_name = "openrouter/anthropic/" + model_name
+        else:
+            raise ValueError("No Anthropic API key was set, this model isn't available")
+    
         self._guild_id = guild_id
         self._history_management = db_conn
 
@@ -69,18 +79,11 @@ class Completions:
             _chat_thread[-1]["content"].append(self._file_data)
 
         # Generate completion
-        _response = await self.__orouter_client.chat.completions.create(
-            extra_headers={
-                "HTTP-Referer": "https://github.com/zavocc/JakeyBot",
-                "X-Title": environ.get("BOT_NAME", "JakeyBot")
-            },
+        _response = await litellm.acompletion(
             messages=_chat_thread,
-            model=f"anthropic/{self._model_name}",
+            model=self._model_name,
             max_tokens=3024,
             temperature=0.7,
-            response_format={
-                "type":"text"
-            }
         )
 
         # AI response
