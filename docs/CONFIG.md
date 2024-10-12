@@ -27,7 +27,9 @@ for chat history and other settings, this may be required.
     - Setting to non-openai endpoints that doesn't have GPT-4o and GPT-4o mini would not work.
 - `ANTHROPIC_API_KEY` - Set the Anthropic API keys for Claude models. Obtain one from [the console](https://console.anthropic.com/settings/keys)
 - `MISTRAL_API_KEY` - Set the Mistral API keys for Mistral models. Obtain one from [La Platforme](https://console.mistral.ai/api-keys/)
+- `GROQ_API_KEY` - For LLaMA and other open models. [Get API Key](https://console.groq.com/keys)
 - `OPENROUTER_API_KEY` - Set an OpenRouter API key if you want to use models within this platform, the models will automatically make use of this backend if none of the API keys are set.
+  - This will only override OpenAI, Mistral, and Anthropic providers
 
 ## Administrative
 - `SYSTEM_USER_ID` - If you're hosting a bot, please set your Discord user ID to adminisrate the bot even if you're not the administrator of the server. With great power coems great responsibility! This is used for commands like `$admin_execute` (`$eval` as alias) to do tasks like `$eval git pull --rebase` or `$eval free -h`
