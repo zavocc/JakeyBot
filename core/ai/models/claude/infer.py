@@ -1,23 +1,28 @@
 from core.exceptions import MultiModalUnavailable, ChatHistoryFull
 from os import environ
 import discord
-import openai
+import logging
+import litellm
 
 class Completions:
-    def __init__(self, client_session = None, guild_id = None, 
-                 model = {"model_provider": "claude", "model_name": "claude-3-haiku"}, 
-                 db_conn = None, **kwargs):
-        if client_session is None or not hasattr(client_session, "_orouter"):
-            raise AttributeError("OpenRouter (using OpenAI SDK) client session has not been set or initialized")
+    _model_provider_thread = "claude"
 
+    def __init__(self, guild_id = None, 
+                 model_name = "claude-3-haiku",
+                 db_conn = None, **kwargs):
         self._file_data = None
 
-        self._model_name = model["model_name"]
-        self._model_provider = model["model_provider"]
+        if environ.get("ANTHROPIC_API_KEY"):
+            logging.info("Using default Anthropic API endpoint")
+            self._model_name = "anthropic/" + model_name
+        elif environ.get("OPENROUTER_API_KEY"):
+            logging.info("Using OpenRouter API for Anthropic")
+            self._model_name = "openrouter/anthropic/" + model_name
+        else:
+            raise ValueError("No Anthropic API key was set, this model isn't available")
+    
         self._guild_id = guild_id
         self._history_management = db_conn
-
-        self.__orouter_client: openai.AsyncClient = client_session._orouter
 
     async def input_files(self, attachment: discord.Attachment, **kwargs):
         # Check if the attachment is an image
@@ -35,7 +40,7 @@ class Completions:
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Load history
-        _prompt_count, _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider)
+        _prompt_count, _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
         if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
             raise ChatHistoryFull("Maximum history reached! Clear the conversation")
         
@@ -73,18 +78,12 @@ class Completions:
             _chat_thread[-1]["content"].append(self._file_data)
 
         # Generate completion
-        _response = await self.__orouter_client.chat.completions.create(
-            extra_headers={
-                "HTTP-Referer": "https://github.com/zavocc/JakeyBot",
-                "X-Title": environ.get("BOT_NAME", "JakeyBot")
-            },
+        _response = await litellm.acompletion(
             messages=_chat_thread,
-            model=f"anthropic/{self._model_name}",
+            model=self._model_name,
             max_tokens=3024,
             temperature=0.7,
-            response_format={
-                "type":"text"
-            }
+            api_key=environ.get("ANTHROPIC_API_KEY")
         )
 
         # AI response
@@ -106,4 +105,4 @@ class Completions:
         return {"answer":_answer, "prompt_count":_prompt_count+1, "chat_thread": _chat_thread}
 
     async def save_to_history(self, chat_thread = None, prompt_count = 0):
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=chat_thread, prompt_count=prompt_count, model_provider=self._model_provider)
+        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=chat_thread, prompt_count=prompt_count, model_provider=self._model_provider_thread)

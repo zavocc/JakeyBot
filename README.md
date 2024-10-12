@@ -3,7 +3,7 @@ Jakey Bot is a multi-model chatbot with personality, designed to give you access
 
 ![Jakey Bot Banner](./assets/banner.png)
 
-This bot primarily uses Gemini through [the Gemini API](https://ai.google.dev) as well as other models from [OpenAI](https://openai.com), and others from [OpenRouter](https://openrouter.ai) for other AI models for unified access. Combined with best Python and Discord APIs to create a helpful AI assistants
+This bot primarily uses Gemini through [the Gemini API](https://ai.google.dev) as well as other models from OpenAI, Anthropic, Mistral, or use [OpenRouter](https://openrouter.ai) for unified access to some models. Combined with best Python and Discord APIs to create a helpful AI assistants
 
 ## Platform availability
 Jakey AI is available as Discord Bot. Other platforms is coming soon!
@@ -12,8 +12,7 @@ Jakey AI is available as Discord Bot. Other platforms is coming soon!
 - Access to the top AI flagship models right within Discord!
 - Summarize text channels and messages
 - Multimodality support and summarize file attachments!\*
-- Access to O1 models!\**
-- Browse, run python code, edit images right within chat\***
+- Browse, run python code, edit images right within chat\**
 - Create images using FLUX.1 and Stable Diffusion 3!
 
 Other non-AI extras include:
@@ -21,8 +20,7 @@ Other non-AI extras include:
 - Mimic other users
 
 > \* - Gemini can take images, videos, audio, certain text files, and full PDFs as input while others only accept image inputs \
-> \** - You must have an OpenRouter account and credits to use O1 models since you don't want to pay for $100 just to access it\
-> \*** - Tools are only supported through Gemini models
+> \** - Tools are only supported through Gemini models
 
 ## Installation
 The only thing you'd need is Python with PIP and venv!

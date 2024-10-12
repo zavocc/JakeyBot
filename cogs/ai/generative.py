@@ -97,10 +97,9 @@ class BaseChat(commands.Cog):
         _model = model.split("__")
         _model_provider = _model[1]
         _model_name = _model[-1]
-        _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model[1]}.infer").Completions(
-            client_session=self.bot._ai_client_session, # this is disregarded in the Gemini model
+        _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
             guild_id=guild_id,
-            model={"model_provider": _model_provider, "model_name": _model_name},
+            model_name=_model_name,
             db_conn = self.DBConn,
             _discord_bot=self.bot, # These are used for tools which are not part of its parameters
             _discord_ctx=ctx
