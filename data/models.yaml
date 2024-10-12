@@ -26,7 +26,6 @@ models:
     name: GPT-4o Mini
     description: A smaller version of GPT-4o for speed and cost with multimodal capabilities
   
-
   ############################################
   # Claude models
   ############################################
@@ -44,6 +43,9 @@ models:
   - model: __mistralai__mistral-large-2407
     name: Mistral Large 2
     description: Advanced multilingual model with top reasoning capabilities
+  - model: __mistralai__open-mixtral-8x7b
+    name: Mixtral 8x7B
+    description: The OG Mistral's sparse mixture of experts model with low moderation
   - model: __mistralai__codestral-latest
     name: Codestral
     description: Optimized for code chat
