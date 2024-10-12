@@ -23,11 +23,11 @@ for chat history and other settings, this may be required.
 ## Generative AI features
 - `GEMINI_API_KEY` - Set the Gemini API token, get one at [Google AI Studio](https://aistudio.google.com/app/apikey). If left blank, generative features powered by Gemini will be disabled.
 - `OPENAI_API_KEY` - Set the OpenAI API key, obtain one from [OpenAI Platform](https://platform.openai.com/api-keys)
-  - `__OAI_ENDPOINT` - Sets the base URL if you use GPT-4o models outside of OpenAI platform (e.g. GitHub models marketplace, Azure AI, or brokers/proxy like OpenRouter)
+  - `OPENAI_API_ENDPOINT` - Sets the base URL if you use GPT-4o models outside of OpenAI platform (e.g. GitHub models marketplace or Azure AI models)
     - Setting to non-openai endpoints that doesn't have GPT-4o and GPT-4o mini would not work.
-- `OPENROUTER_API_KEY` - Set the key from OpenRouter, without it, you cannot use models like Claude or O1-preview/O1-mini.
-  - You can also use your OpenRouter API key to `OPENAI_API_KEY` and the `__OAI_ENDPOINT` to OpenRouter endpoint if you decide to use OpenRouter as your main platform.
-
+- `ANTHROPIC_API_KEY` - Set the Anthropic API keys for Claude models. Obtain one from [the console](https://console.anthropic.com/settings/keys)
+- `MISTRAL_API_KEY` - Set the Mistral API keys for Mistral models. Obtain one from [La Platforme](https://console.mistral.ai/api-keys/)
+- `OPENROUTER_API_KEY` - Set an OpenRouter API key if you want to use models within this platform, the models will automatically make use of this backend if none of the API keys are set.
 
 ## Administrative
 - `SYSTEM_USER_ID` - If you're hosting a bot, please set your Discord user ID to adminisrate the bot even if you're not the administrator of the server. With great power coems great responsibility! This is used for commands like `$admin_execute` (`$eval` as alias) to do tasks like `$eval git pull --rebase` or `$eval free -h`
