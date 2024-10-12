@@ -50,11 +50,3 @@ models:
     name: Codestral
     description: Optimized for code chat
 
-  ############################################
-  # By GROQ
-  ############################################
-  - model: __groq__llama-3.2-90b-text-preview
-    name: Llama 3.2 90B (text only)
-    description: Model by Meta
-    
-

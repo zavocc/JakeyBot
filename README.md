@@ -3,7 +3,7 @@ Jakey Bot is a multi-model chatbot with personality, designed to give you access
 
 ![Jakey Bot Banner](./assets/banner.png)
 
-This bot primarily uses Gemini through [the Gemini API](https://ai.google.dev) as well as other models from [OpenAI](https://openai.com), and others from [OpenRouter](https://openrouter.ai) for other AI models for unified access. Combined with best Python and Discord APIs to create a helpful AI assistants
+This bot primarily uses Gemini through [the Gemini API](https://ai.google.dev) as well as other models from OpenAI, Anthropic, Mistral, or use [OpenRouter](https://openrouter.ai) for unified access to some models. Combined with best Python and Discord APIs to create a helpful AI assistants
 
 ## Platform availability
 Jakey AI is available as Discord Bot. Other platforms is coming soon!
