@@ -34,7 +34,9 @@ for chat history and other settings, this may be required.
 ## Administrative
 - `SYSTEM_USER_ID` - If you're hosting a bot, please set your Discord user ID to adminisrate the bot even if you're not the administrator of the server. With great power coems great responsibility! This is used for commands like `$admin_execute` (`$eval` as alias) to do tasks like `$eval git pull --rebase` or `$eval free -h`
 
-- `TEMP_DIR` - Path to store temporary uploaded/downloaded attachments for multimodal use. Defaults to `temp/` in the cuurent directory if not set. Files are always deleted on every execution regardless if its successful or not, or when the bot is restared.
+- `TEMP_DIR` - Path to store temporary uploaded/downloaded attachments for multimodal use. Defaults to `temp/` in the cuurent directory if not set. Files are always deleted on every execution regardless if its successful or not, or when the bot is restared or shutdown.
+
+- `MAX_CONTEXT_HISTORY` - Sets soft limit how many interactions are needed until it reaches its limit, defaults to 20. It's recommended to set within reasonable values as LLM conversation history threads are stateless and can cost exponentially as the thread tokens gets passed through without caching. Consider the hard limit of MongoDB document is 16MB.
 
 - `SHARED_CHAT_HISTORY` - Determines whether to share the chat history to all members inside the guild. Accepts case insensitive boolean values. We recommend setting this to `false` as the bot does not have admin controls to manage chat history guild wide and conversations are treated as single dialogue. Setting to `false` makes it as if interacting the bot in DMs having their own history regardless of the setting. Keep in mind that this does not immediately delete per-guild chat history when set to `false`. Use SQLite database browser to manually manage history, refer to [HistoryManagement class](../core/ai/history.py) for more information.
 
