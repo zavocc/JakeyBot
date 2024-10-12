@@ -60,6 +60,7 @@ class Completions:
             model=self._model_name,
             max_tokens=3024,
             temperature=0.7,
+            api_key=environ.get("MISTRAL_API_KEY")
         )
 
         # AI response

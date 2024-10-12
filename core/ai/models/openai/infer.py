@@ -82,7 +82,8 @@ class Completions:
             model=self._model_name,
             max_tokens=3024,
             temperature=0.7,
-            base_url=self._oai_endpoint
+            base_url=self._oai_endpoint,
+            api_key=environ.get("OPENAI_API_KEY")
         )
 
         # AI response
