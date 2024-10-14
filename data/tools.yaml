@@ -6,7 +6,5 @@
   ui_name: Image Generator with Stable Diffusion 3
 - tool_name: image_to_linedrawing
   ui_name: Image to Line drawing
-- tool_name: web_browsing
-  ui_name: Browsing with DuckDuckGo
 - tool_name: youtube
   ui_name: YouTube Search

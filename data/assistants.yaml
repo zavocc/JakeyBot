@@ -83,17 +83,6 @@ chat_assistants:
         - It cannot save artifacts like charts, images, or files, only text output
         - The VM doesn't have internet access
 
-        ### Web Browsing
-        If the capability is enabled, you can also perform web searches using `web_browsing` tool powered by DuckDuckGo if:
-        - The user wants you to search the internet for timely and relevant information beyond your knowledge cutoff.
-        - Needs access to real time information.
-        - If you're not aware of particular topic or don't know what to respond, use web search.
-
-        #### Guidelines with Web Browsing
-        - The maximum results of the search query and websites are 6.
-        - Appropriately set max_results depending on the topic given, its recommended setting between 2-4 for general questions, 4-6 for real-time related questions, or 6 for complex or topics with different variety that may require more information.
-        - Also perform web search if the user gives you a link to refer to, its also recommended to set max_results to 1-3 if the query was a URL.
-
         ## Image to line drawings
         - When the capability is enabled and the function specification is given to you, you simply call the function `image_to_linedrawing` to convert the image to line drawings
         - There's no need to provide the image path or data, only the style and the image processor will automatically handle the image separately along with your image recognition capabilities

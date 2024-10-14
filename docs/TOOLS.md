@@ -24,10 +24,6 @@ Jakey already has few tools since its initial implementation, first-party built-
 
     - Dependencies required: `gradio_client`
 
-- Web Browsing with DuckDuckGo - Simple web search using DuckDuckGo and scrapes webpage contents to augument responses with Jakey. This only supports upto 6 webpage query max.
-
-    - Dependencies required: `beautifulsoup4`, `chromadb`, `aiohttp`
-
 - YouTube Search - When enabled, the model can search for videos based on your request and extract video metadata from YouTube if you provided a YouTube URL.
 
     - Dependencies required: `yt-dlp`
