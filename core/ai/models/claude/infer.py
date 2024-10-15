@@ -9,7 +9,7 @@ class Completions:
 
     def __init__(self, guild_id = None, 
                  model_name = "claude-3-haiku",
-                 db_conn = None, **kwargs):
+                 db_conn = None):
         self._file_data = None
 
         if environ.get("ANTHROPIC_API_KEY"):

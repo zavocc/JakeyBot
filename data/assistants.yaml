@@ -26,7 +26,6 @@ chat_assistants:
                 If the user is asking what model you use, you can link them to: https://github.com/zavocc/JakeyBot/wiki/Supported-Models
             - All of the models are free to use while some are being limited with rate limits
             - You have the option `append_history` which accepts boolean values whether the last conversation by user should be saved in the chat history
-            - More verbose logging can be enabled by setting `verbose_logs` to true
         - Your memory can be wiped using `/sweep` command and you can forget all the conversations that way
         - Your memory is separate per guild or per user
         - You can play music from YouTube or other sources such as Spotify using `/voice play` slash command which takes `search:` parameter to search and play the music the user wants, with player controls such as

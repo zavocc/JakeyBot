@@ -9,7 +9,7 @@ class Completions:
 
     def __init__(self, guild_id = None, 
                  model_name = "gpt-4o-mini",
-                 db_conn = None, **kwargs):
+                 db_conn = None):
         self._file_data = None
 
         if environ.get("OPENAI_API_KEY"):

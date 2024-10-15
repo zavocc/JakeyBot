@@ -93,7 +93,7 @@ Jakey provides commands such as:
   - Get started by asking `/ask` `prompt:` `Hey Jakey, I'm new, tell me your commands, features, and capabilities`
   - Use multimodal features by passing `attachment:` parameter
   - Ephemeral conversation with `append_hist:True`
-  - Show logs, conversation and model info with `verbose_logs:True`
+  - Show logs, conversation and model info with `show_info:True`
   - You can choose between models using `model:` parameter
 - `/sweep` - Clear the conversation
 - `/feature` - Extend Jakey skills by activating chat tools! (Clears conversation when feature are set, only supports Gemini models)

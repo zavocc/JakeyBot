@@ -8,7 +8,7 @@ class Completions:
 
     def __init__(self, guild_id = None,
                  model_name = "mistral-large-2407",
-                 db_conn = None, **kwargs):
+                 db_conn = None):
         
         if environ.get("MISTRAL_API_KEY"):
             logging.info("Using default Mistral API endpoint")

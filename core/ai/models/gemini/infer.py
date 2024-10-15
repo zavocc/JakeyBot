@@ -48,15 +48,8 @@ class Completions(GenAIConfigDefaults):
 
     def __init__(self, guild_id = None, 
                  model_name = "gemini-1.5-flash-002",
-                 db_conn = None, **kwargs):
+                 db_conn = None):
         super().__init__()
-
-        # Optional
-        # To be set as
-        # self._discord_bot = bot
-        if kwargs.get("_discord_bot") is not None and kwargs.get("_discord_ctx") is not None:
-            self._discord_bot: discord.Bot = kwargs.get("_discord_bot")
-            self._discord_ctx: discord.ApplicationContext = kwargs.get("_discord_ctx")
 
         self._file_data = None
         self._file_source_url = None
@@ -83,29 +76,21 @@ class Completions(GenAIConfigDefaults):
             raise httperror
 
         # Upload the file to the server
+        _msgstatus = None
         try:
             _file_uri = await asyncio.to_thread(genai.upload_file, path=_xfilename, display_name=_xfilename.split("/")[-1])
-            _msgstatus = None
 
             # Wait for the file to be uploaded
             while _file_uri.state.name == "PROCESSING":
-                if _msgstatus is None:
+                if _msgstatus is None and hasattr(self, "_discord_ctx"):
                     _msgstatus = await self._discord_ctx.send("⌛ Processing the file attachment... this may take a while")
                 await asyncio.sleep(3)
                 _file_uri = await asyncio.to_thread(genai.get_file, _file_uri.name)
         except Exception as e:
-            if _msgstatus: await _msgstatus.delete()
-            await self._discord_ctx.respond(f"❌ Sorry, I can't process the file attachment, please see console logs for more details")
             raise e
         finally:
+            if _msgstatus: await _msgstatus.delete()
             await aiofiles.os.remove(_xfilename)
-
-        # Immediately use the "used" status message to indicate that the file API is used
-        if kwargs.get("verbose_logs") == True:
-            # Add caution that the attachment data would be lost in 48 hours
-            await self._discord_ctx.send("> 📝 **Note:** The submitted file attachment will be deleted from the context after 48 hours.")
-        
-        if _msgstatus is not None: await _msgstatus.delete()
 
         # Set the attachment variable
         self._file_source_url = attachment.url
@@ -129,13 +114,12 @@ class Completions(GenAIConfigDefaults):
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Setup model and tools
-        if self._discord_bot is not None and self._discord_ctx is not None and self._history_management is not None:
+        if hasattr(self, "_discord_bot") and hasattr(self, "_discord_ctx") and self._history_management is not None:
             _Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self._discord_bot, self._discord_ctx)
 
             if _Tool_use.tool_name == "code_execution":
                 _Tool_use.tool_schema = "code_execution"
 
-        if _Tool_use:
             tool_config = {'function_calling_config':_Tool_use.tool_config}
 
             if hasattr(_Tool_use, "file_uri"):

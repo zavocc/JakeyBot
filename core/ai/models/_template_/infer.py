@@ -10,12 +10,7 @@ class Completions():
 
     def __init__(self, guild_id = None, 
                  model_name = "agi-5-latest",
-                 db_conn = None, **kwargs):
-        # Used for tools and interacting with the Discord APIs
-        if kwargs.get("_discord_bot") is not None and kwargs.get("_discord_ctx") is not None:
-            self._discord_bot: discord.Bot = kwargs.get("_discord_bot")
-            self._discord_ctx: discord.ApplicationContext = kwargs.get("_discord_ctx")
-
+                 db_conn = None):
         # Used for passing non-textual data into the model
         self._file_data = None # The attachment data itself (binary data, prompt, etc)
         self._file_source_url = None # To reference the source of the file

@@ -63,13 +63,8 @@ class BaseChat(commands.Cog):
         description="Show information about the model, tool, files used and the context size through an embed",
         default=False
     )
-    @discord.option(
-        "verbose_logs",
-        description="Display more logs along with the response depending on the model",
-        default=False
-    )
     async def ask(self, ctx, prompt: str, attachment: discord.Attachment, model: str,
-        append_history: bool, show_info: bool, verbose_logs: bool):
+        append_history: bool, show_info: bool):
         """Ask a question using Gemini and models from OpenAI, Anthropic, and more!"""
         await ctx.response.defer()
 
@@ -93,17 +88,20 @@ class BaseChat(commands.Cog):
                 await ctx.respond("🚫 This commmand can only be used in DMs or authorized guilds!")
                 return
 
-        # Configure infer
+        # Set model
         _model = model.split("__")
         _model_provider = _model[1]
         _model_name = _model[-1]
+
+        # Configure inference
         _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
             guild_id=guild_id,
             model_name=_model_name,
             db_conn = self.DBConn,
-            _discord_bot=self.bot, # These are used for tools which are not part of its parameters
-            _discord_ctx=ctx
         )
+        
+        _infer._discord_bot = self.bot
+        _infer._discord_ctx = ctx
 
         ###############################################
         # File attachment processing
@@ -112,7 +110,7 @@ class BaseChat(commands.Cog):
             if not hasattr(_infer, "input_files"):
                 raise MultiModalUnavailable(f"Multimodal is not available for this model: {_model_name}")
 
-            await _infer.input_files(attachment=attachment, verbose_logs=verbose_logs)
+            await _infer.input_files(attachment=attachment)
 
         ###############################################
         # Answer generation
