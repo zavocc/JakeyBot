@@ -13,12 +13,9 @@ class Admin(commands.Cog):
 
     # Shutdown command
     @commands.command(aliases=['exit', 'stop', 'quit', 'shutdown'])
+    @commands.is_owner()
     async def admin_shutdown(self, ctx):
         """Shuts down the bot"""
-        if ctx.author.id != int(environ.get("SYSTEM_USER_ID")):
-            await ctx.respond("Only my master can do that >:(")
-            return
-
         await ctx.send("Shutting down...")
         # Shutdown aiohttp client and the bot
         #if hasattr(self.bot, "_aiohttp_session"):   
@@ -33,12 +30,9 @@ class Admin(commands.Cog):
 
     # Execute command
     @commands.command(aliases=['eval', 'evaluate'])
+    @commands.is_owner()
     async def admin_execute(self, ctx, *shell_command):
         """Execute a shell command inline, useful for troubleshooting or running quick maintenance task (owner only)"""
-        if ctx.author.id != int(environ.get("SYSTEM_USER_ID")):
-            await ctx.respond("Only my master can do that >:(")
-            return
-
         # Check for arguments
         if not shell_command or len(shell_command) == 0:
             await ctx.respond("You need to provide a shell command to execute")
@@ -73,6 +67,13 @@ class Admin(commands.Cog):
         else:
             await ctx.respond(f"I executed `{pretty_shell_command}` and got no output")
 
+    async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.NotOwner):
+            await ctx.respond("❌ Sorry, only the owner can use this command.")
+        elif isinstance(error, commands.MissingPermissions):
+            await ctx.respond(f"❌ You are missing the required permissions to use this command. Needed permissions:\n```{error}```")
+        else:
+            raise error
 
 def setup(bot):
     bot.add_cog(Admin(bot))

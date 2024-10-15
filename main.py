@@ -28,11 +28,6 @@ except ModuleNotFoundError as e:
 if "TOKEN" in environ and (environ.get("TOKEN") == "INSERT_DISCORD_TOKEN") or (environ.get("TOKEN") is None) or (environ.get("TOKEN") == ""):
     raise Exception("Please insert a valid Discord bot token")
 
-# Check for system user ID else abort
-# This is used for eval commands
-if environ.get("SYSTEM_USER_ID") == "YOUR_DISCORD_ID" or environ.get("SYSTEM_USER_ID") is None or environ.get("SYSTEM_USER_ID") == "":
-    raise Exception("Please set SYSTEM_USER_ID in dev.env")
-
 # Intents
 intents = discord.Intents.default()
 intents.message_content = True
