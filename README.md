@@ -1,9 +1,9 @@
 ## Jakey Bot
-Jakey Bot is a multi-model chatbot with personality, designed to give you access to popular AI chatbots from Google, OpenAI, Anthropic, Mistral right within Discord!
+Jakey Bot is a multi-model AI and music bot with personality, designed to give you access to popular AI chatbots from Google, OpenAI, Anthropic, Mistral right within Discord! 
 
 ![Jakey Bot Banner](./assets/banner.png)
 
-This bot primarily uses Gemini through [the Gemini API](https://ai.google.dev) as well as other models from OpenAI, Anthropic, Mistral, or use [OpenRouter](https://openrouter.ai) for unified access to some models. Combined with best Python and Discord APIs to create a helpful AI assistants
+This bot primarily uses Gemini through [the Gemini API](https://ai.google.dev) as well as other models from OpenAI, Anthropic, Mistral, or use [OpenRouter](https://openrouter.ai) for unified access to some models using LiteLLM! Combined with best Python and Discord APIs to create a helpful AI assistants
 
 ## Platform availability
 Jakey AI is available as Discord Bot. Other platforms is coming soon!
@@ -16,15 +16,13 @@ Jakey AI is available as Discord Bot. Other platforms is coming soon!
 - Create images using FLUX.1 and Stable Diffusion 3!
 
 Other non-AI extras include:
-- Listen to music using wavelink!
+- Listen to music using wavelink! Play with your tunes from Spotify, SoundCloud, YouTube, and more! Right within Discord!
 - Mimic other users
 
 > \* - Gemini can take images, videos, audio, certain text files, and full PDFs as input while others only accept image inputs \
 > \** - Tools are only supported through Gemini models
 
-## Installation
-The only thing you'd need is Python with PIP and venv!
-
+## Installation and setup
 ### Required permissions for Discord bot
 - Read message history (see [#faq](#faq) for privacy implications)
 - Embed messages (required for rendering text more than 4096 and for most commands)
@@ -34,24 +32,37 @@ The only thing you'd need is Python with PIP and venv!
 - Create slash commands
 - Voice related features such as connect, disconnect
 
-### Required dependencies
-- Python 3.10+ with pip \
-    If you use Linux distros, I strongly require you to install Python with venv support due to [PEP 0668](https://peps.python.org/pep-0668/) and [PEP 0453](https://peps.python.org/pep-0453/) for rationale.
-
-There may be other dependencies needed for some operations such as tools. Please see [TOOLS.md](./docs/TOOLS.md) for rationale.
-
 ### Installation
-Once you activated your enviornment and has pip ready, you can run
+The best way to get started is through Docker method... You can directly pull the image from my Docker 🐳 Hub repository and simply run the bot below:
 ```
-pip3 install -r requirements.txt
+~ $ docker pull zavocc/jakey:sugilite
+~ $ docker run -it --env-file dev.env --rm jakey:sugilite
 ```
 
-Wavelink isn't installed by default, you must perform these tasks to enable music VC features
-```
-pip3 install wavelink
-pip3 uninstall py-cord discord.py
-pip3 install py-cord
-```
+NOTE: You need to provide [the dev.env file](#configuring) as explained below
+
+<details>
+  <summary>Manual installation</summary>
+  But if you prefer manual method without using containers, you need to install Python version atleast 3.10+ with pip and venv is highly preferred and run the commands
+
+  You must create a virtual environment before proceeding which you can do by running:
+  ```
+  python -m venv .venv
+
+  # Activate
+  . .venv/bin/activate
+  ```
+
+  Install dependencies as needed
+  ```
+  pip3 install -r requirements.txt
+
+  # This is optional
+  pip3 install wavelink
+  pip3 uninstall py-cord discord.py
+  pip3 install py-cord
+  ```
+</details>
 
 ## Configuring
 After you install the required dependencies, configure your bot first by heading over to [dev.env.template](./dev.env.template) and save it as `dev.env` in the gitroot directory
@@ -60,34 +71,24 @@ You will need to provide Discord bot token from the developers portal.
 
 Please see [CONFIG.md](./docs/CONFIG.md) for more information about configuration.
 
-### Wavelink configuration:
-You can enable VC-related commands such as `/voice play` (which plays videos from YouTube and other supported sources)
+### Music features
+You can enable VC-related commands such as `/voice play` (which plays videos from YouTube and other supported sources) by providing appropriate Lavalink sources
 
 Please see [CONFIG.md#voice](./docs/CONFIG.md#voice) to configure wavelink
 
-#### Serverless lavalink
 You can use the list of 3rd party servers from and use servers from https://lavalink.darrennathanael.com/NoSSL/lavalink-without-ssl/ and configure the `dev.env` file pointing the third party Lavalink servers, no installation required... 
 
----
-
-#### Your own lavalink server
-You can also host your own lavalink server, you must install OpenJDK and download the [Lavalink jar file](https://github.com/lavalink-devs/Lavalink/releases) and placing it as `_wavelink/Lavalink.jar` in project's root directory.
-
-Activate voice by placing `Lavalink.jar` and copy `application.yml.template` to `application.yml` and run `java -jar Lavalink.jar` in separate session before starting the bot.
-
-If you decide to configure the port, address, and password, make sure it reflects to the `dev.env` file as well.
-
-
-## Running the server
+Alternatively, you can also host your own... Refer to [lavalink documentation](https://lavalink.dev/getting-started/index.html) to configure your own lavalink setup... make sure to install OpenJDK before you proceed.
+## Running
 After everything is configured, you can run `main.py`
 
+## Get Started
 Get started by asking Jakey `/ask prompt:Who are you and how can I get started`
 
 By default, it uses **Gemini 1.5 Flash** due to versatility with long context and multimodality, matching the performance of, but other models can be used as well. Jakey also supports Gemini 1.5 Pro, GPT-4o and its mini variant, o1-preview and o1-mini, and Claude 3.5 sonnet and 3 Haiku
 
 If you decide to use other models please see [Models comparison](https://github.com/zavocc/JakeyBot/wiki/Supported-Models) and [the LLM arena by livebench](https://livebench.ai/) to understand your models use cases
 
-## Get started
 Jakey provides commands such as:
 - `/ask` - Ask Jakey anything!
   - Get started by asking `/ask` `prompt:` `Hey Jakey, I'm new, tell me your commands, features, and capabilities`

@@ -5,9 +5,9 @@ This document defines the `dev.env` variables used to configure the Discord bot.
 - `TOKEN` - Set the Discord bot token, get one from [Discord Developer Portal](https://discord.com/developers/applications).
 
 ## Voice
-These are the default settings to connect to Lavalink v4. If you're willing to use different host, port, and password, please make a copy of [wavelink/application.yml.template](./wavelink/application.yml.template) to `wavelink/application.yml` and change the settings accordingly. Please configure Lavalink's yml file if you want to use proxy, changing the server port, password and so on.
+These are the default settings to connect to Lavalink v4.
 
-You can also use serverless lavalink instances in https://lavalink.darrennathanael.com/NoSSL/lavalink-without-ssl/
+You can use lavalink instances in https://lavalink.darrennathanael.com/NoSSL/lavalink-without-ssl/ to make it easier to setup and get started.
 
 - `ENV_LAVALINK_URI` - Host where Lavalink server is running (defaults to local server URI: `http://127.0.0.1:2222`)
 - `ENV_LAVALINK_PASS` - Lavalink password (change this if connecting remotely) - (defaults to "youshallnotpass")
