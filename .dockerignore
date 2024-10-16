@@ -1,0 +1,12 @@
+**/__pycache__
+.devcontainer
+.github
+.git
+.idx/
+.vscode/
+assets/
+docs/
+temp/
+chroma.log
+dev.env
+README.md
