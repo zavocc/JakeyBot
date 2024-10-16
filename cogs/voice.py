@@ -313,11 +313,15 @@ class Voice(commands.Cog):
         await ctx.respond('🔌 Disconnected.')
     
     async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
-        if isinstance(error, commands.NoPrivateMessage):
+        _error = getattr(error, "original", error)
+        if isinstance(_error, commands.NoPrivateMessage):
             await ctx.respond("❌ Sorry, this feature is not supported in DMs. Please use this command inside the guild.")
-        elif isinstance(error, commands.MissingPermissions):
-            await ctx.respond(f"❌ You are missing the required permissions to use this command. Needed permissions:\n```{error}```")
+        elif isinstance(_error, commands.MissingPermissions):
+            await ctx.respond(f"❌ You are missing the required permissions to use this command. Needed permissions:\n```{_error}```")
+        elif isinstance(_error, wavelink.InvalidNodeException):
+            await ctx.respond("No nodes are currently active right now, please try again later.")
         else:
+            await ctx.respond(f"❌ An error has occured! Reason:\n```{_error}```")
             raise error
 
 def setup(bot):

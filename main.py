@@ -17,13 +17,6 @@ load_dotenv("dev.env")
 # Logging
 logging.basicConfig(format='%(levelname)s %(asctime)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 
-# Playback support
-try:
-    wavelink = importlib.import_module("wavelink")
-except ModuleNotFoundError as e:
-    logging.warning("Playback support is disabled: %s", e)
-    wavelink = None
-
 # Check if TOKEN is set
 if "TOKEN" in environ and (environ.get("TOKEN") == "INSERT_DISCORD_TOKEN") or (environ.get("TOKEN") is None) or (environ.get("TOKEN") == ""):
     raise Exception("Please insert a valid Discord bot token")
@@ -36,34 +29,40 @@ intents.members = True
 # Bot
 bot = bridge.Bot(command_prefix=commands.when_mentioned_or(environ.get("BOT_PREFIX", "$")), intents = intents)
 
+# Playback support
+try:
+    bot._wavelink = importlib.import_module("wavelink")
+except ModuleNotFoundError as e:
+    logging.warning("Playback support is disabled: %s", e)
+    bot._wavelink = None
+
 ###############################################
 # ON READY
 ###############################################
 @bot.event
 async def on_ready():
-    global wavelink
-
     # start wavelink setup if playback support is enabled
-    if wavelink is not None:
+    if bot._wavelink is not None:
         try:
             # https://wavelink.dev/en/latest/recipes.html
             ENV_LAVALINK_URI = environ.get("ENV_LAVALINK_URI") if environ.get("ENV_LAVALINK_URI") is not None else "http://127.0.0.1:2222"
             ENV_LAVALINK_PASS = environ.get("ENV_LAVALINK_PASS") if environ.get("ENV_LAVALINK_PASS") is not None else "youshallnotpass"
             ENV_LAVALINK_IDENTIFIER = environ.get("ENV_LAVALINK_IDENTIFIER") if environ.get("ENV_LAVALINK_IDENTIFIER") is not None else "main"
 
-            node = wavelink.Node(
+            node = bot._wavelink.Node(
                 identifier=ENV_LAVALINK_IDENTIFIER,
                 uri=ENV_LAVALINK_URI,
-                password=ENV_LAVALINK_PASS
+                password=ENV_LAVALINK_PASS,
+                retries=0 # Only connect once to save time
             )
 
-            await wavelink.Pool.connect(
+            await bot._wavelink.Pool.connect(
                 client=bot,
                 nodes=[node]
             )
-        except wavelink.WavelinkException as e:
+        except Exception as e:
             logging.error(f"Failed to setup wavelink: {e}... Disabling playback support")
-            wavelink = None
+            bot._wavelink = None
     
     # Prepare temporary directory
     if environ.get("TEMP_DIR") is not None:
@@ -115,7 +114,7 @@ with open('commands.yaml', 'r') as file:
     cog_commands = yaml.safe_load(file)
     for command in cog_commands:
         # Disable voice commands if playback support is not enabled
-        if "voice" in command and not wavelink:
+        if "voice" in command and not bot._wavelink:
            logging.warning(f"Skipping {command}... Playback support is disabled")
            continue
 
