@@ -5,6 +5,7 @@ gradio_client==1.1.0
 jsonpickle==3.2.2
 litellm >= 1.48.18
 motor==3.5.1
+pillow==11.0.0
 py-cord >= 2.6.0
 pymongo==4.8.0
 python-dotenv==1.0.0

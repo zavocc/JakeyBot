@@ -1,7 +1,11 @@
 from discord.ext import commands
 from discord import Member, DiscordException
+from core.ai.models.gemini.infer import Completions
 from os import environ
+import aiohttp
 import discord
+import io
+import PIL.Image
 
 class Fun(commands.Cog):
     """Use my fun and trivial utilities here that can help make your server more active and entertaining"""
@@ -51,7 +55,53 @@ class Fun(commands.Cog):
             await ctx.respond("⚠️ Please input a member")
         else:
             raise error
+        
+    @commands.slash_command(
+        contexts={discord.InteractionContextType.guild},
+        integration_types={discord.IntegrationType.guild_install}
+    )
+    async def avatar(self, ctx, user: Member = None, generate_descriptions: bool = False):
+        """Get user avatar"""
+        await ctx.response.defer(ephemeral=True)
 
+        user = await self.bot.fetch_user(user.id if user else ctx.author.id)
+        avatar_url = user.avatar.url if user.avatar else "https://cdn.discordapp.com/embed/avatars/0.png"
+
+        # Generate image descriptions
+        _description = None
+        if generate_descriptions:
+            try:
+                _filedata = None
+                # Download the image as files like
+                async with aiohttp.ClientSession() as _session:
+                    # Maximum file size is 3MB so check it
+                    async with _session.head(avatar_url) as _response:
+                        if int(_response.headers.get("Content-Length")) > 3000000:
+                            raise Exception("Max file size reached")
+                    
+                    # Save it as bytes so io.BytesIO can read it
+                    async with _session.get(avatar_url) as response:
+                        _filedata = await response.read()
+                
+                # Check filedata
+                if not _filedata:
+                    raise Exception("No file data")
+                
+                # Generate description
+                _infer = Completions()
+                _description = await _infer.completion([PIL.Image.open(io.BytesIO(_filedata)), "Generate image descriptions but one sentence short to describe it"])
+            except Exception as e:
+                print(e)
+                pass
+
+        # Embed
+        embed = discord.Embed(
+            title=f"{user.name}'s Avatar",
+            description=_description,
+            color=discord.Color.random()
+        )
+        embed.set_image(url=avatar_url)
+        await ctx.respond(embed=embed, ephemeral=True)
 
 def setup(bot):
     bot.add_cog(Fun(bot))

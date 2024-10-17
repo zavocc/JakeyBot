@@ -106,9 +106,7 @@ class Completions(GenAIConfigDefaults):
 
         answer = await _genai_client.generate_content_async({
                 "role":"user",
-                "parts":[
-                    prompt
-                ]
+                "parts":prompt if isinstance(prompt, list) else [prompt]
             })
         return answer.text
 
