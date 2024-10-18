@@ -1,6 +1,8 @@
 from core.exceptions import MultiModalUnavailable, ChatHistoryFull
 from os import environ
+import base64
 import discord
+import importlib
 import litellm
 import logging
 
@@ -44,6 +46,30 @@ class Completions:
             }
 
         self._file_data = _attachment_prompt
+
+    async def audio_completion(self, prompt):
+        # Check if we have OpenAI module
+        try:
+            _oai_client = importlib.import_module("openai").AsyncOpenAI(api_key=environ.get("OPENAI_API_KEY"))
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("OpenAI module not found, this model isn't available")
+        
+        # Generate audio completions
+        _completion = await _oai_client.chat.completions.create(
+            model="gpt-4o-audio-preview",
+            modalities=["text", "audio"],
+            audio={"voice": "onyx", "format": "wav"},
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+
+        # Return the base64-decoded audio
+        return base64.b64decode(_completion.choices[0].message.audio.data)
+
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Load history

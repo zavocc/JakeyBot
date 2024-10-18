@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Install wavelink and remove pycord/discord.py only leaving pycord, and other dependencies
 RUN <<EOL
-pip install pillow
+pip install pillow openai
 pip install wavelink
 pip uninstall -y discord.py py-cord
 pip install -U py-cord
