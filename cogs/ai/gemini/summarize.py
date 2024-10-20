@@ -1,12 +1,14 @@
 from core.ai.assistants import Assistants
 from core.ai.models.gemini.infer import Completions
 from discord.ext import commands
+from google.ai.generativelanguage_v1beta.types import content
 from os import environ
 import google.generativeai as genai
 import aiofiles
 import datetime
 import discord
 import inspect
+import json
 import random
 
 class GenAITools(commands.Cog):
@@ -40,13 +42,20 @@ class GenAITools(commands.Cog):
         default=None
     )
     @discord.option(
+        "max_references",
+        description="Determines how many references it should display - Max 10.",
+        min_value=1,
+        max_value=10,
+        default=5
+    )
+    @discord.option(
         "limit",
         description="Limit the number of messages to read - higher the limits can lead to irrelevant summary",
         min_value=5,
         max_value=50,
         default=25
     )
-    async def summarize(self, ctx, before_date: str, after_date: str, around_date: str, limit: int):
+    async def summarize(self, ctx, before_date: str, after_date: str, around_date: str, max_references: int, limit: int):
         """Summarize or catch up latest messages based on the current channel"""
         await ctx.response.defer(ephemeral=True)
             
@@ -54,9 +63,6 @@ class GenAITools(commands.Cog):
         if ctx.channel.is_nsfw():
             await ctx.respond("❌ Sorry, I can't summarize messages in NSFW channels!")
             return
-
-        # additional system prompt providing the user interaction context to provide personalized summaries
-        _xuser_display_name = await ctx.guild.fetch_member(ctx.author.id)
         
         # Discord channel conversation context
         _current_discord_convo_context = []
@@ -99,23 +105,43 @@ class GenAITools(commands.Cog):
         # set model
         _completions = Completions()
 
-        _summary = await _completions.completion(inspect.cleandoc(f"""
-            You are currently interacting as a user to give personalized responses based on their activity if applicable:
-                                        
-            - User's nickname or display name: **{_xuser_display_name.display_name}**
-            - Username (akin to user+discriminator which is deprecated format): **{ctx.author.name}**
-            - User ID (this uniquely identifies the users as opposed to username/display name) **{ctx.author.id}**
-                                        
+        # Constrain the output to JSON
+        _completions.generation_config.update({
+            "response_schema": content.Schema(
+                type=content.Type.OBJECT,
+                enum=[],
+                required=["summary", "links"],
+                properties={
+                    "summary": content.Schema(
+                        type=content.Type.STRING,
+                    ),
+                    "links": content.Schema(
+                        type=content.Type.ARRAY,
+                        items=content.Schema(
+                            type=content.Type.OBJECT,
+                            enum=[],
+                            required=["description", "jump_url"],
+                            properties={
+                                "description": content.Schema(
+                                    type=content.Type.STRING,
+                                ),
+                                "jump_url": content.Schema(
+                                    type=content.Type.STRING,
+                                ),
+                            },
+                        ),
+                    ),
+                },
+            ),
+            "response_mime_type": "application/json",
+        })
+
+        _summary = json.loads(await _completions.completion(inspect.cleandoc(f"""                                       
             Date today is {datetime.datetime.now().strftime('%m/%d/%Y')}
-
-            {self._assistants_system_prompt.discord_msg_summarizer_prompt["supplemental_prompt_format"]}
-
-            ****************************************************
             OK, now generate summaries for me:
-            ****************************************************
 
              {_current_discord_convo_context}
-            """), system_instruction=self._assistants_system_prompt.discord_msg_summarizer_prompt["initial_prompt"])
+            """).rstrip(), system_instruction=self._assistants_system_prompt.discord_msg_summarizer_prompt))
 
         # If arguments are given, also display the date
         _app_title = f"Summary for {ctx.channel.name}"
@@ -127,20 +153,32 @@ class GenAITools(commands.Cog):
             _app_title += f" around __{around_date.date()}__"
 
         # Send message in an embed format or in markdown file if it exceeds to 4096 characters
-        if len(_summary) > 4096:
+        if len(_summary["summary"]) > 4096:
             # Send the response as file
             response_file = f"{environ.get('TEMP_DIR')}/response{random.randint(8000,9000)}.md"
             async with aiofiles.open(response_file, "a+") as f:
                 await f.write(_app_title + "\n----------\n")
-                await f.write(_summary)
+                await f.write(_summary["summary"])
+
+                # Iterate over the provided links
+                await f.write(f"\n\n----------\n# References\n----------\n\n")
+                for _links in _summary["links"]:
+                    await f.write(f"- [{_links['description']}]({_links['jump_url']})\n")
             await ctx.respond(f"Here is the summary generated for this channel", file=discord.File(response_file, "response.md"))
         else:
             _embed = discord.Embed(
                     title=_app_title,
-                    description=str(_summary),
+                    description=str(_summary["summary"]),
                     color=discord.Color.random()
             )
             _embed.set_author(name="Catch-up")
+
+            # Iterate over links and display it as field
+            for _links in _summary["links"]:
+                if len(_embed.fields) >= max_references:
+                    break
+                _embed.add_field(name=_links["description"], value=_links["jump_url"], inline=False)
+                
             _embed.set_footer(text="Responses generated by AI may not give accurate results! Double check with facts!")
             await ctx.respond(embed=_embed)
 
