@@ -3,6 +3,7 @@ from core.ai.core import ModelsList
 from core.ai.history import History
 from core.exceptions import ChatHistoryFull, MultiModalUnavailable
 from discord.ext import commands
+from discord import Message
 from os import environ
 import core.ai.models._template_.infer # For type hinting
 import aiofiles
@@ -181,3 +182,34 @@ class BaseChat(commands.Cog):
 
         # Raise error
         raise _error
+
+
+    @commands.Cog.listener()
+    async def on_message(self, prompt: Message):
+        # Must be mentioned
+        if not self.bot.user.mentioned_in(prompt):
+            return
+
+        print(prompt.content)
+
+        # Check if SHARED_CHAT_HISTORY is enabled
+        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+            guild_id = prompt.guild.id if prompt.guild else prompt.author.id # Always fallback to ctx.author.id for DMs since ctx.guild is None
+        else:
+            guild_id = prompt.author.id
+
+        # Configure inference
+        _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.gemini.infer").Completions(
+            guild_id=guild_id,
+            model_name="gemini-1.5-flash-002",
+            db_conn = self.DBConn,
+        )
+
+        ###############################################
+        # Answer generation
+        ###############################################
+        _result = await _infer.completion(prompt=prompt.content, system_instruction=self._assistants_system_prompt.jakey_system_prompt)
+        _formatted_response = _result.rstrip()
+
+        await prompt.channel.send(_formatted_response)
+        

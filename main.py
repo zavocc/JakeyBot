@@ -27,7 +27,7 @@ intents.message_content = True
 intents.members = True
 
 # Bot
-bot = bridge.Bot(command_prefix=commands.when_mentioned_or(environ.get("BOT_PREFIX", "$")), intents = intents)
+bot = bridge.Bot(command_prefix=environ.get("BOT_PREFIX", "$"), intents = intents)
 
 # Playback support
 try:
