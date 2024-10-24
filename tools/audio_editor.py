@@ -14,8 +14,7 @@ class Tool:
     # File path attribute
     file_uri = ""
 
-    def __init__(self, bot, method_send):
-        self.bot = bot
+    def __init__(self, method_send):
         self.method_send = method_send
 
         self.tool_schema = genai.protos.Tool(

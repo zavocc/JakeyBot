@@ -100,8 +100,6 @@ class BaseChat(commands.Cog):
             model_name=_model_name,
             db_conn = self.DBConn,
         )
-        
-        _infer._discord_bot = self.bot
         _infer._discord_method_send = ctx.send
 
         ###############################################
@@ -204,8 +202,6 @@ class BaseChat(commands.Cog):
             model_name="gemini-1.5-flash-002",
             db_conn = self.DBConn,
         )
-
-        _infer._discord_bot = self.bot
         _infer._discord_method_send = prompt.channel.send
 
         ###############################################
