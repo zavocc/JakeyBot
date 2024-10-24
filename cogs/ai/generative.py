@@ -209,6 +209,19 @@ class BaseChat(commands.Cog):
         _infer._discord_method_send = prompt.channel.send
 
         ###############################################
+        # File attachment processing
+        ###############################################
+        if len(prompt.attachments) > 1:
+            await prompt.channel.send("🚫 I can only process one file at a time")
+            return
+        
+        if prompt.attachments:
+            if not hasattr(_infer, "input_files"):
+                raise MultiModalUnavailable(f"Multimodal is not available for this model: WIP")
+
+            await _infer.input_files(attachment=prompt.attachments[0])
+
+        ###############################################
         # Answer generation
         ###############################################
         _result = await _infer.chat_completion(prompt=prompt.content, system_instruction=self._assistants_system_prompt.jakey_system_prompt)
