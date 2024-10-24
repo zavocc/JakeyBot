@@ -176,7 +176,11 @@ class Completions(GenAIConfigDefaults):
                     _chat_parts.parts.pop(0)
 
             # Notify the user that the chat session has been re-initialized
-            await self._discord_ctx.send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
+            _strings = "> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!"
+            if isinstance(self._discord_ctx, discord.Message):
+                await self._discord_ctx.channel.send(_strings)
+            else:
+                await self._discord_ctx.send(_strings)
 
             # Re-send the message
             answer = await chat_session.send_message_async(final_prompt, tool_config=tool_config)
@@ -198,11 +202,11 @@ class Completions(GenAIConfigDefaults):
                     try:
                         _result = await _Tool_use._tool_function(**_func_call.args)
                     except (AttributeError, TypeError) as e:
-                        await self._discord_ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
+                        #await self._discord_ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
                         # Also print the error to the console
                         logging.error("Slash Commands > /ask: I think I found a problem related to function calling:", e)
-                        return
-
+                        raise e
+            
                     # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
                     answer = await chat_session.send_message_async(
                         genai.protos.Content(

@@ -205,6 +205,9 @@ class BaseChat(commands.Cog):
             db_conn = self.DBConn,
         )
 
+        _infer._discord_bot = self.bot
+        _infer._discord_ctx = prompt
+
         ###############################################
         # Answer generation
         ###############################################

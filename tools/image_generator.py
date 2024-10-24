@@ -42,13 +42,15 @@ class Tool:
         # Import
         try:
             gradio_client = importlib.import_module("gradio_client")
-            os = importlib.import_module("os")
         except ModuleNotFoundError:
             return "This tool is not available at the moment"
 
         # Create image
         try:
-            message_curent = await self.ctx.send("⌛ Generating an image... this may take few minutes")
+            if isinstance(self.ctx, discord.Message):
+                message_curent = await self.ctx.channel.send("⌛ Generating an image... this may take few minutes")
+            else:
+                message_curent = await self.ctx.send("⌛ Generating an image... this may take few minutes")
             result = await asyncio.to_thread(
                 gradio_client.Client("stabilityai/stable-diffusion-3-medium").predict,
                 prompt=image_description,
@@ -68,7 +70,10 @@ class Tool:
         await message_curent.delete()
 
         # Send the image
-        await self.ctx.send(file=discord.File(fp=result[0]))
+        if isinstance(self.ctx, discord.Message):
+            await self.ctx.channel.send(file=discord.File(fp=result[0]))
+        else:
+            await self.ctx.send(file=discord.File(fp=result[0]))
 
         # Cleanup
         await aiofiles.os.remove(result[0])

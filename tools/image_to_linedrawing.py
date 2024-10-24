@@ -50,7 +50,10 @@ class Tool:
     
 
         # Send the image
-        await self.ctx.send(file=discord.File(fp=result))
+        if isinstance(self.ctx, discord.Message):
+            await self.ctx.channel.send_message(file=discord.File(fp=result))
+        else:
+            await self.ctx.send(file=discord.File(fp=result))
 
         # Cleanup
         await aiofiles.os.remove(result)

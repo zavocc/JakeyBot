@@ -44,7 +44,6 @@ class Tool:
         # Import
         try:
             gradio_client = importlib.import_module("gradio_client")
-            os = importlib.import_module("os")
         except ModuleNotFoundError:
             return "This tool is not available at the moment"
 
@@ -72,7 +71,10 @@ class Tool:
         await message_curent.delete()
 
         # Send the audio
-        await self.ctx.send(file=discord.File(fp=result))
+        if isinstance(self.ctx, discord.Message):
+            await self.ctx.channel.send_message(file=discord.File(fp=result))
+        else:
+            await self.ctx.send(file=discord.File(fp=result))
 
         # Cleanup
         await aiofiles.os.remove(result)
