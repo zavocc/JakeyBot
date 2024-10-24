@@ -11,9 +11,8 @@ class Tool:
     tool_name = "image_to_linedrawing"
     tool_config = "AUTO"
     file_uri = ""
-    def __init__(self, bot, ctx):
-        self.bot = bot
-        self.ctx = ctx
+    def __init__(self, method_send):
+        self.method_send = method_send
 
         self.tool_schema = genai.protos.Tool(
             function_declarations=[
@@ -48,9 +47,8 @@ class Tool:
         except Exception as e:
             return f"Image restyling failed and the image isn't sent, reason {e}"
     
-
         # Send the image
-        await self.ctx.send(file=discord.File(fp=result))
+        await self.method_send(file=discord.File(fp=result))
 
         # Cleanup
         await aiofiles.os.remove(result)

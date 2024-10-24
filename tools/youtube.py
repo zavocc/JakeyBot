@@ -7,9 +7,8 @@ class Tool:
     tool_human_name = "YouTube Search"
     tool_name = "youtube"
     tool_config = "AUTO"
-    def __init__(self, bot, ctx):
-        self.bot = bot
-        self.ctx = ctx
+    def __init__(self, method_send):
+        self.method_send = method_send
 
         # YouTube
         self.tool_schema = genai.protos.Tool(

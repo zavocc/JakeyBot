@@ -14,9 +14,8 @@ class Tool:
     # File path attribute
     file_uri = ""
 
-    def __init__(self, bot, ctx):
-        self.bot = bot
-        self.ctx = ctx
+    def __init__(self, method_send):
+        self.method_send = method_send
 
         self.tool_schema = genai.protos.Tool(
             function_declarations=[
@@ -44,12 +43,11 @@ class Tool:
         # Import
         try:
             gradio_client = importlib.import_module("gradio_client")
-            os = importlib.import_module("os")
         except ModuleNotFoundError:
             return "This tool is not available at the moment"
 
         try:
-            message_curent = await self.ctx.send("🎤✨ Adding some magic to the audio...")
+            message_curent = await self.method_send("🎤✨ Adding some magic to the audio...")
             result = await asyncio.to_thread(
                 gradio_client.Client("OpenSound/EzAudio").predict,
                 text=prompt,
@@ -72,7 +70,7 @@ class Tool:
         await message_curent.delete()
 
         # Send the audio
-        await self.ctx.send(file=discord.File(fp=result))
+        await self.method_send(file=discord.File(fp=result))
 
         # Cleanup
         await aiofiles.os.remove(result)
