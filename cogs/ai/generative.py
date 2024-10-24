@@ -102,7 +102,7 @@ class BaseChat(commands.Cog):
         )
         
         _infer._discord_bot = self.bot
-        _infer._discord_ctx = ctx
+        _infer._discord_method_send = ctx.send
 
         ###############################################
         # File attachment processing
@@ -206,7 +206,7 @@ class BaseChat(commands.Cog):
         )
 
         _infer._discord_bot = self.bot
-        _infer._discord_ctx = prompt
+        _infer._discord_method_send = prompt.channel.send
 
         ###############################################
         # Answer generation

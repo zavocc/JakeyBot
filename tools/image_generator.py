@@ -10,9 +10,9 @@ class Tool:
     tool_human_name = "Image Generator with Stable Diffusion 3"
     tool_name = "image_generator"
     tool_config = "AUTO"
-    def __init__(self, bot, ctx):
+    def __init__(self, bot, method_send):
         self.bot = bot
-        self.ctx = ctx
+        self.method_send = method_send
 
         # Image generator
         self.tool_schema = genai.protos.Tool(
@@ -47,10 +47,7 @@ class Tool:
 
         # Create image
         try:
-            if isinstance(self.ctx, discord.Message):
-                message_curent = await self.ctx.channel.send("⌛ Generating an image... this may take few minutes")
-            else:
-                message_curent = await self.ctx.send("⌛ Generating an image... this may take few minutes")
+            message_curent = await self.method_send("⌛ Generating an image... this may take few minutes")
             result = await asyncio.to_thread(
                 gradio_client.Client("stabilityai/stable-diffusion-3-medium").predict,
                 prompt=image_description,
@@ -70,10 +67,7 @@ class Tool:
         await message_curent.delete()
 
         # Send the image
-        if isinstance(self.ctx, discord.Message):
-            await self.ctx.channel.send(file=discord.File(fp=result[0]))
-        else:
-            await self.ctx.send(file=discord.File(fp=result[0]))
+        await self.method_send(file=discord.File(fp=result[0]))
 
         # Cleanup
         await aiofiles.os.remove(result[0])

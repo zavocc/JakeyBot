@@ -82,8 +82,8 @@ class Completions(GenAIConfigDefaults):
 
             # Wait for the file to be uploaded
             while _file_uri.state.name == "PROCESSING":
-                if _msgstatus is None and hasattr(self, "_discord_ctx"):
-                    _msgstatus = await self._discord_ctx.send("⌛ Processing the file attachment... this may take a while")
+                if _msgstatus is None and hasattr(self, "_discord_method_send"):
+                    _msgstatus = await self._discord_method_send("⌛ Processing the file attachment... this may take a while")
                 await asyncio.sleep(3)
                 _file_uri = await asyncio.to_thread(genai.get_file, _file_uri.name)
         except Exception as e:
@@ -112,8 +112,8 @@ class Completions(GenAIConfigDefaults):
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Setup model and tools
-        if hasattr(self, "_discord_bot") and hasattr(self, "_discord_ctx") and self._history_management is not None:
-            _Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self._discord_bot, self._discord_ctx)
+        if hasattr(self, "_discord_bot") and hasattr(self, "_discord_method_send") and self._history_management is not None:
+            _Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self._discord_bot, self._discord_method_send)
 
             if _Tool_use.tool_name == "code_execution":
                 _Tool_use.tool_schema = "code_execution"
@@ -176,11 +176,7 @@ class Completions(GenAIConfigDefaults):
                     _chat_parts.parts.pop(0)
 
             # Notify the user that the chat session has been re-initialized
-            _strings = "> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!"
-            if isinstance(self._discord_ctx, discord.Message):
-                await self._discord_ctx.channel.send(_strings)
-            else:
-                await self._discord_ctx.send(_strings)
+            await self._discord_method_send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
 
             # Re-send the message
             answer = await chat_session.send_message_async(final_prompt, tool_config=tool_config)
@@ -202,10 +198,10 @@ class Completions(GenAIConfigDefaults):
                     try:
                         _result = await _Tool_use._tool_function(**_func_call.args)
                     except (AttributeError, TypeError) as e:
-                        #await self._discord_ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
+                        await self._discord_method_send("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
                         # Also print the error to the console
                         logging.error("Slash Commands > /ask: I think I found a problem related to function calling:", e)
-                        raise e
+                        return
             
                     # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
                     answer = await chat_session.send_message_async(
@@ -227,7 +223,7 @@ class Completions(GenAIConfigDefaults):
                         }
                     )
 
-                    #await self._discord_ctx.send(f"Used: **{_Tool_use.tool_human_name}**")
+                    #await self._discord_method_send(f"Used: **{_Tool_use.tool_human_name}**")
                     self._used_tool_name = _Tool_use.tool_human_name
 
         return {"answer":answer.text, "prompt_count":_prompt_count+1, "chat_thread": chat_session.history}
