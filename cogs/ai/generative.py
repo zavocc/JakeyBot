@@ -12,6 +12,7 @@ import discord
 import importlib
 import motor.motor_asyncio
 import random
+import re
 
 class BaseChat(commands.Cog):
     def __init__(self, bot):
@@ -164,7 +165,6 @@ class BaseChat(commands.Cog):
         if append_history:
             await _infer.save_to_history(chat_thread=_result["chat_thread"], prompt_count=_result["prompt_count"])
 
-    # Handle all unhandled exceptions through error event, handled exceptions are currently image analysis safety settings
     @ask.error
     async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
         _error = getattr(error, "original", error)
@@ -181,14 +181,15 @@ class BaseChat(commands.Cog):
         # Raise error
         raise _error
 
-
     @commands.Cog.listener()
     async def on_message(self, prompt: Message):
         # Must be mentioned
         if not self.bot.user.mentioned_in(prompt):
             return
 
-        print(prompt.content)
+        # Check if the prompt is empty
+        if prompt.content == f"<@{self.bot.user.id}>":
+            return
 
         # Check if SHARED_CHAT_HISTORY is enabled
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
@@ -196,11 +197,25 @@ class BaseChat(commands.Cog):
         else:
             guild_id = prompt.author.id
 
-        # Configure inference
-        _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.gemini.infer").Completions(
-            guild_id=guild_id,
-            model_name="gemini-1.5-flash-002",
-            db_conn = self.DBConn,
+        # Check if we can switch models
+        _model_provider = "gemini"
+        _model_name = "gemini-1.5-flash-002"
+        if "/model:" in prompt.content:
+            _amsg = await prompt.channel.send(f"🔍 Using specific model")
+            for _model_selection in ModelsList.get_models_list(raw=True):
+                _model_provider = _model_selection.split("__")[1]
+                _model_name = _model_selection.split("__")[-1]
+
+                # In this regex, we are using \s at the end since when using gpt-4o-mini, it will match with gpt-4o at first
+                # So, we are using \s|$ to match the end of the string and the suffix gets matched or if it's placed at the end of the string
+                if re.search(rf"\/model:{_model_name}(\s|$)", prompt.content):
+                    await _amsg.edit(content=f"🔍 Used specific model: {_model_name}")
+                    break
+    
+        _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
+                guild_id=guild_id,
+                model_name=_model_name,
+                db_conn = self.DBConn,
         )
         _infer._discord_method_send = prompt.channel.send
 
@@ -213,7 +228,7 @@ class BaseChat(commands.Cog):
         
         if prompt.attachments:
             if not hasattr(_infer, "input_files"):
-                raise MultiModalUnavailable(f"Multimodal is not available for this model: WIP")
+                raise MultiModalUnavailable(f"Multimodal is not available for this model: {_model_name}")
 
             await _infer.input_files(attachment=prompt.attachments[0])
 
@@ -221,9 +236,54 @@ class BaseChat(commands.Cog):
         # Answer generation
         ###############################################
         # Remove the mention substring
-        _formatted_prompt = prompt.content.replace(f"<@{self.bot.user.id}>", "").strip()
-        _result = await _infer.chat_completion(prompt=_formatted_prompt, system_instruction=self._assistants_system_prompt.jakey_system_prompt)
+        #_removed_mentions = prompt.content.replace(f"<@{self.bot.user.id}>", "").strip()
+
+        # Through capturing group, we can remove the mention and the model selection from the prompt at both in the middle and at the end
+        _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/model:{_model_name}(\s|$))", "", prompt.content).strip()
+        print(_final_prompt)
+        _result = await _infer.chat_completion(prompt=_final_prompt, system_instruction=self._assistants_system_prompt.jakey_system_prompt)
+        
+        # Format the response
         _formatted_response = _result["answer"].rstrip()
 
-        await prompt.channel.send(_formatted_response)
-        
+        # Model usage and context size
+        if len(_result["answer"]) > 2000 and len(_result["answer"]) < 4096:
+            _system_embed = discord.Embed(
+                # Truncate the title to (max 256 characters) if it exceeds beyond that since discord wouldn't allow it
+                title=str(_final_prompt)[0:100],
+                description=str(_result["answer"]),
+                color=discord.Color.random()
+            )
+        else:
+            _system_embed = None
+            _formatted_response = f"{_result['answer'].rstrip()}\n-# {_model_name.upper()}"
+
+        if not _system_embed is None:
+            # Model used
+            _system_embed.add_field(name="Model used", value=_model_name)
+            # Only report context size information if history is enabled
+            _system_embed.add_field(name="Chat turns left", value=f"{_result["prompt_count"]} of {environ.get('MAX_CONTEXT_HISTORY', 20)}")
+                
+            # Tool use
+            if hasattr(_infer, "_used_tool_name"): _system_embed.add_field(name="Tool used", value=_infer._used_tool_name)
+            # Files used
+            if prompt.attachments: _system_embed.add_field(name="File used", value=prompt.attachments[0].filename)
+            _system_embed.set_footer(text="Responses generated by AI may not give accurate results! Double check with facts!")
+
+        # Embed the response if the response is more than 2000 characters
+        # Check to see if this message is more than 2000 characters which embeds will be used for displaying the message
+        if len(_formatted_response) > 4096:
+            # Send the response as file
+            response_file = f"{environ.get('TEMP_DIR')}/response{random.randint(6000,7000)}.md"
+            async with aiofiles.open(response_file, "w+") as f:
+                await f.write(_formatted_response)
+            await prompt.channel.send("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(response_file, "response.md"), embed=_system_embed)
+        elif len(_formatted_response) > 2000:
+            await prompt.channel.send(embed=_system_embed)
+        else:
+            await prompt.channel.send(_formatted_response, embed=_system_embed)
+
+        # Save to chat history
+        await _infer.save_to_history(chat_thread=_result["chat_thread"], prompt_count=_result["prompt_count"])
+
+    

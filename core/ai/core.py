@@ -3,14 +3,17 @@ import yaml
 
 class ModelsList:
     @staticmethod
-    def get_models_list():
+    def get_models_list(raw=False):
         # Load the models list from YAML file
         with open("data/models.yaml", "r") as models:
             _internal_model_data = yaml.safe_load(models)
 
         # Iterate through the models and yield each as a discord.OptionChoice
         for model in _internal_model_data['models']:
-            yield discord.OptionChoice(f"{model['name']} - {model['description']}", model["model"])
+            if raw:
+                yield model["model"]
+            else:
+                yield discord.OptionChoice(f"{model['name']} - {model['description']}", model["model"])
         
         del _internal_model_data
 
