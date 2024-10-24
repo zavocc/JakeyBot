@@ -220,7 +220,9 @@ class BaseChat(commands.Cog):
         ###############################################
         # Answer generation
         ###############################################
-        _result = await _infer.chat_completion(prompt=prompt.content, system_instruction=self._assistants_system_prompt.jakey_system_prompt)
+        # Remove the mention substring
+        _formatted_prompt = prompt.content.replace(f"<@{self.bot.user.id}>", "").strip()
+        _result = await _infer.chat_completion(prompt=_formatted_prompt, system_instruction=self._assistants_system_prompt.jakey_system_prompt)
         _formatted_response = _result["answer"].rstrip()
 
         await prompt.channel.send(_formatted_response)
