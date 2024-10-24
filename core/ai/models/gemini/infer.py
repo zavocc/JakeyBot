@@ -126,6 +126,7 @@ class Completions(GenAIConfigDefaults):
                 else:
                     tool_config = {'function_calling_config':"NONE"}
         else:
+            _Tool_use = None
             tool_config = None
 
         _genai_client = genai.GenerativeModel(
@@ -133,7 +134,7 @@ class Completions(GenAIConfigDefaults):
             safety_settings=self.safety_settings_config,
             generation_config=self.generation_config,
             system_instruction=system_instruction,
-            tools=_Tool_use.tool_schema if _Tool_use else None
+            tools=_Tool_use.tool_schema if _Tool_use is not None else None
         )
 
         # Load history
