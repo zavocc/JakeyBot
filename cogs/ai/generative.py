@@ -181,16 +181,7 @@ class BaseChat(commands.Cog):
         # Raise error
         raise _error
 
-    @commands.Cog.listener()
-    async def on_message(self, prompt: Message):
-        # Must be mentioned
-        if not self.bot.user.mentioned_in(prompt):
-            return
-
-        # Check if the prompt is empty
-        if prompt.content == f"<@{self.bot.user.id}>":
-            return
-
+    async def _on_message_ask(self, prompt: Message):
         # Check if SHARED_CHAT_HISTORY is enabled
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
             guild_id = prompt.guild.id if prompt.guild else prompt.author.id # Always fallback to ctx.author.id for DMs since ctx.guild is None
@@ -286,4 +277,30 @@ class BaseChat(commands.Cog):
         # Save to chat history
         await _infer.save_to_history(chat_thread=_result["chat_thread"], prompt_count=_result["prompt_count"])
 
+    @commands.Cog.listener()
+    async def on_message(self, prompt_message):
+        # Must be mentioned
+        if not self.bot.user.mentioned_in(prompt_message):
+            return
+
+        # Check if the prompt is empty
+        if prompt_message.content == f"<@{self.bot.user.id}>":
+            return
+
+        # For now the entire function is under try 
+        # Maybe this can be separated into another function
+        try:
+            await self._on_message_ask(prompt_message)
+        except Exception as _error:
+            if isinstance(_error, commands.CommandOnCooldown):
+                await prompt_message.reply(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
+            elif isinstance(_error, ChatHistoryFull):
+                await prompt_message.reply("📚 Maximum context history reached! Clear the conversation using `/sweep` to continue")
+            elif isinstance(_error, MultiModalUnavailable):
+                await prompt_message.reply("🚫 This model cannot process certain files, choose another model to continue")
+            else:
+                await prompt_message.reply(f"❌ Sorry, I couldn't answer your question at the moment, reason:\n```{_error}```")
+
+            # Raise error
+            raise _error
     
