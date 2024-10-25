@@ -1,6 +1,4 @@
 # type: ignore
-from core.exceptions import ChatHistoryFull
-import importlib
 import discord
 
 # A base template for other models
@@ -30,7 +28,7 @@ class Completions():
 
     # For chat completions (required)
     async def chat_completion(self, prompt, system_instruction: str = None):
-        return {"answer":"A quick brown fox jumps over a lazy dog", "prompt_count":1+1, "chat_thread": []}
+        return {"answer":"A quick brown fox jumps over a lazy dog", "chat_thread": []}
 
-    async def save_to_history(self, chat_thread = None, prompt_count = 0):
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=_encoded, prompt_count=prompt_count, model_provider=self._model_provider_thread)
+    async def save_to_history(self, chat_thread = None):
+        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=_encoded, model_provider=self._model_provider_thread)

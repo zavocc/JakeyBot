@@ -1,4 +1,4 @@
-from core.exceptions import MultiModalUnavailable, ChatHistoryFull
+from core.exceptions import MultiModalUnavailable
 from os import environ
 import discord
 import logging
@@ -52,10 +52,7 @@ class Completions:
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Load history
-        _prompt_count, _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
-        if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
-            raise ChatHistoryFull("Maximum history reached! Clear the conversation")
-        
+        _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
         if _chat_thread is None:
             # Begin with system prompt
             _chat_thread = [{
@@ -114,7 +111,7 @@ class Completions:
             }
         )
 
-        return {"answer":_answer, "prompt_count":_prompt_count+1, "chat_thread": _chat_thread}
+        return {"answer":_answer, "chat_thread": _chat_thread}
 
-    async def save_to_history(self, chat_thread = None, prompt_count = 0):
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=chat_thread, prompt_count=prompt_count, model_provider=self._model_provider_thread)
+    async def save_to_history(self, chat_thread = None):
+        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)

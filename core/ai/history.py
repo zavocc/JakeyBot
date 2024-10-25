@@ -13,10 +13,9 @@ class History:
         self._db = self._db_conn[environ.get("MONGO_DB_NAME", "chat_history_prod")]
         self._collection = self._db["db_collection"]
 
-    def _document_template(self, guild_id, prompt_count, tool_use = "code_execution"):
+    def _document_template(self, guild_id, tool_use = "code_execution"):
         return {
             "guild_id": guild_id,
-            "prompt_count": prompt_count,
             "tool_use": tool_use
         }
 
@@ -45,9 +44,9 @@ class History:
         _document = await self._collection.find_one({"guild_id": guild_id})
             
         # Return the prompt history and chat context
-        return _document["prompt_count"], _document[f"chat_thread_{model_provider}"]
+        return _document[f"chat_thread_{model_provider}"]
 
-    async def save_history(self, guild_id, chat_thread, prompt_count = 0, model_provider = None):
+    async def save_history(self, guild_id, chat_thread, model_provider = None):
         if model_provider is None:
             raise ConnectionError("Please set a provider")
 
@@ -63,7 +62,6 @@ class History:
         # Update the document
         await self._collection.update_one({"guild_id": guild_id}, {
             "$set": {
-                "prompt_count": prompt_count,
                 f"chat_thread_{model_provider}": chat_thread
             }
         }, upsert=True)

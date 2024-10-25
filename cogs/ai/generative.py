@@ -1,7 +1,7 @@
 from core.ai.assistants import Assistants
 from core.ai.core import ModelsList
 from core.ai.history import History
-from core.exceptions import ChatHistoryFull, MultiModalUnavailable
+from core.exceptions import MultiModalUnavailable
 from discord.ext import commands
 from discord import Message
 from os import environ
@@ -136,11 +136,9 @@ class BaseChat(commands.Cog):
         if not _system_embed is None:
             # Model used
             _system_embed.add_field(name="Model used", value=_model_name)
-            # Only report context size information if history is enabled
-            if append_history: 
-                _system_embed.add_field(name="Chat turns left", value=f"{_result["prompt_count"]} of {environ.get('MAX_CONTEXT_HISTORY', 20)}")
-            else:
-                _system_embed.add_field(name="Chat turns left", value="This chat isn't saved")
+
+            # Check if this conversation isn't appended to chat history
+            if not append_history: _system_embed.add_field(name="Privacy", value="This conversation isn't saved")
                 
             # Tool use
             if hasattr(_infer, "_used_tool_name"): _system_embed.add_field(name="Tool used", value=_infer._used_tool_name)
@@ -163,7 +161,7 @@ class BaseChat(commands.Cog):
 
         # Save to chat history
         if append_history:
-            await _infer.save_to_history(chat_thread=_result["chat_thread"], prompt_count=_result["prompt_count"])
+            await _infer.save_to_history(chat_thread=_result["chat_thread"])
 
     @ask.error
     async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
@@ -171,8 +169,6 @@ class BaseChat(commands.Cog):
         # Cooldown error
         if isinstance(_error, commands.CommandOnCooldown):
             await ctx.respond(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
-        elif isinstance(_error, ChatHistoryFull):
-            await ctx.respond("📚 Maximum context history reached! Clear the conversation using `/sweep` to continue")
         elif isinstance(_error, MultiModalUnavailable):
             await ctx.respond("🚫 This model cannot process certain files, choose another model to continue")
         else:
@@ -261,8 +257,6 @@ class BaseChat(commands.Cog):
         if not _system_embed is None:
             # Model used
             _system_embed.add_field(name="Model used", value=_model_name)
-            # Only report context size information if history is enabled
-            _system_embed.add_field(name="Chat turns left", value=f"{_result["prompt_count"]} of {environ.get('MAX_CONTEXT_HISTORY', 20)}")
                 
             # Tool use
             if hasattr(_infer, "_used_tool_name"): _system_embed.add_field(name="Tool used", value=_infer._used_tool_name)
@@ -284,7 +278,7 @@ class BaseChat(commands.Cog):
             await prompt.channel.send(_formatted_response, embed=_system_embed)
 
         # Save to chat history
-        await _infer.save_to_history(chat_thread=_result["chat_thread"], prompt_count=_result["prompt_count"])
+        await _infer.save_to_history(chat_thread=_result["chat_thread"])
 
     @commands.Cog.listener()
     async def on_message(self, prompt_message):
@@ -303,8 +297,6 @@ class BaseChat(commands.Cog):
         except Exception as _error:
             if isinstance(_error, commands.CommandOnCooldown):
                 await prompt_message.reply(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
-            elif isinstance(_error, ChatHistoryFull):
-                await prompt_message.reply("📚 Maximum context history reached! Clear the conversation using `/sweep` to continue")
             elif isinstance(_error, MultiModalUnavailable):
                 await prompt_message.reply("🚫 This model cannot process certain files, choose another model to continue")
             else:

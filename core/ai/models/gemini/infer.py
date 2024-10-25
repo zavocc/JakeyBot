@@ -1,4 +1,3 @@
-from core.exceptions import ChatHistoryFull
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from os import environ
 from pathlib import Path
@@ -138,10 +137,7 @@ class Completions(GenAIConfigDefaults):
         )
 
         # Load history
-        _prompt_count, _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
-        if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
-            raise ChatHistoryFull("Maximum history reached! Clear the conversation")
-
+        _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
         _chat_thread = await asyncio.to_thread(jsonpickle.decode, _chat_thread, keys=True) if _chat_thread is not None else []
 
         # Craft prompt
@@ -226,8 +222,8 @@ class Completions(GenAIConfigDefaults):
                     #await self._discord_method_send(f"Used: **{_Tool_use.tool_human_name}**")
                     self._used_tool_name = _Tool_use.tool_human_name
 
-        return {"answer":answer.text, "prompt_count":_prompt_count+1, "chat_thread": chat_session.history}
+        return {"answer":answer.text, "chat_thread": chat_session.history}
 
-    async def save_to_history(self, chat_thread = None, prompt_count = 0):
+    async def save_to_history(self, chat_thread = None):
         _encoded = await asyncio.to_thread(jsonpickle.encode, chat_thread, indent=4, keys=True)
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=_encoded, prompt_count=prompt_count, model_provider=self._model_provider_thread)
+        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=_encoded, model_provider=self._model_provider_thread)
