@@ -176,6 +176,43 @@ class BaseChat(commands.Cog):
 
         # Raise error
         raise _error
+    
+    @commands.slash_command(
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
+    )
+    async def models(self, ctx):
+        """List all available models"""
+        await ctx.response.defer(ephemeral=True)
+
+        # Create an embed
+        _embed = discord.Embed(
+            title="Available models",
+            description="Here are the list of available models that you can use, /model:model-name to use a specific model when mentioning the bot",
+            color=discord.Color.random()
+        )
+
+        # Iterate over models
+        # Now we separate model provider into field and model names into value
+        # It is __provider__model-name so we need to split it and group them as per provider
+        _model_provider_tabledict = {}
+
+        for _model in ModelsList.get_models_list(raw=True):
+            _model_provider = _model.split("__")[1]
+            _model_name = _model.split("__")[-1]
+
+            # Add the model name to the corresponding provider in the dictionary
+            if _model_provider not in _model_provider_tabledict:
+                _model_provider_tabledict[_model_provider] = [_model_name]
+            else:
+                _model_provider_tabledict[_model_provider].append(_model_name)
+
+        # Add fields to the embed
+        for provider, models in _model_provider_tabledict.items():
+            _embed.add_field(name=provider, value=", ".join(models), inline=False)
+
+        # Send the embed
+        await ctx.respond(embed=_embed)
 
     async def _on_message_ask(self, prompt: Message):
         # Check if SHARED_CHAT_HISTORY is enabled
@@ -287,7 +324,7 @@ class BaseChat(commands.Cog):
             return
 
         # Check if the prompt is empty
-        if prompt_message.content == f"<@{self.bot.user.id}>":
+        if prompt_message.content == f"<@{self.bot.user.id}>".strip():
             return
 
         # For now the entire function is under try 

@@ -27,7 +27,7 @@ class History:
             raise TypeError("guild_id is required")
         
         if (await self._collection.find_one({"guild_id": guild_id})) is None:
-            _template = self._document_template(guild_id, 0, "code_execution")
+            _template = self._document_template(guild_id, "code_execution")
 
             # Create a document if it doesn't exist
             await self._collection.update_one({"guild_id": guild_id},{"$set": _template}, upsert=True)
@@ -54,7 +54,7 @@ class History:
             raise TypeError("guild_id is required")
 
         if (await self._collection.find_one({"guild_id": guild_id})) is None:
-            _template = self._document_template(guild_id, 0, "code_execution")
+            _template = self._document_template(guild_id, "code_execution")
 
             # Create a document if it doesn't exist
             await self._collection.update_one({"guild_id": guild_id},{"$set": _template}, upsert=True)
@@ -84,7 +84,7 @@ class History:
         await self.clear_history(guild_id)
 
         if (await self._collection.find_one({"guild_id": guild_id})) is None:
-            _template = self._document_template(guild_id, 0, tool)
+            _template = self._document_template(guild_id, tool)
 
             # Create a document if it doesn't exist
             await self._collection.update_one({"guild_id": guild_id},{"$set": _template}, upsert=True)
@@ -98,7 +98,7 @@ class History:
             raise TypeError("guild_id is required")
                 
         if (await self._collection.find_one({"guild_id": guild_id})) is None:
-            _template = self._document_template(guild_id, 0, "code_execution")
+            _template = self._document_template(guild_id, "code_execution")
 
             # Create a document if it doesn't exist
             await self._collection.update_one({"guild_id": guild_id},{"$set": _template}, upsert=True)
