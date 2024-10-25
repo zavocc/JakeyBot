@@ -188,11 +188,14 @@ class BaseChat(commands.Cog):
         else:
             guild_id = prompt.author.id
 
+        # Thinking message
+        _thinking_message = await prompt.channel.send("🤔 Determining what to do...")
+
         # Check if we can switch models
         _model_provider = "gemini"
         _model_name = "gemini-1.5-flash-002"
         if "/model:" in prompt.content:
-            _amsg = await prompt.channel.send(f"🔍 Using specific model")
+            await _thinking_message.edit(f"🔍 Using specific model")
             for _model_selection in ModelsList.get_models_list(raw=True):
                 _model_provider = _model_selection.split("__")[1]
                 _model_name = _model_selection.split("__")[-1]
@@ -200,8 +203,12 @@ class BaseChat(commands.Cog):
                 # In this regex, we are using \s at the end since when using gpt-4o-mini, it will match with gpt-4o at first
                 # So, we are using \s|$ to match the end of the string and the suffix gets matched or if it's placed at the end of the string
                 if re.search(rf"\/model:{_model_name}(\s|$)", prompt.content):
-                    await _amsg.edit(content=f"🔍 Used specific model: {_model_name}")
+                    await _thinking_message.edit(content=f"🔍 Asking with specific model: **{_model_name}**")
                     break
+            else:
+                _model_provider = "gemini"
+                _model_name = "gemini-1.5-flash-002"
+                await _thinking_message.edit(content=f"🔍 Asking with the default model: **{_model_name}**")
     
         _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
                 guild_id=guild_id,
@@ -214,28 +221,30 @@ class BaseChat(commands.Cog):
         # File attachment processing
         ###############################################
         if len(prompt.attachments) > 1:
-            await prompt.channel.send("🚫 I can only process one file at a time")
+            await _thinking_message.edit("🚫 I can only process one file at a time")
             return
         
         if prompt.attachments:
             if not hasattr(_infer, "input_files"):
                 raise MultiModalUnavailable(f"Multimodal is not available for this model: {_model_name}")
 
+            await _thinking_message.edit(f"🔍 Analyzing the file: **{prompt.attachments[0].filename}**")
             await _infer.input_files(attachment=prompt.attachments[0])
 
         ###############################################
         # Answer generation
         ###############################################
-        # Remove the mention substring
-        #_removed_mentions = prompt.content.replace(f"<@{self.bot.user.id}>", "").strip()
+        await _thinking_message.edit(f"⌛ Formulating an answer...")
 
         # Through capturing group, we can remove the mention and the model selection from the prompt at both in the middle and at the end
         _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/model:{_model_name}(\s|$))", "", prompt.content).strip()
-        print(_final_prompt)
         _result = await _infer.chat_completion(prompt=_final_prompt, system_instruction=self._assistants_system_prompt.jakey_system_prompt)
         
         # Format the response
         _formatted_response = _result["answer"].rstrip()
+
+        # Delete the thinking message
+        await _thinking_message.delete()
 
         # Model usage and context size
         if len(_result["answer"]) > 2000 and len(_result["answer"]) < 4096:
