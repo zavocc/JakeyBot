@@ -29,13 +29,16 @@ models:
   ############################################
   # Claude models
   ############################################
-  # Claude models hosted through OpenRouter
-  - model: __claude__claude-3.5-sonnet
-    name: Claude 3.5 Sonnet
-    description: Top notch intelligence with balanced speed and accuracy
-  - model: __claude__claude-3-haiku
+  # Claude models
+  - model: __claude__claude-3-haiku-20240307
     name: Claude 3 Haiku
-    description: Lightning fast chat with low accuracy
+    description: Lightning fast chat with such intelligence
+  - model: __claude__claude-3-5-sonnet-latest
+    name: Claude 3.5 Sonnet (New)
+    description: Top notch intelligence with greater accuracy for coding and other tasks
+  - model: __claude__claude-3-5-sonnet-20240620
+    name: Claude 3.5 Sonnet
+    description: Oldstable version but with balanced speed and accuracy
 
   ############################################
   # Mistral models

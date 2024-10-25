@@ -15,7 +15,19 @@ class Completions:
             self._model_name = "mistral/" + model_name
         elif environ.get("OPENROUTER_API_KEY"):
             logging.info("Using OpenRouter API for Mistral")
-            self._model_name = "openrouter/mistralai/" + model_name
+            
+            # Normalize model names since the naming convention is different here
+            if model_name == "mistral-large-2407":
+                self._model_name = "openrouter/mistralai/" + "mistral-large"
+            elif model_name == "open-mixtral-8x7b":
+                self._model_name = "openrouter/mistralai/" + "mixtral-8x7b-instruct"
+            elif model_name == "codestral-latest":
+                # Only codestral-mamba is available in Mistral OpenRouter API while this one is the larger code model
+                raise ValueError("codestral-latest model is not available in Mistral OpenRouter API")
+            else:
+                self._model_name = "openrouter/mistralai/" + model_name
+
+            logging.info(f"Using normalized model name: {self._model_name}")
         else:
             raise ValueError("No Mistral API key was set, this model isn't available")
 
@@ -29,10 +41,10 @@ class Completions:
             raise ChatHistoryFull("Maximum history reached! Clear the conversation")
 
         # System prompt
-        # Check if codestral-latest model is used since it's not necessary to put system instructions as its designed for code
+        # Check if codestral model is used since it's not necessary to put system instructions as its designed for code
         # And to prevent tokens from being depleted quickly
         if _chat_thread is None:
-            if not "codestral-latest" in self._model_name:
+            if not "codestral" in self._model_name:
                 _chat_thread = [{
                     "role": "system",
                     "content": system_instruction   
