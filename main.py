@@ -102,12 +102,19 @@ async def on_message(message):
     if bot.user.mentioned_in(message) and message.content == f"<@{bot.user.id}>".strip():
         await message.channel.send(cleandoc(f"""Hello <@{message.author.id}>! I am **{environ.get("BOT_NAME", "Jakey Bot!*")}** ✨
                                             I am an AI bot and I can also make your server fun and entertaining! 🎉
+
+                                            You just pinged me, but what can I do for you? 🤔
                                             
-                                            - You can ask me anything by typing **/ask** and get started
+                                            - You can ask me anything by typing **/ask** and get started or by mentioning me again but with a message
                                             - You can access most of my useful commands with **/**slash commands or use `{environ.get("BOT_PREFIX", "$")}help` to see the list prefixed commands I have.
                                             - You can access my apps by **tapping and holding any message** or **clicking the three-dots menu** and click **Apps** to see the list of apps I have
                                             
-                                            If you have any questions, you can visit my [documentation or contact at](https://zavocc.github.io)"""))
+                                            You can ask me questions, such as:
+                                            - **@{environ.get("BOT_NAME", "Jakey Bot")}** How many R's in the word strawberry?  
+                                            - **/ask** `prompt:`Can you tell me a joke?  
+                                            - Hey **@{environ.get("BOT_NAME", "Jakey Bot")}** can you give me quotes for today?  
+
+                                            If you have any questions, you can visit my [documentation or contact me here](https://zavocc.github.io)"""))
 
 
 with open('commands.yaml', 'r') as file:
