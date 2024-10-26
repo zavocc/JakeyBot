@@ -65,10 +65,10 @@ class BaseChat(commands.Cog):
         description="Show information about the model, tool, files used and the context size through an embed",
         default=False
     )
-    async def ask(self, ctx, prompt: str, attachment: discord.Attachment, model: str,
+    async def ask(self, ctx: discord.ApplicationContext, prompt: str, attachment: discord.Attachment, model: str,
         append_history: bool, show_info: bool):
         """Ask a question using Gemini and models from OpenAI, Anthropic, and more!"""
-        await ctx.response.defer()
+        await ctx.response.defer(ephemeral=False)
 
         # Message history
         # Since pycord 2.6, user apps support is implemented. But in order for this command to work in DMs, it has to be installed as user app
@@ -156,15 +156,18 @@ class BaseChat(commands.Cog):
             response_file = f"{environ.get('TEMP_DIR')}/response{random.randint(6000,7000)}.md"
             async with aiofiles.open(response_file, "w+") as f:
                 await f.write(_formatted_response)
-            await ctx.respond("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(response_file, "response.md"), embed=_system_embed)
+            _jakey_response = await ctx.send("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(response_file, "response.md"), embed=_system_embed)
         elif len(_formatted_response) > 2000:
-            await ctx.respond(embed=_system_embed)
+            _jakey_response = await ctx.send(embed=_system_embed)
         else:
-            await ctx.respond(_formatted_response, embed=_system_embed)
+            _jakey_response = await ctx.send(_formatted_response, embed=_system_embed)
 
         # Save to chat history
         if append_history:
             await _infer.save_to_history(chat_thread=_result["chat_thread"])
+
+        # Done
+        await ctx.respond(f"✅ Done {ctx.author.mention}! check out the response: {_jakey_response.jump_url}")
 
     @ask.error
     async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
@@ -214,7 +217,7 @@ class BaseChat(commands.Cog):
         for provider, models in _model_provider_tabledict.items():
             _embed.add_field(name=provider, value=", ".join(models), inline=False)
 
-        # Send the embed
+        # Send the status
         await ctx.respond(embed=_embed)
 
     async def _on_message_ask(self, prompt: Message):
