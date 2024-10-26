@@ -6,7 +6,6 @@ import importlib
 class Tool:
     tool_human_name = "YouTube Search"
     tool_name = "youtube"
-    tool_config = "AUTO"
     def __init__(self, method_send):
         self.method_send = method_send
 

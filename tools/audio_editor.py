@@ -9,10 +9,6 @@ import importlib
 class Tool:
     tool_human_name = "EzAudio"
     tool_name = "audio_editor"
-    tool_config = "AUTO"
-
-    # File path attribute
-    file_uri = ""
 
     def __init__(self, method_send):
         self.method_send = method_send
@@ -25,17 +21,18 @@ class Tool:
                     parameters=genai.protos.Schema(
                         type=genai.protos.Type.OBJECT,
                         properties={
+                            'discord_attachment_url':genai.protos.Schema(type=genai.protos.Type.STRING),
                             'prompt':genai.protos.Schema(type=genai.protos.Type.STRING),
                             'edit_start_in_seconds':genai.protos.Schema(type=genai.protos.Type.NUMBER),
                             'edit_length_in_seconds':genai.protos.Schema(type=genai.protos.Type.NUMBER)
                         },
-                        required=['prompt']
+                        required=['discord_attachment_url', 'prompt']
                     )
                 )
             ]
         )
 
-    async def _tool_function(self, prompt: str, edit_start_in_seconds: int = 3, edit_length_in_seconds: int = 5):
+    async def _tool_function(self, discord_attachment_url: str, prompt: str, edit_start_in_seconds: int = 3, edit_length_in_seconds: int = 5):
         # Validate parameters
         if edit_length_in_seconds > 10 or edit_length_in_seconds < 0.5:
             edit_length_in_seconds = 5
@@ -52,7 +49,7 @@ class Tool:
                 gradio_client.Client("OpenSound/EzAudio").predict,
                 text=prompt,
                 boundary=2,
-                gt_file=gradio_client.handle_file(self.file_uri),
+                gt_file=gradio_client.handle_file(discord_attachment_url),
                 mask_start=edit_start_in_seconds,
                 mask_length=edit_length_in_seconds,
                 guidance_scale=5,

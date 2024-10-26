@@ -9,8 +9,6 @@ import importlib
 class Tool:
     tool_human_name = "Image to Line drawing"
     tool_name = "image_to_linedrawing"
-    tool_config = "AUTO"
-    file_uri = ""
     def __init__(self, method_send):
         self.method_send = method_send
 
@@ -22,15 +20,16 @@ class Tool:
                     parameters=genai.protos.Schema(
                         type=genai.protos.Type.OBJECT,
                         properties={
+                            'discord_attachment_url':genai.protos.Schema(type=genai.protos.Type.STRING),
                             'mode':genai.protos.Schema(type=genai.protos.Type.STRING, enum=["Simple Lines", "Complex Lines"]),
                         },
-                        required=['mode']
+                        required=['discord_attachment_url', 'mode']
                     )
                 )
             ]
         )
 
-    async def _tool_function(self, mode: str):
+    async def _tool_function(self, discord_attachment_url: str, mode: str):
         # Import
         try:
             gradio_client = importlib.import_module("gradio_client")
@@ -40,7 +39,7 @@ class Tool:
         try:
             result = await asyncio.to_thread(
                 gradio_client.Client("awacke1/Image-to-Line-Drawings").predict,
-                input_img=gradio_client.handle_file(self.file_uri),
+                input_img=gradio_client.handle_file(discord_attachment_url),
                 ver=mode,
                 api_name="/predict"
             )

@@ -116,17 +116,8 @@ class Completions(GenAIConfigDefaults):
 
             if _Tool_use.tool_name == "code_execution":
                 _Tool_use.tool_schema = "code_execution"
-
-            tool_config = {'function_calling_config':_Tool_use.tool_config}
-
-            if hasattr(_Tool_use, "file_uri"):
-                if self._file_source_url is not None:
-                    _Tool_use.file_uri = self._file_source_url
-                else:
-                    tool_config = {'function_calling_config':"NONE"}
         else:
             _Tool_use = None
-            tool_config = None
 
         _genai_client = genai.GenerativeModel(
             model_name=self._model_name,
@@ -149,7 +140,7 @@ class Completions(GenAIConfigDefaults):
         # when trying to access the deleted file uploaded using Files API. See:
         # https://discuss.ai.google.dev/t/what-is-the-best-way-to-persist-chat-history-into-file/3804/6?u=zavocc306
         try:
-            answer = await chat_session.send_message_async(final_prompt, tool_config=tool_config)
+            answer = await chat_session.send_message_async(final_prompt)
         #  Retry the response if an error has occured
         except google.api_core.exceptions.PermissionDenied:
             # Iterate over chat_session.history
@@ -175,7 +166,7 @@ class Completions(GenAIConfigDefaults):
             await self._discord_method_send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
 
             # Re-send the message
-            answer = await chat_session.send_message_async(final_prompt, tool_config=tool_config)
+            answer = await chat_session.send_message_async(final_prompt)
 
         # answer.parts is equivalent to answer.candidates[0].   content.parts[0] but it is a shorthand alias
         _candidates = answer.parts

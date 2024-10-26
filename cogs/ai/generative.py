@@ -112,6 +112,9 @@ class BaseChat(commands.Cog):
 
             await _infer.input_files(attachment=attachment)
 
+            # Also add the URL to the prompt so that it can be used for tools
+            prompt += f"\n\nTHIS PROMPT IS AUTO INSERTED BY SYSTEM: By the way based on the attachment given, here is the URL associated for reference:\n{attachment.url}"
+
         ###############################################
         # Answer generation
         ###############################################
@@ -271,6 +274,10 @@ class BaseChat(commands.Cog):
 
         # Through capturing group, we can remove the mention and the model selection from the prompt at both in the middle and at the end
         _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/model:{_model_name}(\s|$))", "", prompt.content).strip()
+        # If we have attachments, also add the URL to the prompt so that it can be used for tools
+        if prompt.attachments:
+            _final_prompt += f"\n\nTHIS PROMPT IS AUTO INSERTED BY SYSTEM: By the way based on the attachment given, here is the URL associated for reference:\n{prompt.attachments[0].url}"
+        
         _result = await _infer.chat_completion(prompt=_final_prompt, system_instruction=self._assistants_system_prompt.jakey_system_prompt)
         
         # Format the response
