@@ -264,7 +264,7 @@ class BaseChat(commands.Cog):
             if not hasattr(_infer, "input_files"):
                 raise MultiModalUnavailable(f"Multimodal is not available for this model: {_model_name}")
 
-            await _thinking_message.edit(f"🔍 Analyzing the file: **{prompt.attachments[0].filename}**")
+            await _thinking_message.edit(f"📄 Processing the file: **{prompt.attachments[0].filename}**")
             await _infer.input_files(attachment=prompt.attachments[0])
 
         ###############################################
