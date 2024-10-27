@@ -218,6 +218,14 @@ class BaseChat(commands.Cog):
                 _model_name = "gemini-1.5-flash-002"
                 await _thinking_message.edit(content=f"🔍 Asking with the default model: **{_model_name}**")
     
+        # Check for /chat:ephemeral and /chat:info
+        append_history = True
+        show_info = False
+        if "/chat:ephemeral" in prompt.content:
+            append_history = False
+        if "/chat:info" in prompt.content:
+            show_info = True
+
         _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
                 guild_id=guild_id,
                 model_name=_model_name,
@@ -245,7 +253,7 @@ class BaseChat(commands.Cog):
         await _thinking_message.edit(f"⌛ Formulating an answer...")
 
         # Through capturing group, we can remove the mention and the model selection from the prompt at both in the middle and at the end
-        _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/model:{_model_name}(\s|$))", "", prompt.content).strip()
+        _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/model:{_model_name}(\s|$)|\/chat:ephemeral(\s|$)|\/chat:info(\s|$))", "", prompt.content).strip()
         # If we have attachments, also add the URL to the prompt so that it can be used for tools
         if prompt.attachments:
             _final_prompt += f"\n\nTHIS PROMPT IS AUTO INSERTED BY SYSTEM: By the way based on the attachment given, here is the URL associated for reference:\n{prompt.attachments[0].url}"
@@ -267,8 +275,11 @@ class BaseChat(commands.Cog):
                 color=discord.Color.random()
             )
         else:
-            _system_embed = None
-            _formatted_response = f"{_result['answer'].rstrip()}\n-# {_model_name.upper()}"
+            if show_info:
+                _system_embed = discord.Embed()
+            else:
+                _system_embed = None
+                _formatted_response = f"{_result['answer'].rstrip()}\n-# {_model_name.upper()}"
 
         if not _system_embed is None:
             # Model used
@@ -294,7 +305,8 @@ class BaseChat(commands.Cog):
             await prompt.channel.send(_formatted_response, embed=_system_embed)
 
         # Save to chat history
-        await _infer.save_to_history(chat_thread=_result["chat_thread"])
+        if append_history:
+            await _infer.save_to_history(chat_thread=_result["chat_thread"])
 
     @commands.Cog.listener()
     async def on_message(self, prompt_message):
