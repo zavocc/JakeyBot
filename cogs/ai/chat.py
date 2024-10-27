@@ -46,17 +46,20 @@ class Chat(commands.Cog):
     @commands.cooldown(3, 6, commands.BucketType.user) # Add cooldown to prevent abuse
     @discord.option(
         "prompt",
+        input_type=str,
         description="Enter your prompt, ask real questions, or provide a context for the model to generate a response",
         max_length=4096,
         required=True
     )
     @discord.option(
         "attachment",
+        input_type=discord.Attachment,
         description="Attach your files to answer from. Supports image, audio, video, text, and PDF files",
         required=False,
     )
     @discord.option(
         "model",
+        input_type=str,
         description="Choose a model to use for the conversation - flash is the default model",
         choices=ModelsList.get_models_list(),
         default="__gemini__gemini-1.5-flash-002",
@@ -64,16 +67,17 @@ class Chat(commands.Cog):
     )
     @discord.option(
         "append_history",
+        input_type=bool,
         description="Store the conversation to chat history?",
         default=True
     )
     @discord.option(
         "show_info",
+        input_type=bool,
         description="Show information about the model, tool, files used through an embed",
         default=False
     )
-    async def ask(self, ctx: discord.ApplicationContext, prompt: str, attachment: discord.Attachment, model: str,
-        append_history: bool, show_info: bool):
+    async def ask(self, ctx, prompt, attachment, model, append_history, show_info):
         """Ask a question using Gemini and models from OpenAI, Anthropic, and more!"""
         await self._ask_command.ask(ctx, prompt, attachment, model, append_history, show_info)
 
