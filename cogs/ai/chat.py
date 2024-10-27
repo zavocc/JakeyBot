@@ -1,13 +1,95 @@
+from core.ai.assistants import Assistants
 from core.ai.core import ModelsList
 from cogs.ai.generative import BaseChat
+from cogs.ai.generative_event import BaseChat as BaseChatEvent
+from core.ai.history import History
+from core.exceptions import MultiModalUnavailable
 from discord.ext import commands
 from os import environ
 import discord
 import inspect
+import motor.motor_asyncio
 
-class Chat(BaseChat):
+class Chat(commands.Cog):
     def __init__(self, bot):
-        super().__init__(bot)
+        self.bot: discord.Bot = bot
+        self.author = environ.get("BOT_NAME", "Jakey Bot")
+
+        # Load the database and initialize the HistoryManagement class
+        # MongoDB database connection for chat history and possibly for other things
+        try:
+            self.DBConn: History = History(db_conn=motor.motor_asyncio.AsyncIOMotorClient(environ.get("MONGO_DB_URL")))
+        except Exception as e:
+            raise e(f"Failed to connect to MongoDB: {e}...\n\nPlease set MONGO_DB_URL in dev.env")
+
+        # default system prompt - load assistants
+        self._assistants_system_prompt = Assistants()
+
+        # Initialize the chat system
+        self._ask_command = BaseChat(bot, self.author, self.DBConn, self._assistants_system_prompt)
+        self._ask_event = BaseChatEvent(bot, self.author, self.DBConn, self._assistants_system_prompt)
+
+    ###############################################
+    # Ask event slash command
+    ###############################################
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        await self._ask_event.on_message(message)
+
+    ###############################################
+    # Ask slash command
+    ###############################################
+    @commands.slash_command(
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
+    )
+    @commands.cooldown(3, 6, commands.BucketType.user) # Add cooldown to prevent abuse
+    @discord.option(
+        "prompt",
+        description="Enter your prompt, ask real questions, or provide a context for the model to generate a response",
+        max_length=4096,
+        required=True
+    )
+    @discord.option(
+        "attachment",
+        description="Attach your files to answer from. Supports image, audio, video, text, and PDF files",
+        required=False,
+    )
+    @discord.option(
+        "model",
+        description="Choose a model to use for the conversation - flash is the default model",
+        choices=ModelsList.get_models_list(),
+        default="__gemini__gemini-1.5-flash-002",
+        required=False
+    )
+    @discord.option(
+        "append_history",
+        description="Store the conversation to chat history?",
+        default=True
+    )
+    @discord.option(
+        "show_info",
+        description="Show information about the model, tool, files used through an embed",
+        default=False
+    )
+    async def ask(self, ctx: discord.ApplicationContext, prompt: str, attachment: discord.Attachment, model: str,
+        append_history: bool, show_info: bool):
+        """Ask a question using Gemini and models from OpenAI, Anthropic, and more!"""
+        await self._ask_command.ask(ctx, prompt, attachment, model, append_history, show_info)
+
+    @ask.error
+    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
+        _error = getattr(error, "original", error)
+        # Cooldown error
+        if isinstance(_error, commands.CommandOnCooldown):
+            await ctx.respond(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
+        elif isinstance(_error, MultiModalUnavailable):
+            await ctx.respond("🚫 This model cannot process certain files, choose another model to continue")
+        else:
+            await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, reason:\n```{_error}```")
+
+        # Raise error
+        raise _error
 
     ###############################################
     # List models command
