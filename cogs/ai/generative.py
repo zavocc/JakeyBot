@@ -135,7 +135,8 @@ class BaseChat(commands.Cog):
                 _system_embed = discord.Embed()
             else:
                 _system_embed = None
-                _formatted_response = f"{_result['answer'].rstrip()}\n-# {_model_name.upper()}"
+                # Add minified version of chat information
+                _formatted_response = f"{_result['answer'].rstrip()}\n-# {_model_name.upper()} {"(this response isn't saved)" if not append_history else ''}"
 
         if not _system_embed is None:
             # Model used
@@ -227,6 +228,7 @@ class BaseChat(commands.Cog):
         # Send the status
         await ctx.respond(embed=_embed)
 
+    # This is a private function
     async def _on_message_ask(self, prompt: Message):
         # Check if SHARED_CHAT_HISTORY is enabled
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
