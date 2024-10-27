@@ -19,7 +19,6 @@ class BaseChat():
     ###############################################
     async def ask(self, ctx: discord.ApplicationContext, prompt: str, attachment: discord.Attachment, model: str,
         append_history: bool, show_info: bool):
-        #"""Ask a question using Gemini and models from OpenAI, Anthropic, and more!"""
         await ctx.response.defer(ephemeral=False)
 
         # Check if SHARED_CHAT_HISTORY is enabled
