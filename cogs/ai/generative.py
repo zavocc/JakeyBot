@@ -62,19 +62,13 @@ class BaseChat(commands.Cog):
     )
     @discord.option(
         "show_info",
-        description="Show information about the model, tool, files used and the context size through an embed",
+        description="Show information about the model, tool, files used through an embed",
         default=False
     )
     async def ask(self, ctx: discord.ApplicationContext, prompt: str, attachment: discord.Attachment, model: str,
         append_history: bool, show_info: bool):
         """Ask a question using Gemini and models from OpenAI, Anthropic, and more!"""
         await ctx.response.defer(ephemeral=False)
-
-        # Message history
-        # Since pycord 2.6, user apps support is implemented. But in order for this command to work in DMs, it has to be installed as user app
-        # Which also exposes the command to the guilds the user joined where the bot is not authorized to send commands. This can cause partial function succession with MissingAccess error
-        # One way to check is to check required permissions through @command.has_permissions(send_messages=True) or ctx.interaction.authorizing_integration_owners
-        # The former returns "# This raises ClientException: Parent channel not found when ran outside of authorized guilds or DMs" which should be a good basis
 
         # Check if SHARED_CHAT_HISTORY is enabled
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
@@ -219,12 +213,14 @@ class BaseChat(commands.Cog):
                 await _thinking_message.edit(content=f"🔍 Asking with the default model: **{_model_name}**")
     
         # Check for /chat:ephemeral and /chat:info
-        append_history = True
-        show_info = False
+        _append_history = True
+        _show_info = False
         if "/chat:ephemeral" in prompt.content:
-            append_history = False
+            await _thinking_message.edit("🔒 Ok the user wants me to not save this conversation so I will respect that")
+            _append_history = False
         if "/chat:info" in prompt.content:
-            show_info = True
+            await _thinking_message.edit("ℹ️ Ok the user wants me to show the information about the model, tool, files used")
+            _show_info = True
 
         _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
                 guild_id=guild_id,
@@ -275,11 +271,12 @@ class BaseChat(commands.Cog):
                 color=discord.Color.random()
             )
         else:
-            if show_info:
+            if _show_info:
                 _system_embed = discord.Embed()
             else:
                 _system_embed = None
-                _formatted_response = f"{_result['answer'].rstrip()}\n-# {_model_name.upper()}"
+                # Add minified version of chat information
+                _formatted_response = f"{_result['answer'].rstrip()}\n-# {_model_name.upper()} {"(this response isn't saved)" if not _append_history else ''}"
 
         if not _system_embed is None:
             # Model used
@@ -305,7 +302,7 @@ class BaseChat(commands.Cog):
             await prompt.channel.send(_formatted_response, embed=_system_embed)
 
         # Save to chat history
-        if append_history:
+        if _append_history:
             await _infer.save_to_history(chat_thread=_result["chat_thread"])
 
     @commands.Cog.listener()
