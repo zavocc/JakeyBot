@@ -9,10 +9,14 @@ class ModelsList:
             _internal_model_data = yaml.safe_load(models)
 
         # Iterate through the models and yield each as a discord.OptionChoice
-        for model in _internal_model_data['models']:
+        for model in _internal_model_data:
             if raw:
                 yield model["model"]
             else:
+                # Check if the model dict has hide_ui key
+                if model.get("hide_ui") is not None and model.get("hide_ui") == True:
+                    continue
+
                 yield discord.OptionChoice(f"{model['name']} - {model['description']}", model["model"])
         
         del _internal_model_data

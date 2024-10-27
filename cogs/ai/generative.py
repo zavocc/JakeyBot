@@ -10,6 +10,7 @@ import aiofiles
 import aiofiles.os
 import discord
 import importlib
+import inspect
 import motor.motor_asyncio
 import random
 import re
@@ -194,7 +195,13 @@ class BaseChat(commands.Cog):
         # Create an embed
         _embed = discord.Embed(
             title="Available models",
-            description="Here are the list of available models that you can use, /model:model-name to use a specific model when mentioning the bot",
+            description=inspect.cleandoc(
+                """Here are the list of available models that you can use
+                 
+                To switch models, add this to your prompt /model:model-name to use a specific model when mentioning the bot
+                Models are available and named as per the official model names
+
+                Some models maybe aliased (e.g. -latest may be aliased to the last snapshot model) and some models may not be available"""),
             color=discord.Color.random()
         )
 
