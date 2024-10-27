@@ -3,10 +3,57 @@ from cogs.ai.generative import BaseChat
 from discord.ext import commands
 from os import environ
 import discord
+import inspect
 
 class Chat(BaseChat):
     def __init__(self, bot):
         super().__init__(bot)
+
+    ###############################################
+    # List models command
+    ###############################################
+    @commands.slash_command(
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
+    )
+    async def models(self, ctx):
+        """List all available models"""
+        await ctx.response.defer(ephemeral=True)
+
+        # Create an embed
+        _embed = discord.Embed(
+            title="Available models",
+            description=inspect.cleandoc(
+                """Here are the list of available models that you can use
+                 
+                To switch models, add this to your prompt /model:model-name to use a specific model when mentioning the bot
+                Models are available and named as per the official model names
+
+                Some models maybe aliased (e.g. -latest may be aliased to the last snapshot model) and some models may not be available"""),
+            color=discord.Color.random()
+        )
+
+        # Iterate over models
+        # Now we separate model provider into field and model names into value
+        # It is __provider__model-name so we need to split it and group them as per provider
+        _model_provider_tabledict = {}
+
+        for _model in ModelsList.get_models_list(raw=True):
+            _model_provider = _model.split("__")[1]
+            _model_name = _model.split("__")[-1]
+
+            # Add the model name to the corresponding provider in the dictionary
+            if _model_provider not in _model_provider_tabledict:
+                _model_provider_tabledict[_model_provider] = [_model_name]
+            else:
+                _model_provider_tabledict[_model_provider].append(_model_name)
+
+        # Add fields to the embed
+        for provider, models in _model_provider_tabledict.items():
+            _embed.add_field(name=provider, value=", ".join(models), inline=False)
+
+        # Send the status
+        await ctx.respond(embed=_embed)
 
     ###############################################
     # Clear context command
