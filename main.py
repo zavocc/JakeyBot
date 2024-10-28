@@ -76,7 +76,7 @@ async def on_ready():
         mkdir(environ.get("TEMP_DIR"))
 
     #https://stackoverflow.com/a/65780398 - for multiple statuses
-    await bot.change_presence(activity=discord.Game(f"/ask me anything or {environ.get("BOT_PREFIX", "$")}help"))
+    await bot.change_presence(activity=discord.Game(f"/ask me anything or {bot.command_prefix}help"))
     print(f"{bot.user} is ready and online!")
 
     # Check if we can load gemini api
@@ -106,7 +106,7 @@ async def on_message(message):
                                             You just pinged me, but what can I do for you? 🤔
                                             
                                             - You can ask me anything by typing **/ask** and get started or by mentioning me again but with a message
-                                            - You can access most of my useful commands with **/**slash commands or use `{environ.get("BOT_PREFIX", "$")}help` to see the list prefixed commands I have.
+                                            - You can access most of my useful commands with **/**slash commands or use `{bot.command_prefix}help` to see the list prefixed commands I have.
                                             - You can access my apps by **tapping and holding any message** or **clicking the three-dots menu** and click **Apps** to see the list of apps I have
                                             
                                             You can ask me questions, such as:

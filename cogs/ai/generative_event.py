@@ -147,27 +147,32 @@ class BaseChat():
         if _append_history:
             await _infer.save_to_history(chat_thread=_result["chat_thread"])
 
-    async def on_message(self, prompt_message):
-        # Must be mentioned
-        if not self.bot.user.mentioned_in(prompt_message):
+    async def on_message(self, prompt_message: Message):
+        # Ignore messages from the bot itself
+        if prompt_message.author.id == self.bot.user.id:
             return
 
-        # Check if the prompt is empty
-        if prompt_message.content == f"<@{self.bot.user.id}>".strip():
-            return
+        # Must be mentioned and check if it's not starts with prefix or slash command
+        if prompt_message.guild is None or self.bot.user.mentioned_in(prompt_message):
+            if prompt_message.content.startswith(self.bot.command_prefix) or prompt_message.content.startswith("/"):
+                return
+            
+            # Check if the prompt is empty
+            if prompt_message.content == f"<@{self.bot.user.id}>".strip():
+                return
 
-        # For now the entire function is under try 
-        # Maybe this can be separated into another function
-        try:
-            await self.priv_ask(prompt_message)
-        except Exception as _error:
-            if isinstance(_error, commands.CommandOnCooldown):
-                await prompt_message.reply(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
-            elif isinstance(_error, MultiModalUnavailable):
-                await prompt_message.reply("🚫 This model cannot process certain files, choose another model to continue")
-            else:
-                await prompt_message.reply(f"❌ Sorry, I couldn't answer your question at the moment, reason:\n```{_error}```")
+            # For now the entire function is under try 
+            # Maybe this can be separated into another function
+            try:
+                await self.priv_ask(prompt_message)
+            except Exception as _error:
+                if isinstance(_error, commands.CommandOnCooldown):
+                    await prompt_message.reply(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
+                elif isinstance(_error, MultiModalUnavailable):
+                    await prompt_message.reply("🚫 This model cannot process certain files, choose another model to continue")
+                else:
+                    await prompt_message.reply(f"❌ Sorry, I couldn't answer your question at the moment, reason:\n```{_error}```")
 
-            # Raise error
-            raise _error
+                # Raise error
+                raise _error
     
