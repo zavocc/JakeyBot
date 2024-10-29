@@ -46,7 +46,7 @@ class BaseChat():
         _model_name = _model.split("__")[-1]
         if "/model:" in prompt.content:
             await _thinking_message.edit(f"🔍 Using specific model")
-            for _model_selection in ModelsList.get_models_list(raw=True):
+            async for _model_selection in ModelsList.get_models_list_async():
                 _model_provider = _model_selection.split("__")[1]
                 _model_name = _model_selection.split("__")[-1]
 

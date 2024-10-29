@@ -168,7 +168,7 @@ class Chat(commands.Cog):
         # It is __provider__model-name so we need to split it and group them as per provider
         _model_provider_tabledict = {}
 
-        for _model in ModelsList.get_models_list(raw=True):
+        async for _model in ModelsList.get_models_list_async():
             _model_provider = _model.split("__")[1]
             _model_name = _model.split("__")[-1]
 
