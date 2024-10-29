@@ -183,10 +183,9 @@ class Completions(GenAIConfigDefaults):
                     try:
                         _result = await _Tool_use._tool_function(**_func_call.args)
                     except (AttributeError, TypeError) as e:
-                        await self._discord_method_send("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
                         # Also print the error to the console
                         logging.error("Slash Commands > /ask: I think I found a problem related to function calling:", e)
-                        return
+                        raise e("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
             
                     # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
                     answer = await chat_session.send_message_async(
