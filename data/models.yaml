@@ -1,3 +1,6 @@
+# Syntax
+# __<provider>__<model_name>
+
 # Hosted through Gemini API
 - model: __gemini__gemini-1.5-pro-002
   name: Gemini 1.5 Pro

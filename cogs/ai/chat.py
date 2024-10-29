@@ -104,13 +104,13 @@ class Chat(commands.Cog):
     )
     @discord.option(
         "model",
-        description="Choose a default model to use for the conversation",
+        description="Choose default model for the conversation",
         choices=ModelsList.get_models_list(),
         required=True
     )
     async def model(self, ctx, model: str):
-        """Set the default model for the conversation"""
-        await ctx.response.defer(ephemeral=True)
+        """Set the default model whenever you mention the me!"""
+        await ctx.response.defer(ephemeral=False)
 
         # Check if SHARED_CHAT_HISTORY is enabled
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
@@ -121,7 +121,17 @@ class Chat(commands.Cog):
         # Save the default model in the database
         await self.DBConn.set_default_model(guild_id=guild_id, model=model)
 
-        await ctx.respond(f"✅ Default model set to **{model}**")
+        # Split the model name to get the provider and model name
+        # If it has __provider__ prefix
+        if "__" not in model:
+            await ctx.respond("❌ Invalid model name, please choose a model from the list")
+            return
+        else:
+            _model = model.split("__")
+            _model_provider = _model[1]
+            _model_name = _model[-1]
+
+        await ctx.respond(f"✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**")
 
     # Handle errors
     @model.error
