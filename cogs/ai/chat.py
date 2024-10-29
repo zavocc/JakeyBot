@@ -94,6 +94,40 @@ class Chat(commands.Cog):
 
         # Raise error
         raise _error
+    
+    ###############################################
+    # Set default model command
+    ###############################################
+    @commands.slash_command(
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
+    )
+    @discord.option(
+        "model",
+        description="Choose a default model to use for the conversation",
+        choices=ModelsList.get_models_list(),
+        required=True
+    )
+    async def model(self, ctx, model: str):
+        """Set the default model for the conversation"""
+        await ctx.response.defer(ephemeral=True)
+
+        # Check if SHARED_CHAT_HISTORY is enabled
+        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
+        else:
+            guild_id = ctx.author.id
+
+        # Save the default model in the database
+        await self.DBConn.set_default_model(guild_id=guild_id, model=model)
+
+        await ctx.respond(f"✅ Default model set to **{model}**")
+
+    # Handle errors
+    @model.error
+    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
+        await ctx.respond("❌ Something went wrong, please check the console logs for details.")
+        raise error
 
     ###############################################
     # List models command

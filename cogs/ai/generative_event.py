@@ -1,5 +1,6 @@
 from core.ai.core import ModelsList
 from core.exceptions import MultiModalUnavailable
+from core.ai.history import History # type hinting
 from discord.ext import commands
 from discord import Message
 from os import environ
@@ -8,11 +9,12 @@ import aiofiles
 import aiofiles.os
 import discord
 import importlib
+import logging
 import random
 import re
 
 class BaseChat():
-    def __init__(self, bot, author, history, assistants):
+    def __init__(self, bot, author, history: History, assistants):
         self.bot: discord.Bot = bot
         self.author = author
         self.DBConn = history
@@ -33,8 +35,15 @@ class BaseChat():
         _thinking_message = await prompt.channel.send("🤔 Determining what to do...")
 
         # Check if we can switch models
-        _model_provider = "gemini"
-        _model_name = "gemini-1.5-flash-002"
+        try:
+            _model = await self.DBConn.get_default_model(guild_id=guild_id)
+        except Exception as e:
+            # Set the default model
+            _model = "__gemini__gemini-1.5-flash-002"
+            logging.error("generative_event.py: Something went wrong while getting default model %s", e)
+
+        _model_provider = _model.split("__")[1]
+        _model_name = _model.split("__")[-1]
         if "/model:" in prompt.content:
             await _thinking_message.edit(f"🔍 Using specific model")
             for _model_selection in ModelsList.get_models_list(raw=True):
@@ -47,8 +56,8 @@ class BaseChat():
                     await _thinking_message.edit(content=f"🔍 Asking with specific model: **{_model_name}**")
                     break
             else:
-                _model_provider = "gemini"
-                _model_name = "gemini-1.5-flash-002"
+                _model_provider = _model.split("__")[1]
+                _model_name = _model.split("__")[-1]
                 await _thinking_message.edit(content=f"🔍 Asking with the default model: **{_model_name}**")
     
         # Check for /chat:ephemeral and /chat:info
