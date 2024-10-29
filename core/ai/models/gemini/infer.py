@@ -51,7 +51,6 @@ class Completions(GenAIConfigDefaults):
         super().__init__()
 
         self._file_data = None
-        self._file_source_url = None
 
         self._model_name = model_name
         self._guild_id = guild_id
@@ -92,7 +91,6 @@ class Completions(GenAIConfigDefaults):
             await aiofiles.os.remove(_xfilename)
 
         # Set the attachment variable
-        self._file_source_url = attachment.url
         self._file_data = _file_uri
 
     async def completion(self, prompt, system_instruction: str = None):

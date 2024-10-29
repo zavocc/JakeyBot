@@ -11,7 +11,6 @@ class Completions():
                  db_conn = None):
         # Used for passing non-textual data into the model
         self._file_data = None # The attachment data itself (binary data, prompt, etc)
-        self._file_source_url = None # To reference the source of the file
 
         # This is required - DO NOT MODIFY
         self._model_name = model_name
