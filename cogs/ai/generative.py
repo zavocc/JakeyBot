@@ -36,8 +36,8 @@ class BaseChat():
                 return
 
         # Set model
-        _model = model.split("__")
-        _model_provider = _model[1]
+        _model = model.split("::")
+        _model_provider = _model[0]
         _model_name = _model[-1]
 
         # Configure inference

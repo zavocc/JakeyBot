@@ -19,7 +19,7 @@ class History:
         return {
             "guild_id": guild_id,
             "tool_use": tool_use,
-            "default_model": "__gemini__gemini-1.5-flash-002"
+            "default_model": "gemini::gemini-1.5-flash-002"
         }
 
     async def load_history(self, guild_id, model_provider = None):
@@ -132,9 +132,9 @@ class History:
         try:
             _dc = await self._collection.find_one({"guild_id": guild_id})
             if _dc is None or "default_model" not in _dc:
-                return "__gemini__gemini-1.5-flash-002"
+                return "gemini::gemini-1.5-flash-002"
             return _dc["default_model"]
         except Exception:
             logging.error("An error occurred while fetching the default model from the database")
-            return "__gemini__gemini-1.5-flash-002"
+            return "gemini::gemini-1.5-flash-002"
 

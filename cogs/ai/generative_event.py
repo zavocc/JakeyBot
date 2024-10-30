@@ -42,13 +42,13 @@ class BaseChat():
             _model = "__gemini__gemini-1.5-flash-002"
             logging.error("generative_event.py: Something went wrong while getting default model %s", e)
 
-        _model_provider = _model.split("__")[1]
-        _model_name = _model.split("__")[-1]
+        _model_provider = _model.split("::")[0]
+        _model_name = _model.split("::")[-1]
         if "/model:" in prompt.content:
             await _thinking_message.edit(f"🔍 Using specific model")
             async for _model_selection in ModelsList.get_models_list_async():
-                _model_provider = _model_selection.split("__")[1]
-                _model_name = _model_selection.split("__")[-1]
+                _model_provider = _model_selection.split("::")[0]
+                _model_name = _model_selection.split("::")[-1]
 
                 # In this regex, we are using \s at the end since when using gpt-4o-mini, it will match with gpt-4o at first
                 # So, we are using \s|$ to match the end of the string and the suffix gets matched or if it's placed at the end of the string
@@ -56,8 +56,8 @@ class BaseChat():
                     await _thinking_message.edit(content=f"🔍 Asking with specific model: **{_model_name}**")
                     break
             else:
-                _model_provider = _model.split("__")[1]
-                _model_name = _model.split("__")[-1]
+                _model_provider = _model.split("::")[0]
+                _model_name = _model.split("::")[-1]
                 await _thinking_message.edit(content=f"🔍 Asking with the default model: **{_model_name}**")
     
         # Check for /chat:ephemeral and /chat:info

@@ -64,7 +64,7 @@ class Chat(commands.Cog):
         input_type=str,
         description="Choose a model to use for the conversation - flash is the default model",
         choices=ModelsList.get_models_list(),
-        default="__gemini__gemini-1.5-flash-002",
+        default="gemini::gemini-1.5-flash-002",
         required=False
     )
     @discord.option(
@@ -129,13 +129,13 @@ class Chat(commands.Cog):
         await self.DBConn.set_default_model(guild_id=guild_id, model=model)
 
         # Split the model name to get the provider and model name
-        # If it has __provider__ prefix
-        if "__" not in model:
+        # If it has :: prefix
+        if "::" not in model:
             await ctx.respond("❌ Invalid model name, please choose a model from the list")
             return
         else:
-            _model = model.split("__")
-            _model_provider = _model[1]
+            _model = model.split("::")
+            _model_provider = _model[0]
             _model_name = _model[-1]
 
         await ctx.respond(f"✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**")
@@ -170,8 +170,8 @@ class Chat(commands.Cog):
         _model_provider_tabledict = {}
 
         async for _model in ModelsList.get_models_list_async():
-            _model_provider = _model.split("__")[1]
-            _model_name = _model.split("__")[-1]
+            _model_provider = _model.split("::")[0]
+            _model_name = _model.split("::")[-1]
 
             # Add the model name to the corresponding provider in the dictionary
             if _model_provider not in _model_provider_tabledict:
