@@ -110,7 +110,7 @@ class Chat(commands.Cog):
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
     )
     @discord.option(
-        "name",
+        "model",
         description="Choose default model for the conversation",
         choices=ModelsList.get_models_list(),
         required=True
