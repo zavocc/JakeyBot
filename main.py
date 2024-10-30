@@ -100,7 +100,7 @@ async def on_message(message):
        return
     
     if bot.user.mentioned_in(message) and message.content == f"<@{bot.user.id}>".strip():
-        await message.channel.send(cleandoc(f"""Hello <@{message.author.id}>! I am **{environ.get("BOT_NAME", "Jakey Bot!*")}** ✨
+        await message.channel.send(cleandoc(f"""Hello <@{message.author.id}>! I am **{bot.user.name}** ✨
                                             I am an AI bot and I can also make your server fun and entertaining! 🎉
 
                                             You just pinged me, but what can I do for you? 🤔
@@ -110,9 +110,9 @@ async def on_message(message):
                                             - You can access my apps by **tapping and holding any message** or **clicking the three-dots menu** and click **Apps** to see the list of apps I have
                                             
                                             You can ask me questions, such as:
-                                            - **@{environ.get("BOT_NAME", "Jakey Bot")}** How many R's in the word strawberry?  
+                                            - **@{bot.user.name}** How many R's in the word strawberry?  
                                             - **/ask** `prompt:`Can you tell me a joke?  
-                                            - Hey **@{environ.get("BOT_NAME", "Jakey Bot")}** can you give me quotes for today?  
+                                            - Hey **@{bot.user.name}** can you give me quotes for today?  
 
                                             If you have any questions, you can visit my [documentation or contact me here](https://zavocc.github.io)"""))
 
@@ -153,7 +153,7 @@ class CustomHelp(commands.MinimalHelpCommand):
             """
             command_name = self.invoked_with
             return (
-                cleandoc(f"""**{environ.get("BOT_NAME", "Jakey Bot")}** help
+                cleandoc(f"""**{bot.user.name}** help
 
                 Welcome! here are the prefix commands that you can use!
                 

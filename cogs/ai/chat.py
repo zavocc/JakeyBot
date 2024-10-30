@@ -4,6 +4,7 @@ from cogs.ai.generative import BaseChat
 from cogs.ai.generative_event import BaseChat as BaseChatEvent
 from core.ai.history import History
 from core.exceptions import MultiModalUnavailable
+from discord.commands import SlashCommandGroup
 from discord.ext import commands
 from os import environ
 import discord
@@ -28,6 +29,7 @@ class Chat(commands.Cog):
         # Initialize the chat system
         self._ask_command = BaseChat(bot, self.author, self.DBConn, self._assistants_system_prompt)
         self._ask_event = BaseChatEvent(bot, self.author, self.DBConn, self._assistants_system_prompt)
+
 
     ###############################################
     # Ask event slash command
@@ -96,19 +98,24 @@ class Chat(commands.Cog):
         raise _error
     
     ###############################################
+    # For /model slash command group
+    ###############################################
+    model = SlashCommandGroup(name="model", description="Configure default models for the conversation")
+
+    ###############################################
     # Set default model command
     ###############################################
-    @commands.slash_command(
+    @model.command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
     )
     @discord.option(
-        "model",
+        "name",
         description="Choose default model for the conversation",
         choices=ModelsList.get_models_list(),
         required=True
     )
-    async def model(self, ctx, model: str):
+    async def set(self, ctx, model: str):
         """Set the default model whenever you mention the me!"""
         await ctx.response.defer(ephemeral=False)
 
@@ -133,20 +140,14 @@ class Chat(commands.Cog):
 
         await ctx.respond(f"✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**")
 
-    # Handle errors
-    @model.error
-    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
-        await ctx.respond("❌ Something went wrong, please check the console logs for details.")
-        raise error
-
     ###############################################
     # List models command
     ###############################################
-    @commands.slash_command(
+    @model.command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
     )
-    async def models(self, ctx):
+    async def list(self, ctx):
         """List all available models"""
         await ctx.response.defer(ephemeral=True)
 
@@ -154,12 +155,12 @@ class Chat(commands.Cog):
         _embed = discord.Embed(
             title="Available models",
             description=inspect.cleandoc(
-                """Here are the list of available models that you can use
-                 
-                To switch models, add this to your prompt /model:model-name to use a specific model when mentioning the bot
-                Models are available and named as per the official model names
+                f"""Here are the list of available models that you can use
 
-                Some models maybe aliased (e.g. -latest may be aliased to the last snapshot model) and some models may not be available"""),
+                You can set the default model for the conversation using `/model set` command or on demand through chat prompting
+                via `@{self.bot.user.name} /model:model-name` command
+                
+                Each provider has its own chat history, skills, and capabilities. Choose what's best for you"""),
             color=discord.Color.random()
         )
 
@@ -184,6 +185,12 @@ class Chat(commands.Cog):
 
         # Send the status
         await ctx.respond(embed=_embed)
+
+    # Handle errors
+    @model.error
+    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
+        await ctx.respond("❌ Something went wrong, please check the console logs for details.")
+        raise error
 
     ###############################################
     # Clear context command
