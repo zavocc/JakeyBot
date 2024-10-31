@@ -190,7 +190,7 @@ class Completions(GenAIConfigDefaults):
                     except (AttributeError, TypeError) as e:
                         # Also print the error to the console
                         logging.error("ask command: I think I found a problem related to function calling:", e)
-                        raise e("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
+                        raise ToolsUnavailable
                     # For other exceptions, log the error and add it as part of the chat thread
                     except Exception as e:
                         # Also print the error to the console
