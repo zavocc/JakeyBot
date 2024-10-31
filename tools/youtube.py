@@ -1,6 +1,7 @@
 # Built in Tools
 import google.generativeai as genai
 import importlib
+import inspect
 
 # Function implementations
 class Tool:
@@ -35,17 +36,11 @@ class Tool:
         ytquery = f"ytsearch:{query}" if not is_youtube_link else query
 
         # Import yt_dlp
-        try:
-            yt_dlp = importlib.import_module("yt_dlp")
-            inspect = importlib.import_module("inspect")
+        yt_dlp = importlib.import_module("yt_dlp")
 
-            with yt_dlp.YoutubeDL() as ydl:
-                info = ydl.sanitize_info(ydl.extract_info(ytquery, download=False))
-        except ModuleNotFoundError:
-            return "This tool is not available at the moment"
-        except Exception as e:
-            return f"An error occurred: {e}"
-        
+        with yt_dlp.YoutubeDL() as ydl:
+            info = ydl.sanitize_info(ydl.extract_info(ytquery, download=False))
+    
         # Serialize objects and get the URL, title, description, and channel
         return inspect.cleandoc(f"""
             YouTube search results, provide links as is, never use markdown hyperlinks as []():

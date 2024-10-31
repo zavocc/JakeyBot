@@ -31,20 +31,14 @@ class Tool:
 
     async def _tool_function(self, discord_attachment_url: str, mode: str):
         # Import
-        try:
-            gradio_client = importlib.import_module("gradio_client")
-        except ModuleNotFoundError:
-            return "This tool is not available at the moment"
+        gradio_client = importlib.import_module("gradio_client")
 
-        try:
-            result = await asyncio.to_thread(
-                gradio_client.Client("awacke1/Image-to-Line-Drawings").predict,
-                input_img=gradio_client.handle_file(discord_attachment_url),
-                ver=mode,
-                api_name="/predict"
-            )
-        except Exception as e:
-            return f"Image restyling failed and the image isn't sent, reason {e}"
+        result = await asyncio.to_thread(
+            gradio_client.Client("awacke1/Image-to-Line-Drawings").predict,
+            input_img=gradio_client.handle_file(discord_attachment_url),
+            ver=mode,
+            api_name="/predict"
+        )
     
         # Send the image
         await self.method_send(file=discord.File(fp=result))

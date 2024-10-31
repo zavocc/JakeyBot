@@ -7,7 +7,7 @@ import importlib
 
 # Function implementations
 class Tool:
-    tool_human_name = "Image Generator with Stable Diffusion 3"
+    tool_human_name = "Image Generator with Stable Diffusion 3.5"
     tool_name = "image_generator"
     def __init__(self, method_send):
         self.method_send = method_send
@@ -33,33 +33,27 @@ class Tool:
 
     # Image generator
     async def _tool_function(self, image_description: str, width: int, height: int):
-        # Validate parameters, width and height should not exceed 1344 and should not be set to 0
-        if width > 1344 or width == 0 or height > 1344 or height == 0:
+        # Validate parameters
+        if width > 1024 or width == 0 or height > 1024 or height == 0:
             height, width = 1024, 1024
 
         # Import
-        try:
-            gradio_client = importlib.import_module("gradio_client")
-        except ModuleNotFoundError:
-            return "This tool is not available at the moment"
+        gradio_client = importlib.import_module("gradio_client")
 
         # Create image
-        try:
-            message_curent = await self.method_send("⌛ Generating an image... this may take few minutes")
-            result = await asyncio.to_thread(
-                gradio_client.Client("stabilityai/stable-diffusion-3-medium").predict,
-                prompt=image_description,
-                negative_prompt=f"low quality, distorted, bad art, strong violence, sexually explicit, disturbing",
-                width=width,
-                height=height,
-                guidance_scale=7,
-                seed=0,
-                randomize_seed=True,
-                num_inference_steps=30,
-                api_name="/infer"
-            )
-        except Exception as e:
-            return f"Image generation fail and the image isn't sent, reason {e}"
+        message_curent = await self.method_send(f"⌛ Generating **{image_description}**... this may take few minutes")
+        result = await asyncio.to_thread(
+            gradio_client.Client("stabilityai/stable-diffusion-3.5-large").predict,
+            prompt=image_description,
+            negative_prompt=f"low quality, distorted, bad art, strong violence, sexually explicit, disturbing",
+            width=width,
+            height=height,
+            guidance_scale=7,
+            seed=0,
+            randomize_seed=True,
+            num_inference_steps=40,
+            api_name="/infer"
+        )
         
         # Delete status
         await message_curent.delete()
