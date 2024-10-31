@@ -1,3 +1,4 @@
+from core.exceptions import ToolsUnavailable
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from os import environ
 from pathlib import Path
@@ -110,7 +111,11 @@ class Completions(GenAIConfigDefaults):
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Setup model and tools
         if hasattr(self, "_discord_method_send") and self._history_management is not None:
-            _Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self._discord_method_send)
+            try:
+                _Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self._discord_method_send)
+            except ModuleNotFoundError as e:
+                logging.error("I cannot import the tool because the module is not found: %s", e)
+                raise ToolsUnavailable
 
             if _Tool_use.tool_name == "code_execution":
                 _Tool_use.tool_schema = "code_execution"

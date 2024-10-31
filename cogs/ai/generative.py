@@ -1,4 +1,4 @@
-from core.exceptions import MultiModalUnavailable
+from core.exceptions import ModelUnavailable, MultiModalUnavailable
 from os import environ
 import core.ai.models._template_.infer # For type hinting
 import aiofiles
@@ -41,11 +41,14 @@ class BaseChat():
         _model_name = _model[-1]
 
         # Configure inference
-        _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
-            guild_id=guild_id,
-            model_name=_model_name,
-            db_conn = self.DBConn,
-        )
+        try:
+            _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
+                guild_id=guild_id,
+                model_name=_model_name,
+                db_conn = self.DBConn,
+            )
+        except ModuleNotFoundError:
+            raise ModelUnavailable
         _infer._discord_method_send = ctx.send
 
         ###############################################
@@ -53,7 +56,7 @@ class BaseChat():
         ###############################################
         if attachment is not None:
             if not hasattr(_infer, "input_files"):
-                raise MultiModalUnavailable(f"Multimodal is not available for this model: {_model_name}")
+                raise MultiModalUnavailable
 
             await _infer.input_files(attachment=attachment)
 

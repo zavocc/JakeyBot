@@ -1,5 +1,5 @@
 from core.ai.core import ModelsList
-from core.exceptions import MultiModalUnavailable
+from core.exceptions import ModelUnavailable, MultiModalUnavailable, ToolsUnavailable
 from core.ai.history import History # type hinting
 from discord.ext import commands
 from discord import Message
@@ -70,11 +70,14 @@ class BaseChat():
             await _thinking_message.edit("ℹ️ Ok the user wants me to show the information about the model, tool, files used")
             _show_info = True
 
-        _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
-                guild_id=guild_id,
-                model_name=_model_name,
-                db_conn = self.DBConn,
-        )
+        try:
+            _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
+                    guild_id=guild_id,
+                    model_name=_model_name,
+                    db_conn = self.DBConn,
+            )
+        except ModuleNotFoundError:
+            raise ModelUnavailable
         _infer._discord_method_send = prompt.channel.send
 
         ###############################################
@@ -86,7 +89,7 @@ class BaseChat():
         
         if prompt.attachments:
             if not hasattr(_infer, "input_files"):
-                raise MultiModalUnavailable(f"Multimodal is not available for this model: {_model_name}")
+                raise MultiModalUnavailable
 
             await _thinking_message.edit(f"📄 Processing the file: **{prompt.attachments[0].filename}**")
             await _infer.input_files(attachment=prompt.attachments[0])
@@ -179,6 +182,10 @@ class BaseChat():
                     await prompt_message.reply(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
                 elif isinstance(_error, MultiModalUnavailable):
                     await prompt_message.reply("🚫 This model cannot process certain files, choose another model to continue")
+                elif isinstance(_error, ModelUnavailable):
+                    await prompt_message.reply(f"⚠️ The model you've chosen is not available at the moment, please choose another model")
+                elif isinstance(_error, ToolsUnavailable):
+                    await prompt_message.reply(f"⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
                 else:
                     await prompt_message.reply(f"❌ Sorry, I couldn't answer your question at the moment, reason:\n```{_error}```")
 
