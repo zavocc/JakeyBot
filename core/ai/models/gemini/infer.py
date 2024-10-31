@@ -189,8 +189,13 @@ class Completions(GenAIConfigDefaults):
                         _result = await _Tool_use._tool_function(**_func_call.args)
                     except (AttributeError, TypeError) as e:
                         # Also print the error to the console
-                        logging.error("Slash Commands > /ask: I think I found a problem related to function calling:", e)
+                        logging.error("ask command: I think I found a problem related to function calling:", e)
                         raise e("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
+                    # For other exceptions, log the error and add it as part of the chat thread
+                    except Exception as e:
+                        # Also print the error to the console
+                        logging.error("ask command: Something when calling specific tool lately, reason:", e)
+                        _result = f"⚠️ Something went wrong while executing the tool: {e}, please tell the developer or the user to check console logs"
             
                     # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
                     answer = await chat_session.send_message_async(
