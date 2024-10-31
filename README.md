@@ -1,3 +1,16 @@
+- [Jakey Bot](#jakey-bot)
+- [Platform availability](#platform-availability)
+- [Features](#features)
+- [Installation and setup](#installation-and-setup)
+  - [Required permissions for Discord bot](#required-permissions-for-discord-bot)
+  - [Installation](#installation)
+- [Configuring](#configuring)
+  - [Music features](#music-features)
+- [Running](#running)
+- [Get Started](#get-started)
+- [FAQ](#faq)
+
+
 ## Jakey Bot
 Jakey Bot is a multi-model AI and music bot with personality, designed to give you access to popular AI chatbots from Google, OpenAI, Anthropic, Mistral right within Discord! 
 
@@ -83,17 +96,17 @@ Alternatively, you can also host your own... Refer to [lavalink documentation](h
 After everything is configured, you can run `main.py`
 
 ## Get Started
-Get started by asking Jakey `/ask prompt:Who are you and how can I get started`
+Get started by asking Jakey `/ask prompt:Who are you and how can I get started` or **@Jakey what can you do?**
 
-By default, it uses **Gemini 1.5 Flash** due to versatility with long context and multimodality, matching the performance of, but other models can be used as well. Jakey also supports Gemini 1.5 Pro, GPT-4o and its mini variant, o1-preview and o1-mini, and Claude 3.5 sonnet and 3 Haiku
+By default, it uses **Gemini 1.5 Flash** due to versatility with long context and multimodality, matching the performance of, but other models can be used as well.
 
 If you decide to use other models please see [Models comparison](https://github.com/zavocc/JakeyBot/wiki/Supported-Models) and [the LLM arena by livebench](https://livebench.ai/) to understand your models use cases
 
-Jakey provides commands such as:
+Jakey provides slash commands such as:
 - `/ask` - Ask Jakey anything!
   - Get started by asking `/ask` `prompt:` `Hey Jakey, I'm new, tell me your commands, features, and capabilities`
   - Use multimodal features by passing `attachment:` parameter
-  - Ephemeral conversation with `append_hist:True`
+  - Ephemeral conversation with `append_hist:False`
   - Show logs, conversation and model info with `show_info:True`
   - You can choose between models using `model:` parameter
 - `/sweep` - Clear the conversation
