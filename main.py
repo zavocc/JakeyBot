@@ -27,7 +27,7 @@ intents.message_content = True
 intents.members = True
 
 # Bot
-bot = bridge.Bot(command_prefix=commands.when_mentioned_or(environ.get("BOT_PREFIX", "$")), intents = intents)
+bot = bridge.Bot(command_prefix=environ.get("BOT_PREFIX", "$"), intents = intents)
 
 # Playback support
 try:
@@ -76,7 +76,7 @@ async def on_ready():
         mkdir(environ.get("TEMP_DIR"))
 
     #https://stackoverflow.com/a/65780398 - for multiple statuses
-    await bot.change_presence(activity=discord.Game(f"/ask me anything or {environ.get("BOT_PREFIX", "$")}help"))
+    await bot.change_presence(activity=discord.Game(f"/ask me anything or {bot.command_prefix}help"))
     print(f"{bot.user} is ready and online!")
 
     # Check if we can load gemini api
@@ -100,14 +100,21 @@ async def on_message(message):
        return
     
     if bot.user.mentioned_in(message) and message.content == f"<@{bot.user.id}>".strip():
-        await message.channel.send(cleandoc(f"""Hello <@{message.author.id}>! I am **{environ.get("BOT_NAME", "Jakey Bot!*")}** ✨
+        await message.channel.send(cleandoc(f"""Hello <@{message.author.id}>! I am **{bot.user.name}** ✨
                                             I am an AI bot and I can also make your server fun and entertaining! 🎉
+
+                                            You just pinged me, but what can I do for you? 🤔
                                             
-                                            - You can ask me anything by typing **/ask** and get started
-                                            - You can access most of my useful commands with **/**slash commands or use `{environ.get("BOT_PREFIX", "$")}help` to see the list prefixed commands I have.
+                                            - You can ask me anything by typing **/ask** and get started or by mentioning me again but with a message
+                                            - You can access most of my useful commands with **/**slash commands or use `{bot.command_prefix}help` to see the list prefixed commands I have.
                                             - You can access my apps by **tapping and holding any message** or **clicking the three-dots menu** and click **Apps** to see the list of apps I have
                                             
-                                            If you have any questions, you can visit my [documentation or contact at](https://zavocc.github.io)"""))
+                                            You can ask me questions, such as:
+                                            - **@{bot.user.name}** How many R's in the word strawberry?  
+                                            - **/ask** `prompt:`Can you tell me a joke?  
+                                            - Hey **@{bot.user.name}** can you give me quotes for today?  
+
+                                            If you have any questions, you can visit my [documentation or contact me here](https://zavocc.github.io)"""))
 
 
 with open('commands.yaml', 'r') as file:
@@ -146,7 +153,7 @@ class CustomHelp(commands.MinimalHelpCommand):
             """
             command_name = self.invoked_with
             return (
-                cleandoc(f"""**{environ.get("BOT_NAME", "Jakey Bot")}** help
+                cleandoc(f"""**{bot.user.name}** help
 
                 Welcome! here are the prefix commands that you can use!
                 

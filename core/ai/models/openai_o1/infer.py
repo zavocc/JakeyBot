@@ -1,14 +1,12 @@
-from core.exceptions import MultiModalUnavailable
 from os import environ
-import discord
 import litellm
 import logging
 
 class Completions:
-    _model_provider_thread = "openai"
+    _model_provider_thread = "openai_o1"
 
     def __init__(self, guild_id = None, 
-                 model_name = "gpt-4o-mini",
+                 model_name = "o1-mini",
                  db_conn = None):
         self._file_data = None
 
@@ -19,42 +17,28 @@ class Completions:
                 logging.info(f"Using OpenAI API endpoint: {self._oai_endpoint}")
             else:
                 self._oai_endpoint = None
-                logging.info("Using default OpenAI API endpoint")
+                logging.info("Using default OpenAI API endpoint for O1 models")
             self._model_name = "openai/" + model_name
         elif environ.get("OPENROUTER_API_KEY"):
-            logging.info("Using OpenRouter API for OpenAI")
+            logging.info("Using OpenRouter API for OpenAI (O1)")
             self._model_name = "openrouter/openai/" + model_name
             self._oai_endpoint = None
         else:
-            raise ValueError("No OpenAI API key was set, this model isn't available")
+            raise ValueError("No OpenAI API key was set, this O1 model isn't available")
 
         self._guild_id = guild_id
         self._history_management = db_conn
 
-    async def input_files(self, attachment: discord.Attachment, **kwargs):
-        # Check if the attachment is an image
-        if not attachment.content_type.startswith("image"):
-            raise MultiModalUnavailable("Only images are supported for this model")
-
-        _attachment_prompt = {
-            "type":"image_url",
-            "image_url": {
-                    "url": attachment.url
-                }
-            }
-
-        self._file_data = _attachment_prompt
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Load history
         _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
+
+        if hasattr(self, "_discord_method_send"):
+           await self._discord_method_send("🔍 NOTICE: O1 models is a new reasoning engine by OpenAI that is designed to think before it can answer. This model may change, ratelimited, and prematurely respond.")
         
         if _chat_thread is None:
-            # Begin with system prompt
-            _chat_thread = [{
-                "role": "system",
-                "content": system_instruction   
-            }]
+            _chat_thread = []
 
         
         # Craft prompt
@@ -78,8 +62,7 @@ class Completions:
         _response = await litellm.acompletion(
             messages=_chat_thread,
             model=self._model_name,
-            max_tokens=3024,
-            temperature=0.7,
+            max_tokens=12000,
             base_url=self._oai_endpoint,
             api_key=environ.get("OPENAI_API_KEY")
         )

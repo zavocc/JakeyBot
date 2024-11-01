@@ -1,4 +1,5 @@
 from os import environ
+import logging
 import motor.motor_asyncio
 
 # A class that is responsible for managing and manipulating the chat history
@@ -12,12 +13,13 @@ class History:
         # Create a new database if it doesn't exist, access chat_history database
         self._db = self._db_conn[environ.get("MONGO_DB_NAME", "chat_history_prod")]
         self._collection = self._db["db_collection"]
+        logging.info(f"Connected to the database {self._db.name} and collection {self._collection.name}")
 
-    def _document_template(self, guild_id, prompt_count, tool_use = "code_execution"):
+    async def _document_template(self, guild_id, tool_use = "code_execution"):
         return {
             "guild_id": guild_id,
-            "prompt_count": prompt_count,
-            "tool_use": tool_use
+            "tool_use": tool_use,
+            "default_model": "gemini::gemini-1.5-flash-002"
         }
 
     async def load_history(self, guild_id, model_provider = None):
@@ -28,7 +30,7 @@ class History:
             raise TypeError("guild_id is required")
         
         if (await self._collection.find_one({"guild_id": guild_id})) is None:
-            _template = self._document_template(guild_id, 0, "code_execution")
+            _template = await self._document_template(guild_id, "code_execution")
 
             # Create a document if it doesn't exist
             await self._collection.update_one({"guild_id": guild_id},{"$set": _template}, upsert=True)
@@ -45,9 +47,9 @@ class History:
         _document = await self._collection.find_one({"guild_id": guild_id})
             
         # Return the prompt history and chat context
-        return _document["prompt_count"], _document[f"chat_thread_{model_provider}"]
+        return _document[f"chat_thread_{model_provider}"]
 
-    async def save_history(self, guild_id, chat_thread, prompt_count = 0, model_provider = None):
+    async def save_history(self, guild_id, chat_thread, model_provider = None):
         if model_provider is None:
             raise ConnectionError("Please set a provider")
 
@@ -55,7 +57,7 @@ class History:
             raise TypeError("guild_id is required")
 
         if (await self._collection.find_one({"guild_id": guild_id})) is None:
-            _template = self._document_template(guild_id, 0, "code_execution")
+            _template = await self._document_template(guild_id, "code_execution")
 
             # Create a document if it doesn't exist
             await self._collection.update_one({"guild_id": guild_id},{"$set": _template}, upsert=True)
@@ -63,7 +65,6 @@ class History:
         # Update the document
         await self._collection.update_one({"guild_id": guild_id}, {
             "$set": {
-                "prompt_count": prompt_count,
                 f"chat_thread_{model_provider}": chat_thread
             }
         }, upsert=True)
@@ -86,7 +87,7 @@ class History:
         await self.clear_history(guild_id)
 
         if (await self._collection.find_one({"guild_id": guild_id})) is None:
-            _template = self._document_template(guild_id, 0, tool)
+            _template = await self._document_template(guild_id, tool)
 
             # Create a document if it doesn't exist
             await self._collection.update_one({"guild_id": guild_id},{"$set": _template}, upsert=True)
@@ -100,11 +101,40 @@ class History:
             raise TypeError("guild_id is required")
                 
         if (await self._collection.find_one({"guild_id": guild_id})) is None:
-            _template = self._document_template(guild_id, 0, "code_execution")
+            _template = await self._document_template(guild_id, "code_execution")
 
             # Create a document if it doesn't exist
             await self._collection.update_one({"guild_id": guild_id},{"$set": _template}, upsert=True)
             return "code_execution"
 
         return (await self._collection.find_one({"guild_id": guild_id}))["tool_use"]
+    
+    async def set_default_model(self, guild_id, model):
+        if guild_id is None and type(guild_id) != int:
+            raise TypeError("guild_id is required")
+
+        if (await self._collection.find_one({"guild_id": guild_id})) is None:
+            _template = self._document_template(guild_id, "code_execution")
+
+            # Create a document if it doesn't exist
+            await self._collection.update_one({"guild_id": guild_id},{"$set": _template}, upsert=True)
+
+        await self._collection.update_one({"guild_id": guild_id}, {
+            "$set": {
+                "default_model": model
+            }
+        }, upsert=True)
+
+    async def get_default_model(self, guild_id):
+        if guild_id is None and type(guild_id) != int:
+            raise TypeError("guild_id is required")
+
+        try:
+            _dc = await self._collection.find_one({"guild_id": guild_id})
+            if _dc is None or "default_model" not in _dc:
+                return "gemini::gemini-1.5-flash-002"
+            return _dc["default_model"]
+        except Exception:
+            logging.error("An error occurred while fetching the default model from the database")
+            return "gemini::gemini-1.5-flash-002"
 

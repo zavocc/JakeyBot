@@ -1,9 +1,10 @@
-class ChatHistoryFull(Exception):
-    def __init__(self, message):
-        super().__init__(message)
-
 class MultiModalUnavailable(Exception):
-    def __init__(self, message):
-        super().__init__(message)
+    pass
 
-__all__ = [ChatHistoryFull, MultiModalUnavailable]
+class ModelUnavailable(ModuleNotFoundError):
+    pass
+
+class ToolsUnavailable(ModuleNotFoundError):
+    pass
+
+__all__ = [ModelUnavailable, MultiModalUnavailable, ToolsUnavailable]

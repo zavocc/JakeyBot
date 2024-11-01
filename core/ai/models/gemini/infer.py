@@ -1,4 +1,4 @@
-from core.exceptions import ChatHistoryFull
+from core.exceptions import ToolsUnavailable
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from os import environ
 from pathlib import Path
@@ -52,7 +52,6 @@ class Completions(GenAIConfigDefaults):
         super().__init__()
 
         self._file_data = None
-        self._file_source_url = None
 
         self._model_name = model_name
         self._guild_id = guild_id
@@ -82,8 +81,8 @@ class Completions(GenAIConfigDefaults):
 
             # Wait for the file to be uploaded
             while _file_uri.state.name == "PROCESSING":
-                if _msgstatus is None and hasattr(self, "_discord_ctx"):
-                    _msgstatus = await self._discord_ctx.send("⌛ Processing the file attachment... this may take a while")
+                if _msgstatus is None and hasattr(self, "_discord_method_send"):
+                    _msgstatus = await self._discord_method_send("⌛ Processing the file attachment... this may take a while")
                 await asyncio.sleep(3)
                 _file_uri = await asyncio.to_thread(genai.get_file, _file_uri.name)
         except Exception as e:
@@ -93,7 +92,6 @@ class Completions(GenAIConfigDefaults):
             await aiofiles.os.remove(_xfilename)
 
         # Set the attachment variable
-        self._file_source_url = attachment.url
         self._file_data = _file_uri
 
     async def completion(self, prompt, system_instruction: str = None):
@@ -112,35 +110,28 @@ class Completions(GenAIConfigDefaults):
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Setup model and tools
-        if hasattr(self, "_discord_bot") and hasattr(self, "_discord_ctx") and self._history_management is not None:
-            _Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self._discord_bot, self._discord_ctx)
+        if hasattr(self, "_discord_method_send") and self._history_management is not None:
+            try:
+                _Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self._discord_method_send)
+            except ModuleNotFoundError as e:
+                logging.error("I cannot import the tool because the module is not found: %s", e)
+                raise ToolsUnavailable
 
             if _Tool_use.tool_name == "code_execution":
                 _Tool_use.tool_schema = "code_execution"
-
-            tool_config = {'function_calling_config':_Tool_use.tool_config}
-
-            if hasattr(_Tool_use, "file_uri"):
-                if self._file_source_url is not None:
-                    _Tool_use.file_uri = self._file_source_url
-                else:
-                    tool_config = {'function_calling_config':"NONE"}
         else:
-            tool_config = None
+            _Tool_use = None
 
         _genai_client = genai.GenerativeModel(
             model_name=self._model_name,
             safety_settings=self.safety_settings_config,
             generation_config=self.generation_config,
             system_instruction=system_instruction,
-            tools=_Tool_use.tool_schema if _Tool_use else None
+            tools=_Tool_use.tool_schema if _Tool_use is not None else None
         )
 
         # Load history
-        _prompt_count, _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
-        if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
-            raise ChatHistoryFull("Maximum history reached! Clear the conversation")
-
+        _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
         _chat_thread = await asyncio.to_thread(jsonpickle.decode, _chat_thread, keys=True) if _chat_thread is not None else []
 
         # Craft prompt
@@ -152,7 +143,7 @@ class Completions(GenAIConfigDefaults):
         # when trying to access the deleted file uploaded using Files API. See:
         # https://discuss.ai.google.dev/t/what-is-the-best-way-to-persist-chat-history-into-file/3804/6?u=zavocc306
         try:
-            answer = await chat_session.send_message_async(final_prompt, tool_config=tool_config)
+            answer = await chat_session.send_message_async(final_prompt)
         #  Retry the response if an error has occured
         except google.api_core.exceptions.PermissionDenied:
             # Iterate over chat_session.history
@@ -175,10 +166,10 @@ class Completions(GenAIConfigDefaults):
                     _chat_parts.parts.pop(0)
 
             # Notify the user that the chat session has been re-initialized
-            await self._discord_ctx.send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
+            await self._discord_method_send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
 
             # Re-send the message
-            answer = await chat_session.send_message_async(final_prompt, tool_config=tool_config)
+            answer = await chat_session.send_message_async(final_prompt)
 
         # answer.parts is equivalent to answer.candidates[0].   content.parts[0] but it is a shorthand alias
         _candidates = answer.parts
@@ -197,11 +188,15 @@ class Completions(GenAIConfigDefaults):
                     try:
                         _result = await _Tool_use._tool_function(**_func_call.args)
                     except (AttributeError, TypeError) as e:
-                        await self._discord_ctx.respond("⚠️ The chat thread has a feature is not available at the moment, please reset the chat or try again in few minutes")
                         # Also print the error to the console
-                        logging.error("Slash Commands > /ask: I think I found a problem related to function calling:", e)
-                        return
-
+                        logging.error("ask command: I think I found a problem related to function calling:", e)
+                        raise ToolsUnavailable
+                    # For other exceptions, log the error and add it as part of the chat thread
+                    except Exception as e:
+                        # Also print the error to the console
+                        logging.error("ask command: Something when calling specific tool lately, reason:", e)
+                        _result = f"⚠️ Something went wrong while executing the tool: {e}, please tell the developer or the user to check console logs"
+            
                     # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
                     answer = await chat_session.send_message_async(
                         genai.protos.Content(
@@ -222,11 +217,11 @@ class Completions(GenAIConfigDefaults):
                         }
                     )
 
-                    #await self._discord_ctx.send(f"Used: **{_Tool_use.tool_human_name}**")
+                    #await self._discord_method_send(f"Used: **{_Tool_use.tool_human_name}**")
                     self._used_tool_name = _Tool_use.tool_human_name
 
-        return {"answer":answer.text, "prompt_count":_prompt_count+1, "chat_thread": chat_session.history}
+        return {"answer":answer.text, "chat_thread": chat_session.history}
 
-    async def save_to_history(self, chat_thread = None, prompt_count = 0):
+    async def save_to_history(self, chat_thread = None):
         _encoded = await asyncio.to_thread(jsonpickle.encode, chat_thread, indent=4, keys=True)
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=_encoded, prompt_count=prompt_count, model_provider=self._model_provider_thread)
+        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=_encoded, model_provider=self._model_provider_thread)

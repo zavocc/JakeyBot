@@ -1,78 +1,25 @@
-from core.ai.assistants import Assistants
-from core.ai.core import ModelsList
-from core.ai.history import History
-from core.exceptions import ChatHistoryFull, MultiModalUnavailable
-from discord.ext import commands
+from core.exceptions import ModelUnavailable, MultiModalUnavailable
 from os import environ
 import core.ai.models._template_.infer # For type hinting
 import aiofiles
 import aiofiles.os
 import discord
 import importlib
-import motor.motor_asyncio
 import random
 
-class BaseChat(commands.Cog):
-    def __init__(self, bot):
+class BaseChat():
+    def __init__(self, bot, author, history, assistants):
         self.bot: discord.Bot = bot
-        self.author = environ.get("BOT_NAME", "Jakey Bot")
-
-        # Load the database and initialize the HistoryManagement class
-        # MongoDB database connection for chat history and possibly for other things
-        try:
-            self.DBConn: History = History(db_conn=motor.motor_asyncio.AsyncIOMotorClient(environ.get("MONGO_DB_URL")))
-        except Exception as e:
-            raise e(f"Failed to connect to MongoDB: {e}...\n\nPlease set MONGO_DB_URL in dev.env")
-
-        # default system prompt - load assistants
-        self._assistants_system_prompt = Assistants()
+        self.author = author
+        self.DBConn = history
+        self._assistants_system_prompt = assistants
 
     ###############################################
-    # Ask command
+    # Ask slash command
     ###############################################
-    @commands.slash_command(
-        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
-        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
-    )
-    @commands.cooldown(3, 6, commands.BucketType.user) # Add cooldown to prevent abuse
-    @discord.option(
-        "prompt",
-        description="Enter your prompt, ask real questions, or provide a context for the model to generate a response",
-        max_length=4096,
-        required=True
-    )
-    @discord.option(
-        "attachment",
-        description="Attach your files to answer from. Supports image, audio, video, text, and PDF files",
-        required=False,
-    )
-    @discord.option(
-        "model",
-        description="Choose a model to use for the conversation - flash is the default model",
-        choices=ModelsList.get_models_list(),
-        default="__gemini__gemini-1.5-flash-002",
-        required=False
-    )
-    @discord.option(
-        "append_history",
-        description="Store the conversation to chat history?",
-        default=True
-    )
-    @discord.option(
-        "show_info",
-        description="Show information about the model, tool, files used and the context size through an embed",
-        default=False
-    )
-    async def ask(self, ctx, prompt: str, attachment: discord.Attachment, model: str,
+    async def ask(self, ctx: discord.ApplicationContext, prompt: str, attachment: discord.Attachment, model: str,
         append_history: bool, show_info: bool):
-        """Ask a question using Gemini and models from OpenAI, Anthropic, and more!"""
-        await ctx.response.defer()
-
-        # Message history
-        # Since pycord 2.6, user apps support is implemented. But in order for this command to work in DMs, it has to be installed as user app
-        # Which also exposes the command to the guilds the user joined where the bot is not authorized to send commands. This can cause partial function succession with MissingAccess error
-        # One way to check is to check required permissions through @command.has_permissions(send_messages=True) or ctx.interaction.authorizing_integration_owners
-        # The former returns "# This raises ClientException: Parent channel not found when ran outside of authorized guilds or DMs" which should be a good basis
+        await ctx.response.defer(ephemeral=False)
 
         # Check if SHARED_CHAT_HISTORY is enabled
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
@@ -89,28 +36,32 @@ class BaseChat(commands.Cog):
                 return
 
         # Set model
-        _model = model.split("__")
-        _model_provider = _model[1]
+        _model = model.split("::")
+        _model_provider = _model[0]
         _model_name = _model[-1]
 
         # Configure inference
-        _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
-            guild_id=guild_id,
-            model_name=_model_name,
-            db_conn = self.DBConn,
-        )
-        
-        _infer._discord_bot = self.bot
-        _infer._discord_ctx = ctx
+        try:
+            _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
+                guild_id=guild_id,
+                model_name=_model_name,
+                db_conn = self.DBConn,
+            )
+        except ModuleNotFoundError:
+            raise ModelUnavailable
+        _infer._discord_method_send = ctx.send
 
         ###############################################
         # File attachment processing
         ###############################################
         if attachment is not None:
             if not hasattr(_infer, "input_files"):
-                raise MultiModalUnavailable(f"Multimodal is not available for this model: {_model_name}")
+                raise MultiModalUnavailable
 
             await _infer.input_files(attachment=attachment)
+
+            # Also add the URL to the prompt so that it can be used for tools
+            prompt += f"\n\nTHIS PROMPT IS AUTO INSERTED BY SYSTEM: By the way based on the attachment given, here is the URL associated for reference:\n{attachment.url}"
 
         ###############################################
         # Answer generation
@@ -131,16 +82,15 @@ class BaseChat(commands.Cog):
                 _system_embed = discord.Embed()
             else:
                 _system_embed = None
-                _formatted_response = f"{_result['answer'].rstrip()}\n-# {_model_name.upper()}"
+                # Add minified version of chat information
+                _formatted_response = f"{_result['answer'].rstrip()}\n-# {_model_name.upper()} {"(this response isn't saved)" if not append_history else ''}"
 
         if not _system_embed is None:
             # Model used
             _system_embed.add_field(name="Model used", value=_model_name)
-            # Only report context size information if history is enabled
-            if append_history: 
-                _system_embed.add_field(name="Chat turns left", value=f"{_result["prompt_count"]} of {environ.get('MAX_CONTEXT_HISTORY', 20)}")
-            else:
-                _system_embed.add_field(name="Chat turns left", value="This chat isn't saved")
+
+            # Check if this conversation isn't appended to chat history
+            if not append_history: _system_embed.add_field(name="Privacy", value="This conversation isn't saved")
                 
             # Tool use
             if hasattr(_infer, "_used_tool_name"): _system_embed.add_field(name="Tool used", value=_infer._used_tool_name)
@@ -155,29 +105,15 @@ class BaseChat(commands.Cog):
             response_file = f"{environ.get('TEMP_DIR')}/response{random.randint(6000,7000)}.md"
             async with aiofiles.open(response_file, "w+") as f:
                 await f.write(_formatted_response)
-            await ctx.respond("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(response_file, "response.md"), embed=_system_embed)
+            _jakey_response = await ctx.send("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(response_file, "response.md"), embed=_system_embed)
         elif len(_formatted_response) > 2000:
-            await ctx.respond(embed=_system_embed)
+            _jakey_response = await ctx.send(embed=_system_embed)
         else:
-            await ctx.respond(_formatted_response, embed=_system_embed)
+            _jakey_response = await ctx.send(_formatted_response, embed=_system_embed)
 
         # Save to chat history
         if append_history:
-            await _infer.save_to_history(chat_thread=_result["chat_thread"], prompt_count=_result["prompt_count"])
+            await _infer.save_to_history(chat_thread=_result["chat_thread"])
 
-    # Handle all unhandled exceptions through error event, handled exceptions are currently image analysis safety settings
-    @ask.error
-    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
-        _error = getattr(error, "original", error)
-        # Cooldown error
-        if isinstance(_error, commands.CommandOnCooldown):
-            await ctx.respond(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
-        elif isinstance(_error, ChatHistoryFull):
-            await ctx.respond("📚 Maximum context history reached! Clear the conversation using `/sweep` to continue")
-        elif isinstance(_error, MultiModalUnavailable):
-            await ctx.respond("🚫 This model cannot process certain files, choose another model to continue")
-        else:
-            await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, reason:\n```{_error}```")
-
-        # Raise error
-        raise _error
+        # Done
+        await ctx.respond(f"✅ Done {ctx.author.mention}! check out the response: {_jakey_response.jump_url}")

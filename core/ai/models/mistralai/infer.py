@@ -1,4 +1,3 @@
-from core.exceptions import ChatHistoryFull
 from os import environ
 import litellm
 import logging
@@ -15,7 +14,19 @@ class Completions:
             self._model_name = "mistral/" + model_name
         elif environ.get("OPENROUTER_API_KEY"):
             logging.info("Using OpenRouter API for Mistral")
-            self._model_name = "openrouter/mistralai/" + model_name
+            
+            # Normalize model names since the naming convention is different here
+            if model_name == "mistral-large-2407":
+                self._model_name = "openrouter/mistralai/" + "mistral-large"
+            elif model_name == "open-mixtral-8x7b":
+                self._model_name = "openrouter/mistralai/" + "mixtral-8x7b-instruct"
+            elif model_name == "codestral-latest":
+                # Only codestral-mamba is available in Mistral OpenRouter API while this one is the larger code model
+                raise ValueError("codestral-latest model is not available in Mistral OpenRouter API")
+            else:
+                self._model_name = "openrouter/mistralai/" + model_name
+
+            logging.info(f"Using normalized model name: {self._model_name}")
         else:
             raise ValueError("No Mistral API key was set, this model isn't available")
 
@@ -24,15 +35,13 @@ class Completions:
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Load history
-        _prompt_count, _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
-        if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
-            raise ChatHistoryFull("Maximum history reached! Clear the conversation")
+        _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
 
         # System prompt
-        # Check if codestral-latest model is used since it's not necessary to put system instructions as its designed for code
+        # Check if codestral model is used since it's not necessary to put system instructions as its designed for code
         # And to prevent tokens from being depleted quickly
         if _chat_thread is None:
-            if not "codestral-latest" in self._model_name:
+            if not "codestral" in self._model_name:
                 _chat_thread = [{
                     "role": "system",
                     "content": system_instruction   
@@ -74,7 +83,7 @@ class Completions:
             }
         )
 
-        return {"answer":_answer, "prompt_count":_prompt_count+1, "chat_thread": _chat_thread}
+        return {"answer":_answer, "chat_thread": _chat_thread}
 
-    async def save_to_history(self, chat_thread = None, prompt_count = 0):
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=chat_thread, prompt_count=prompt_count, model_provider=self._model_provider_thread)
+    async def save_to_history(self, chat_thread = None):
+        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)

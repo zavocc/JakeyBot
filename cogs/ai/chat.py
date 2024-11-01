@@ -1,12 +1,200 @@
+from core.ai.assistants import Assistants
 from core.ai.core import ModelsList
 from cogs.ai.generative import BaseChat
+from cogs.ai.generative_event import BaseChat as BaseChatEvent
+from core.ai.history import History
+from core.exceptions import ModelUnavailable, MultiModalUnavailable, ToolsUnavailable
+from discord.commands import SlashCommandGroup
 from discord.ext import commands
 from os import environ
 import discord
+import inspect
+import motor.motor_asyncio
 
-class Chat(BaseChat):
+class Chat(commands.Cog):
     def __init__(self, bot):
-        super().__init__(bot)
+        self.bot: discord.Bot = bot
+        self.author = environ.get("BOT_NAME", "Jakey Bot")
+
+        # Load the database and initialize the HistoryManagement class
+        # MongoDB database connection for chat history and possibly for other things
+        try:
+            self.DBConn: History = History(db_conn=motor.motor_asyncio.AsyncIOMotorClient(environ.get("MONGO_DB_URL")))
+        except Exception as e:
+            raise e(f"Failed to connect to MongoDB: {e}...\n\nPlease set MONGO_DB_URL in dev.env")
+
+        # default system prompt - load assistants
+        self._assistants_system_prompt = Assistants()
+
+        # Initialize the chat system
+        self._ask_command = BaseChat(bot, self.author, self.DBConn, self._assistants_system_prompt)
+        self._ask_event = BaseChatEvent(bot, self.author, self.DBConn, self._assistants_system_prompt)
+
+
+    ###############################################
+    # Ask event slash command
+    ###############################################
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        await self._ask_event.on_message(message)
+
+    ###############################################
+    # Ask slash command
+    ###############################################
+    @commands.slash_command(
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
+    )
+    @commands.cooldown(3, 6, commands.BucketType.user) # Add cooldown to prevent abuse
+    @discord.option(
+        "prompt",
+        input_type=str,
+        description="Enter your prompt, ask real questions, or provide a context for the model to generate a response",
+        max_length=4096,
+        required=True
+    )
+    @discord.option(
+        "attachment",
+        input_type=discord.Attachment,
+        description="Attach your files to answer from. Supports image, audio, video, text, and PDF files",
+        required=False,
+    )
+    @discord.option(
+        "model",
+        input_type=str,
+        description="Choose a model to use for the conversation - flash is the default model",
+        choices=ModelsList.get_models_list(),
+        default="gemini::gemini-1.5-flash-002",
+        required=False
+    )
+    @discord.option(
+        "append_history",
+        input_type=bool,
+        description="Store the conversation to chat history?",
+        default=True
+    )
+    @discord.option(
+        "show_info",
+        input_type=bool,
+        description="Show information about the model, tool, files used through an embed",
+        default=False
+    )
+    async def ask(self, ctx, prompt, attachment, model, append_history, show_info):
+        """Ask a question using Gemini and models from OpenAI, Anthropic, and more!"""
+        await self._ask_command.ask(ctx, prompt, attachment, model, append_history, show_info)
+
+    @ask.error
+    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
+        _error = getattr(error, "original", error)
+        # Cooldown error
+        if isinstance(_error, commands.CommandOnCooldown):
+            await ctx.respond(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
+        elif isinstance(_error, MultiModalUnavailable):
+            await ctx.respond("🚫 This model cannot process certain files, choose another model to continue")
+        elif isinstance(_error, ModelUnavailable):
+            await ctx.respond(f"⚠️ The model you've chosen is not available at the moment, please choose another model")
+        elif isinstance(_error, ToolsUnavailable):
+            await ctx.respond(f"⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
+        else:
+            await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, reason:\n```{_error}```")
+
+        # Raise error
+        raise _error
+    
+    ###############################################
+    # For /model slash command group
+    ###############################################
+    model = SlashCommandGroup(name="model", description="Configure default models for the conversation")
+
+    ###############################################
+    # Set default model command
+    ###############################################
+    @model.command(
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
+    )
+    @discord.option(
+        "model",
+        description="Choose default model for the conversation",
+        choices=ModelsList.get_models_list(),
+        required=True
+    )
+    async def set(self, ctx, model: str):
+        """Set the default model whenever you mention the me!"""
+        await ctx.response.defer(ephemeral=False)
+
+        # Check if SHARED_CHAT_HISTORY is enabled
+        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
+        else:
+            guild_id = ctx.author.id
+
+        # Save the default model in the database
+        await self.DBConn.set_default_model(guild_id=guild_id, model=model)
+
+        # Split the model name to get the provider and model name
+        # If it has :: prefix
+        if "::" not in model:
+            await ctx.respond("❌ Invalid model name, please choose a model from the list")
+            return
+        else:
+            _model = model.split("::")
+            _model_provider = _model[0]
+            _model_name = _model[-1]
+
+        await ctx.respond(f"✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**")
+
+    ###############################################
+    # List models command
+    ###############################################
+    @model.command(
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
+    )
+    async def list(self, ctx):
+        """List all available models"""
+        await ctx.response.defer(ephemeral=True)
+
+        # Create an embed
+        _embed = discord.Embed(
+            title="Available models",
+            description=inspect.cleandoc(
+                f"""Here are the list of available models that you can use
+
+                You can set the default model for the conversation using `/model set` command or on demand through chat prompting
+                via `@{self.bot.user.name} /model:model-name` command
+                
+                Each provider has its own chat history, skills, and capabilities. Choose what's best for you"""),
+            color=discord.Color.random()
+        )
+
+        # Iterate over models
+        # Now we separate model provider into field and model names into value
+        # It is __provider__model-name so we need to split it and group them as per provider
+        _model_provider_tabledict = {}
+
+        async for _model in ModelsList.get_models_list_async():
+            _model_provider = _model.split("::")[0]
+            _model_name = _model.split("::")[-1]
+
+            # Add the model name to the corresponding provider in the dictionary
+            if _model_provider not in _model_provider_tabledict:
+                _model_provider_tabledict[_model_provider] = [_model_name]
+            else:
+                _model_provider_tabledict[_model_provider].append(_model_name)
+
+        # Add fields to the embed
+        for provider, models in _model_provider_tabledict.items():
+            _embed.add_field(name=provider, value=", ".join(models), inline=False)
+
+        # Send the status
+        await ctx.respond(embed=_embed)
+
+    # Handle errors
+    @model.error
+    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
+        await ctx.respond("❌ Something went wrong, please check the console logs for details.")
+        raise error
 
     ###############################################
     # Clear context command

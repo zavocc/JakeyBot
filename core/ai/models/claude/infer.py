@@ -1,4 +1,4 @@
-from core.exceptions import MultiModalUnavailable, ChatHistoryFull
+from core.exceptions import MultiModalUnavailable
 from os import environ
 import discord
 import logging
@@ -8,7 +8,7 @@ class Completions:
     _model_provider_thread = "claude"
 
     def __init__(self, guild_id = None, 
-                 model_name = "claude-3-haiku",
+                 model_name = "claude-3-5-sonnet-latest",
                  db_conn = None):
         self._file_data = None
 
@@ -17,7 +17,19 @@ class Completions:
             self._model_name = "anthropic/" + model_name
         elif environ.get("OPENROUTER_API_KEY"):
             logging.info("Using OpenRouter API for Anthropic")
-            self._model_name = "openrouter/anthropic/" + model_name
+
+            # Normalize model names since the naming convention is different here
+            if model_name == "claude-3-haiku-20240307":
+                self._model_name = "openrouter/anthropic/" + "claude-3-haiku"
+            elif model_name == "claude-3-5-sonnet-latest":
+                self._model_name = "openrouter/anthropic/" + "claude-3.5-sonnet"
+            elif model_name == "claude-3-5-sonnet-20240620":
+                self._model_name = "openrouter/anthropic/" + "claude-3.5-sonnet-20240620"
+            else:
+                self._model_name = "openrouter/anthropic/" + model_name
+            
+            logging.info(f"Using normalized model name: {self._model_name}")
+        
         else:
             raise ValueError("No Anthropic API key was set, this model isn't available")
     
@@ -40,10 +52,7 @@ class Completions:
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Load history
-        _prompt_count, _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
-        if _prompt_count >= int(environ.get("MAX_CONTEXT_HISTORY", 20)):
-            raise ChatHistoryFull("Maximum history reached! Clear the conversation")
-        
+        _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
         if _chat_thread is None:
             # Begin with system prompt
             _chat_thread = [{
@@ -102,7 +111,7 @@ class Completions:
             }
         )
 
-        return {"answer":_answer, "prompt_count":_prompt_count+1, "chat_thread": _chat_thread}
+        return {"answer":_answer, "chat_thread": _chat_thread}
 
-    async def save_to_history(self, chat_thread = None, prompt_count = 0):
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=chat_thread, prompt_count=prompt_count, model_provider=self._model_provider_thread)
+    async def save_to_history(self, chat_thread = None):
+        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)
