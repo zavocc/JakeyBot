@@ -21,6 +21,9 @@
 - model: gemini_litellm::gemini-1.5-flash-002
   name: Gemini 1.5 Flash (LITELLM PRE-ALPHA)
   description: General purpose with high availability
+- model: gemini_litellm::gemini-1.5-pro-002
+  name: Gemini 1.5 Pro (LITELLM PRE-ALPHA)
+  description: Advanced chat tasks with low availability
 
 ############################################
 # OpenAI models
