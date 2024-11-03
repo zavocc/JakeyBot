@@ -6,7 +6,34 @@ import json
 import logging
 import litellm
 
-class Completions:
+class GenAIConfigDefaults:
+    def __init__(self):
+        self.generation_config = {
+            "temperature": 0.5,
+            "top_p": 1,
+            "top_k": 40,
+            "max_tokens": 8192,
+            "safety_settings": [
+                {
+                    "category": "HARM_CATEGORY_HARASSMENT",
+                    "threshold": "BLOCK_ONLY_HIGH"
+                },
+                {
+                    "category": "HARM_CATEGORY_HATE_SPEECH",
+                    "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+                },
+                {
+                    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    "threshold": "BLOCK_ONLY_HIGH"
+                },
+                {
+                    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    "threshold": "BLOCK_ONLY_HIGH"
+                },
+            ]
+        }
+
+class Completions(GenAIConfigDefaults):
     _model_provider_thread = "gemini_litellm"
 
     def __init__(self, guild_id = None, 
@@ -20,13 +47,13 @@ class Completions:
         self._guild_id = guild_id
         self._history_management = db_conn
         
-    async def input_files(self, attachment: discord.Attachment, **kwargs):
+    async def input_files(self, attachment: discord.Attachment):
         _attachment_prompt = {
             "type":"image_url",
             "image_url": {
-                    "url": attachment.url
-                }
+                "url": attachment.url
             }
+        }
 
         self._file_data = _attachment_prompt
 
@@ -78,10 +105,9 @@ class Completions:
         _response = await litellm.acompletion(
             messages=_chat_thread,
             model="gemini/" + self._model_name,
-            max_tokens=8192,
-            temperature=0.7,
             api_key=environ.get("GEMINI_API_KEY"),
-            tools=[_Tool_use.tool_schema_json]
+            tools=[_Tool_use.tool_schema_json] if _Tool_use else None,
+            **self.generation_config
         )
 
         print(_response.choices[0].message.model_dump())
@@ -124,11 +150,13 @@ class Completions:
             _response = await litellm.acompletion(
                 messages=_chat_thread,
                 model="gemini/" + self._model_name,
-                max_tokens=8192,
-                temperature=0.7,
                 api_key=environ.get("GEMINI_API_KEY"),
+                **self.generation_config
             )
             _answer = _response.choices[0].message.content
+
+            # Indicator
+            self._used_tool_name = _Tool_use.tool_human_name
         else:
             # AI response
             _answer = _response.choices[0].message.content

@@ -79,15 +79,6 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(f"/ask me anything or {bot.command_prefix}help"))
     print(f"{bot.user} is ready and online!")
 
-    # Check if we can load gemini api
-    try:
-        _genai = importlib.import_module("google.generativeai")
-        _genai.configure(api_key=environ.get("GEMINI_API_KEY"))
-    except Exception as e:
-        logging.error("Failed to configure Gemini API: %s\nexpect errors later", e)
-    else:
-        logging.info("Gemini API is ready")
-
 ###############################################
 # ON USER MESSAGE
 ###############################################
