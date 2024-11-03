@@ -41,15 +41,11 @@ class Completions:
         # Check if codestral model is used since it's not necessary to put system instructions as its designed for code
         # And to prevent tokens from being depleted quickly
         if _chat_thread is None:
-            if not "codestral" in self._model_name:
-                _chat_thread = [{
-                    "role": "system",
-                    "content": system_instruction   
-                }]
-            else:
-                _chat_thread = []
+            _chat_thread = [{
+                "role": "system",
+                "content": system_instruction   
+            }]
     
-        
         # User prompt
         _chat_thread.append(
              {
