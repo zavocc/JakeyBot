@@ -1,11 +1,8 @@
 from core.exceptions import ToolsUnavailable
 from os import environ
-from pathlib import Path
-import aiofiles.os
-import asyncio
 import discord
 import importlib
-import jsonpickle
+import json
 import logging
 import litellm
 
@@ -87,10 +84,59 @@ class Completions:
             tools=[_Tool_use.tool_schema_json]
         )
 
-        print(_response)
-        print(_response.choices[0].message.tool_calls[0].function.name  )
+        print(_response.choices[0].message.model_dump())
 
-        return {"answer":answer.text, "chat_thread": chat_session.history}
+        # Call tools
+        _tool_call = _response.choices[0].message.tool_calls
+        if _tool_call:
+            print(_tool_call[0].function.arguments)
+
+            # Append the response
+            _chat_thread.append(_response.choices[0].message.model_dump())
+
+            # Send the first response if possible
+            if _response.choices[0].message.content:
+                await self._discord_method_send(_response.choices[0].message.content)
+
+            # Call the tool
+            # Call the function through their callables with getattr
+            try:
+                _result = await _Tool_use._tool_function(**json.loads(_tool_call[0].function.arguments))
+            except (AttributeError, TypeError) as e:
+                # Also print the error to the console
+                logging.error("ask command: I think I found a problem related to function calling:", e)
+                raise ToolsUnavailable
+            # For other exceptions, log the error and add it as part of the chat thread
+            except Exception as e:
+                # Also print the error to the console
+                logging.error("ask command: Something when calling specific tool lately, reason:", e)
+                _result = f"⚠️ Something went wrong while executing the tool: {e}, please tell the developer or the user to check console logs"
+
+            # Append to chat thread
+            _chat_thread.append({
+                "tool_call_id": _tool_call[0].id,
+                "role": "tool",
+                "name": _tool_call[0].function.name,
+                "content": _result,
+            })
+
+            # AI response
+            _response = await litellm.acompletion(
+                messages=_chat_thread,
+                model="gemini/" + self._model_name,
+                max_tokens=8192,
+                temperature=0.7,
+                api_key=environ.get("GEMINI_API_KEY"),
+            )
+            _answer = _response.choices[0].message.content
+        else:
+            # AI response
+            _answer = _response.choices[0].message.content
+
+        # Append to chat thread
+        _chat_thread.append(_response.choices[0].message.model_dump())
+
+        return {"answer":_answer, "chat_thread": _chat_thread}
 
     async def save_to_history(self, chat_thread = None):
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=_encoded, model_provider=self._model_provider_thread)
+        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)
