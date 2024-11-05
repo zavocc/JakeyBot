@@ -1,49 +1,24 @@
 from core.exceptions import MultiModalUnavailable
 from os import environ
-import discord
 import litellm
 import logging
 
 class Completions:
-    _model_provider_thread = "openai"
+    _model_provider_thread = "xai"
 
     def __init__(self, guild_id = None, 
-                 model_name = "gpt-4o-mini",
+                 model_name = "grok-beta",
                  db_conn = None):
         self._file_data = None
 
-        if environ.get("OPENAI_API_KEY"):
-            # Set endpoint if OPENAI_API_ENDPOINT is set
-            if environ.get("OPENAI_API_ENDPOINT"):
-                self._oai_endpoint = environ.get("OPENAI_API_ENDPOINT")
-                logging.info(f"Using OpenAI API endpoint: {self._oai_endpoint}")
-            else:
-                self._oai_endpoint = None
-                logging.info("Using default OpenAI API endpoint")
-            self._model_name = "openai/" + model_name
-        elif environ.get("OPENROUTER_API_KEY"):
-            logging.info("Using OpenRouter API for OpenAI")
-            self._model_name = "openrouter/openai/" + model_name
-            self._oai_endpoint = None
+        if environ.get("XAI_API_KEY"):
+            logging.info("Using default XAI API endpoint")
+            self._model_name = "xai/" + model_name
         else:
-            raise ValueError("No OpenAI API key was set, this model isn't available")
+            raise ValueError("No XAI API key was set, this model isn't available")
 
         self._guild_id = guild_id
         self._history_management = db_conn
-
-    async def input_files(self, attachment: discord.Attachment):
-        # Check if the attachment is an image
-        if not attachment.content_type.startswith("image"):
-            raise MultiModalUnavailable("Only images are supported for this model")
-
-        _attachment_prompt = {
-            "type":"image_url",
-            "image_url": {
-                    "url": attachment.url
-                }
-            }
-
-        self._file_data = _attachment_prompt
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Load history
@@ -70,18 +45,13 @@ class Completions:
             }
         )
 
-        # Check if we have an attachment
-        if self._file_data is not None:
-            _chat_thread[-1]["content"].append(self._file_data)
-
         # Generate completion
         _response = await litellm.acompletion(
             messages=_chat_thread,
             model=self._model_name,
             max_tokens=3024,
             temperature=0.7,
-            base_url=self._oai_endpoint,
-            api_key=environ.get("OPENAI_API_KEY")
+            api_key=environ.get("XAI_API_KEY")
         )
 
         # AI response

@@ -8,7 +8,7 @@ class Completions:
     _model_provider_thread = "claude"
 
     def __init__(self, guild_id = None, 
-                 model_name = "claude-3-5-sonnet-latest",
+                 model_name = "claude-3-5-haiku-20241022",
                  db_conn = None):
         self._file_data = None
 
@@ -36,7 +36,7 @@ class Completions:
         self._guild_id = guild_id
         self._history_management = db_conn
 
-    async def input_files(self, attachment: discord.Attachment, **kwargs):
+    async def input_files(self, attachment: discord.Attachment):
         # Check if the attachment is an image
         if not attachment.content_type.startswith("image"):
             raise MultiModalUnavailable("Only images are supported for this model")

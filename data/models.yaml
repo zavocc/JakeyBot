@@ -41,10 +41,9 @@
 - model: claude::claude-3-haiku-20240307
   name: Claude 3 Haiku
   description: Lightning fast chat with such intelligence
-- model: claude::claude-3-5-sonnet-latest
-  name: Claude 3.5 Sonnet (Latest)
-  description: Latest version of Claude 3.5 Sonnet
-  hide_ui: true # Hide from /ask command since the v2 is the same as this
+- model: claude::claude-3-5-haiku-20241022
+  name: Claude 3.5 Haiku
+  description: A Claude 3 Haiku predecessor with intelligence improvements
 - model: claude::claude-3-5-sonnet-20241022
   name: Claude 3.5 Sonnet v2
   description: Top notch intelligence with greater accuracy for coding and other tasks
@@ -64,3 +63,10 @@
 - model: mistralai::codestral-latest
   name: Codestral
   description: Optimized for code chat
+
+############################################
+# X.AI
+############################################
+- model: xai::grok-beta
+  name: Grok 2.0
+  description: Twitter aka X (XAI) based model, good for most tasks.

@@ -57,7 +57,7 @@ class Completions(GenAIConfigDefaults):
         self._guild_id = guild_id
         self._history_management = db_conn
         
-    async def input_files(self, attachment: discord.Attachment, **kwargs):
+    async def input_files(self, attachment: discord.Attachment):
         # Download the attachment
         _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(518301839, 6582482111)}.{attachment.filename}"
         try:
