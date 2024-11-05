@@ -1,4 +1,3 @@
-from core.exceptions import MultiModalUnavailable
 from os import environ
 import litellm
 import logging
