@@ -26,8 +26,6 @@ Jakey already has few tools since its initial implementation, first-party built-
 
 - YouTube Search - When enabled, the model can search for videos based on your request and extract video metadata from YouTube if you provided a YouTube URL.
 
-    - Dependencies required: `yt-dlp`
-
 Using these Tools is in currently beta and is subject to change, you agree that your chats may not always call the tool correctly.
 
 When the tool is used whether if its successful or failed, an interstitial will be shown below the response body if the particular tool is used.
