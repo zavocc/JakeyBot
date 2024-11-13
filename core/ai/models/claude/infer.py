@@ -70,36 +70,20 @@ class Completions:
 
         
         # Craft prompt
-        # Check if the token of a prompt is longer than 1024 then add cache control ephemeral block
-        if litellm.token_counter(model="anthropic/claude-3-5-sonnet-20241022",text=prompt) >= 1024:
-            logging.info(f"Anthropic: Caching the user prompt... %s", prompt)
-            _chat_thread.append(
-                {
-                "role": "user",
-                "content": [
-                        {
-                            "type": "text",
-                            "text": prompt,
-                            "cache_control": {
-                                "type": "ephemeral"
-                            }
+        _chat_thread.append(
+            {
+            "role": "user",
+            "content": [
+                    {
+                        "type": "text",
+                        "text": prompt,
+                        "cache_control": {
+                            "type": "ephemeral"
                         }
-                    ]
-                }
-            )
-        else:
-            _chat_thread.append(
-                {
-                "role": "user",
-                "content": [
-                        {
-                            "type": "text",
-                            "text": prompt
-                        }
-                    ]
-                }
-            )
-            
+                    }
+                ]
+            }
+        )
 
         # Check if we have an attachment
         if self._file_data is not None:
@@ -118,34 +102,20 @@ class Completions:
         _answer = _response.choices[0].message.content
 
         # Append to chat thread
-        if litellm.token_counter(model="anthropic/claude-3-5-sonnet-20241022",text=_answer) >= 1024:
-            logging.info(f"Anthropic: Caching the assistants prompt... %s", _answer)
-            _chat_thread.append(
-                {
-                    "role": "assistant",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": _answer,
-                            "cache_control": {
-                                "type": "ephemeral"
-                            }
+        _chat_thread.append(
+            {
+                "role": "assistant",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": _answer,
+                        "cache_control": {
+                            "type": "ephemeral"
                         }
-                    ]
-                }
-            )
-        else:
-            _chat_thread.append(
-                {
-                    "role": "assistant",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": _answer
-                        }
-                    ]
-                }
-            )
+                    }
+                ]
+            }
+        )
 
         return {"answer":_answer, "chat_thread": _chat_thread}
 
