@@ -17,6 +17,9 @@
 - model: gemini::gemini-1.5-flash-8b
   name: Gemini 1.5 Flash 8B
   description: Lighter and faster version of Gemini 1.5 Flash 
+- model: gemini::gemini-exp-1114
+  name: Gemini Experimental (1114)
+  description: Gemini latest experimental model from 11/14/24
 
 ############################################
 # OpenAI models
