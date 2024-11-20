@@ -20,6 +20,9 @@
 - model: gemini::gemini-exp-1114
   name: Gemini Experimental (1114)
   description: Gemini latest experimental model from 11/14/24
+- model: gemini::learnlm-1.5-pro-experimental
+  name: LearnLM 1.5 Pro
+  description: Gemini latest experimental model optimized for learning tasks
 
 ############################################
 # OpenAI models

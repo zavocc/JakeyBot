@@ -1,6 +1,5 @@
 from os import environ
 import litellm
-import logging
 
 class Completions:
     _model_provider_thread = "xai"
@@ -11,7 +10,6 @@ class Completions:
         self._file_data = None
 
         if environ.get("XAI_API_KEY"):
-            logging.info("Using default XAI API endpoint")
             self._model_name = "xai/" + model_name
         else:
             raise ValueError("No XAI API key was set, this model isn't available")
