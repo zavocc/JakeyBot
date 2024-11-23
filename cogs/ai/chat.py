@@ -1,4 +1,3 @@
-from core.ai.assistants import Assistants
 from core.ai.core import ModelsList
 from cogs.ai.generative import BaseChat
 from cogs.ai.generative_event import BaseChat as BaseChatEvent
@@ -23,13 +22,9 @@ class Chat(commands.Cog):
         except Exception as e:
             raise e(f"Failed to connect to MongoDB: {e}...\n\nPlease set MONGO_DB_URL in dev.env")
 
-        # default system prompt - load assistants
-        self._assistants_system_prompt = Assistants()
-
         # Initialize the chat system
-        self._ask_command = BaseChat(bot, self.author, self.DBConn, self._assistants_system_prompt)
-        self._ask_event = BaseChatEvent(bot, self.author, self.DBConn, self._assistants_system_prompt)
-
+        self._ask_command = BaseChat(bot, self.author, self.DBConn)
+        self._ask_event = BaseChatEvent(bot, self.author, self.DBConn)
 
     ###############################################
     # Ask event slash command

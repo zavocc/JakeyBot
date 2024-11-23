@@ -16,9 +16,6 @@ class GenAITools(commands.Cog):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
-        # default system prompt - load assistants
-        self._assistants_system_prompt = Assistants()
-
    ###############################################
     # Summarize discord messages
     ###############################################
@@ -104,6 +101,7 @@ class GenAITools(commands.Cog):
         #################
         # set model
         _completions = Completions()
+        _system_prompt = await Assistants.fetch_assistants("discord_msg_summarizer_prompt", type=1)
 
         # Constrain the output to JSON
         _completions.generation_config.update({
@@ -141,7 +139,7 @@ class GenAITools(commands.Cog):
             OK, now generate summaries for me:
 
              {_current_discord_convo_context}
-            """).rstrip(), system_instruction=self._assistants_system_prompt.discord_msg_summarizer_prompt))
+            """).rstrip(), system_instruction=_system_prompt))
 
         # If arguments are given, also display the date
         _app_title = f"Summary for {ctx.channel.name}"

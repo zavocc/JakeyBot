@@ -1,3 +1,4 @@
+from core.ai.assistants import Assistants
 from core.ai.core import ModelsList
 from core.exceptions import ModelUnavailable, MultiModalUnavailable, ToolsUnavailable
 from core.ai.history import History # type hinting
@@ -14,11 +15,10 @@ import random
 import re
 
 class BaseChat():
-    def __init__(self, bot, author, history: History, assistants):
+    def __init__(self, bot, author, history: History):
         self.bot: discord.Bot = bot
         self.author = author
         self.DBConn = history
-        self._assistants_system_prompt = assistants
 
     ###############################################
     # Events-based chat
@@ -105,7 +105,8 @@ class BaseChat():
         if prompt.attachments:
             _final_prompt += f"\n\nTHIS PROMPT IS AUTO INSERTED BY SYSTEM: By the way based on the attachment given, here is the URL associated for reference:\n{prompt.attachments[0].url}"
         
-        _result = await _infer.chat_completion(prompt=_final_prompt, system_instruction=self._assistants_system_prompt.jakey_system_prompt)
+        _system_prompt = await Assistants.fetch_assistants("jakey_system_prompt", type=0)
+        _result = await _infer.chat_completion(prompt=_final_prompt, system_instruction=_system_prompt)
         
         # Format the response
         _formatted_response = _result["answer"].rstrip()

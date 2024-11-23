@@ -9,9 +9,6 @@ class GenAIApps(commands.Cog):
         self.bot: discord.Bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
-        # Assistants
-        self._system_prompt = Assistants()
-
     ###############################################
     # Rephrase command
     ###############################################
@@ -26,7 +23,8 @@ class GenAIApps(commands.Cog):
         
         # Generative model settings
         _completion = Completions()
-        _answer = await _completion.completion(f"Rephrase this message with variety to choose from:\n{str(message.content)}", system_instruction=self._system_prompt.message_rephraser_prompt)
+        _system_prompt = await Assistants.fetch_assistants("message_rephraser_prompt", type=1)
+        _answer = await _completion.completion(f"Rephrase this message with variety to choose from:\n{str(message.content)}", system_instruction=_system_prompt)
 
         # Send message in an embed format
         _embed = discord.Embed(
@@ -67,7 +65,8 @@ class GenAIApps(commands.Cog):
 
         # Generative model settings
         _completion = Completions()
-        _answer = await _completion.completion(f"Explain and summarize based on this message:\n{str(message.content)}", system_instruction=self._system_prompt.message_summarizer_prompt)
+        _system_prompt = await Assistants.fetch_assistants("message_summarizer_prompt", type=1)
+        _answer = await _completion.completion(f"Explain and summarize based on this message:\n{str(message.content)}", system_instruction=_system_prompt)
 
         # Send message in an embed format
         _embed = discord.Embed(
@@ -108,7 +107,8 @@ class GenAIApps(commands.Cog):
 
         # Generative model settings
         _completion = Completions()
-        _answer = await _completion.completion(f"Suggest a response based on this message:\n{str(message.content)}", system_instruction=self._system_prompt.message_suggestions_prompt)
+        _system_prompt = await Assistants.fetch_assistants("message_suggestions_prompt", type=1)
+        _answer = await _completion.completion(f"Suggest a response based on this message:\n{str(message.content)}", system_instruction=_system_prompt)
 
         # To protect privacy, send the message to the user
         # Send message in an embed format

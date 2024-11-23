@@ -1,3 +1,4 @@
+from core.ai.assistants import Assistants
 from core.exceptions import ModelUnavailable, MultiModalUnavailable
 from os import environ
 import core.ai.models._template_.infer # For type hinting
@@ -8,11 +9,10 @@ import importlib
 import random
 
 class BaseChat():
-    def __init__(self, bot, author, history, assistants):
+    def __init__(self, bot, author, history):
         self.bot: discord.Bot = bot
         self.author = author
         self.DBConn = history
-        self._assistants_system_prompt = assistants
 
     ###############################################
     # Ask slash command
@@ -66,7 +66,8 @@ class BaseChat():
         ###############################################
         # Answer generation
         ###############################################
-        _result = await _infer.chat_completion(prompt=prompt, system_instruction=self._assistants_system_prompt.jakey_system_prompt)
+        _system_prompt = await Assistants.fetch_assistants("jakey_system_prompt", type=0)
+        _result = await _infer.chat_completion(prompt=prompt, system_instruction=_system_prompt)
         _formatted_response = _result["answer"].rstrip()
 
         # Model usage and context size
