@@ -77,7 +77,7 @@ class Completions(GenAIConfigDefaults):
         # Upload the file to the server
         _msgstatus = None
         try:
-            _file_uri = await asyncio.to_thread(genai.upload_file, path=_xfilename, display_name=_xfilename.split("/")[-1])
+            _file_uri = await asyncio.to_thread(genai.upload_file, mime_type=attachment.content_type, path=_xfilename, display_name=_xfilename.split("/")[-1])
 
             # Wait for the file to be uploaded
             while _file_uri.state.name == "PROCESSING":
