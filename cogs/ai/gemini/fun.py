@@ -61,7 +61,10 @@ class GeminiUtils(commands.Cog):
                 
                 # Generate description
                 _infer = Completions()
-                _description = await _infer.completion([PIL.Image.open(io.BytesIO(_filedata)), "Generate image descriptions but one sentence short to describe, straight to the point"])
+                _description = await _infer.completion({
+                    "role":"user",
+                    "parts":[PIL.Image.open(io.BytesIO(_filedata)), "Generate image descriptions but one sentence short to describe, straight to the point"]
+                })
             except Exception as e:
                 logging.error("commands>avatar: An errored occured while generating image descriptions: %s", e)
                 _description = "Failed to generate image descriptions, check console for more info."

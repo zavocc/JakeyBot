@@ -102,10 +102,7 @@ class Completions(GenAIConfigDefaults):
             system_instruction=system_instruction,
         )
 
-        answer = await _genai_client.generate_content_async({
-                "role":"user",
-                "parts":prompt if isinstance(prompt, list) else [prompt]
-            })
+        answer = await _genai_client.generate_content_async(prompt)
         return answer.text
 
     async def chat_completion(self, prompt, system_instruction: str = None):
