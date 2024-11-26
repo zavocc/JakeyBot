@@ -26,18 +26,35 @@ class Completions():
         }
 
     async def chat_completion(self, prompt, system_instruction: str = None):
+        # Load history
+        _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
+        print(_chat_thread)
+
         _Tool = {"code_execution": {}}
 
-        _chat_thread = [
-            {
-                "role": "user",
-                "parts": [
-                    {
-                        "text": prompt
-                    }
-                ]
-            }
-        ]
+        # Begin with the first user prompt
+        if _chat_thread is None and not type(_chat_thread) == list:
+            _chat_thread = [
+                {
+                    "parts": [
+                        {
+                            "text": prompt
+                        }
+                    ],
+                    "role": "user",
+                }
+            ]
+        else:
+            _chat_thread.append(
+                {
+                    "parts": [
+                        {
+                            "text": prompt
+                        }
+                    ],
+                    "role": "user",
+                }
+            )
 
         # Payload
         _payload = {
@@ -59,11 +76,16 @@ class Completions():
             async with session.post(f"{self._api_endpoint}/models/{self._model_name}:generateContent?key={environ.get('GEMINI_API_KEY')}",
                                     headers=self._headers,
                                     json=_payload) as response:
-                _response = await response.json()
+                # Raise an error if the request was not successful
+                if response.status != 200:
+                    raise Exception(f"Request failed with status code {response.status}")
 
+                _response = await response.json()
                 await self._discord_method_send(_response)
 
-        return {"answer": _response["candidates"][0]["content"]["parts"][-1]["text"], "chat_thread": None}
+        # Append to history
+        _chat_thread.append(_response["candidates"][0]["content"])
+        return {"answer": _response["candidates"][0]["content"]["parts"][-1]["text"], "chat_thread": _chat_thread}
 
     async def save_to_history(self, chat_thread = None):
-        raise Exception("This version is for testing purposes only, function is not implemented")
+        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)
