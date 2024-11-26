@@ -28,6 +28,13 @@
   description: Gemini latest experimental model optimized for learning tasks
 
 ############################################
+# Gemini (REST: Experimental)
+############################################
+- model: gemini_rest::gemini-1.5-flash-002
+  name: Gemini 1.5 Flash (REST)
+  description: Advanced chat tasks with low availability
+
+############################################
 # OpenAI models
 ############################################
 - model: openai::gpt-4o
