@@ -2,8 +2,9 @@ from os import environ
 from pathlib import Path
 import aiohttp
 import aiofiles
+import asyncio
 import discord
-import json
+import google.generativeai as genai
 import random
 
 class Completions():
@@ -32,17 +33,9 @@ class Completions():
             "responseMimeType": "text/plain"
         }
 
-    # Chunker for file uploads using aiofiles and this is a generator method
-    async def _chunker(self, file_path, chunk_size=8192):
-        async with aiofiles.open(file_path, "rb") as _file:
-            while True:
-                _chunk = _file.read(chunk_size)
-                if not _chunk:
-                    break
-                yield _chunk
-
 
     async def input_files(self, attachment: discord.Attachment):
+         # Download the attachment
         _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(518301839, 6582482111)}.{attachment.filename}"
         try:
             async with aiohttp.ClientSession() as _download_session:
@@ -57,46 +50,25 @@ class Completions():
                 await aiofiles.os.remove(_xfilename)
             # Raise exception
             raise httperror
-        
-        # Upload the file to the GCS ephemeral bucket
-        _initial_headers = {
-            "X-Goog-Upload-Protocol": "resumable",
-            "X-Goog-Upload-Command": "start",
-            "X-Goog-Upload-Headers-Content-Length": str(attachment.size),
-            "X-Goog-Upload-Headers-Content-Type": attachment.content_type,
-            "Content-Type": "application/json"
-        }
-        _upload_payload = {
-            "file": {
-                "display_name": _xfilename.split("/")[-1]
-            }
-        }
 
-        # Upload the file
-        _upload_status = None
-        async with aiohttp.ClientSession() as _upload_session:
-            # Initial resumable request so we can put the binary data later
-            async with _upload_session.post(f"{self._api_endpoint_upload}?key={environ.get('GEMINI_API_KEY')}",
-                                            headers=_initial_headers,
-                                            json=_upload_payload) as _upload_response:
-                # Raise an error if the request was not successful
-                if _upload_response.status != 200:
-                    raise Exception(f"Upload failed with status code {_upload_response.status}, with reason {_upload_response.reason}")
-                
-                # Get the upload status
-                _upload_status = await _upload_response.content.read()
-                print(_upload_status)
-            
-            async with _upload_session.post(f"{self._api_endpoint_upload}?key={environ.get('GEMINI_API_KEY')}",
-                                            ) as _upload_response:
-                # Raise an error if the request was not successful
-                if _upload_response.status != 200:
-                    raise Exception(f"Upload failed with status code {_upload_response.status}, with reason {_upload_response.reason}")
+        # Upload the file to the server
+        _msgstatus = None
+        try:
+            _file_uri = await asyncio.to_thread(genai.upload_file, mime_type=attachment.content_type, path=_xfilename, display_name=_xfilename.split("/")[-1])
 
-                _upload_status = await _upload_response.json()
-                print(_upload_status)
+            # Wait for the file to be uploaded
+            while _file_uri.state.name == "PROCESSING":
+                if _msgstatus is None and hasattr(self, "_discord_method_send"):
+                    _msgstatus = await self._discord_method_send("⌛ Processing the file attachment... this may take a while")
+                await asyncio.sleep(3)
+                _file_uri = await asyncio.to_thread(genai.get_file, _file_uri.name)
+        except Exception as e:
+            raise e
+        finally:
+            if _msgstatus: await _msgstatus.delete()
+            await aiofiles.os.remove(_xfilename)
 
-        self._file_data = {"url":_upload_status["file"]["uri"], "mime_type":attachment.content_type}
+        self._file_data = {"url":_file_uri.uri, "mime_type":attachment.content_type}
 
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Load history
