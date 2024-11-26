@@ -2,9 +2,7 @@ from os import environ
 from pathlib import Path
 import aiohttp
 import aiofiles
-import asyncio
 import discord
-import google.generativeai as genai
 import random
 
 class Completions():
@@ -24,7 +22,6 @@ class Completions():
         # REST parameters
         self._api_endpoint = "https://generativelanguage.googleapis.com/v1beta"
         self._api_endpoint_upload = "https://generativelanguage.googleapis.com/upload/v1beta/files"
-        self._headers = {"Content-Type": "application/json"}
         self._generation_config = {
             "temperature": 1,
             "topK": 40,
@@ -33,9 +30,18 @@ class Completions():
             "responseMimeType": "text/plain"
         }
 
+    ############################
+    # File upload
+    ############################
+    async def _chunker(self, file_path, chunk_size=8192):
+        async with aiofiles.open(file_path, "rb") as _file:
+            _chunk = await _file.read(chunk_size)
+            while _chunk:
+                yield _chunk
+                _chunk = await _file.read(chunk_size)
 
     async def input_files(self, attachment: discord.Attachment):
-         # Download the attachment
+        # Download the attachment
         _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(518301839, 6582482111)}.{attachment.filename}"
         try:
             async with aiohttp.ClientSession() as _download_session:
@@ -52,24 +58,56 @@ class Completions():
             raise httperror
 
         # Upload the file to the server
-        _msgstatus = None
-        try:
-            _file_uri = await asyncio.to_thread(genai.upload_file, mime_type=attachment.content_type, path=_xfilename, display_name=_xfilename.split("/")[-1])
+        # Initial headers
+        _initial_headers = {
+            "Content-Type": "application/json",
+            "X-Goog-Upload-Protocol": "resumable",
+            "X-Goog-Upload-Command": "start",
+            "X-Goog-Upload-Header-Content-Length": str(attachment.size),
+            "X-Goog-Upload-Header-Content-Type": attachment.content_type
+        }
+        _upload_headers = {
+            "Content-Length": str(attachment.size),
+            "X-Goog-Upload-Offset": "0",
+            "X-Goog-Upload-Command": "upload, finalize"
+        }
+        _file_props = {
+            "file": {
+                "display_name": _xfilename.split("/")[-1]
+            }
+        }
 
-            # Wait for the file to be uploaded
-            while _file_uri.state.name == "PROCESSING":
-                if _msgstatus is None and hasattr(self, "_discord_method_send"):
-                    _msgstatus = await self._discord_method_send("⌛ Processing the file attachment... this may take a while")
-                await asyncio.sleep(3)
-                _file_uri = await asyncio.to_thread(genai.get_file, _file_uri.name)
-        except Exception as e:
-            raise e
-        finally:
-            if _msgstatus: await _msgstatus.delete()
+        # Session for uploading the file
+        async with aiohttp.ClientSession() as _upload_session:
+            async with _upload_session.post(f"{self._api_endpoint_upload}?key={environ.get('GEMINI_API_KEY')}",
+                                            headers=_initial_headers,
+                                            json=_file_props) as _upload_response:
+                _upload_url = _upload_response.headers.get("X-Goog-Upload-URL")
+
+            # Upload the actual bytes
+            async with _upload_session.post(_upload_url, headers=_upload_headers, data=self._chunker(_xfilename)) as _upload_response:
+                _upload_info = (await _upload_response.json())["file"]
+                print(_upload_info)
+
+            # Check for status if there's still a processing step
+            # We use a different endpoint to check the status of the file
+            while "PROCESSING" in _upload_info["state"]:
+                async with _upload_session.get(f"{self._api_endpoint}/{_upload_info['name']}",
+                params={'key': environ.get("GEMINI_API_KEY")}) as _upload_response:
+                    _upload_info = await _upload_response.json()
+                    print("PROCESSING VIDEO")
+                    print(_upload_info) 
+
+        # Cleanup
+        if Path(_xfilename).exists():
             await aiofiles.os.remove(_xfilename)
 
-        self._file_data = {"url":_file_uri.uri, "mime_type":attachment.content_type}
+        self._file_data = {"url":_upload_info["uri"], "mime_type":attachment.content_type}
 
+
+    ############################
+    # Inferencing
+    ############################
     async def chat_completion(self, prompt, system_instruction: str = None):
         # Load history
         _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
@@ -134,9 +172,12 @@ class Completions():
 
         # POST request
         async with aiohttp.ClientSession() as session:
-            async with session.post(f"{self._api_endpoint}/models/{self._model_name}:generateContent?key={environ.get('GEMINI_API_KEY')}",
-                                    headers=self._headers,
-                                    json=_payload) as response:
+            async with session.post(
+                                    f"{self._api_endpoint}/models/{self._model_name}:generateContent?key={environ.get('GEMINI_API_KEY')}",
+                                    headers={"Content-Type": "application/json"},
+                                    json=_payload
+                                    ) as response:
+        
                 # Raise an error if the request was not successful
                 if response.status != 200:
                     raise Exception(f"Request failed with status code {response.status} with reason {response.reason}")
