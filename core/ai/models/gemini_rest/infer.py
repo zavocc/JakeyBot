@@ -16,14 +16,30 @@ class Completions():
         self._history_management = db_conn
 
         self._api_endpoint = "https://generativelanguage.googleapis.com/v1beta"
+        self._headers = {"Content-Type": "application/json"}
+        self._generation_config = {
+            "temperature": 1,
+            "topK": 40,
+            "topP": 0.95,
+            "maxOutputTokens": 8192,
+            "responseMimeType": "text/plain"
+        }
 
     async def chat_completion(self, prompt, system_instruction: str = None):
-        # Headers
-        _headers = {
-            "Content-Type": "application/json"
-        }
-    
-        # Request payload
+        _Tool = {"code_execution": {}}
+
+        _chat_thread = [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "text": prompt
+                    }
+                ]
+            }
+        ]
+
+        # Payload
         _payload = {
             "systemInstruction": {
                 "role": "user",
@@ -32,45 +48,16 @@ class Completions():
                         "text": system_instruction
                     }
                 ]
-            }
+            },
+            "generationConfig": self._generation_config,
+            "contents": _chat_thread,
+            "tools": [_Tool]
         }
-
-        # Tools
-        _payload.update({
-            "tools": [
-                {"code_execution": {}}
-            ]
-        })
-
-        # User prompt
-        _payload.update({
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [
-                        {
-                            "text": prompt
-                        }
-                    ]
-                }
-            ]
-        })
-
-        # Generation config
-        _payload.update({
-            "generationConfig": {
-                "temperature": 1,
-                "topK": 40,
-                "topP": 0.95,
-                "maxOutputTokens": 8192,
-                "responseMimeType": "text/plain"
-            }
-        })
 
         # POST request
         async with aiohttp.ClientSession() as session:
             async with session.post(f"{self._api_endpoint}/models/{self._model_name}:generateContent?key={environ.get('GEMINI_API_KEY')}",
-                                    headers=_headers,
+                                    headers=self._headers,
                                     json=_payload) as response:
                 _response = await response.json()
 
