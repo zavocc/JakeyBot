@@ -1,12 +1,20 @@
 from os import environ
+import discord
 import litellm
 import logging
 
 class Completions:
     _model_provider_thread = "mistralai"
 
-    def __init__(self, guild_id = None,
+    def __init__(self, discord_ctx, guild_id = None,
                  model_name = "mistral-large-2407"):
+        # Check if the discord_ctx is either instance of discord.Message or discord.ApplicationContext
+        if isinstance(discord_ctx, discord.Message):
+            self._discord_method_send = discord_ctx.channel.send
+        elif isinstance(discord_ctx, discord.ApplicationContext):
+            self._discord_method_send = discord_ctx.send
+        else:
+            raise Exception("Invalid discord channel context provided")
         
         if environ.get("MISTRAL_API_KEY"):
             logging.info("Using default Mistral API endpoint")

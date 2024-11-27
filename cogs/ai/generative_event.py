@@ -72,8 +72,9 @@ class BaseChat():
 
         try:
             _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
-                    guild_id=guild_id,
-                    model_name=_model_name)
+                discord_ctx=prompt,
+                guild_id=guild_id,
+                model_name=_model_name)
         except ModuleNotFoundError:
             raise ModelUnavailable
         _infer._discord_method_send = prompt.channel.send

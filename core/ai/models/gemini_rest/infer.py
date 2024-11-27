@@ -11,8 +11,16 @@ import random
 class Completions():
     _model_provider_thread = "gemini_rest"
 
-    def __init__(self, guild_id = None, 
+    def __init__(self, discord_ctx, guild_id = None, 
                  model_name = "gemini-1.5-flash-002"):
+        # Check if the discord_ctx is either instance of discord.Message or discord.ApplicationContext
+        if isinstance(discord_ctx, discord.Message):
+            self._discord_method_send = discord_ctx.channel.send
+        elif isinstance(discord_ctx, discord.ApplicationContext):
+            self._discord_method_send = discord_ctx.send
+        else:
+            raise Exception("Invalid discord channel context provided")
+
         self._file_data = None
 
         self._model_name = model_name

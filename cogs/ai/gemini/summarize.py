@@ -110,7 +110,7 @@ class GenAITools(commands.Cog):
         # MODEL
         #################
         # set model
-        _completions = Completions()
+        _completions = Completions(discord_ctx=ctx)
         _system_prompt = await Assistants.fetch_assistants("discord_msg_summarizer_prompt", type=1)
 
         # Constrain the output to JSON

@@ -43,11 +43,11 @@ class BaseChat():
         # Configure inference
         try:
             _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
+                discord_ctx=ctx,
                 guild_id=guild_id,
                 model_name=_model_name)
         except ModuleNotFoundError:
             raise ModelUnavailable
-        _infer._discord_method_send = ctx.send
 
         ###############################################
         # File attachment processing

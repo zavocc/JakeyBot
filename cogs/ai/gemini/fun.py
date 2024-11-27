@@ -41,7 +41,7 @@ class GeminiUtils(commands.Cog):
                 aiohttp = importlib.import_module("aiohttp")
                 PIL = importlib.import_module("PIL")
                 io = importlib.import_module("io")
-                Completions = importlib.import_module("core.ai.models.gemini.infer").Completions
+                Completions = importlib.import_module("core.ai.models.gemini.infer").Completions(discord_ctx=ctx)
 
                 _filedata = None
                 # Download the image as files like
