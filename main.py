@@ -1,8 +1,11 @@
+import aiofiles.ospath
 from discord.ext import bridge, commands
 from dotenv import load_dotenv
 from inspect import cleandoc
-from os import chdir, environ, mkdir
+from os import chdir, mkdir, environ
 from pathlib import Path
+import aiofiles
+import aiofiles.os
 import discord
 import importlib
 import logging
@@ -31,6 +34,17 @@ class InitBot(bridge.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # Prepare temporary directory
+        if environ.get("TEMP_DIR") is not None:
+            if Path(environ.get("TEMP_DIR")).exists():
+                for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
+                    file.unlink()
+            else:
+                mkdir(environ.get("TEMP_DIR"))
+        else:
+            environ["TEMP_DIR"] = "temp"
+            mkdir(environ.get("TEMP_DIR"))
+
         # Wavelink
         self._wavelink = None
         try:
@@ -38,6 +52,17 @@ class InitBot(bridge.Bot):
         except ModuleNotFoundError as e:
             logging.warning("Playback support is disabled: %s", e)
             self._wavelink = None
+
+    # Shutdown the bot
+    async def close(self):
+        await super().close()
+
+        # Remove temp files
+        if Path(environ.get("TEMP_DIR", "temp")).exists():
+            for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
+                await aiofiles.os.remove(file)
+
+        print("DOES CLOSE WORK?")
 
 bot = InitBot(command_prefix=environ.get("BOT_PREFIX", "$"), intents = intents)
 
@@ -68,17 +93,6 @@ async def on_ready():
         except Exception as e:
             logging.error(f"Failed to setup wavelink: {e}... Disabling playback support")
             bot._wavelink = None
-    
-    # Prepare temporary directory
-    if environ.get("TEMP_DIR") is not None:
-        if Path(environ.get("TEMP_DIR")).exists():
-            for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
-                file.unlink()
-        else:
-            mkdir(environ.get("TEMP_DIR"))
-    else:
-        environ["TEMP_DIR"] = "temp"
-        mkdir(environ.get("TEMP_DIR"))
 
     #https://stackoverflow.com/a/65780398 - for multiple statuses
     await bot.change_presence(activity=discord.Game(f"/ask me anything or {bot.command_prefix}help"))
