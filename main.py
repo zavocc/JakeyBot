@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from inspect import cleandoc
 from os import chdir, mkdir, environ
 from pathlib import Path
-import aiofiles
+import aiohttp
 import aiofiles.os
 import discord
 import importlib
@@ -52,16 +52,22 @@ class InitBot(bridge.Bot):
             logging.warning("Playback support is disabled: %s", e)
             self._wavelink = None
 
+        # Prepare AIOhttp client sessions for specific tasks
+        self._ginference = aiohttp.ClientSession(loop=self.loop)
+        self._gfileupload = aiohttp.ClientSession(loop=self.loop)
+
     # Shutdown the bot
     async def close(self):
-        await super().close()
+        # Close aiohttp client sessions
+        await self._ginference.close()
+        await self._gfileupload.close()
 
         # Remove temp files
         if Path(environ.get("TEMP_DIR", "temp")).exists():
             for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
                 await aiofiles.os.remove(file)
 
-        print("DOES CLOSE WORK?")
+        await super().close()
 
 bot = InitBot(command_prefix=environ.get("BOT_PREFIX", "$"), intents = intents)
 
