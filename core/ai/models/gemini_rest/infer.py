@@ -222,9 +222,9 @@ class Completions():
             try:
                 _toolResult = await _Tool._tool_function(**_tool_arg)
             except (AttributeError, TypeError) as e:
-                        # Also print the error to the console
-                        logging.error("ask command: I think I found a problem related to function calling:", e)
-                        raise ToolsUnavailable
+                # Also print the error to the console
+                logging.error("ask command: I think I found a problem related to function calling:", e)
+                raise ToolsUnavailable
             # For other exceptions, log the error and add it as part of the chat thread
             except Exception as e:
                 # Also print the error to the console
