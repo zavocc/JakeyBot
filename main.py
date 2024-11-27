@@ -26,15 +26,20 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-# Bot
-bot = bridge.Bot(command_prefix=environ.get("BOT_PREFIX", "$"), intents = intents)
+# Subclass this bot
+class InitBot(bridge.Bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-# Playback support
-try:
-    bot._wavelink = importlib.import_module("wavelink")
-except ModuleNotFoundError as e:
-    logging.warning("Playback support is disabled: %s", e)
-    bot._wavelink = None
+        # Wavelink
+        self._wavelink = None
+        try:
+            self._wavelink = importlib.import_module("wavelink")
+        except ModuleNotFoundError as e:
+            logging.warning("Playback support is disabled: %s", e)
+            self._wavelink = None
+
+bot = InitBot(command_prefix=environ.get("BOT_PREFIX", "$"), intents = intents)
 
 ###############################################
 # ON READY
