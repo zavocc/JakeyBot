@@ -48,15 +48,14 @@ class GeminiUtils(commands.Cog):
 
                 _filedata = None
                 # Download the image as files like
-                async with aiohttp.ClientSession() as _session:
-                    # Maximum file size is 3MB so check it
-                    async with _session.head(avatar_url) as _response:
-                        if int(_response.headers.get("Content-Length")) > 1500000:
-                            raise Exception("Max file size reached")
-                    
-                    # Save it as bytes so io.BytesIO can read it
-                    async with _session.get(avatar_url) as response:
-                        _filedata = await response.read()
+                # Maximum file size is 3MB so check it
+                async with self.bot._aiohttp_main_client_session.head(avatar_url) as _response:
+                    if int(_response.headers.get("Content-Length")) > 1500000:
+                        raise Exception("Max file size reached")
+                
+                # Save it as bytes so io.BytesIO can read it
+                async with self.bot_aiohttp_main_client_session.get(avatar_url) as response:
+                    _filedata = await response.read()
                 
                 # Check filedata
                 if not _filedata:
