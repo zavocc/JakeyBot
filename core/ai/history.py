@@ -38,9 +38,9 @@ class History:
             upsert=True
         )
 
-    async def load_history(self, guild_id, model_provider = None):
-        if model_provider is None:
-            raise ConnectionError("Please set a provider")
+    async def load_history(self, guild_id: int, model_provider: str):
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
             
         await self._ensure_document(guild_id)
 
@@ -53,9 +53,9 @@ class History:
         _document = await self._collection.find_one({"guild_id": guild_id})
         return _document[f"chat_thread_{model_provider}"]
 
-    async def save_history(self, guild_id, chat_thread, model_provider = None) -> None:
-        if model_provider is None:
-            raise ConnectionError("Please set a provider")
+    async def save_history(self, guild_id: int, chat_thread, model_provider: str) -> None:
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
 
         await self._ensure_document(guild_id)
         
@@ -63,13 +63,13 @@ class History:
             "$set": {f"chat_thread_{model_provider}": chat_thread}
         }, upsert=True)
 
-    async def clear_history(self, guild_id) -> None:
+    async def clear_history(self, guild_id: int) -> None:
         if guild_id is None or not isinstance(guild_id, int):
             raise TypeError("guild_id is required and must be an integer")
 
         await self._collection.delete_one({"guild_id": guild_id})
 
-    async def set_config(self, guild_id, tool="code_execution") -> None:
+    async def set_config(self, guild_id: int, tool: str = "code_execution") -> None:
         await self.clear_history(guild_id)
         await self._ensure_document(guild_id, tool)
         
@@ -77,11 +77,17 @@ class History:
             "$set": {"tool_use": tool}
         }, upsert=True)
 
-    async def get_config(self, guild_id):
+    async def get_config(self, guild_id: int):
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
+
         await self._ensure_document(guild_id)
         return (await self._collection.find_one({"guild_id": guild_id}))["tool_use"]
 
-    async def set_default_model(self, guild_id, model) -> None:
+    async def set_default_model(self, guild_id: int, model: str) -> None:
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
+
         if not model or not isinstance(model, str):
             raise ValueError("Model must be a non-empty string")
 
@@ -97,7 +103,7 @@ class History:
             logging.error(f"Error setting default model: {e}")
             raise e
 
-    async def get_default_model(self, guild_id):
+    async def get_default_model(self, guild_id: int):
         if guild_id is None or not isinstance(guild_id, int):
             raise TypeError("guild_id is required and must be an integer")
 
