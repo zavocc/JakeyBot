@@ -24,6 +24,17 @@ class Completions():
         # Check if discord_bot whether if its a subclass of discord.Bot
         if not isinstance(discord_bot, discord.Bot):
             raise Exception("Invalid discord bot object provided")
+        
+        # Check if the AIOHTTP ClientSession for Gemini API is running
+        if not hasattr(discord_bot, "_gemini_api_rest"):
+            raise Exception("AIOHttp Client Session for Gemini API (POST) not running, please check the bot configuration")
+        
+        # Check if _aiohttp_main_client_session is in the self._discord_bot object
+        if not hasattr(discord_bot, "_aiohttp_main_client_session"):
+            raise Exception("AIOHttp Client Session (MAIN/GET) not initialized, please check the bot configuration")
+        
+        self._gemini_api_rest: aiohttp.ClientSession = discord_bot._gemini_api_rest
+        self._aiohttp_main_client_session: aiohttp.ClientSession = discord_bot._aiohttp_main_client_session
 
         self._file_data = None
 
@@ -55,12 +66,11 @@ class Completions():
         # Download the attachment
         _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(518301839, 6582482111)}.{attachment.filename}"
         try:
-            async with aiohttp.ClientSession() as _download_session:
-                async with _download_session.get(attachment.url, allow_redirects=True) as _xattachments:
-                    # write to file with random number ID
-                    async with aiofiles.open(_xfilename, "wb") as filepath:
-                        async for _chunk in _xattachments.content.iter_chunked(8192):
-                            await filepath.write(_chunk)
+            async with self._aiohttp_main_client_session.get(attachment.url, allow_redirects=True) as _xattachments:
+                # write to file with random number ID
+                async with aiofiles.open(_xfilename, "wb") as filepath:
+                    async for _chunk in _xattachments.content.iter_chunked(8192):
+                        await filepath.write(_chunk)
         except aiohttp.ClientError as httperror:
             # Remove the file if it exists ensuring no data persists even on failure
             if Path(_xfilename).exists():
@@ -89,25 +99,24 @@ class Completions():
         }
 
         # Session for uploading the file
-        async with aiohttp.ClientSession() as _upload_session:
-            async with _upload_session.post(f"{self._api_endpoint_upload}?key={environ.get('GEMINI_API_KEY')}",
-                                            headers=_initial_headers,
-                                            json=_file_props) as _upload_response:
-                _upload_url = _upload_response.headers.get("X-Goog-Upload-URL")
+        async with self._gemini_api_rest.post(f"{self._api_endpoint_upload}?key={environ.get('GEMINI_API_KEY')}",
+                                        headers=_initial_headers,
+                                        json=_file_props) as _upload_response:
+            _upload_url = _upload_response.headers.get("X-Goog-Upload-URL")
 
-            # Upload the actual bytes
-            async with _upload_session.post(_upload_url, headers=_upload_headers, data=self._chunker(_xfilename)) as _upload_response:
-                _upload_info = (await _upload_response.json())["file"]
-                print(_upload_info)
+        # Upload the actual bytes
+        async with self._gemini_api_rest.post(_upload_url, headers=_upload_headers, data=self._chunker(_xfilename)) as _upload_response:
+            _upload_info = (await _upload_response.json())["file"]
+            print(_upload_info)
 
-            # Check for status if there's still a processing step
-            # We use a different endpoint to check the status of the file
-            while "PROCESSING" in _upload_info["state"]:
-                async with _upload_session.get(f"{self._api_endpoint}/{_upload_info['name']}",
-                params={'key': environ.get("GEMINI_API_KEY")}) as _upload_response:
-                    _upload_info = await _upload_response.json()
-                    print("PROCESSING VIDEO")
-                    print(_upload_info) 
+        # Check for status if there's still a processing step
+        # We use a different endpoint to check the status of the file
+        while "PROCESSING" in _upload_info["state"]:
+            async with self._gemini_api_rest.get(f"{self._api_endpoint}/{_upload_info['name']}", 
+                                                 params={'key': environ.get("GEMINI_API_KEY")}) as _upload_response:
+                _upload_info = await _upload_response.json()
+                print("PROCESSING VIDEO")
+                print(_upload_info) 
 
         # Cleanup
         if Path(_xfilename).exists():
@@ -120,7 +129,6 @@ class Completions():
     ############################
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Tools
-        # TODO: Move the db_conn paramter to chat_completion
         try:
             _Tool = importlib.import_module(f"tools.{(await db_conn.get_config(guild_id=self._guild_id))}").Tool(self._discord_method_send)
         except ModuleNotFoundError as e:
@@ -138,28 +146,8 @@ class Completions():
 
         # Begin with the first user prompt
         if _chat_thread is None and not type(_chat_thread) == list:
-            _chat_thread = [
-                {
-                    "parts": [
-                        {
-                            "text": prompt
-                        }
-                    ],
-                    "role": "user",
-                }
-            ]
-        else:
-            _chat_thread.append(
-                {
-                    "parts": [
-                        {
-                            "text": prompt
-                        }
-                    ],
-                    "role": "user",
-                }
-            )
-            
+            _chat_thread = []
+
         # Check if file attachment is present
         if self._file_data is not None:
             _chat_thread.append(
@@ -175,6 +163,18 @@ class Completions():
                     "role": "user"
                 }
             )
+
+        # User prompt
+        _chat_thread.append(
+            {
+                "parts": [
+                    {
+                        "text": prompt
+                    }
+                ],
+                "role": "user",
+            }
+        )
 
         # Payload
         _payload = {
@@ -201,21 +201,20 @@ class Completions():
                 },
             })
 
+        # AIOHttp initial parameters
+        _aiohttp_params = {
+            "url": f"{self._api_endpoint}/models/{self._model_name}:generateContent?key={environ.get('GEMINI_API_KEY')}",
+            "headers": {"Content-Type": "application/json"}
+        }
+
         # POST request
         _response = None
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                                    f"{self._api_endpoint}/models/{self._model_name}:generateContent?key={environ.get('GEMINI_API_KEY')}",
-                                    headers={"Content-Type": "application/json"},
-                                    json=_payload
-                                    ) as response:
-        
-                # Raise an error if the request was not successful
-                if response.status != 200:
-                    raise Exception(f"Request failed with status code {response.status} with reason {response.reason}")
+        async with self._gemini_api_rest.post(**_aiohttp_params, json=_payload) as response:
+            # Raise an error if the request was not successful
+            response.raise_for_status()
 
-                await self._discord_method_send((await response.json()))
-                _response = (await response.json())["candidates"][0]
+            await self._discord_method_send((await response.json()))
+            _response = (await response.json())["candidates"][0]
 
         # Check if we need to execute Tools
         _tool_arg = None
@@ -256,18 +255,11 @@ class Completions():
                 "role": "user"
             })
             _payload.update({"contents": _chat_thread})
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                                        f"{self._api_endpoint}/models/{self._model_name}:generateContent?key={environ.get('GEMINI_API_KEY')}",
-                                        headers={"Content-Type": "application/json"},
-                                        json=_payload
-                                        ) as response:
-            
-                    # Raise an error if the request was not successful
-                    if response.status != 200:
-                        raise Exception(f"Request failed with status code {response.status} with reason {response.reason}")
+            async with self._gemini_api_rest.post(**_aiohttp_params, json=_payload) as response:
+                # Raise an error if the request was not successful
+                response.raise_for_status()
 
-                    _response = (await response.json())["candidates"][0]
+                _response = (await response.json())["candidates"][0]
 
         # Append to history
         _chat_thread.append(_response["content"])

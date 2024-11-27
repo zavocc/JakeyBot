@@ -53,14 +53,17 @@ class InitBot(bridge.Bot):
             self._wavelink = None
 
         # Prepare AIOhttp client sessions for specific tasks
-        self._ginference = aiohttp.ClientSession(loop=self.loop)
-        self._gfileupload = aiohttp.ClientSession(loop=self.loop)
+        # Gemini API
+        self._gemini_api_rest = aiohttp.ClientSession(loop=self.loop)
+
+        # Everything else (mostly GET requests)
+        self._aiohttp_main_client_session = aiohttp.ClientSession(loop=self.loop)
 
     # Shutdown the bot
     async def close(self):
         # Close aiohttp client sessions
-        await self._ginference.close()
-        await self._gfileupload.close()
+        await self._gemini_api_rest.close()
+        await self._aiohttp_main_client_session.close()
 
         # Remove temp files
         if Path(environ.get("TEMP_DIR", "temp")).exists():
