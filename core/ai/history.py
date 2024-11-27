@@ -21,6 +21,9 @@ class History:
             raise TypeError("guild_id is required and must be an integer")
 
         # Do not override tool_use and default_model if it already exists
+        # This checks if the user didn't execute /sweep command with reset_prefs to True
+        # If it does, then it will use the default values from kwargs and therefore upserting the document with new one
+        # Since guild_id entry doesn't exists
         _existing = await self._collection.find_one({"guild_id": guild_id})
         if _existing:
             if "tool_use" in _existing:

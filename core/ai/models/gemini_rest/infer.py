@@ -25,7 +25,7 @@ class Completions():
         if not isinstance(discord_bot, discord.Bot):
             raise Exception("Invalid discord bot object provided")
         
-        self._discod_bot = discord_bot
+        self._discord_bot = discord_bot
         
         # Check if the AIOHTTP ClientSession for Gemini API is running
         if not hasattr(discord_bot, "_gemini_api_rest"):
@@ -134,7 +134,7 @@ class Completions():
         try:
             _Tool = importlib.import_module(f"tools.{(await db_conn.get_config(guild_id=self._guild_id))}").Tool(
                 method_send=self._discord_method_send,
-                discord_bot=self._discod_bot
+                discord_bot=self._discord_bot
             )
         except ModuleNotFoundError as e:
             logging.error("I cannot import the tool because the module is not found: %s", e)
