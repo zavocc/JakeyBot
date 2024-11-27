@@ -1,8 +1,11 @@
+from core.exceptions import ToolsUnavailable
 from os import environ
 from pathlib import Path
 import aiohttp
 import aiofiles
 import discord
+import importlib
+import logging
 import random
 
 class Completions():
@@ -11,8 +14,6 @@ class Completions():
     def __init__(self, guild_id = None, 
                  model_name = "gemini-1.5-flash-002",
                  db_conn = None):
-        super().__init__()
-
         self._file_data = None
 
         self._model_name = model_name
@@ -104,16 +105,26 @@ class Completions():
 
         self._file_data = {"url":_upload_info["uri"], "mime_type":attachment.content_type}
 
-
     ############################
     # Inferencing
     ############################
     async def chat_completion(self, prompt, system_instruction: str = None):
+        # Tools
+        # TODO: Move the db_conn paramter to chat_completion
+        try:
+            _Tool = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self._discord_method_send)
+        except ModuleNotFoundError as e:
+            logging.error("I cannot import the tool because the module is not found: %s", e)
+            raise ToolsUnavailable
+
+        if _Tool.tool_name == "code_execution":
+            _Tool.tool_schema_beta = {"code_execution": {}}
+
+        print(_Tool.tool_schema_beta)
+
         # Load history
         _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
         print(_chat_thread)
-
-        _Tool = {"code_execution": {}}
 
         # Begin with the first user prompt
         if _chat_thread is None and not type(_chat_thread) == list:
@@ -167,10 +178,21 @@ class Completions():
             },
             "generationConfig": self._generation_config,
             "contents": _chat_thread,
-            "tools": [_Tool]
         }
 
+        # Check if tool is available
+        if _Tool is not None:
+            _payload.update({
+                "tools":[_Tool.tool_schema_beta],
+                "toolConfig": {
+                    "functionCallingConfig": {
+                        "mode": "AUTO"
+                    }
+                },
+            })
+
         # POST request
+        _response = None
         async with aiohttp.ClientSession() as session:
             async with session.post(
                                     f"{self._api_endpoint}/models/{self._model_name}:generateContent?key={environ.get('GEMINI_API_KEY')}",
@@ -182,12 +204,64 @@ class Completions():
                 if response.status != 200:
                     raise Exception(f"Request failed with status code {response.status} with reason {response.reason}")
 
-                _response = await response.json()
-                await self._discord_method_send(_response)
+                await self._discord_method_send((await response.json()))
+                _response = (await response.json())["candidates"][0]
+
+        # Check if we need to execute Tools
+        _tool_arg = None
+        for x in _response["content"]["parts"]:
+            await self._discord_method_send(x)
+            if "functionCall" in x:
+                _tool_arg = x["functionCall"]["args"]
+
+        if _tool_arg:
+            # Add previous interaction to the chat thread
+            _chat_thread.append(_response["content"])
+
+            # Call the tool
+            try:
+                _toolResult = await _Tool._tool_function(**_tool_arg)
+            except (AttributeError, TypeError) as e:
+                        # Also print the error to the console
+                        logging.error("ask command: I think I found a problem related to function calling:", e)
+                        raise ToolsUnavailable
+            # For other exceptions, log the error and add it as part of the chat thread
+            except Exception as e:
+                # Also print the error to the console
+                logging.error("ask command: Something when calling specific tool lately, reason:", e)
+                _toolResult = f"⚠️ Something went wrong while executing the tool: {e}, please tell the developer or the user to check console logs"
+
+            # Add the result in chat thread and run inference
+            _chat_thread.append({
+                "parts": [
+                    {
+                        "functionResponse": {
+                            "name": _Tool.tool_name,
+                            "response": {
+                                "result": _toolResult
+                            }
+                        }
+                    }
+                ],
+                "role": "user"
+            })
+            _payload.update({"contents": _chat_thread})
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                                        f"{self._api_endpoint}/models/{self._model_name}:generateContent?key={environ.get('GEMINI_API_KEY')}",
+                                        headers={"Content-Type": "application/json"},
+                                        json=_payload
+                                        ) as response:
+            
+                    # Raise an error if the request was not successful
+                    if response.status != 200:
+                        raise Exception(f"Request failed with status code {response.status} with reason {response.reason}")
+
+                    _response = (await response.json())["candidates"][0]
 
         # Append to history
-        _chat_thread.append(_response["candidates"][0]["content"])
-        return {"answer": _response["candidates"][0]["content"]["parts"][-1]["text"], "chat_thread": _chat_thread}
+        _chat_thread.append(_response["content"])
+        return {"answer": _response["content"]["parts"][-1]["text"], "chat_thread": _chat_thread}
 
     async def save_to_history(self, chat_thread = None):
         await self._history_management.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)

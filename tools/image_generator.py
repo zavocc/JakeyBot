@@ -31,6 +31,30 @@ class Tool:
             ]
         )
 
+        self.tool_schema_beta = {
+            "functionDeclarations": [
+                {
+                    "name": self.tool_name,
+                    "description": "Generate or restyle images using natural language or from description",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "image_description": {
+                                "type": "string"
+                            },
+                            "width": {
+                                "type": "number"
+                            },
+                            "height": {
+                                "type": "number"
+                            }
+                        },
+                        "required": ["image_description", "width", "height"]
+                    }
+                }
+            ]
+        }
+
     # Image generator
     async def _tool_function(self, image_description: str, width: int, height: int):
         # Validate parameters
