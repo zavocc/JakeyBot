@@ -73,6 +73,7 @@ class BaseChat():
         try:
             _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
                 discord_ctx=prompt,
+                discord_bot=self.bot,
                 guild_id=guild_id,
                 model_name=_model_name)
         except ModuleNotFoundError:

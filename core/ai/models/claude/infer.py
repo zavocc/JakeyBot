@@ -7,7 +7,7 @@ import litellm
 class Completions:
     _model_provider_thread = "claude"
 
-    def __init__(self, discord_ctx, guild_id = None, 
+    def __init__(self, discord_ctx, discord_bot, guild_id = None, 
                  model_name = "claude-3-5-haiku-20241022"):
         # Check if the discord_ctx is either instance of discord.Message or discord.ApplicationContext
         if isinstance(discord_ctx, discord.Message):
@@ -16,6 +16,10 @@ class Completions:
             self._discord_method_send = discord_ctx.send
         else:
             raise Exception("Invalid discord channel context provided")
+
+        # Check if discord_bot whether if its a subclass of discord.Bot
+        if not isinstance(discord_bot, discord.Bot):
+            raise Exception("Invalid discord bot object provided")
 
         self._file_data = None
 

@@ -22,7 +22,7 @@ class GenAIApps(commands.Cog):
         await ctx.response.defer(ephemeral=True)
         
         # Generative model settings
-        _completion = Completions(discord_ctx=ctx)
+        _completion = Completions(discord_ctx=ctx, discord_bot=self.bot)
         _system_prompt = await Assistants.fetch_assistants("message_rephraser_prompt", type=1)
         _answer = await _completion.completion(f"Rephrase this message with variety to choose from:\n{str(message.content)}", system_instruction=_system_prompt)
 
@@ -64,7 +64,7 @@ class GenAIApps(commands.Cog):
         await ctx.response.defer(ephemeral=True)
 
         # Generative model settings
-        _completion = Completions(discord_ctx=ctx)
+        _completion = Completions(discord_ctx=ctx, discord_bot=self.bot)
         _system_prompt = await Assistants.fetch_assistants("message_summarizer_prompt", type=1)
         _answer = await _completion.completion(f"Explain and summarize based on this message:\n{str(message.content)}", system_instruction=_system_prompt)
 
@@ -106,7 +106,7 @@ class GenAIApps(commands.Cog):
         await ctx.response.defer(ephemeral=True)
 
         # Generative model settings
-        _completion = Completions(discord_ctx=ctx)
+        _completion = Completions(discord_ctx=ctx, discord_bot=self.bot)
         _system_prompt = await Assistants.fetch_assistants("message_suggestions_prompt", type=1)
         _answer = await _completion.completion(f"Suggest a response based on this message:\n{str(message.content)}", system_instruction=_system_prompt)
 
