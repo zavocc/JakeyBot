@@ -6,8 +6,7 @@ class Completions:
     _model_provider_thread = "mistralai"
 
     def __init__(self, guild_id = None,
-                 model_name = "mistral-large-2407",
-                 db_conn = None):
+                 model_name = "mistral-large-2407"):
         
         if environ.get("MISTRAL_API_KEY"):
             logging.info("Using default Mistral API endpoint")
@@ -31,11 +30,10 @@ class Completions:
             raise ValueError("No Mistral API key was set, this model isn't available")
 
         self._guild_id = guild_id
-        self._history_management = db_conn
 
-    async def chat_completion(self, prompt, system_instruction: str = None):
+    async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
-        _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
+        _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
 
         # System prompt
         # Check if codestral model is used since it's not necessary to put system instructions as its designed for code
@@ -81,5 +79,5 @@ class Completions:
 
         return {"answer":_answer, "chat_thread": _chat_thread}
 
-    async def save_to_history(self, chat_thread = None):
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)
+    async def save_to_history(self, db_conn, chat_thread = None):
+        await db_conn.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)

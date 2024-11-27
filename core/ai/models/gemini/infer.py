@@ -47,15 +47,13 @@ class Completions(GenAIConfigDefaults):
     _model_provider_thread = "gemini"
 
     def __init__(self, guild_id = None, 
-                 model_name = "gemini-1.5-flash-002",
-                 db_conn = None):
+                 model_name = "gemini-1.5-flash-002"):
         super().__init__()
 
         self._file_data = None
 
         self._model_name = model_name
         self._guild_id = guild_id
-        self._history_management = db_conn
         
     async def input_files(self, attachment: discord.Attachment):
         # Download the attachment
@@ -105,11 +103,11 @@ class Completions(GenAIConfigDefaults):
         answer = await _genai_client.generate_content_async(prompt)
         return answer.text
 
-    async def chat_completion(self, prompt, system_instruction: str = None):
+    async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Setup model and tools
-        if hasattr(self, "_discord_method_send") and self._history_management is not None:
+        if db_conn is not None:
             try:
-                _Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self._discord_method_send)
+                _Tool_use = importlib.import_module(f"tools.{(await db_conn.get_config(guild_id=self._guild_id))}").Tool(self._discord_method_send)
             except ModuleNotFoundError as e:
                 logging.error("I cannot import the tool because the module is not found: %s", e)
                 raise ToolsUnavailable
@@ -128,7 +126,7 @@ class Completions(GenAIConfigDefaults):
         )
 
         # Load history
-        _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
+        _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
         _chat_thread = await asyncio.to_thread(jsonpickle.decode, _chat_thread, keys=True) if _chat_thread is not None else []
 
         # Craft prompt
@@ -219,6 +217,6 @@ class Completions(GenAIConfigDefaults):
 
         return {"answer":answer.text, "chat_thread": chat_session.history}
 
-    async def save_to_history(self, chat_thread = None):
+    async def save_to_history(self, db_conn, chat_thread = None):
         _encoded = await asyncio.to_thread(jsonpickle.encode, chat_thread, indent=4, keys=True)
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=_encoded, model_provider=self._model_provider_thread)
+        await db_conn.save_history(guild_id=self._guild_id, chat_thread=_encoded, model_provider=self._model_provider_thread)

@@ -73,9 +73,7 @@ class BaseChat():
         try:
             _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
                     guild_id=guild_id,
-                    model_name=_model_name,
-                    db_conn = self.DBConn,
-            )
+                    model_name=_model_name)
         except ModuleNotFoundError:
             raise ModelUnavailable
         _infer._discord_method_send = prompt.channel.send
@@ -106,7 +104,7 @@ class BaseChat():
             _final_prompt += f"\n\nTHIS PROMPT IS AUTO INSERTED BY SYSTEM: By the way based on the attachment given, here is the URL associated for reference:\n{prompt.attachments[0].url}"
         
         _system_prompt = await Assistants.fetch_assistants("jakey_system_prompt", type=0)
-        _result = await _infer.chat_completion(prompt=_final_prompt, system_instruction=_system_prompt)
+        _result = await _infer.chat_completion(prompt=_final_prompt, db_conn=self.DBConn, system_instruction=_system_prompt)
         
         # Format the response
         _formatted_response = _result["answer"].rstrip()
@@ -158,7 +156,7 @@ class BaseChat():
 
         # Save to chat history
         if _append_history:
-            await _infer.save_to_history(chat_thread=_result["chat_thread"])
+            await _infer.save_to_history(db_conn=self.DBConn, chat_thread=_result["chat_thread"])
 
     async def on_message(self, prompt_message: Message):
         # Ignore messages from the bot itself

@@ -7,8 +7,7 @@ class Completions():
     _model_provider_thread = "ai_provider_company"
 
     def __init__(self, guild_id = None, 
-                 model_name = "agi-5-latest",
-                 db_conn = None):
+                 model_name = "agi-5-latest"):
         # Used for passing non-textual data into the model
         self._file_data = None # The attachment data itself (binary data, prompt, etc)
 
@@ -26,8 +25,8 @@ class Completions():
        pass
 
     # For chat completions (required)
-    async def chat_completion(self, prompt, system_instruction: str = None):
+    async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         return {"answer":"A quick brown fox jumps over a lazy dog", "chat_thread": []}
 
-    async def save_to_history(self, chat_thread = None):
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=_encoded, model_provider=self._model_provider_thread)
+    async def save_to_history(self, db_conn, chat_thread = None):
+        await db_conn.save_history(guild_id=self._guild_id, chat_thread=_encoded, model_provider=self._model_provider_thread)

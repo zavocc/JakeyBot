@@ -12,13 +12,11 @@ class Completions():
     _model_provider_thread = "gemini_rest"
 
     def __init__(self, guild_id = None, 
-                 model_name = "gemini-1.5-flash-002",
-                 db_conn = None):
+                 model_name = "gemini-1.5-flash-002"):
         self._file_data = None
 
         self._model_name = model_name
         self._guild_id = guild_id
-        self._history_management = db_conn
 
         # REST parameters
         self._api_endpoint = "https://generativelanguage.googleapis.com/v1beta"
@@ -108,11 +106,11 @@ class Completions():
     ############################
     # Inferencing
     ############################
-    async def chat_completion(self, prompt, system_instruction: str = None):
+    async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Tools
         # TODO: Move the db_conn paramter to chat_completion
         try:
-            _Tool = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self._discord_method_send)
+            _Tool = importlib.import_module(f"tools.{(await db_conn.get_config(guild_id=self._guild_id))}").Tool(self._discord_method_send)
         except ModuleNotFoundError as e:
             logging.error("I cannot import the tool because the module is not found: %s", e)
             raise ToolsUnavailable
@@ -123,7 +121,7 @@ class Completions():
         print(_Tool.tool_schema_beta)
 
         # Load history
-        _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
+        _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
         print(_chat_thread)
 
         # Begin with the first user prompt
@@ -263,5 +261,5 @@ class Completions():
         _chat_thread.append(_response["content"])
         return {"answer": _response["content"]["parts"][-1]["text"], "chat_thread": _chat_thread}
 
-    async def save_to_history(self, chat_thread = None):
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)
+    async def save_to_history(self, db_conn, chat_thread = None):
+        await db_conn.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)

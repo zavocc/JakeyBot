@@ -44,9 +44,7 @@ class BaseChat():
         try:
             _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
                 guild_id=guild_id,
-                model_name=_model_name,
-                db_conn = self.DBConn,
-            )
+                model_name=_model_name)
         except ModuleNotFoundError:
             raise ModelUnavailable
         _infer._discord_method_send = ctx.send
@@ -67,7 +65,7 @@ class BaseChat():
         # Answer generation
         ###############################################
         _system_prompt = await Assistants.fetch_assistants("jakey_system_prompt", type=0)
-        _result = await _infer.chat_completion(prompt=prompt, system_instruction=_system_prompt)
+        _result = await _infer.chat_completion(prompt=prompt, db_conn=self.DBConn, system_instruction=_system_prompt)
         _formatted_response = _result["answer"].rstrip()
 
         # Model usage and context size
@@ -114,7 +112,7 @@ class BaseChat():
 
         # Save to chat history
         if append_history:
-            await _infer.save_to_history(chat_thread=_result["chat_thread"])
+            await _infer.save_to_history(db_conn=self.DBConn, chat_thread=_result["chat_thread"])
 
         # Done
         await ctx.respond(f"✅ Done {ctx.author.mention}! check out the response: {_jakey_response.jump_url}")

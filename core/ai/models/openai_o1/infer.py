@@ -6,8 +6,7 @@ class Completions:
     _model_provider_thread = "openai_o1"
 
     def __init__(self, guild_id = None, 
-                 model_name = "o1-mini",
-                 db_conn = None):
+                 model_name = "o1-mini"):
         self._file_data = None
 
         if environ.get("OPENAI_API_KEY"):
@@ -27,12 +26,11 @@ class Completions:
             raise ValueError("No OpenAI API key was set, this O1 model isn't available")
 
         self._guild_id = guild_id
-        self._history_management = db_conn
 
 
-    async def chat_completion(self, prompt, system_instruction: str = None):
+    async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
-        _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
+        _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
 
         if hasattr(self, "_discord_method_send"):
            await self._discord_method_send("🔍 NOTICE: O1 models is a new reasoning engine by OpenAI that is designed to think before it can answer. This model may change, ratelimited, and prematurely respond.")
@@ -85,5 +83,5 @@ class Completions:
 
         return {"answer":_answer, "chat_thread": _chat_thread}
 
-    async def save_to_history(self, chat_thread = None):
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)
+    async def save_to_history(self, db_conn, chat_thread = None):
+        await db_conn.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)
