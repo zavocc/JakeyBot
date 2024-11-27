@@ -1,4 +1,3 @@
-import aiofiles.ospath
 from discord.ext import bridge, commands
 from dotenv import load_dotenv
 from inspect import cleandoc
