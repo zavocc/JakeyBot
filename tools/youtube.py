@@ -1,7 +1,6 @@
 # Built in Tools
 import google.generativeai as genai
 import aiohttp
-import inspect
 
 # Function implementations
 class Tool:

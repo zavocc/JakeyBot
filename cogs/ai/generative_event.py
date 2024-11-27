@@ -1,3 +1,4 @@
+from aiohttp.client_exceptions import ClientResponseError
 from core.ai.assistants import Assistants
 from core.ai.core import ModelsList
 from core.exceptions import ModelUnavailable, MultiModalUnavailable, ToolsUnavailable
@@ -8,6 +9,7 @@ from os import environ
 import core.ai.models._template_.infer # For type hinting
 import aiofiles
 import aiofiles.os
+import aiofiles.ospath
 import discord
 import importlib
 import logging
@@ -24,7 +26,7 @@ class BaseChat():
     # Events-based chat
     ###############################################
     # This is a private function
-    async def priv_ask(self, prompt: Message):
+    async def ask_core(self, prompt: Message):
         # Check if SHARED_CHAT_HISTORY is enabled
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
             guild_id = prompt.guild.id if prompt.guild else prompt.author.id # Always fallback to ctx.author.id for DMs since ctx.guild is None
@@ -40,7 +42,7 @@ class BaseChat():
         except Exception as e:
             # Set the default model
             _model = "__gemini__gemini-1.5-flash-002"
-            logging.error("generative_event.py: Something went wrong while getting default model %s", e)
+            logging.error("%s: Something went wrong while getting default model %s", (await aiofiles.ospath.abspath(__file__)), e)
 
         _model_provider = _model.split("::")[0]
         _model_name = _model.split("::")[-1]
@@ -177,10 +179,10 @@ class BaseChat():
             # For now the entire function is under try 
             # Maybe this can be separated into another function
             try:
-                await self.priv_ask(prompt_message)
+                await self.ask_core(prompt_message)
             except Exception as _error:
-                if isinstance(_error, commands.CommandOnCooldown):
-                    await prompt_message.reply(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
+                if isinstance(_error, ClientResponseError):
+                    await prompt_message.reply(f"😨 Uh oh, something happened to our end while processing requests, please check console log for details!")
                 elif isinstance(_error, MultiModalUnavailable):
                     await prompt_message.reply("🚫 This model cannot process certain files, choose another model to continue")
                 elif isinstance(_error, ModelUnavailable):

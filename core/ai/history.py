@@ -1,4 +1,5 @@
 from os import environ
+import aiofiles.ospath
 import logging
 import motor.motor_asyncio
 
@@ -13,7 +14,7 @@ class History:
         # Create a new database if it doesn't exist, access chat_history database
         self._db = self._db_conn[environ.get("MONGO_DB_NAME", "chat_history_prod")]
         self._collection = self._db["db_collection"]
-        logging.info(f"Connected to the database {self._db.name} and collection {self._collection.name}")
+        logging.info("Connected to the database %s and collection %s", self._db.name, self._collection.name)
 
     async def _ensure_document(self, guild_id: int, model: str = "gemini::gemini-1.5-flash-002", tool_use: str = "code_execution"):
         """Ensures a document exists for the given guild_id, creates one if it doesn't exist."""
@@ -103,7 +104,7 @@ class History:
                 upsert=True
             )
         except Exception as e:
-            logging.error(f"Error setting default model: {e}")
+            logging.error("%s: Error setting default model: %s", (await aiofiles.ospath.abspath(__file__)), e)
             raise e
 
     async def get_default_model(self, guild_id: int):
@@ -114,6 +115,6 @@ class History:
         try:
             return (await self._collection.find_one({"guild_id": guild_id}))["default_model"]
         except Exception as e:
-            logging.error(f"Error getting default model: {e}")
+            logging.error("%s: Error getting default model: %s", (await aiofiles.ospath.abspath(__file__)), e)
             raise e
 

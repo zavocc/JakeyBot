@@ -1,8 +1,10 @@
+import aiofiles.ospath
 from core.exceptions import ToolsUnavailable
 from os import environ
 from pathlib import Path
 import aiohttp
 import aiofiles
+import asyncio
 import discord
 import importlib
 import logging
@@ -47,12 +49,18 @@ class Completions():
         self._api_endpoint = "https://generativelanguage.googleapis.com/v1beta"
         self._api_endpoint_upload = "https://generativelanguage.googleapis.com/upload/v1beta/files"
         self._generation_config = {
-            "temperature": 1,
+            "temperature": 0.7,
             "topK": 40,
             "topP": 0.95,
             "maxOutputTokens": 8192,
             "responseMimeType": "text/plain"
         }
+        self._safety_settings = [
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_LOW_AND_ABOVE"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_LOW_AND_ABOVE"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_LOW_AND_ABOVE"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_LOW_AND_ABOVE"}
+        ]
 
     ############################
     # File upload
@@ -113,12 +121,20 @@ class Completions():
 
         # Check for status if there's still a processing step
         # We use a different endpoint to check the status of the file
+        _msgstatus = None
         while "PROCESSING" in _upload_info["state"]:
             async with self._gemini_api_rest.get(f"{self._api_endpoint}/{_upload_info['name']}", 
                                                  params={'key': environ.get("GEMINI_API_KEY")}) as _upload_response:
                 _upload_info = await _upload_response.json()
-                print("PROCESSING VIDEO")
-                print(_upload_info) 
+                
+                if _msgstatus is None:
+                    _msgstatus = await self._discord_method_send(f"⌚ Processing the file attachment, this may take longer than usual...")
+                
+                # Prevent rate limiting from the Discord API
+                await asyncio.sleep(2.5)
+        else:
+            if _msgstatus is not None:
+                await _msgstatus.delete()
 
         # Cleanup
         if Path(_xfilename).exists():
@@ -137,7 +153,7 @@ class Completions():
                 discord_bot=self._discord_bot
             )
         except ModuleNotFoundError as e:
-            logging.error("I cannot import the tool because the module is not found: %s", e)
+            logging.error("%s: I cannot import the tool because the module is not found: %s", (await aiofiles.ospath.abspath(__file__)), e)
             raise ToolsUnavailable
 
         if _Tool.tool_name == "code_execution":
@@ -192,6 +208,7 @@ class Completions():
                 ]
             },
             "generationConfig": self._generation_config,
+            "safetySettings": self._safety_settings,
             "contents": _chat_thread,
         }
 
@@ -213,22 +230,34 @@ class Completions():
         }
 
         # POST request
-        _response = None
         async with self._gemini_api_rest.post(**_aiohttp_params, json=_payload) as response:
             # Raise an error if the request was not successful
-            response.raise_for_status()
+            try:
+                response.raise_for_status()
+            # Because this may print API keys, log the error and raise an exception
+            except aiohttp.ClientResponseError as e:
+                logging.error("%s: I think I found a problem related to the request: %s", (await aiofiles.ospath.abspath(__file__)), e)
+                raise e
 
             await self._discord_method_send((await response.json()))
+
+            # Get the response with starting first candidate
             _response = (await response.json())["candidates"][0]
+
+        # Check if the response is empty or blocked by safety settings
+        if _response["finishReason"] == "SAFETY":
+            raise Exception("The response was blocked by safety settings, rephrase the prompt or try again later")
 
         # Check if we need to execute Tools
         _tool_arg = None
+        _tool_name = None
         for x in _response["content"]["parts"]:
             await self._discord_method_send(x)
             if "functionCall" in x:
                 _tool_arg = x["functionCall"]["args"]
+                _tool_name = x["functionCall"]["name"]
 
-        if _tool_arg:
+        if _tool_arg and _tool_name:
             # Add previous interaction to the chat thread
             _chat_thread.append(_response["content"])
 
@@ -237,12 +266,12 @@ class Completions():
                 _toolResult = await _Tool._tool_function(**_tool_arg)
             except (AttributeError, TypeError) as e:
                 # Also print the error to the console
-                logging.error("ask command: I think I found a problem related to function calling:", e)
+                logging.error("%s: I think I found a problem related to function calling: %s", (await aiofiles.ospath.abspath(__file__)), e)
                 raise ToolsUnavailable
             # For other exceptions, log the error and add it as part of the chat thread
             except Exception as e:
                 # Also print the error to the console
-                logging.error("ask command: Something when calling specific tool lately, reason:", e)
+                logging.error("%s: Something when calling specific tool lately, reason: %s", (await aiofiles.ospath.abspath(__file__)), e)
                 _toolResult = f"⚠️ Something went wrong while executing the tool: {e}, please tell the developer or the user to check console logs"
 
             # Add the result in chat thread and run inference
@@ -250,7 +279,7 @@ class Completions():
                 "parts": [
                     {
                         "functionResponse": {
-                            "name": _Tool.tool_name,
+                            "name": _tool_name,
                             "response": {
                                 "result": _toolResult
                             }
@@ -265,6 +294,10 @@ class Completions():
                 response.raise_for_status()
 
                 _response = (await response.json())["candidates"][0]
+
+            # Check if the response is empty or blocked by safety settings
+            if _response["finishReason"] == "SAFETY":
+                raise Exception("The full response was blocked by safety settings, rephrase the prompt or try again later")
 
         # Append to history
         _chat_thread.append(_response["content"])

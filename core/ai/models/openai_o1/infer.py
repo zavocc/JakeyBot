@@ -26,7 +26,7 @@ class Completions:
             # Set endpoint if OPENAI_API_ENDPOINT is set
             if environ.get("OPENAI_API_ENDPOINT"):
                 self._oai_endpoint = environ.get("OPENAI_API_ENDPOINT")
-                logging.info(f"Using OpenAI API endpoint: {self._oai_endpoint}")
+                logging.info("Using OpenAI API endpoint: %s", self._oai_endpoint)
             else:
                 self._oai_endpoint = None
                 logging.info("Using default OpenAI API endpoint for O1 models")

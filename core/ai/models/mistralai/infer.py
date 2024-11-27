@@ -37,7 +37,7 @@ class Completions:
             else:
                 self._model_name = "openrouter/mistralai/" + model_name
 
-            logging.info(f"Using normalized model name: {self._model_name}")
+            logging.info("Using normalized model name: %s", self._model_name)
         else:
             raise ValueError("No Mistral API key was set, this model isn't available")
 

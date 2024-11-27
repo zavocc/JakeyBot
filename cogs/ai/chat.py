@@ -1,3 +1,4 @@
+from aiohttp.client_exceptions import ClientResponseError
 from core.ai.core import ModelsList
 from cogs.ai.generative import BaseChat
 from cogs.ai.generative_event import BaseChat as BaseChatEvent
@@ -84,6 +85,8 @@ class Chat(commands.Cog):
         # Cooldown error
         if isinstance(_error, commands.CommandOnCooldown):
             await ctx.respond(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
+        elif isinstance(_error, ClientResponseError):
+            await ctx.respond(f"😨 Uh oh, something happened to our end while processing requests, please check console log for details!")
         elif isinstance(_error, MultiModalUnavailable):
             await ctx.respond("🚫 This model cannot process certain files, choose another model to continue")
         elif isinstance(_error, ModelUnavailable):

@@ -2,6 +2,7 @@ from discord.ext import bridge, commands
 from dotenv import load_dotenv
 from inspect import cleandoc
 from os import chdir, mkdir, environ
+from os.path import abspath
 from pathlib import Path
 import aiohttp
 import aiofiles.os
@@ -99,7 +100,7 @@ async def on_ready():
                 nodes=[node]
             )
         except Exception as e:
-            logging.error(f"Failed to setup wavelink: {e}... Disabling playback support")
+            logging.error("%s: Failed to setup wavelink: %s... Disabling playback support", abspath(__file__) ,e)
             bot._wavelink = None
 
     #https://stackoverflow.com/a/65780398 - for multiple statuses
@@ -149,13 +150,13 @@ with open('commands.yaml', 'r') as file:
     for command in cog_commands:
         # Disable voice commands if playback support is not enabled
         if "voice" in command and not bot._wavelink:
-           logging.warning(f"Skipping {command}... Playback support is disabled")
+           logging.warning("Skipping %s... Playback support is disabled", command)
            continue
 
         try:
             bot.load_extension(f'cogs.{command}')
         except Exception as e:
-            logging.error(f"\ncogs.{command} failed to load, skipping... The following error of the cog: %s", e)
+            logging.error("cogs.%s failed to load, skipping... The following error of the cog: %s", command, e)
             continue
 
 # Initialize custom help

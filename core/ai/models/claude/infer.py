@@ -39,7 +39,7 @@ class Completions:
             else:
                 self._model_name = "openrouter/anthropic/" + model_name
             
-            logging.info(f"Using normalized model name: {self._model_name}")
+            logging.info("Using normalized model name: %s", self._model_name)
         
         else:
             raise ValueError("No Anthropic API key was set, this model isn't available")
