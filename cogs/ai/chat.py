@@ -198,7 +198,11 @@ class Chat(commands.Cog):
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
     )
-    async def sweep(self, ctx):
+    @discord.option(
+        "reset_prefs",
+        description="Clear the context history including the default model and feature settings",
+    )
+    async def sweep(self, ctx, reset_prefs: bool = False):
         """Clear the context history of the conversation"""
         await ctx.response.defer()
 
@@ -216,14 +220,21 @@ class Chat(commands.Cog):
                 await ctx.respond("🚫 This commmand can only be used in DMs or authorized guilds!")
                 return  
 
-        # Initialize history
+        # Get current feature and model
         _feature = await self.DBConn.get_config(guild_id=guild_id)
+        _model = await self.DBConn.get_default_model(guild_id=guild_id)
 
-        # Clear and set feature
+        print(_feature, _model)
+
+        # Clear and set feature and model
         await self.DBConn.clear_history(guild_id=guild_id)
-        await self.DBConn.set_config(guild_id=guild_id, tool=_feature)
 
-        await ctx.respond("✅ Chat history reset!")
+        if not reset_prefs:
+            await self.DBConn.set_config(guild_id=guild_id, tool=_feature)
+            await self.DBConn.set_default_model(guild_id=guild_id, model=_model)
+            await ctx.respond("✅ Chat history reset!")
+        else:
+            await ctx.respond("✅ Chat history reset, model and feature settings are cleared!")
 
     # Handle errors
     @sweep.error
@@ -271,12 +282,22 @@ class Chat(commands.Cog):
 
         # if tool use is the same, do not clear history
         _feature = await self.DBConn.get_config(guild_id=guild_id)
+
+        # Default model
+        _model = await self.DBConn.get_default_model(guild_id=guild_id)
+
+        print(_feature, _model)
+
+        # Check default model
         if _feature == capability:
             await ctx.respond("✅ Feature already enabled!")
         else:
             # set config
             await self.DBConn.set_config(guild_id=guild_id, tool=capability)
+            await self.DBConn.set_default_model(guild_id=guild_id, model=_model)
             await ctx.respond(f"✅ Feature **{capability}** enabled successfully and chat is reset to reflect the changes")
+
+            print(_feature, _model)
         
     # Handle errors
     @feature.error
