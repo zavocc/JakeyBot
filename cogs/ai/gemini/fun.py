@@ -1,3 +1,4 @@
+from core.ai.models.gemini.infer import Completions
 from discord.ext import commands
 from discord import Member, DiscordException
 from os import environ
@@ -38,13 +39,8 @@ class GeminiUtils(commands.Cog):
         if describe:
             try:
                 # Import modules
-                aiohttp = importlib.import_module("aiohttp")
                 PIL = importlib.import_module("PIL")
                 io = importlib.import_module("io")
-                Completions = importlib.import_module("core.ai.models.gemini.infer").Completions(
-                    discord_ctx=ctx,
-                    discord_bot=self.bot
-                )
 
                 _filedata = None
                 # Download the image as files like
@@ -54,7 +50,7 @@ class GeminiUtils(commands.Cog):
                         raise Exception("Max file size reached")
                 
                 # Save it as bytes so io.BytesIO can read it
-                async with self.bot_aiohttp_main_client_session.get(avatar_url) as response:
+                async with self.bot._aiohttp_main_client_session.get(avatar_url) as response:
                     _filedata = await response.read()
                 
                 # Check filedata
@@ -62,7 +58,7 @@ class GeminiUtils(commands.Cog):
                     raise Exception("No file data")
                 
                 # Generate description
-                _infer = Completions()
+                _infer = Completions(discord_ctx=ctx, discord_bot=self.bot)
                 _description = await _infer.completion({
                     "role":"user",
                     "parts":[PIL.Image.open(io.BytesIO(_filedata)), "Generate image descriptions but one sentence short to describe, straight to the point"]
