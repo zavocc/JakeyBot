@@ -9,8 +9,9 @@ import importlib
 class Tool:
     tool_human_name = "Image to Line drawing"
     tool_name = "image_to_linedrawing"
-    def __init__(self, method_send):
+    def __init__(self, method_send, discord_bot):
         self.method_send = method_send
+        self.discord_bot = discord_bot
 
         self.tool_schema = genai.protos.Tool(
             function_declarations=[
@@ -28,6 +29,29 @@ class Tool:
                 )
             ]
         )
+
+        self.tool_schema_beta = {
+            "functionDeclarations": [
+                {
+                    "name": self.tool_name,
+                    "description": "Restyle images to line drawings based from the given image",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "discord_attachment_url": {
+                                "type": "string"
+                            },
+                            "mode": {
+                                "type": "string",
+                                "enum": ["Simple Lines", "Complex Lines"]
+                            }
+                        },
+                        "required": ["discord_attachment_url", "mode"]
+                    }
+                }
+            ]
+        }
+
 
     async def _tool_function(self, discord_attachment_url: str, mode: str):
         # Import

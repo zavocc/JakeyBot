@@ -9,8 +9,9 @@ import importlib
 class Tool:
     tool_human_name = "Image Generator with Stable Diffusion 3.5"
     tool_name = "image_generator"
-    def __init__(self, method_send):
+    def __init__(self, method_send, discord_bot):
         self.method_send = method_send
+        self.discord_bot = discord_bot
 
         # Image generator
         self.tool_schema = genai.protos.Tool(

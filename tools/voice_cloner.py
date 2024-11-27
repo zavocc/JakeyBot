@@ -10,8 +10,9 @@ class Tool:
     tool_human_name = "Voice Cloner"
     tool_name = "voice_cloner"
 
-    def __init__(self, method_send):
+    def __init__(self, method_send, discord_bot):
         self.method_send = method_send
+        self.discord_bot = discord_bot
 
         self.tool_schema = genai.protos.Tool(
             function_declarations=[
@@ -29,6 +30,28 @@ class Tool:
                 )
             ]
         )
+
+        self.tool_schema_beta = {
+            "functionDeclarations": [
+                {
+                    "name": self.tool_name,
+                    "description": "Clone voices and perform TTS tasks from the given audio files",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "discord_attachment_url": {
+                                "type": "string"
+                            },
+                            "text": {
+                                "type": "string"
+                            }
+                        },
+                        "required": ["discord_attachment_url", "text"]
+                    }
+                }
+            ]
+        }
+
 
     async def _tool_function(self, discord_attachment_url: str, text: str):
         # Import

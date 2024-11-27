@@ -10,8 +10,9 @@ class Tool:
     tool_human_name = "EzAudio"
     tool_name = "audio_editor"
 
-    def __init__(self, method_send):
+    def __init__(self, method_send, discord_bot):
         self.method_send = method_send
+        self.discord_bot = discord_bot
 
         self.tool_schema = genai.protos.Tool(
             function_declarations=[
@@ -31,6 +32,33 @@ class Tool:
                 )
             ]
         )
+
+        self.tool_schema_beta = {
+            "functionDeclarations": [
+                {
+                    "name": self.tool_name,
+                    "description": "Edit audio, simply provide the description for editing, and EzAudio will do the rest",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "discord_attachment_url": {
+                                "type": "string"
+                            },
+                            "prompt": {
+                                "type": "string"
+                            },
+                            "edit_start_in_seconds": {
+                                "type": "number"
+                            },
+                            "edit_length_in_seconds": {
+                                "type": "number"
+                            }
+                        },
+                        "required": ["discord_attachment_url", "prompt"]
+                    }
+                }
+            ]
+        }
 
     async def _tool_function(self, discord_attachment_url: str, prompt: str, edit_start_in_seconds: int = 3, edit_length_in_seconds: int = 5):
         # Validate parameters
