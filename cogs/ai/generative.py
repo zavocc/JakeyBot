@@ -1,7 +1,7 @@
 from core.ai.assistants import Assistants
 from core.exceptions import ModelUnavailable, MultiModalUnavailable
 from os import environ
-import core.ai.models._template_.infer # For type hinting
+import core.aimodels._template_ # For type hinting
 import aiofiles
 import aiofiles.os
 import discord
@@ -42,7 +42,7 @@ class BaseChat():
 
         # Configure inference
         try:
-            _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
+            _infer: core.aimodels._template_.Completions = importlib.import_module(f"core.aimodels.{_model_provider}").Completions(
                 discord_ctx=ctx,
                 discord_bot=self.bot,
                 guild_id=guild_id,

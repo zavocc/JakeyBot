@@ -1,4 +1,4 @@
-from core.ai.models.gemini.infer import Completions
+from core.aimodels.gemini import Completions
 from core.ai.assistants import Assistants
 from discord.ext import commands
 from os import environ

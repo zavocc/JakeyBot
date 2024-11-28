@@ -6,7 +6,7 @@ from core.ai.history import History # type hinting
 from discord.ext import commands
 from discord import Message
 from os import environ
-import core.ai.models._template_.infer # For type hinting
+import core.aimodels._template_ # For type hinting
 import aiofiles
 import aiofiles.os
 import aiofiles.ospath
@@ -73,7 +73,7 @@ class BaseChat():
             _show_info = True
 
         try:
-            _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
+            _infer: core.aimodels._template_.Completions = importlib.import_module(f"core.aimodels.{_model_provider}").Completions(
                 discord_ctx=prompt,
                 discord_bot=self.bot,
                 guild_id=guild_id,
