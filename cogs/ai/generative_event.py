@@ -189,8 +189,7 @@ class BaseChat():
                     await prompt_message.reply(f"⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
                 else:
                     logging.error("%s: An error has occured when Jakey is generating an answer, reason: %s", (await aiofiles.ospath.abspath(__file__)), _error)
-                    await prompt_message.reply(f"❌ Sorry, I couldn't answer your question at the moment, please check the console logs for details")
-
+                    await prompt_message.reply(f"❌ Sorry, I couldn't answer your question at the moment, check console logs. What exactly happened: **`{type(_error).__name__}`**")
                 # Raise error
                 raise _error
     

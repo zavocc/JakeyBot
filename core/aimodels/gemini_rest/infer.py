@@ -32,11 +32,11 @@ class Completions():
         
         # Check if the AIOHTTP ClientSession for Gemini API is running
         if not hasattr(discord_bot, "_gemini_api_rest"):
-            raise Exception("AIOHttp Client Session for Gemini API (POST) not running, please check the bot configuration")
+            raise Exception("aiohttp client session for get and post requests in Gemini API not running, please check the bot configuration")
         
         # Check if _aiohttp_main_client_session is in the self._discord_bot object
         if not hasattr(discord_bot, "_aiohttp_main_client_session"):
-            raise Exception("AIOHttp Client Session (MAIN/GET) not initialized, please check the bot configuration")
+            raise Exception("aiohttp client session for get requests not initialized, please check the bot configuration")
         
         self._gemini_api_rest: aiohttp.ClientSession = discord_bot._gemini_api_rest
         self._aiohttp_main_client_session: aiohttp.ClientSession = discord_bot._aiohttp_main_client_session

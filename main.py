@@ -53,7 +53,7 @@ class InitBot(bridge.Bot):
             logging.warning("Playback support is disabled: %s", e)
             self._wavelink = None
 
-        # Prepare AIOhttp client sessions for specific tasks
+        # Prepare aiohttp client sessions for specific tasks
         # Gemini API
         self._gemini_api_rest = aiohttp.ClientSession(loop=self.loop)
 

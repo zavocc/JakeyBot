@@ -49,7 +49,7 @@ class Tool:
     async def _tool_function(self, videoid: str):
         # Using piped.video to get the video data
         if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
-            raise Exception("AIOHttp Client Session (MAIN/GET) not initialized, please check the bot configuration")
+            raise Exception("aiohttp client session for get requests not initialized, please check the bot configuration")
 
         _session: aiohttp.ClientSession = self.discord_bot._aiohttp_main_client_session
 

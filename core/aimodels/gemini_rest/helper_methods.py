@@ -1,4 +1,5 @@
 from core.exceptions import GeminiClientRequestError
+import logging
 import aiofiles
 import aiohttp
 
@@ -19,7 +20,8 @@ async def hm_chunker(file_path, chunk_size=8192):
 async def hm_raise_for_status(response: aiohttp.ClientResponse):
     try:
         response.raise_for_status()
-    except aiohttp.ClientResponseError:
+    except aiohttp.ClientResponseError as e:
+        logging.error("%s: I think I found a problem related to the request: %s", (await aiofiles.ospath.abspath(__file__)), e)
         if response.headers.get("Content-Type") == "application/json":
             raise GeminiClientRequestError(error_code=(await response.json())["error"]["code"], 
                                             error_message=(await response.json())["error"]["message"])
