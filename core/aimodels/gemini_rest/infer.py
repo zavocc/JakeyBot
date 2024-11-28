@@ -1,9 +1,10 @@
-import aiofiles.ospath
+from .helper_methods import hm_chunker, hm_raise_for_status
 from core.exceptions import ToolsUnavailable
 from os import environ
 from pathlib import Path
 import aiohttp
 import aiofiles
+import aiofiles.ospath
 import asyncio
 import discord
 import importlib
@@ -62,27 +63,6 @@ class Completions():
             {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_LOW_AND_ABOVE"}
         ]
 
-    ############################
-    # File upload
-    ############################
-    async def _chunker(self, file_path, chunk_size=8192):
-        async with aiofiles.open(file_path, "rb") as _file:
-            _chunk = await _file.read(chunk_size)
-            while _chunk:
-                yield _chunk
-                _chunk = await _file.read(chunk_size)
-
-    ############################
-    # Raise for status wrapper
-    # For logging and error handling
-    ############################
-    async def _raise_for_status(self, response: aiohttp.ClientResponse):
-        try:
-            response.raise_for_status()
-        except aiohttp.ClientResponseError as e:
-            logging.error("%s: I think I found a problem related to the request: %s", (await aiofiles.ospath.abspath(__file__)), e)
-            raise e
-
     async def input_files(self, attachment: discord.Attachment):
         # Download the attachment
         _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(518301839, 6582482111)}.{attachment.filename}"
@@ -124,15 +104,15 @@ class Completions():
                                         headers=_initial_headers,
                                         json=_file_props) as _upload_response:
             # Raise an error if the request was not successful
-            await self._raise_for_status(_upload_response)
+            await hm_raise_for_status(_upload_response)
 
             # Get the upload URL
             _upload_url = _upload_response.headers.get("X-Goog-Upload-URL")
 
         # Upload the actual bytes
-        async with self._gemini_api_rest.post(_upload_url, headers=_upload_headers, data=self._chunker(_xfilename)) as _upload_response:
+        async with self._gemini_api_rest.post(_upload_url, headers=_upload_headers, data=hm_chunker(_xfilename)) as _upload_response:
             # Raise an error if the request was not successful
-            await self._raise_for_status(_upload_response)
+            await hm_raise_for_status(_upload_response)
             
             # Get the file metadata
             _upload_info = (await _upload_response.json())["file"]
@@ -145,7 +125,7 @@ class Completions():
             async with self._gemini_api_rest.get(f"{self._api_endpoint}/{_upload_info['name']}", 
                                                  params={'key': environ.get("GEMINI_API_KEY")}) as _upload_response:
                 # Raise an error if the request was not successful
-                await self._raise_for_status(_upload_response)
+                await hm_raise_for_status(_upload_response)
 
                 _upload_info = await _upload_response.json()
                 
@@ -254,7 +234,7 @@ class Completions():
         # POST request
         async with self._gemini_api_rest.post(**_aiohttp_params, json=_payload) as response:
             # Raise an error if the request was not successful
-            await self._raise_for_status(response)
+            await hm_raise_for_status(response)
 
             await self._discord_method_send((await response.json()))
 
@@ -307,7 +287,7 @@ class Completions():
             })
             _payload.update({"contents": _chat_thread})
             async with self._gemini_api_rest.post(**_aiohttp_params, json=_payload) as response:
-                await self._raise_for_status(response)
+                await hm_raise_for_status(response)
 
                 _response = (await response.json())["candidates"][0]
 
