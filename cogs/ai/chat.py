@@ -95,11 +95,13 @@ class Chat(commands.Cog):
         elif isinstance(_error, ToolsUnavailable):
             await ctx.respond(f"⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
         else:
-            logging.error("%s: An error has occured when Jakey is generating an answer, reason: %s", (await aiofiles.ospath.abspath(__file__)), _error)
             await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, check console logs. What exactly happened: **`{type(_error).__name__}`**")
 
+        # Log the error
+        logging.error("%s: An error has occured when Jakey is generating an answer, reason: %s", (await aiofiles.ospath.abspath(__file__)), _error, exc_info=True)
+
         # Raise error
-        raise _error
+        #raise _error
     
     ###############################################
     # For /model slash command group
