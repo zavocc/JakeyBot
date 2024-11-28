@@ -5,7 +5,7 @@ import yaml
 class Assistants:
     # function to get the assistants
     @staticmethod
-    async def fetch_assistants(assistant_name: str, type: int = 0):
+    async def set_assistant_type(assistant_name: str, type: int = 0):
         # 0 - chat_assistants
         # 1 - utility_assistants
 

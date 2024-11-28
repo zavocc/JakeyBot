@@ -65,7 +65,7 @@ class BaseChat():
         ###############################################
         # Answer generation
         ###############################################
-        _system_prompt = await Assistants.fetch_assistants("jakey_system_prompt", type=0)
+        _system_prompt = await Assistants.set_assistant_type("jakey_system_prompt", type=0)
         _result = await _infer.chat_completion(prompt=prompt, db_conn=self.DBConn, system_instruction=_system_prompt)
         _formatted_response = _result["answer"].rstrip()
 

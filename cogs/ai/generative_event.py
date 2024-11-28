@@ -107,7 +107,7 @@ class BaseChat():
         if prompt.attachments:
             _final_prompt += f"\n\nTHIS PROMPT IS AUTO INSERTED BY SYSTEM: By the way based on the attachment given, here is the URL associated for reference:\n{prompt.attachments[0].url}"
         
-        _system_prompt = await Assistants.fetch_assistants("jakey_system_prompt", type=0)
+        _system_prompt = await Assistants.set_assistant_type("jakey_system_prompt", type=0)
         _result = await _infer.chat_completion(prompt=_final_prompt, db_conn=self.DBConn, system_instruction=_system_prompt)
         
         # Format the response
