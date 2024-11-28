@@ -258,6 +258,9 @@ class Completions():
             # Add previous interaction to the chat thread
             _chat_thread.append(_response["content"])
 
+            # Indicate the tool is called
+            await self._discord_method_send(f"✅ Used: **{_Tool.tool_human_name}**")
+
             # Call the tool
             try:
                 _toolResult = await _Tool._tool_function(**_tool_arg)
