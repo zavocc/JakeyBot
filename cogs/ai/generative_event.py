@@ -1,9 +1,7 @@
-from aiohttp.client_exceptions import ClientResponseError
 from core.ai.assistants import Assistants
 from core.ai.core import ModelsList
-from core.exceptions import ModelUnavailable, MultiModalUnavailable, ToolsUnavailable
+from core.exceptions import GeminiClientRequestError, ModelUnavailable, MultiModalUnavailable, ToolsUnavailable
 from core.ai.history import History # type hinting
-from discord.ext import commands
 from discord import Message
 from os import environ
 import core.aimodels._template_ # For type hinting
@@ -181,8 +179,8 @@ class BaseChat():
             try:
                 await self.ask_core(prompt_message)
             except Exception as _error:
-                if isinstance(_error, ClientResponseError):
-                    await prompt_message.reply(f"😨 Uh oh, something happened to our end while processing requests, please check console log for details!")
+                if isinstance(_error, GeminiClientRequestError):
+                    await prompt_message.reply(f"😨 Uh oh, something happened to our end while processing requests code **{_error.error_code}** with reason: **{_error.error_message}**")
                 elif isinstance(_error, MultiModalUnavailable):
                     await prompt_message.reply("🚫 This model cannot process certain files, choose another model to continue")
                 elif isinstance(_error, ModelUnavailable):
@@ -190,7 +188,8 @@ class BaseChat():
                 elif isinstance(_error, ToolsUnavailable):
                     await prompt_message.reply(f"⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
                 else:
-                    await prompt_message.reply(f"❌ Sorry, I couldn't answer your question at the moment, reason:\n```{_error}```")
+                    logging.error("%s: An error has occured when Jakey is generating an answer, reason: %s", (await aiofiles.ospath.abspath(__file__)), _error)
+                    await prompt_message.reply(f"❌ Sorry, I couldn't answer your question at the moment, please check the console logs for details")
 
                 # Raise error
                 raise _error

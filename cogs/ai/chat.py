@@ -1,14 +1,15 @@
-from aiohttp.client_exceptions import ClientResponseError
 from core.ai.core import ModelsList
 from cogs.ai.generative import BaseChat
 from cogs.ai.generative_event import BaseChat as BaseChatEvent
 from core.ai.history import History
-from core.exceptions import ModelUnavailable, MultiModalUnavailable, ToolsUnavailable
+from core.exceptions import GeminiClientRequestError, ModelUnavailable, MultiModalUnavailable, ToolsUnavailable
 from discord.commands import SlashCommandGroup
 from discord.ext import commands
 from os import environ
+import aiofiles.ospath
 import discord
 import inspect
+import logging
 import motor.motor_asyncio
 
 class Chat(commands.Cog):
@@ -85,8 +86,8 @@ class Chat(commands.Cog):
         # Cooldown error
         if isinstance(_error, commands.CommandOnCooldown):
             await ctx.respond(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
-        elif isinstance(_error, ClientResponseError):
-            await ctx.respond(f"😨 Uh oh, something happened to our end while processing requests, please check console log for details!")
+        elif isinstance(_error, GeminiClientRequestError):
+            await ctx.respond(f"😨 Uh oh, something happened to our end while processing requests code **{_error.error_code}** with reason: **{_error.error_message}**")
         elif isinstance(_error, MultiModalUnavailable):
             await ctx.respond("🚫 This model cannot process certain files, choose another model to continue")
         elif isinstance(_error, ModelUnavailable):
@@ -94,7 +95,8 @@ class Chat(commands.Cog):
         elif isinstance(_error, ToolsUnavailable):
             await ctx.respond(f"⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
         else:
-            await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, reason:\n```{_error}```")
+            logging.error("%s: An error has occured when Jakey is generating an answer, reason: %s", (await aiofiles.ospath.abspath(__file__)), _error)
+            await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, please check the console logs for details")
 
         # Raise error
         raise _error

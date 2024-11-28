@@ -100,23 +100,21 @@ class Completions():
         }
 
         # Session for uploading the file
-        async with self._gemini_api_rest.post(f"{self._api_endpoint_upload}?key={environ.get('GEMINI_API_KEY')}",
+        async with self._gemini_api_rest.post(f"{self._api_endpoint_upload}",
+                                        params={"key": environ.get("GEMINI_API_KEY")},
                                         headers=_initial_headers,
                                         json=_file_props) as _upload_response:
-            # Raise an error if the request was not successful
             await hm_raise_for_status(_upload_response)
-
+                
             # Get the upload URL
             _upload_url = _upload_response.headers.get("X-Goog-Upload-URL")
-
+           
         # Upload the actual bytes
         async with self._gemini_api_rest.post(_upload_url, headers=_upload_headers, data=hm_chunker(_xfilename)) as _upload_response:
-            # Raise an error if the request was not successful
             await hm_raise_for_status(_upload_response)
             
             # Get the file metadata
             _upload_info = (await _upload_response.json())["file"]
-            print(_upload_info)
 
         # Check for status if there's still a processing step
         # We use a different endpoint to check the status of the file
@@ -124,7 +122,7 @@ class Completions():
         while "PROCESSING" in _upload_info["state"]:
             async with self._gemini_api_rest.get(f"{self._api_endpoint}/{_upload_info['name']}", 
                                                  params={'key': environ.get("GEMINI_API_KEY")}) as _upload_response:
-                # Raise an error if the request was not successful
+                # Check if the request was successful
                 await hm_raise_for_status(_upload_response)
 
                 _upload_info = await _upload_response.json()
@@ -227,19 +225,44 @@ class Completions():
 
         # AIOHttp initial parameters
         _aiohttp_params = {
-            "url": f"{self._api_endpoint}/models/{self._model_name}:generateContent?key={environ.get('GEMINI_API_KEY')}",
+            "url": f"{self._api_endpoint}/models/{self._model_name}:generateContent",
+            "params": {"key": environ.get("GEMINI_API_KEY")},
             "headers": {"Content-Type": "application/json"}
         }
 
         # POST request
+        _retry = None
         async with self._gemini_api_rest.post(**_aiohttp_params, json=_payload) as response:
-            # Raise an error if the request was not successful
-            await hm_raise_for_status(response)
+            # Check for errors
+            if response.status == 403 and "do not have permission to access the File" in (await response.json())["error"]["message"]:
+                await self._discord_method_send("⚠️ Something went wrong when making a request, cleaning the chat history and retrying...")
+                # Add a status to retry
+                _retry = True
+            elif response.status >= 400:
+                await hm_raise_for_status(response)
+            else:
+                print((await response.json()))
 
-            print((await response.json()))
+                # Get the response with starting first candidate
+                _response = (await response.json())["candidates"][0]
+            
+        # We attempt to retry the requests by cleaning the chat h
+        if _retry:
+            for _chat_turns in _chat_thread:
+                print(_chat_turns, end="\n\n")
+                for _chat_part in _chat_turns["parts"]:
+                    if "fileData" in _chat_part:
+                        _chat_part.clear()
+                        _chat_part.update({
+                            "text": "⚠️ The file attachment expired and was removed."
+                        })
+            
+            # Retry the request
+            async with self._gemini_api_rest.post(**_aiohttp_params, json=_payload) as response:
+                # Raise an error if the request was not successful
+                await hm_raise_for_status(response)
 
-            # Get the response with starting first candidate
-            _response = (await response.json())["candidates"][0]
+                _response = (await response.json())["candidates"][0]
 
         # Check if the response is empty or blocked by safety settings
         if _response["finishReason"] == "SAFETY":
@@ -290,6 +313,7 @@ class Completions():
             })
             _payload.update({"contents": _chat_thread})
             async with self._gemini_api_rest.post(**_aiohttp_params, json=_payload) as response:
+                # Raise an error if the request was not successful
                 await hm_raise_for_status(response)
 
                 _response = (await response.json())["candidates"][0]
