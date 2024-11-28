@@ -1,6 +1,6 @@
 from core.ai.assistants import Assistants
 from core.ai.core import ModelsList
-from core.exceptions import GeminiClientRequestError, ModelUnavailable, MultiModalUnavailable, ToolsUnavailable
+from core.exceptions import *
 from core.ai.history import History # type hinting
 from discord import Message
 from os import environ
@@ -181,6 +181,8 @@ class BaseChat():
             except Exception as _error:
                 if isinstance(_error, GeminiClientRequestError):
                     await prompt_message.reply(f"😨 Uh oh, something happened to our end while processing requests code **{_error.error_code}** with reason: **{_error.error_message}**")
+                elif isinstance(_error, HistoryDatabaseError):
+                    await prompt_message.reply(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
                 elif isinstance(_error, MultiModalUnavailable):
                     await prompt_message.reply("🚫 This model cannot process certain files, choose another model to continue")
                 elif isinstance(_error, ModelUnavailable):

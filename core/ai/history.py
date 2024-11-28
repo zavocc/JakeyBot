@@ -1,3 +1,4 @@
+from core.exceptions import HistoryDatabaseError
 from os import environ
 import aiofiles.ospath
 import logging
@@ -105,7 +106,7 @@ class History:
             )
         except Exception as e:
             logging.error("%s: Error setting default model: %s", (await aiofiles.ospath.abspath(__file__)), e)
-            raise e
+            raise HistoryDatabaseError("Error setting default model")
 
     async def get_default_model(self, guild_id: int):
         if guild_id is None or not isinstance(guild_id, int):
@@ -116,5 +117,5 @@ class History:
             return (await self._collection.find_one({"guild_id": guild_id}))["default_model"]
         except Exception as e:
             logging.error("%s: Error getting default model: %s", (await aiofiles.ospath.abspath(__file__)), e)
-            raise e
+            raise HistoryDatabaseError("Error getting default model")
 

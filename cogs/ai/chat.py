@@ -2,7 +2,7 @@ from core.ai.core import ModelsList
 from cogs.ai.generative import BaseChat
 from cogs.ai.generative_event import BaseChat as BaseChatEvent
 from core.ai.history import History
-from core.exceptions import GeminiClientRequestError, ModelUnavailable, MultiModalUnavailable, ToolsUnavailable
+from core.exceptions import *
 from discord.commands import SlashCommandGroup
 from discord.ext import commands
 from os import environ
@@ -88,6 +88,8 @@ class Chat(commands.Cog):
             await ctx.respond(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
         elif isinstance(_error, GeminiClientRequestError):
             await ctx.respond(f"😨 Uh oh, something happened to our end while processing requests code **{_error.error_code}** with reason: **{_error.error_message}**")
+        elif isinstance(_error, HistoryDatabaseError):
+            await ctx.respond(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
         elif isinstance(_error, MultiModalUnavailable):
             await ctx.respond("🚫 This model cannot process certain files, choose another model to continue")
         elif isinstance(_error, ModelUnavailable):
