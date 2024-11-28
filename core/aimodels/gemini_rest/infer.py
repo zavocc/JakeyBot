@@ -236,7 +236,7 @@ class Completions():
             # Raise an error if the request was not successful
             await hm_raise_for_status(response)
 
-            await self._discord_method_send((await response.json()))
+            print((await response.json()))
 
             # Get the response with starting first candidate
             _response = (await response.json())["candidates"][0]
@@ -249,7 +249,7 @@ class Completions():
         _tool_arg = None
         _tool_name = None
         for x in _response["content"]["parts"]:
-            await self._discord_method_send(x)
+            print(x)
             if "functionCall" in x:
                 _tool_arg = x["functionCall"]["args"]
                 _tool_name = x["functionCall"]["name"]
