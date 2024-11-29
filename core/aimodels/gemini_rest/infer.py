@@ -286,10 +286,16 @@ class Completions():
         # Check if we need to execute Tools
         _tool_arg = None
         _tool_name = None
-        for x in _response["content"]["parts"]:
-            if "functionCall" in x:
-                _tool_arg = x["functionCall"]["args"]
-                _tool_name = x["functionCall"]["name"]
+        for _partchk in _response["content"]["parts"]:
+            if "functionCall" in _partchk:
+                _tool_arg = _partchk["functionCall"]["args"]
+                _tool_name = _partchk["functionCall"]["name"]
+                break
+
+            # Check if we have code execution response
+            if "codeExecutionResult" in _partchk:
+                await self._discord_method_send(f"✅ Used: **{_Tool.tool_human_name}**")
+                break
 
         if _tool_arg and _tool_name:
             # Add previous interaction to the chat thread
