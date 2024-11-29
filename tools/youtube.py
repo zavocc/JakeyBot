@@ -11,24 +11,7 @@ class Tool:
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-        # YouTube
-        self.tool_schema = genai.protos.Tool(
-            function_declarations=[
-                genai.protos.FunctionDeclaration(
-                    name = self.tool_name,
-                    description = "Summarize and gather insights from a YouTube video.",
-                    parameters=genai.protos.Schema(
-                        type=genai.protos.Type.OBJECT,
-                        properties={
-                            'videoid':genai.protos.Schema(type=genai.protos.Type.STRING),
-                        },
-                        required=['videoid']
-                    )
-                )
-            ]
-        )
-
-        self.tool_schema_beta = {
+        self.tool_schema = {
             "functionDeclarations": [
                 {
                     "name": self.tool_name,

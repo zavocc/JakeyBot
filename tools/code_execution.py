@@ -11,4 +11,4 @@ class Tool:
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-        self.tool_schema_beta = {"code_execution": {}}
+        self.tool_schema = {"code_execution": {}}

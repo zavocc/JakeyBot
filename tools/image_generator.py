@@ -14,26 +14,7 @@ class Tool:
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-        # Image generator
-        self.tool_schema = genai.protos.Tool(
-            function_declarations=[
-                genai.protos.FunctionDeclaration(
-                    name = self.tool_name,
-                    description = "Generate or restyle images using natural language or from description",
-                    parameters=genai.protos.Schema(
-                        type=genai.protos.Type.OBJECT,
-                        properties={
-                            'image_description':genai.protos.Schema(type=genai.protos.Type.STRING),
-                            'width':genai.protos.Schema(type=genai.protos.Type.NUMBER),
-                            'height':genai.protos.Schema(type=genai.protos.Type.NUMBER)
-                        },
-                        required=['image_description', 'width', 'height']
-                    )
-                )
-            ]
-        )
-
-        self.tool_schema_beta = {
+        self.tool_schema = {
             "functionDeclarations": [
                 {
                     "name": self.tool_name,

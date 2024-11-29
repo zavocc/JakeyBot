@@ -14,24 +14,7 @@ class Tool:
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-        self.tool_schema = genai.protos.Tool(
-            function_declarations=[
-                genai.protos.FunctionDeclaration(
-                    name = self.tool_name,
-                    description = "Restyle images to line drawings based from the given image",
-                    parameters=genai.protos.Schema(
-                        type=genai.protos.Type.OBJECT,
-                        properties={
-                            'discord_attachment_url':genai.protos.Schema(type=genai.protos.Type.STRING),
-                            'mode':genai.protos.Schema(type=genai.protos.Type.STRING, enum=["Simple Lines", "Complex Lines"]),
-                        },
-                        required=['discord_attachment_url', 'mode']
-                    )
-                )
-            ]
-        )
-
-        self.tool_schema_beta = {
+        self.tool_schema = {
             "functionDeclarations": [
                 {
                     "name": self.tool_name,

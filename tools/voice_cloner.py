@@ -15,24 +15,7 @@ class Tool:
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-        self.tool_schema = genai.protos.Tool(
-            function_declarations=[
-                genai.protos.FunctionDeclaration(
-                    name = self.tool_name,
-                    description = "Clone voices and perform TTS tasks from the given audio files",
-                    parameters=genai.protos.Schema(
-                        type=genai.protos.Type.OBJECT,
-                        properties={
-                            'discord_attachment_url':genai.protos.Schema(type=genai.protos.Type.STRING),
-                            'text':genai.protos.Schema(type=genai.protos.Type.STRING),
-                        },
-                        required=['discord_attachment_url', 'text']
-                    )
-                )
-            ]
-        )
-
-        self.tool_schema_beta = {
+        self.tool_schema = {
             "functionDeclarations": [
                 {
                     "name": self.tool_name,

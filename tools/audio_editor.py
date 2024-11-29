@@ -15,26 +15,7 @@ class Tool:
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-        self.tool_schema = genai.protos.Tool(
-            function_declarations=[
-                genai.protos.FunctionDeclaration(
-                    name = self.tool_name,
-                    description = "Edit audio, simply provide the description for editing, and EzAudio will do the rest",
-                    parameters=genai.protos.Schema(
-                        type=genai.protos.Type.OBJECT,
-                        properties={
-                            'discord_attachment_url':genai.protos.Schema(type=genai.protos.Type.STRING),
-                            'prompt':genai.protos.Schema(type=genai.protos.Type.STRING),
-                            'edit_start_in_seconds':genai.protos.Schema(type=genai.protos.Type.NUMBER),
-                            'edit_length_in_seconds':genai.protos.Schema(type=genai.protos.Type.NUMBER)
-                        },
-                        required=['discord_attachment_url', 'prompt']
-                    )
-                )
-            ]
-        )
-
-        self.tool_schema_beta = {
+        self.tool_schema = {
             "functionDeclarations": [
                 {
                     "name": self.tool_name,
