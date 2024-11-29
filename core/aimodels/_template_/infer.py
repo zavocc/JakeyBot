@@ -37,7 +37,7 @@ class Completions():
        pass
 
     # For chat completions (required)
-    async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
+    async def chat_completion(self, prompt, db_conn, system_instruction: str = None) -> dict:
         return {"answer":"A quick brown fox jumps over a lazy dog", "chat_thread": []}
 
     async def save_to_history(self, db_conn, chat_thread = None):
