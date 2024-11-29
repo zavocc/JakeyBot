@@ -1,9 +1,7 @@
 from core.ai.assistants import Assistants
 from core.aimodels.gemini import Completions
 from discord.ext import commands
-from google.ai.generativelanguage_v1beta.types import content
 from os import environ
-import google.generativeai as genai
 import aiofiles
 import datetime
 import discord
@@ -74,10 +72,12 @@ class GenAITools(commands.Cog):
         _prompt_feed = [{
             "role": "user",
             "parts":[
-                inspect.cleandoc(
-                    f"""Date today is {datetime.datetime.now().strftime('%m/%d/%Y')}
-                    OK, now generate summaries for me:"""
-                )
+                {
+                    "text": inspect.cleandoc(
+                        f"""Date today is {datetime.datetime.now().strftime('%m/%d/%Y')}
+                        OK, now generate summaries for me:"""
+                    )
+                }
             ]
         }]
         
@@ -89,19 +89,22 @@ class GenAITools(commands.Cog):
                 _prompt_feed.append(
                     {
                         "role": "user",
-                        "parts": [inspect.cleandoc(
-                            f"""# Message by: {x.author.name} at {x.created_at}
+                        "parts": [
+                            {
+                            "text": inspect.cleandoc(
+                                f"""# Message by: {x.author.name} at {x.created_at}
 
-                            # Message body:
-                            {x.content}
+                                # Message body:
+                                {x.content}
 
-                            # Message jump link:
-                            {x.jump_url}
+                                # Message jump link:
+                                {x.jump_url}
 
-                            # Additional information:
-                            - Discord User ID: {x.author.id}
-                            - Discord User Display Name: {x.author.display_name}"""
-                        )]
+                                # Additional information:
+                                - Discord User ID: {x.author.id}
+                                - Discord User Display Name: {x.author.display_name}""")
+                            }
+                        ]
                     }
                 )
             else:
@@ -115,33 +118,31 @@ class GenAITools(commands.Cog):
         _system_prompt = await Assistants.set_assistant_type("discord_msg_summarizer_prompt", type=1)
 
         # Constrain the output to JSON
-        _completions.generation_config.update({
-            "response_schema": content.Schema(
-                type=content.Type.OBJECT,
-                enum=[],
-                required=["summary", "links"],
-                properties={
-                    "summary": content.Schema(
-                        type=content.Type.STRING,
-                    ),
-                    "links": content.Schema(
-                        type=content.Type.ARRAY,
-                        items=content.Schema(
-                            type=content.Type.OBJECT,
-                            enum=[],
-                            required=["description", "jump_url"],
-                            properties={
-                                "description": content.Schema(
-                                    type=content.Type.STRING,
-                                ),
-                                "jump_url": content.Schema(
-                                    type=content.Type.STRING,
-                                ),
+        _completions._generation_config.update({
+            "response_schema": {
+                "type": "object",
+                "properties": {
+                    "summary": {
+                        "type": "string"
+                    },
+                    "links": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "description": {
+                                    "type": "string"
+                                },
+                                "jump_url": {
+                                    "type": "string"
+                                }
                             },
-                        ),
-                    ),
+                            "required": ["description", "jump_url"]
+                        }
+                    }
                 },
-            ),
+                "required": ["summary", "links"]
+            },
             "response_mime_type": "application/json",
         })
 

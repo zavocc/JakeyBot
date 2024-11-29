@@ -9,12 +9,15 @@ import asyncio
 import discord
 import importlib
 import logging
+import typing
 import random
 
 class Completions(RestParams):
     _model_provider_thread = "gemini"
 
     def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "gemini-1.5-flash-002"):
+        super().__init__()
+
         # Discord context
         self._discord_ctx = discord_ctx
 
@@ -132,6 +135,55 @@ class Completions(RestParams):
     ############################
     # Inferencing
     ############################
+    # Completion
+    async def completion(self, prompt: typing.Union[str, list], system_instruction: str = None):
+        # Check if the prompt is a string
+        if isinstance(prompt, str):
+            prompt = [
+                {
+                    "parts": [
+                        {
+                            "text": prompt
+                        }
+                    ],
+                }
+            ]
+        elif isinstance(prompt, list):
+            pass
+        else:
+            raise TypeError("Prompt must be either a string or a list")
+        
+        # Payload
+        _payload = {
+            "systemInstruction": {
+                "role": "user",
+                "parts": [
+                    {
+                        "text": system_instruction or "You are a helpful assistant"
+                    }
+                ]
+            },
+            "generationConfig": self._generation_config,
+            "safetySettings": self._safety_settings,
+            "contents": prompt,
+        }
+
+        # AIOHttp initial parameters
+        _aiohttp_params = {
+            "url": f"{self._api_endpoint}/models/{self._model_name}:generateContent",
+            "params": {"key": environ.get("GEMINI_API_KEY")},
+            "headers": {"Content-Type": "application/json"}
+        }
+
+        async with self._gemini_api_rest.post(**_aiohttp_params, json=_payload) as response:
+            # Check for errors
+            await hm_raise_for_status(response)
+            
+            # Get the response with starting first candidate
+            _response = (await response.json())["candidates"][0]["content"]["parts"][-1]["text"]
+            return _response
+
+    # Chat Completion
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Tools
         try:
@@ -185,7 +237,7 @@ class Completions(RestParams):
                 "role": "user",
                 "parts": [
                     {
-                        "text": system_instruction
+                        "text": system_instruction or "You are a helpful assistant"
                     }
                 ]
             },
