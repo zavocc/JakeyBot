@@ -1,5 +1,4 @@
 # Huggingface spaces endpoints 
-import google.generativeai as genai
 import aiofiles.os
 import asyncio
 import discord

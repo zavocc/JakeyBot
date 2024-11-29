@@ -12,8 +12,8 @@ class History:
             raise ConnectionError("Please set MONGO_DB_URL in dev.env")
         
         # Create a new database if it doesn't exist, access chat_history database
-        self._db = self._db_conn[environ.get("MONGO_DB_NAME", "chat_history_prod")]
-        self._collection = self._db["db_collection"]
+        self._db = self._db_conn[environ.get("MONGO_DB_NAME", "jakey_prod_db")]
+        self._collection = self._db[environ.get("MONGO_DB_COLLECTION_NAME", "jakey_prod_db_collection")]
         logging.info("Connected to the database %s and collection %s", self._db.name, self._collection.name)
 
     async def _ensure_document(self, guild_id: int, model: str = "gemini::gemini-1.5-flash-002", tool_use: str = "code_execution"):

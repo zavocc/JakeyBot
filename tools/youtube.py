@@ -1,5 +1,4 @@
 # Built in Tools
-import google.generativeai as genai
 import aiohttp
 
 # Function implementations
