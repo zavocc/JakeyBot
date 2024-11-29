@@ -1,5 +1,6 @@
 from .helper_methods import hm_chunker, hm_raise_for_status
-from core.exceptions import ToolsUnavailable
+from .rest_params import RestParams
+from core.exceptions import SafetyFilterError, ToolsUnavailable
 from os import environ
 from pathlib import Path
 import aiohttp
@@ -10,18 +11,18 @@ import importlib
 import logging
 import random
 
-class Completions():
+class Completions(RestParams):
     _model_provider_thread = "gemini_rest"
-    _api_endpoint = "https://generativelanguage.googleapis.com/v1beta"
-    _api_endpoint_upload = "https://generativelanguage.googleapis.com/upload/v1beta/files"
 
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, 
-                 model_name = "gemini-1.5-flash-002"):
+    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "gemini-1.5-flash-002"):
+        # Discord context
+        self._discord_ctx = discord_ctx
+
         # Check if the discord_ctx is either instance of discord.Message or discord.ApplicationContext
         if isinstance(discord_ctx, discord.Message):
-            self._discord_method_send = discord_ctx.channel.send
+            self._discord_method_send = self._discord_ctx.channel.send
         elif isinstance(discord_ctx, discord.ApplicationContext):
-            self._discord_method_send = discord_ctx.send
+            self._discord_method_send = self._discord_ctx.send
         else:
             raise Exception("Invalid discord channel context provided")
 
@@ -29,7 +30,8 @@ class Completions():
         if not isinstance(discord_bot, discord.Bot):
             raise Exception("Invalid discord bot object provided")
         
-        self._discord_bot = discord_bot
+        # Discord bot object lifecycle instance
+        self._discord_bot: discord.Bot = discord_bot
         
         # Check if the AIOHTTP ClientSession for Gemini API is running
         if not hasattr(discord_bot, "_gemini_api_rest"):
@@ -47,20 +49,6 @@ class Completions():
         self._model_name = model_name
         self._guild_id = guild_id
 
-        # REST parameters
-        self._generation_config = {
-            "temperature": 0.7,
-            "topK": 40,
-            "topP": 0.95,
-            "maxOutputTokens": 8192,
-            "responseMimeType": "text/plain"
-        }
-        self._safety_settings = [
-            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_LOW_AND_ABOVE"},
-            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_LOW_AND_ABOVE"},
-            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_LOW_AND_ABOVE"},
-            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_LOW_AND_ABOVE"}
-        ]
 
     async def input_files(self, attachment: discord.Attachment):
         # Download the attachment
@@ -149,6 +137,7 @@ class Completions():
         try:
             _Tool = importlib.import_module(f"tools.{(await db_conn.get_config(guild_id=self._guild_id))}").Tool(
                 method_send=self._discord_method_send,
+                discord_ctx=self._discord_ctx,
                 discord_bot=self._discord_bot
             )
         except ModuleNotFoundError as e:
@@ -278,7 +267,7 @@ class Completions():
 
         # Check if the response is empty or blocked by safety settings
         if _response["finishReason"] == "SAFETY":
-            raise Exception("The response was blocked by safety settings, rephrase the prompt or try again later")
+            raise SafetyFilterError("The response was blocked by safety settings, rephrase the prompt or try again later")
 
         # Check if we need to execute Tools
         _tool_arg = None

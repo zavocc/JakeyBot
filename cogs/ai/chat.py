@@ -93,6 +93,8 @@ class Chat(commands.Cog):
             await ctx.respond("🚫 This model cannot process certain files, choose another model to continue")
         elif isinstance(_error, ModelUnavailable):
             await ctx.respond(f"⚠️ The model you've chosen is not available at the moment, please choose another model")
+        elif isinstance(_error, SafetyFilterError):
+            await ctx.respond(f"🤬 I detected unsafe content in your prompt, please rephrase your question")
         elif isinstance(_error, ToolsUnavailable):
             await ctx.respond(f"⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
         else:
@@ -232,8 +234,6 @@ class Chat(commands.Cog):
         _feature = await self.DBConn.get_config(guild_id=guild_id)
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
 
-        print(_feature, _model)
-
         # Clear and set feature and model
         await self.DBConn.clear_history(guild_id=guild_id)
 
@@ -294,8 +294,6 @@ class Chat(commands.Cog):
         # Default model
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
 
-        print(_feature, _model)
-
         # Check default model
         if _feature == capability:
             await ctx.respond("✅ Feature already enabled!")
@@ -304,8 +302,6 @@ class Chat(commands.Cog):
             await self.DBConn.set_config(guild_id=guild_id, tool=capability)
             await self.DBConn.set_default_model(guild_id=guild_id, model=_model)
             await ctx.respond(f"✅ Feature **{capability}** enabled successfully and chat is reset to reflect the changes")
-
-            print(_feature, _model)
         
     # Handle errors
     @feature.error

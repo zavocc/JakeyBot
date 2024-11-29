@@ -13,13 +13,18 @@ class MultiModalUnavailable(Exception):
 class ModelUnavailable(ModuleNotFoundError):
     pass
 
+class SafetyFilterError(Exception):
+    pass
+
 class ToolsUnavailable(ModuleNotFoundError):
     pass
+
 
 __all__ = [
     "GeminiClientRequestError",
     "HistoryDatabaseError",
     "ModelUnavailable",
     "MultiModalUnavailable",
+    "SafetyFilterError",
     "ToolsUnavailable"
 ]

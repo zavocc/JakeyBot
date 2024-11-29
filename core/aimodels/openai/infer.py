@@ -7,19 +7,24 @@ import logging
 class Completions:
     _model_provider_thread = "openai"
 
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, 
-                 model_name = "gpt-4o-mini"):
+    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "gpt-4o-mini"):
+        # Discord context
+        self._discord_ctx = discord_ctx
+
         # Check if the discord_ctx is either instance of discord.Message or discord.ApplicationContext
         if isinstance(discord_ctx, discord.Message):
-            self._discord_method_send = discord_ctx.channel.send
+            self._discord_method_send = self._discord_ctx.channel.send
         elif isinstance(discord_ctx, discord.ApplicationContext):
-            self._discord_method_send = discord_ctx.send
+            self._discord_method_send = self._discord_ctx.send
         else:
             raise Exception("Invalid discord channel context provided")
 
         # Check if discord_bot whether if its a subclass of discord.Bot
         if not isinstance(discord_bot, discord.Bot):
             raise Exception("Invalid discord bot object provided")
+        
+        # Discord bot object lifecycle instance
+        self._discord_bot: discord.Bot = discord_bot
 
         self._file_data = None
 

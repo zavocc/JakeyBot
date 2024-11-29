@@ -188,6 +188,8 @@ class BaseChat():
                     await prompt_message.reply(f"⚠️ The model you've chosen is not available at the moment, please choose another model")
                 elif isinstance(_error, ToolsUnavailable):
                     await prompt_message.reply(f"⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
+                elif isinstance(_error, SafetyFilterError):
+                    await prompt_message.reply(f"🤬 I detected unsafe content in your prompt, please rephrase your question")
                 else:
                     await prompt_message.reply(f"❌ Sorry, I couldn't answer your question at the moment, check console logs. What exactly happened: **`{type(_error).__name__}`**")
 

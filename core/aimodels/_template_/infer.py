@@ -6,19 +6,24 @@ class Completions():
     # This will be used for chat history thread, feel free to change it
     _model_provider_thread = "ai_provider_company"
 
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, 
-                 model_name = "agi-5-latest"):
+    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "agi-5-latest"):
+        # Discord context
+        self._discord_ctx = discord_ctx
+
         # Check if the discord_ctx is either instance of discord.Message or discord.ApplicationContext
         if isinstance(discord_ctx, discord.Message):
-            self._discord_method_send = discord_ctx.channel.send
+            self._discord_method_send = self._discord_ctx.channel.send
         elif isinstance(discord_ctx, discord.ApplicationContext):
-            self._discord_method_send = discord_ctx.send
+            self._discord_method_send = self._discord_ctx.send
         else:
             raise Exception("Invalid discord channel context provided")
         
         # Check if discord_bot whether if its a subclass of discord.Bot
         if not isinstance(discord_bot, discord.Bot):
             raise Exception("Invalid discord bot object provided")
+        
+        # Discord bot object lifecycle instance
+        self._discord_bot: discord.Bot = discord_bot
 
         # Used for passing non-textual data into the model
         self._file_data = None # The attachment data itself (binary data, prompt, etc)
