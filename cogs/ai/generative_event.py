@@ -180,7 +180,7 @@ class BaseChat():
                 await self.ask_core(prompt_message)
             except Exception as _error:
                 if isinstance(_error, GeminiClientRequestError):
-                    await prompt_message.reply(f"😨 Uh oh, something happened to our end while processing requests code **{_error.error_code}** with reason: **{_error.error_message}**")
+                    await prompt_message.reply(f"😨 Uh oh, something happened to our end while processing requests code **{_error.error_code}** with reason: **{_error.message}**")
                 elif isinstance(_error, HistoryDatabaseError):
                     await prompt_message.reply(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
                 elif isinstance(_error, MultiModalUnavailable):

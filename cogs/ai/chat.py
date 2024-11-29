@@ -87,7 +87,7 @@ class Chat(commands.Cog):
         if isinstance(_error, commands.CommandOnCooldown):
             await ctx.respond(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
         elif isinstance(_error, GeminiClientRequestError):
-            await ctx.respond(f"😨 Uh oh, something happened to our end while processing requests code **{_error.error_code}** with reason: **{_error.error_message}**")
+            await ctx.respond(f"😨 Uh oh, something happened to our end while processing requests code **{_error.error_code}** with reason: **{_error.message}**")
         elif isinstance(_error, HistoryDatabaseError):
             await ctx.respond(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
         elif isinstance(_error, MultiModalUnavailable):

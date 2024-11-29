@@ -1,9 +1,7 @@
-# TODO: change error_message to just message
-# Replace all occurrences in the codebase that uses error_message to message
 class GeminiClientRequestError(Exception):
-    def __init__(self, error_code: int = 400, error_message: str = "Bad Request"):
+    def __init__(self, message: str, error_code: int = 400):
         self.error_code = error_code
-        self.error_message = error_message
+        self.message = message
 
 class HistoryDatabaseError(Exception):
     def __init__(self, message: str):
