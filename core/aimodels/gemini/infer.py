@@ -378,7 +378,7 @@ class Completions(RestParams):
 
             # Check if the response is empty or blocked by safety settings
             if _response["finishReason"] == "SAFETY":
-                raise Exception("The full response was blocked by safety settings, rephrase the prompt or try again later")
+                raise SafetyFilterError("The full response was blocked by safety settings, rephrase the prompt or try again later")
 
         # Append to history
         _chat_thread.append(_response["content"])
