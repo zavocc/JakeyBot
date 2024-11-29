@@ -194,7 +194,7 @@ class BaseChat():
                     await prompt_message.reply(f"❌ Sorry, I couldn't answer your question at the moment, check console logs. What exactly happened: **`{type(_error).__name__}`**")
 
                 # Log the error
-                logging.error("An error has occured while generating an answer, reason: ", exc_info=True)
+                logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)
 
                 # Raise error
                 #raise _error

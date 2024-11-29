@@ -64,7 +64,7 @@ class GeminiUtils(commands.Cog):
                     "parts":[PIL.Image.open(io.BytesIO(_filedata)), "Generate image descriptions but one sentence short to describe, straight to the point"]
                 })
             except Exception as e:
-                logging.error("An errored occured while generating image descriptions: %s", e)
+                logging.error("An errored occurred while generating image descriptions: %s", e)
                 _description = "Failed to generate image descriptions, check console for more info."
 
         # Embed
@@ -80,7 +80,7 @@ class GeminiUtils(commands.Cog):
     @avatar.error
     async def on_command_error(self, ctx: commands.Context):
         await ctx.respond("⛔ Something went wrong, please check console log for details")
-        logging.error("An error has occured while executing avatar command, reason: ", exc_info=True)
+        logging.error("An error has occurred while executing avatar command, reason: ", exc_info=True)
 
 def setup(bot):
     bot.add_cog(GeminiUtils(bot))

@@ -201,7 +201,7 @@ class GenAITools(commands.Cog):
         else:
             await ctx.respond("❌ Sorry, I can't summarize messages at the moment, I'm still learning! Please try again, and please check console logs.")
         
-        logging.error("An error has occured while generating an summaries, reason: %s", _error, exc_info=True)
+        logging.error("An error has occurred while generating an summaries, reason: %s", _error, exc_info=True)
 
     
 def setup(bot):

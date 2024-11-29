@@ -149,13 +149,13 @@ class Completions(GenAIConfigDefaults):
         final_prompt = [self._file_data, f'{prompt}'] if self._file_data is not None else f'{prompt}'
         chat_session = _genai_client.start_chat(history=_chat_thread if _chat_thread else None)
 
-        # Re-write the history if an error has occured
+        # Re-write the history if an error has occurred
         # For now this is the only workaround that I could find to re-write the history if there are dead file references causing PermissionDenied exception
         # when trying to access the deleted file uploaded using Files API. See:
         # https://discuss.ai.google.dev/t/what-is-the-best-way-to-persist-chat-history-into-file/3804/6?u=zavocc306
         try:
             answer = await chat_session.send_message_async(final_prompt)
-        #  Retry the response if an error has occured
+        #  Retry the response if an error has occurred
         except google.api_core.exceptions.PermissionDenied:
             # Iterate over chat_session.history
             # Due to the uncanny use of protobuf objects but when iterating, each contains the format similar to this
