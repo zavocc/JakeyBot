@@ -9,3 +9,5 @@ class Tool:
     def __init__(self, method_send, discord_bot):
         self.method_send = method_send
         self.discord_bot = discord_bot
+
+        self.tool_schema_beta = {"code_execution": {}}

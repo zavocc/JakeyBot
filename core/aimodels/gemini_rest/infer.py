@@ -155,9 +155,6 @@ class Completions():
             logging.error("I cannot import the tool because the module is not found: %s", e)
             raise ToolsUnavailable
 
-        if _Tool.tool_name == "code_execution":
-            _Tool.tool_schema_beta = {"code_execution": {}}
-
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
 
