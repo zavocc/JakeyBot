@@ -33,7 +33,7 @@ class Completions():
         pass
 
     # For non-chat completions
-    async def completion(self, prompt, system_instruction: str = None):
+    async def completion(self, prompt, system_instruction: str = None) -> str:
        pass
 
     # For chat completions (required)
