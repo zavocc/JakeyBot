@@ -4,7 +4,6 @@ from os import environ
 from pathlib import Path
 import aiofiles
 import aiofiles.os
-import aiofiles.ospath
 import aiohttp
 import asyncio
 import discord
@@ -121,7 +120,7 @@ class Completions(GenAIConfigDefaults):
             try:
                 _Tool_use = importlib.import_module(f"tools.{(await db_conn.get_config(guild_id=self._guild_id))}").Tool(self._discord_method_send)
             except ModuleNotFoundError as e:
-                logging.error("%s: I cannot import the tool because the module is not found: %s", (await aiofiles.ospath.abspath(__file__)), e)
+                logging.error("I cannot import the tool because the module is not found: %s", e)
                 raise ToolsUnavailable
 
             if _Tool_use.tool_name == "code_execution":
@@ -196,12 +195,12 @@ class Completions(GenAIConfigDefaults):
                         _result = await _Tool_use._tool_function(**_func_call.args)
                     except (AttributeError, TypeError) as e:
                         # Also print the error to the console
-                        logging.error("%s: I think I found a problem related to function calling:", (await aiofiles.ospath.abspath(__file__)), e)
+                        logging.error("I think I found a problem related to function calling: %s", e)
                         raise ToolsUnavailable
                     # For other exceptions, log the error and add it as part of the chat thread
                     except Exception as e:
                         # Also print the error to the console
-                        logging.error("%s: Something when calling specific tool lately, reason: %s", (await aiofiles.ospath.abspath(__file__)), e)
+                        logging.error("Something when calling specific tool lately, reason: %s", e)
                         _result = f"⚠️ Something went wrong while executing the tool: {e}, please tell the developer or the user to check console logs"
             
                     # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution

@@ -18,7 +18,9 @@ chdir(Path(__file__).parent.resolve())
 load_dotenv("dev.env")
 
 # Logging
-logging.basicConfig(format='%(levelname)s %(asctime)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
+logging.basicConfig(format='%(levelname)s %(asctime)s [%(filename)s:%(lineno)d - %(funcName)s()]: %(message)s', 
+                    datefmt='%m/%d/%Y %I:%M:%S %p', 
+                    level=logging.INFO)
 
 # Check if TOKEN is set
 if "TOKEN" in environ and (environ.get("TOKEN") == "INSERT_DISCORD_TOKEN") or (environ.get("TOKEN") is None) or (environ.get("TOKEN") == ""):
@@ -100,21 +102,12 @@ async def on_ready():
                 nodes=[node]
             )
         except Exception as e:
-            logging.error("%s: Failed to setup wavelink: %s... Disabling playback support", abspath(__file__) ,e)
+            logging.error("Failed to setup wavelink: %s... Disabling playback support", e)
             bot._wavelink = None
 
     #https://stackoverflow.com/a/65780398 - for multiple statuses
     await bot.change_presence(activity=discord.Game(f"/ask me anything or {bot.command_prefix}help"))
-    print(f"{bot.user} is ready and online!")
-
-    # Check if we can load gemini api
-    try:
-        _genai = importlib.import_module("google.generativeai")
-        _genai.configure(api_key=environ.get("GEMINI_API_KEY"))
-    except Exception as e:
-        logging.error("Failed to configure Gemini API: %s\nexpect errors later", e)
-    else:
-        logging.info("Gemini API is ready")
+    logging.info("%s is ready and online!", bot.user)
 
 ###############################################
 # ON USER MESSAGE

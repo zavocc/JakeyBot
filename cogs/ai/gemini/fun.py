@@ -2,7 +2,6 @@ from core.aimodels.gemini import Completions
 from discord.ext import commands
 from discord import Member, DiscordException
 from os import environ
-import aiofiles.ospath
 import discord
 import importlib
 import logging
@@ -65,7 +64,7 @@ class GeminiUtils(commands.Cog):
                     "parts":[PIL.Image.open(io.BytesIO(_filedata)), "Generate image descriptions but one sentence short to describe, straight to the point"]
                 })
             except Exception as e:
-                logging.error("%s: An errored occured while generating image descriptions: %s", (await aiofiles.ospath.abspath(__file__)), e)
+                logging.error("An errored occured while generating image descriptions: %s", e)
                 _description = "Failed to generate image descriptions, check console for more info."
 
         # Embed

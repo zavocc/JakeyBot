@@ -6,7 +6,6 @@ from core.exceptions import *
 from discord.commands import SlashCommandGroup
 from discord.ext import commands
 from os import environ
-import aiofiles.ospath
 import discord
 import inspect
 import logging
@@ -100,7 +99,7 @@ class Chat(commands.Cog):
             await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, check console logs. What exactly happened: **`{type(_error).__name__}`**")
 
         # Log the error
-        logging.error("%s: An error has occured when Jakey is generating an answer, reason: %s", (await aiofiles.ospath.abspath(__file__)), _error, exc_info=True)
+        logging.error("An error has occured when Jakey is generating an answer, reason: %s", _error, exc_info=True)
 
         # Raise error
         #raise _error

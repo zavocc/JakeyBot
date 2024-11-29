@@ -4,7 +4,6 @@ from os import environ
 from pathlib import Path
 import aiohttp
 import aiofiles
-import aiofiles.ospath
 import asyncio
 import discord
 import importlib
@@ -13,6 +12,8 @@ import random
 
 class Completions():
     _model_provider_thread = "gemini_rest"
+    _api_endpoint = "https://generativelanguage.googleapis.com/v1beta"
+    _api_endpoint_upload = "https://generativelanguage.googleapis.com/upload/v1beta/files"
 
     def __init__(self, discord_ctx, discord_bot, guild_id = None, 
                  model_name = "gemini-1.5-flash-002"):
@@ -47,8 +48,6 @@ class Completions():
         self._guild_id = guild_id
 
         # REST parameters
-        self._api_endpoint = "https://generativelanguage.googleapis.com/v1beta"
-        self._api_endpoint_upload = "https://generativelanguage.googleapis.com/upload/v1beta/files"
         self._generation_config = {
             "temperature": 0.7,
             "topK": 40,
@@ -153,17 +152,14 @@ class Completions():
                 discord_bot=self._discord_bot
             )
         except ModuleNotFoundError as e:
-            logging.error("%s: I cannot import the tool because the module is not found: %s", (await aiofiles.ospath.abspath(__file__)), e)
+            logging.error("I cannot import the tool because the module is not found: %s", e)
             raise ToolsUnavailable
 
         if _Tool.tool_name == "code_execution":
             _Tool.tool_schema_beta = {"code_execution": {}}
 
-        print(_Tool.tool_schema_beta)
-
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
-        print(_chat_thread)
 
         # Begin with the first user prompt
         if _chat_thread is None and not type(_chat_thread) == list:
@@ -241,15 +237,34 @@ class Completions():
             elif response.status >= 400:
                 await hm_raise_for_status(response)
             else:
-                print((await response.json()))
-
                 # Get the response with starting first candidate
                 _response = (await response.json())["candidates"][0]
             
         # We attempt to retry the requests by cleaning the chat h
         if _retry:
+            # Format of the chat thread
+            # _chat_thread = [
+            #   {
+            #     "parts": [
+            #         {
+            #             "fileData": {
+            #                 "fileUri": "https://example.com/file.png",
+            #                 "mimeType": "image/png"
+            #              }
+            #         }
+            #     ],
+            #     "role": "user"
+            #   },
+            #   {
+            #     "parts": [
+            #         {
+            #             "text": "Summarize the image"
+            #         }
+            #     ],
+            #     "role": "user"
+            #   },
+            # ]
             for _chat_turns in _chat_thread:
-                print(_chat_turns, end="\n\n")
                 for _chat_part in _chat_turns["parts"]:
                     if "fileData" in _chat_part:
                         _chat_part.clear()
@@ -272,7 +287,6 @@ class Completions():
         _tool_arg = None
         _tool_name = None
         for x in _response["content"]["parts"]:
-            print(x)
             if "functionCall" in x:
                 _tool_arg = x["functionCall"]["args"]
                 _tool_name = x["functionCall"]["name"]
@@ -286,15 +300,15 @@ class Completions():
 
             # Call the tool
             try:
+                if not hasattr(_Tool, "_tool_function"):
+                    logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s", e)
+                    raise ToolsUnavailable
+    
                 _toolResult = await _Tool._tool_function(**_tool_arg)
-            except (AttributeError, TypeError) as e:
-                # Also print the error to the console
-                logging.error("%s: I think I found a problem related to function calling: %s", (await aiofiles.ospath.abspath(__file__)), e)
-                raise ToolsUnavailable
             # For other exceptions, log the error and add it as part of the chat thread
             except Exception as e:
                 # Also print the error to the console
-                logging.error("%s: Something when calling specific tool lately, reason: %s", (await aiofiles.ospath.abspath(__file__)), e)
+                logging.error("Something when calling specific tool lately, reason: %s", e)
                 _toolResult = f"⚠️ Something went wrong while executing the tool: {e}, please tell the developer or the user to check console logs"
 
             # Add the result in chat thread and run inference

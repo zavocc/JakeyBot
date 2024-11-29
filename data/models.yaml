@@ -2,40 +2,30 @@
 # provider::model_name
 
 # Hosted through Gemini API
-- model: gemini::gemini-1.5-pro-002
+- model: gemini_rest::gemini-1.5-pro-002
   name: Gemini 1.5 Pro
   description: Advanced chat tasks with low availability
-- model: gemini::gemini-1.5-flash-002
+- model: gemini_rest::gemini-1.5-flash-002
   name: Gemini 1.5 Flash
   description: General purpose with high availability
-- model: gemini::gemini-1.5-pro-001
+- model: gemini_rest::gemini-1.5-pro-001
   name: Gemini 1.5 Pro 001
   description: Oldstable version
-- model: gemini::gemini-1.5-flash-001
+- model: gemini_rest::gemini-1.5-flash-001
   name: Gemini 1.5 Flash 001
   description: Oldstable version
-- model: gemini::gemini-1.5-flash-8b
+- model: gemini_rest::gemini-1.5-flash-8b
   name: Gemini 1.5 Flash 8B
   description: Lighter and faster version of Gemini 1.5 Flash 
-- model: gemini::gemini-exp-1114
+- model: gemini_rest::gemini-exp-1114
   name: Gemini Experimental (1114)
   description: Gemini latest experimental model from 11/14/24
-- model: gemini::gemini-exp-1121
+- model: gemini_rest::gemini-exp-1121
   name: Gemini Experimental (1121)
   description: Gemini latest experimental model from 11/21/24
-- model: gemini::learnlm-1.5-pro-experimental
+- model: gemini_rest::learnlm-1.5-pro-experimental
   name: LearnLM 1.5 Pro
   description: Gemini latest experimental model optimized for learning tasks
-
-############################################
-# Gemini (REST: Experimental)
-############################################
-- model: gemini_rest::gemini-1.5-flash-002
-  name: Gemini 1.5 Flash (REST)
-  description: General purpose with high availability
-- model: gemini_rest::gemini-1.5-pro-002
-  name: Gemini 1.5 Pro (REST)
-  description: Advanced chat tasks with low availability
 
 ############################################
 # OpenAI models

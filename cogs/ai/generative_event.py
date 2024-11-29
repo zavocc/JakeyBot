@@ -7,7 +7,6 @@ from os import environ
 import core.aimodels._template_ # For type hinting
 import aiofiles
 import aiofiles.os
-import aiofiles.ospath
 import discord
 import importlib
 import logging
@@ -40,7 +39,7 @@ class BaseChat():
         except Exception as e:
             # Set the default model
             _model = "__gemini__gemini-1.5-flash-002"
-            logging.error("%s: Something went wrong while getting default model %s", (await aiofiles.ospath.abspath(__file__)), e)
+            logging.error("Something went wrong while getting default model %s", e)
 
         _model_provider = _model.split("::")[0]
         _model_name = _model.split("::")[-1]
@@ -193,7 +192,7 @@ class BaseChat():
                     await prompt_message.reply(f"❌ Sorry, I couldn't answer your question at the moment, check console logs. What exactly happened: **`{type(_error).__name__}`**")
 
                 # Log the error
-                logging.error("%s: An error has occured when Jakey is generating an answer, reason: %s", (await aiofiles.ospath.abspath(__file__)), _error, exc_info=True)
+                logging.error("An error has occured when Jakey is generating an answer, reason: %s", _error, exc_info=True)
 
                 # Raise error
                 #raise _error

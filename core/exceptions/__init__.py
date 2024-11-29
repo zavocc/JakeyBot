@@ -16,4 +16,10 @@ class ModelUnavailable(ModuleNotFoundError):
 class ToolsUnavailable(ModuleNotFoundError):
     pass
 
-__all__ = [GeminiClientRequestError, HistoryDatabaseError, ModelUnavailable, MultiModalUnavailable, ToolsUnavailable]
+__all__ = [
+    "GeminiClientRequestError",
+    "HistoryDatabaseError",
+    "ModelUnavailable",
+    "MultiModalUnavailable",
+    "ToolsUnavailable"
+]

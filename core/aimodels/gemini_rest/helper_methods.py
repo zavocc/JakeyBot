@@ -21,7 +21,7 @@ async def hm_raise_for_status(response: aiohttp.ClientResponse):
     try:
         response.raise_for_status()
     except aiohttp.ClientResponseError as e:
-        logging.error("%s: I think I found a problem related to the request: %s", (await aiofiles.ospath.abspath(__file__)), e)
+        logging.error("I think I found a problem related to the request: %s", e)
         # Usually in some cases, the response body is in JSON format, and sometimes its text/plain or text/html
         # So check the content type and raise the error accordingly
         if response.headers.get("Content-Type") == "application/json":
