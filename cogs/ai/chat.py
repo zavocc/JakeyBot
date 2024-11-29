@@ -101,7 +101,7 @@ class Chat(commands.Cog):
             await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, check console logs. What exactly happened: **`{type(_error).__name__}`**")
 
         # Log the error
-        logging.error("An error has occured when Jakey is generating an answer, reason: %s", _error, exc_info=True)
+        logging.error("An error has occured while generating an answer, reason: ", exc_info=True)
 
         # Raise error
         #raise _error
@@ -197,9 +197,9 @@ class Chat(commands.Cog):
 
     # Handle errors
     @model.error
-    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
+    async def on_application_command_error(self, ctx: discord.ApplicationContext):
         await ctx.respond("❌ Something went wrong, please check the console logs for details.")
-        raise error
+        logging.error("An error has occured while executing models list command, reason: ", exc_info=True)
 
     ###############################################
     # Clear context command
@@ -255,7 +255,8 @@ class Chat(commands.Cog):
             await ctx.respond("ℹ️ Chat history is already cleared!")
         else:
             await ctx.respond("❌ Something went wrong, please check the console logs for details.")
-            raise error
+            logging.error("An error has occured while executing sweep command, reason: ", exc_info=True)
+
 
     ###############################################
     # Set chat features command
@@ -307,7 +308,7 @@ class Chat(commands.Cog):
     @feature.error
     async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
         await ctx.respond("❌ Something went wrong, please check the console logs for details.")
-        raise error
+        logging.error("An error has occured while executing feature command, reason: ", exc_info=True)
 
 def setup(bot):
     bot.add_cog(Chat(bot))

@@ -8,6 +8,7 @@ import aiofiles
 import datetime
 import discord
 import inspect
+import logging
 import json
 import random
 
@@ -188,26 +189,19 @@ class GenAITools(commands.Cog):
 
     # Handle errors
     @summarize.error
-    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
-        # Check for safety or blocked prompt errors
-        _exceptions = [genai.types.StopCandidateException, ValueError]
-        
+    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):        
         # Check if this command is executed in a guild
         if isinstance(error, commands.NoPrivateMessage):
             await ctx.respond("❌ Sorry, this command is only to be used in a guild!")
-            raise error
 
         # Get original exception from the DiscordException.original attribute
-        error = getattr(error, "original", error)
-        if any(_iter for _iter in _exceptions if isinstance(error, _iter)):
-            if "time data" in str(error):
-                await ctx.respond("⚠️ Sorry, I couldn't summarize messages with that date format! Please use **mm/dd/yyyy** format.")
-            else:
-                await ctx.respond("❌ Sorry, I can't summarize messages at the moment, I'm still learning! Please try again.")
+        _error = getattr(error, "original", error)
+        if "time data" in str(_error):
+            await ctx.respond("⚠️ Sorry, I couldn't summarize messages with that date format! Please use **mm/dd/yyyy** format.")
         else:
-            await ctx.respond(f"⚠️ Uh oh! I couldn't answer your question, something happend to our end!\nHere is the logs for reference and troubleshooting:\n ```{error}```")
+            await ctx.respond("❌ Sorry, I can't summarize messages at the moment, I'm still learning! Please try again, and please check console logs.")
         
-        raise error
+        logging.error("An error has occured while generating an summaries, reason: %s", _error, exc_info=True)
 
     
 def setup(bot):

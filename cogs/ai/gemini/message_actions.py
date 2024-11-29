@@ -3,6 +3,7 @@ from core.ai.assistants import Assistants
 from discord.ext import commands
 from os import environ
 import discord
+import logging
 
 class GenAIApps(commands.Cog):
     def __init__(self, bot):
@@ -49,7 +50,7 @@ class GenAIApps(commands.Cog):
         #error = getattr(error, "original", error)
         #if any(_iter for _iter in _exceptions if isinstance(error, _iter)):
         await ctx.respond("❌ Sorry, I couldn't rephrase that message. I'm still learning!")
-        raise error
+        logging.error("An error has occured while rephrasing the message, reason: ", exc_info=True)
 
     ###############################################
     # Explain command
@@ -91,7 +92,7 @@ class GenAIApps(commands.Cog):
         #error = getattr(error, "original", error)
         #if any(_iter for _iter in _exceptions if isinstance(error, _iter)):
         await ctx.respond("❌ Sorry, I couldn't explain that message. I'm still learning!")
-        raise error
+        logging.error("An error has occured while generating message explanations, reason: ", exc_info=True)
 
     ###############################################
     # Suggestions command
@@ -134,7 +135,7 @@ class GenAIApps(commands.Cog):
         #error = getattr(error, "original", error)
         #if any(_iter for _iter in _exceptions if isinstance(error, _iter)):
         await ctx.respond("❌ Sorry, this is embarrasing but I couldn't suggest good responses. I'm still learning!")
-        raise error
+        logging.error("An error has occured while generating message explanations, reason: ", exc_info=True)
 
 def setup(bot):
     bot.add_cog(GenAIApps(bot))

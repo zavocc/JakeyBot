@@ -78,9 +78,9 @@ class GeminiUtils(commands.Cog):
         await ctx.respond(embed=embed, ephemeral=True)
 
     @avatar.error
-    async def on_command_error(self, ctx: commands.Context, error: DiscordException):
+    async def on_command_error(self, ctx: commands.Context):
         await ctx.respond("⛔ Something went wrong, please check console log for details")
-        raise error
+        logging.error("An error has occured while executing avatar command, reason: ", exc_info=True)
 
 def setup(bot):
     bot.add_cog(GeminiUtils(bot))
