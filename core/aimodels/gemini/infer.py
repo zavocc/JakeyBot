@@ -1,6 +1,6 @@
 from .helper_methods import hm_chunker, hm_raise_for_status
 from .rest_params import RestParams
-from core.exceptions import SafetyFilterError, ToolsUnavailable
+from core.exceptions import GeminiClientRequestError, SafetyFilterError, ToolsUnavailable
 from os import environ
 from pathlib import Path
 import aiohttp
@@ -380,9 +380,20 @@ class Completions(RestParams):
             if _response["finishReason"] == "SAFETY":
                 raise SafetyFilterError("The full response was blocked by safety settings, rephrase the prompt or try again later")
 
+        _finalResponse = None
+        # Find the text response since sometimes it triggers KeyError sometimes
+        for _part in _response["content"]["parts"]:
+            if "text" in _part:
+                _finalResponse = _part["text"]
+                break
+        
+        # Custom Error
+        if _finalResponse is None:
+            raise GeminiClientRequestError(message="An error was occurred, the response was empty or not found", error_code=999)
+
         # Append to history
         _chat_thread.append(_response["content"])
-        return {"answer": _response["content"]["parts"][-1]["text"], "chat_thread": _chat_thread}
+        return {"answer": _finalResponse, "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
         await db_conn.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)
