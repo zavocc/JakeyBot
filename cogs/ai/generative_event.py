@@ -172,6 +172,13 @@ class BaseChat():
             # Check if the prompt is empty
             if prompt_message.content == f"<@{self.bot.user.id}>".strip():
                 return
+            
+            # If the bot is mentioned through reply with mentions, also add its previous message as context
+            # So that the bot will reply to that query without quoting the message providing relevant response
+            if prompt_message.reference:
+                _context_message = await prompt_message.channel.fetch_message(prompt_message.reference.message_id)
+                prompt_message.content = f"> Replying to your previous response:\n\n{_context_message.content}\n\n{prompt_message.content}"
+                await prompt_message.channel.send(f"✅ Replying to: {_context_message.jump_url}")
 
             # For now the entire function is under try 
             # Maybe this can be separated into another function
