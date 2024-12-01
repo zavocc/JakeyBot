@@ -16,7 +16,7 @@ class Tool:
             "functionDeclarations": [
                 {
                     "name": self.tool_name,
-                    "description": "Search and fetch latest information with Bing.",
+                    "description": "Search and fetch latest information and pull videos with Bing.",
                     "parameters": {
                         "type": "object",
                         "properties": {
