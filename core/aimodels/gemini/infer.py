@@ -382,9 +382,13 @@ class Completions(RestParams):
 
         _finalResponse = None
         # Find the text response since sometimes it triggers KeyError sometimes
+        # If there are two text fields, append it to the final response
         for _part in _response["content"]["parts"]:
             if "text" in _part:
-                _finalResponse = _part["text"]
+                if _finalResponse is not None:
+                    _finalResponse += _part["text"]
+                else:
+                    _finalResponse = _part["text"]
                 break
         
         # Custom Error
