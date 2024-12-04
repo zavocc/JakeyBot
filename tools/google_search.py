@@ -35,8 +35,8 @@ class Tool:
 
     
     async def _tool_function(self, query: str, n_results: int = 10):
-        # Must not be above 50
-        if n_results > 50:
+        # Must not be above 10
+        if n_results > 10:
             n_results = 10
 
         # Using piped.video to get the video data
