@@ -5,8 +5,8 @@ import discord
 
 # Function implementations
 class Tool:
-    tool_human_name = "Google Search"
-    tool_name = "google_search"
+    tool_human_name = "Google Deep Search"
+    tool_name = "google_deep_search"
     def __init__(self, method_send, discord_ctx, discord_bot):
         self.method_send = method_send
         self.discord_ctx = discord_ctx
@@ -16,25 +16,28 @@ class Tool:
             "functionDeclarations": [
                 {
                     "name": self.tool_name,
-                    "description": "Search and fetch latest information, get detailed and verifiable answers with Google Search. Use Google Search to provide up-to-date and quality verifiable answers.",
+                    "description": "Iteratively search and fetch latest information, get informed and verifiable results from Google search, and understand relationships between different sources between different queries.",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "query": {
-                                "type": "string"
+                            "queries": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
                             },
                             "n_results": {
                                 "type": "integer",
                             },
                         },
-                        "required": ["query"]
+                        "required": ["queries"]
                     }
                 }
             ]
         }
 
     
-    async def _tool_function(self, query: str, n_results: int = 10):
+    async def _tool_function(self, queries: list, n_results: int = 10):
         # Must not be above 10
         if n_results > 10:
             n_results = 10
@@ -49,33 +52,6 @@ class Tool:
 
         _session: aiohttp.ClientSession = self.discord_bot._aiohttp_main_client_session
 
-        # Google Custom Search API Endpoint
-        _endpoint = "https://customsearch.googleapis.com/customsearch/v1"
-
-        # Parameters
-        _params = {
-            "num": n_results,
-            "q": query,
-            "safe": "active",
-            "cx": environ.get("CSE_SEARCH_ENGINE_CXID"),
-            "key": environ.get("CSC_GCP_API_KEY")
-        }
-
-        _headers = {
-            "Accept": "application/json"
-        }
-
-        async with _session.get(_endpoint, params=_params, headers=_headers) as _response:
-            _data = await _response.json()
-
-            # If the Content-Type is not application/json
-            if "application/json" not in _response.headers["Content-Type"]:
-                raise Exception("The response from the YouTube API is not in JSON format")
-            
-            # If the response is not successful
-            if _response.status != 200:
-                raise Exception(f"Failed to fetch YouTube search results with code {_response.status}, reason: {_response.reason}")
-            
         # Iterate over items list
         # Return the data as dict
         _output = [
@@ -86,15 +62,54 @@ class Tool:
                 "results": []
             }
         ]
-        for _item in _data["items"]:
-            if _item["kind"] != "customsearch#result":
-                continue
 
-            _output[0]["results"].append({
-                "title": _item["title"],
-                "link": _item["link"],
-                "excerpt": _item["snippet"]
-            })
+
+        _pedit = None
+        for query in queries:
+            # Google Custom Search API Endpoint
+            _endpoint = "https://customsearch.googleapis.com/customsearch/v1"
+
+            # Parameters
+            _params = {
+                "num": n_results,
+                "q": query,
+                "safe": "active",
+                "cx": environ.get("CSE_SEARCH_ENGINE_CXID"),
+                "key": environ.get("CSC_GCP_API_KEY")
+            }
+
+            _headers = {
+                "Accept": "application/json"
+            }
+
+            
+            async with _session.get(_endpoint, params=_params, headers=_headers) as _response:
+                _data = await _response.json()
+
+                # If the Content-Type is not application/json
+                if "application/json" not in _response.headers["Content-Type"]:
+                    raise Exception("The response from the YouTube API is not in JSON format")
+                
+                # If the response is not successful
+                if _response.status != 200:
+                    raise Exception(f"Failed to fetch YouTube search results with code {_response.status}, reason: {_response.reason}")
+                
+
+            for _item in _data["items"]:
+                if _item["kind"] != "customsearch#result":
+                    continue
+
+                _output[0]["results"].append({
+                    "title": _item["title"],
+                    "link": _item["link"],
+                    "excerpt": _item["snippet"]
+                })
+
+            # Searched
+            if _pedit:
+                _pedit = await _pedit.edit(f"🔍 Searched: **{query}**")
+            else:
+                _pedit = await self.method_send(f"🔍 Searched: **{query}**")
 
         # If the webpages list is empty
         if not _output[0]["results"]:
@@ -102,12 +117,11 @@ class Tool:
 
         # Embed that contains first 10 sources
         _sembed = discord.Embed(
-            title="Sources with Google Search",
+            title="Sources with Google Deep Search",
             color=discord.Color.random(),
         )
 
-        # Searched
-        await self.method_send(f"🔍 Searched: **{query}**")
+        
 
         # Iterate description
         _desclinks = []

@@ -128,6 +128,14 @@ chat_assistants:
           - 6-10 results for research queries and ones that may need deeper knowledge
           - 10 for highly complex, highly anticipated queries, such as Election results, or any other queries that requires a lot of information and verification
 
+        Google search browsing variants:
+        `google_search` tool to quickly ground responses with up-to-date information from the web
+        `google_deep_search` tool to get more detailed information and informed results by iteratively fetching sources with different queries
+        
+        The deep search tool may take bit longer and its recommended to balance n_results from threshold of 2 to 5 results since a lot of information is being fetched
+        Google search is good for fast searches and Google deep search is good for more detailed searches
+        But both are separate tools and activated through /feature command, but again it will result in chat history being cleared
+
         You do not say "I'll search it, i'll be right back" and it must be initiated immediately
         Because as a bot, you cannot promise the user "One moment please...." because it will be misleading for them especially if they are AI illiterate
         As much as possible, execute tools as defined in the schema!
