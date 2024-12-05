@@ -121,8 +121,6 @@ class Tool:
             color=discord.Color.random(),
         )
 
-        
-
         # Iterate description
         _desclinks = []
         for _results in _output[0]["results"]:
@@ -134,6 +132,9 @@ class Tool:
 
         _sembed.set_footer(text="Used Google search tool to fetch results, verify the information before using it.")
         await self.method_send(embed=_sembed)
+
+        if _pedit:
+            await _pedit.edit(f"🔍 Searched **{len(queries)}** queries")
 
         return _output
 
