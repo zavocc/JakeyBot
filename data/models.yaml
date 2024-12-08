@@ -17,12 +17,12 @@
 - model: gemini::gemini-1.5-flash-8b
   name: Gemini 1.5 Flash 8B
   description: Lighter and faster version of Gemini 1.5 Flash 
-- model: gemini::gemini-exp-1114
-  name: Gemini Experimental (1114)
-  description: Gemini latest experimental model from 11/14/24
 - model: gemini::gemini-exp-1121
   name: Gemini Experimental (1121)
   description: Gemini latest experimental model from 11/21/24
+- model: gemini::gemini-exp-1206
+  name: Gemini Experimental (1206)
+  description: Gemini latest experimental model from 12/06/24
 - model: gemini::learnlm-1.5-pro-experimental
   name: LearnLM 1.5 Pro
   description: Gemini latest experimental model optimized for learning tasks

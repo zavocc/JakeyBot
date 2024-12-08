@@ -44,18 +44,32 @@ class GenAIConfigDefaults:
 
 
 class Completions(GenAIConfigDefaults):
-    _model_provider_thread = "gemini"
+    _model_provider_thread = "gemini_legacy"
 
-    def __init__(self, guild_id = None, 
-                 model_name = "gemini-1.5-flash-002",
-                 db_conn = None):
+    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "gemini-1.5-flash-002"):
+        # Discord context
+        self._discord_ctx = discord_ctx
+
         super().__init__()
+        # Check if the discord_ctx is either instance of discord.Message or discord.ApplicationContext
+        if isinstance(discord_ctx, discord.Message):
+            self._discord_method_send = self._discord_ctx.channel.send
+        elif isinstance(discord_ctx, discord.ApplicationContext):
+            self._discord_method_send = self._discord_ctx.send
+        else:
+            raise Exception("Invalid discord channel context provided")
+
+        # Check if discord_bot whether if its a subclass of discord.Bot
+        if not isinstance(discord_bot, discord.Bot):
+            raise Exception("Invalid discord bot object provided")
+        
+        # Discord bot object lifecycle instance
+        self._discord_bot: discord.Bot = discord_bot
 
         self._file_data = None
 
         self._model_name = model_name
         self._guild_id = guild_id
-        self._history_management = db_conn
         
     async def input_files(self, attachment: discord.Attachment):
         # Download the attachment
@@ -77,7 +91,7 @@ class Completions(GenAIConfigDefaults):
         # Upload the file to the server
         _msgstatus = None
         try:
-            _file_uri = await asyncio.to_thread(genai.upload_file, path=_xfilename, display_name=_xfilename.split("/")[-1])
+            _file_uri = await asyncio.to_thread(genai.upload_file, mime_type=attachment.content_type, path=_xfilename, display_name=_xfilename.split("/")[-1])
 
             # Wait for the file to be uploaded
             while _file_uri.state.name == "PROCESSING":
@@ -102,17 +116,14 @@ class Completions(GenAIConfigDefaults):
             system_instruction=system_instruction,
         )
 
-        answer = await _genai_client.generate_content_async({
-                "role":"user",
-                "parts":prompt if isinstance(prompt, list) else [prompt]
-            })
+        answer = await _genai_client.generate_content_async(prompt)
         return answer.text
 
-    async def chat_completion(self, prompt, system_instruction: str = None):
+    async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Setup model and tools
-        if hasattr(self, "_discord_method_send") and self._history_management is not None:
+        if db_conn is not None:
             try:
-                _Tool_use = importlib.import_module(f"tools.{(await self._history_management.get_config(guild_id=self._guild_id))}").Tool(self._discord_method_send)
+                _Tool_use = importlib.import_module(f"tools.{(await db_conn.get_config(guild_id=self._guild_id))}").Tool(self._discord_method_send)
             except ModuleNotFoundError as e:
                 logging.error("I cannot import the tool because the module is not found: %s", e)
                 raise ToolsUnavailable
@@ -131,20 +142,20 @@ class Completions(GenAIConfigDefaults):
         )
 
         # Load history
-        _chat_thread = await self._history_management.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
+        _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
         _chat_thread = await asyncio.to_thread(jsonpickle.decode, _chat_thread, keys=True) if _chat_thread is not None else []
 
         # Craft prompt
         final_prompt = [self._file_data, f'{prompt}'] if self._file_data is not None else f'{prompt}'
         chat_session = _genai_client.start_chat(history=_chat_thread if _chat_thread else None)
 
-        # Re-write the history if an error has occured
+        # Re-write the history if an error has occurred
         # For now this is the only workaround that I could find to re-write the history if there are dead file references causing PermissionDenied exception
         # when trying to access the deleted file uploaded using Files API. See:
         # https://discuss.ai.google.dev/t/what-is-the-best-way-to-persist-chat-history-into-file/3804/6?u=zavocc306
         try:
             answer = await chat_session.send_message_async(final_prompt)
-        #  Retry the response if an error has occured
+        #  Retry the response if an error has occurred
         except google.api_core.exceptions.PermissionDenied:
             # Iterate over chat_session.history
             # Due to the uncanny use of protobuf objects but when iterating, each contains the format similar to this
@@ -189,12 +200,12 @@ class Completions(GenAIConfigDefaults):
                         _result = await _Tool_use._tool_function(**_func_call.args)
                     except (AttributeError, TypeError) as e:
                         # Also print the error to the console
-                        logging.error("ask command: I think I found a problem related to function calling:", e)
+                        logging.error("I think I found a problem related to function calling: %s", e)
                         raise ToolsUnavailable
                     # For other exceptions, log the error and add it as part of the chat thread
                     except Exception as e:
                         # Also print the error to the console
-                        logging.error("ask command: Something when calling specific tool lately, reason:", e)
+                        logging.error("Something when calling specific tool lately, reason: %s", e)
                         _result = f"⚠️ Something went wrong while executing the tool: {e}, please tell the developer or the user to check console logs"
             
                     # send it again, and lower safety settings since each message parts may not align with safety settings and can partially block outputs and execution
@@ -222,6 +233,6 @@ class Completions(GenAIConfigDefaults):
 
         return {"answer":answer.text, "chat_thread": chat_session.history}
 
-    async def save_to_history(self, chat_thread = None):
+    async def save_to_history(self, db_conn, chat_thread = None):
         _encoded = await asyncio.to_thread(jsonpickle.encode, chat_thread, indent=4, keys=True)
-        await self._history_management.save_history(guild_id=self._guild_id, chat_thread=_encoded, model_provider=self._model_provider_thread)
+        await db_conn.save_history(guild_id=self._guild_id, chat_thread=_encoded, model_provider=self._model_provider_thread)
