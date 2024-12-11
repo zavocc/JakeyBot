@@ -2,6 +2,8 @@
   ui_name: Code Execution with Python
 - tool_name: audio_editor
   ui_name: Audio Editor with EzAudio
+- tool_name: github_file_tool
+  ui_name: GitHub
 - tool_name: google_search
   ui_name: Grounding with Google Search (Faster)
 - tool_name: google_deep_search

@@ -2,6 +2,9 @@
 # provider::model_name
 
 # Hosted through Gemini API
+- model: gemini::gemini-2.0-flash-exp
+  name: Gemini 2.0 Flash Experimental
+  description: New and better omni-modal model surpasses Gemini 1.5 Pro
 - model: gemini::gemini-1.5-pro-002
   name: Gemini 1.5 Pro
   description: Advanced chat tasks with low availability
