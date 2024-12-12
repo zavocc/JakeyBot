@@ -21,16 +21,22 @@ class Tool:
                         "type": "object",
                         "properties": {
                             "filepath": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
+                                "type": "object",
+                                "properties": {
+                                    "files": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "required": ["files"]
                             },
                             "repo": {
-                                "type": "string",
+                                "type": "string"
                             },
                             "branch": {
-                                "type": "string",
+                                "type": "string"
                             }
                         },
                         "required": ["filepath", "repo"]
@@ -40,7 +46,7 @@ class Tool:
         }
 
     
-    async def _tool_function(self, filepath: list, repo: str, branch: str = "master"):
+    async def _tool_function(self, filepath: dict, repo: str, branch: str = "master"):
         # Must initialize the aiohttp client session
         if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
             raise Exception("aiohttp client session for get requests not initialized, please check the bot configuration")
@@ -62,6 +68,9 @@ class Tool:
 
         # Interstitial
         _interstitial = await self.method_send("🔍 Searching for files in the specified paths")
+
+        # Access the files key
+        filepath = filepath["files"]
 
         # Iterate over the filepath
         for _files in filepath:
