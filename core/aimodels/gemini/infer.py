@@ -321,8 +321,6 @@ class Completions(RestParams):
         if _response["finishReason"] == "SAFETY":
             raise SafetyFilterError("The response was blocked by safety settings, rephrase the prompt or try again later")
 
-        print(_response)
-
         # Check if we need to execute Tools
         _tool_arg = None
         _tool_name = None
