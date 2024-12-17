@@ -79,6 +79,6 @@
 ############################################
 # X.AI
 ############################################
-- model: xai::grok-beta
-  name: Grok 2.0
+- model: xai::grok-2-1212
+  name: Grok 2.0 (Text Only)
   description: Twitter aka X (XAI) based model, good for most tasks.
