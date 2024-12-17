@@ -1,5 +1,6 @@
 from core.ai.assistants import Assistants
 from core.ai.core import ModelsList
+from core.ai.orchestrators.search import SearchOrchestrator
 from core.exceptions import *
 from core.ai.history import History # type hinting
 from discord import Message
@@ -70,6 +71,13 @@ class BaseChat():
             await _thinking_message.edit("ℹ️ Ok the user wants me to show the information about the model, tool, files used")
             _show_info = True
 
+        # Check if we can search
+        _search_orchestrator_results = None
+        if "/search" in prompt.content:
+            await _thinking_message.edit("🔍 Searching the web for information")
+            _orchestrator = SearchOrchestrator(method_send=prompt.channel.send, discord_ctx=prompt, discord_bot=self.bot, prompt=prompt.content)
+            _search_orchestrator_results = await _orchestrator.SearchOrchestrator()
+
         try:
             _infer: core.aimodels._template_.Completions = importlib.import_module(f"core.aimodels.{_model_provider}").Completions(
                 discord_ctx=prompt,
@@ -105,6 +113,10 @@ class BaseChat():
         if prompt.attachments:
             _final_prompt += f"\n\nTHIS PROMPT IS AUTO INSERTED BY SYSTEM: By the way based on the attachment given, here is the URL associated for reference:\n{prompt.attachments[0].url}"
         
+        # Append search orchestrator prompt
+        if _search_orchestrator_results:
+            _final_prompt += f"\n\nSYSTEM PROMPT INJECT: SEARCH RESULTS\n\n{_search_orchestrator_results}\n"
+
         _system_prompt = await Assistants.set_assistant_type("jakey_system_prompt", type=0)
         _result = await _infer.chat_completion(prompt=_final_prompt, db_conn=self.DBConn, system_instruction=_system_prompt)
         
