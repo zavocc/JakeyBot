@@ -109,7 +109,7 @@ class SearchOrchestrator:
         return _output
 
     async def SearchOrchestrator(self):
-        _completions = Completions(discord_ctx=self.discord_ctx, discord_bot=self.discord_bot, model_name="gemini-1.5-flash-8b")
+        _completions = Completions(discord_ctx=self.discord_ctx, discord_bot=self.discord_bot, model_name="gemini-1.5-flash-002")
         _interstitial = await self.method_send("🔍 Ok..... ")
 
         # Configure completions
