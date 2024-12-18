@@ -2,6 +2,9 @@
 # provider::model_name
 
 # Hosted through Gemini API
+- model: gemini::gemini-exp-1206
+  name: Gemini 2.0 Advanced Experimental
+  description: Gemini's superior experimental model from 12/06/2024
 - model: gemini::gemini-2.0-flash-exp
   name: Gemini 2.0 Flash Experimental
   description: New and better omni-modal model surpasses Gemini 1.5 Pro
@@ -23,9 +26,6 @@
 - model: gemini::gemini-exp-1121
   name: Gemini Experimental (1121)
   description: Gemini latest experimental model from 11/21/24
-- model: gemini::gemini-exp-1206
-  name: Gemini Experimental (1206)
-  description: Gemini latest experimental model from 12/06/24
 - model: gemini::learnlm-1.5-pro-experimental
   name: LearnLM 1.5 Pro
   description: Gemini latest experimental model optimized for learning tasks
