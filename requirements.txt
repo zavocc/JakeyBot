@@ -1,7 +1,7 @@
 aiofiles==24.1.0
-google-generativeai >= 0.7.2
+#google-generativeai >= 0.7.2
 gradio_client==1.1.0
-jsonpickle==3.2.2
+#jsonpickle==3.2.2
 litellm >= 1.48.18
 motor==3.5.1
 py-cord >= 2.6.0
