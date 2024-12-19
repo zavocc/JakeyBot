@@ -92,6 +92,10 @@ class BaseChat():
             # Check if this conversation isn't appended to chat history
             if not append_history: 
                 _system_embed.add_field(name="Privacy", value="This conversation isn't saved")
+
+            # Check if there is _tokens_used attribute
+            if hasattr(_infer, "_tokens_used"):
+                _system_embed.add_field(name="Tokens used", value=_infer._tokens_used)
                 
             # Files used
             if attachment is not None: 

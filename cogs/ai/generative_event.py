@@ -138,6 +138,10 @@ class BaseChat():
             if not _append_history: 
                 _system_embed.add_field(name="Privacy", value="This conversation isn't saved")
 
+            # Check if there is _tokens_used attribute
+            if hasattr(_infer, "_tokens_used"):
+                _system_embed.add_field(name="Tokens used", value=_infer._tokens_used)
+
             # Files used
             if prompt.attachments: 
                 _system_embed.add_field(name="File used", value=prompt.attachments[0].filename)
