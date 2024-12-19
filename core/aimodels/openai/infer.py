@@ -89,14 +89,25 @@ class Completions:
         if self._file_data is not None:
             _chat_thread[-1]["content"].append(self._file_data)
 
+        # Params
+        _params = {
+            "messages": _chat_thread,
+            "model": self._model_name,
+            "max_tokens": 3024,
+            "temperature": 0.7,
+            "base_url": self._oai_endpoint,
+            "api_key": environ.get("OPENAI_API_KEY")
+        }
+
+        # When O1 model is used, set reasoning effort to medium
+        # Since higher can be costly and lower performs similarly to GPT-4o 
+        if "o1" in self._model_name:
+            _interstitial = await self._discord_method_send("🔍 Used O1 model, please wait while I'm thinking...")
+            _params["reasoning_effort"] = "medium"
+
         # Generate completion
         _response = await litellm.acompletion(
-            messages=_chat_thread,
-            model=self._model_name,
-            max_tokens=3024,
-            temperature=0.7,
-            base_url=self._oai_endpoint,
-            api_key=environ.get("OPENAI_API_KEY")
+            **_params
         )
 
         # AI response
@@ -114,6 +125,9 @@ class Completions:
                 ]
             }
         )
+
+        if _interstitial:
+            await _interstitial.delete()
 
         return {"answer":_answer, "chat_thread": _chat_thread}
 

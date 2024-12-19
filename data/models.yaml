@@ -39,6 +39,9 @@
 - model: openai::gpt-4o-mini
   name: GPT-4o Mini
   description: A smaller version of GPT-4o for speed and cost with multimodal capabilities
+- model: openai::o1
+  name: OpenAI O1
+  description: OpenAI's latest model that spends time thinking before responding
 - model: openai_o1::o1-preview
   name: O1 Preview
   description: OpenAI's latest model that spends time thinking before responding
