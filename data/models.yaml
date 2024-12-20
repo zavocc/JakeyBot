@@ -8,7 +8,7 @@
 - model: gemini_newsdk::gemini-2.0-flash-exp
   name: Gemini 2.0 Flash Experimental
   description: New and better omni-modal model surpasses Gemini 1.5 Pro
-- model: gemini_newsdk:gemini-2.0-flash-thinking-exp-1219
+- model: gemini_newsdk::gemini-2.0-flash-thinking-exp-1219
   name: Gemini 2.0 Flash with Reasoning Experimental
   description: Google's latest model that thinks before it responds
 - model: gemini::gemini-1.5-pro-002

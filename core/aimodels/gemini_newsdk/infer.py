@@ -160,6 +160,10 @@ class Completions(APIParams):
             role="user"
         ).model_dump())
 
+        # Disable tools entirely if the model has "gemini-2.0-flash-thinking-exp-1219"
+        if self._model_name == "gemini-2.0-flash-thinking-exp-1219":
+            _Tool = None
+
         # Check if tool is code execution
         if _Tool:
             if _Tool.tool_name == "code_execution":
@@ -183,7 +187,13 @@ class Completions(APIParams):
         # First candidate response
         _candidateContentResponse = _response.candidates[0].content
 
-        # Tools
+        # Send the CoT process of the model if "gemin-2.0-flash-thinking-exp-1219" is used
+        # Here we assume the CoT is always at the first index of the parts
+        if self._model_name == "gemini-2.0-flash-thinking-exp-1219":
+            await self._discord_method_send(f"> ℹ️ Below is Gemini's 2.0 thinking process and can produce undesirable outputs. Keep in mind that this model doesn't support tools, has 32k context, and only supports image and text inputs.")
+            await self._discord_method_send(f"> {_candidateContentResponse.parts[0].text.replace('\n', '\n> ')}")
+
+        # Check if tools are used
         _toolInvoke = None
         for _part in _candidateContentResponse.parts:
             if _part.function_call:

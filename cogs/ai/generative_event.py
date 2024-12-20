@@ -84,7 +84,7 @@ class BaseChat():
         # File attachment processing
         ###############################################
         if len(prompt.attachments) > 1:
-            await _thinking_message.edit("🚫 I can only process one file at a time")
+            await prompt.reply("🚫 I can only process one file at a time")
             return
         
         if prompt.attachments:
