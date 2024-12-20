@@ -1,8 +1,9 @@
 from discord.ext import bridge, commands
 from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 from inspect import cleandoc
 from os import chdir, mkdir, environ
-from os.path import abspath
 from pathlib import Path
 import aiohttp
 import aiofiles.os
@@ -55,9 +56,8 @@ class InitBot(bridge.Bot):
             logging.warning("Playback support is disabled: %s", e)
             self._wavelink = None
 
-        # Prepare aiohttp client sessions for specific tasks
-        # Gemini API
-        self._gemini_api_rest = aiohttp.ClientSession(loop=self.loop)
+        # Gemini API Client
+        self._gemini_api_client = genai.Client(api_key=environ.get("GEMINI_API_KEY"))
 
         # Everything else (mostly GET requests)
         self._aiohttp_main_client_session = aiohttp.ClientSession(loop=self.loop)
@@ -65,7 +65,6 @@ class InitBot(bridge.Bot):
     # Shutdown the bot
     async def close(self):
         # Close aiohttp client sessions
-        await self._gemini_api_rest.close()
         await self._aiohttp_main_client_session.close()
 
         # Remove temp files

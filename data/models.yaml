@@ -5,7 +5,7 @@
 - model: gemini::gemini-exp-1206
   name: Gemini 2.0 Advanced Experimental
   description: Gemini's superior experimental model from 12/06/2024
-- model: gemini::gemini-2.0-flash-exp
+- model: gemini_newsdk::gemini-2.0-flash-exp
   name: Gemini 2.0 Flash Experimental
   description: New and better omni-modal model surpasses Gemini 1.5 Pro
 - model: gemini::gemini-2.0-flash-thinking-exp-1219
@@ -14,7 +14,7 @@
 - model: gemini::gemini-1.5-pro-002
   name: Gemini 1.5 Pro
   description: Advanced chat tasks with low availability
-- model: gemini::gemini-1.5-flash-002
+- model: gemini_newsdk::gemini-1.5-flash-002
   name: Gemini 1.5 Flash
   description: General purpose with high availability
 - model: gemini::gemini-1.5-pro-001

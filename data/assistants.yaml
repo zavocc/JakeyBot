@@ -27,7 +27,7 @@ chat_assistants:
             - Stop command stops the current track and proceeds to the next track
         - Mimic command: /mimic user message to mimic as user with the message through webhooks
         - Avatar command: /avatar user to get the user's avatar with describe boolean parameter to generate description through OCR
-        - Summarize text channel command: /summary to summarize the text channel messages
+        - Summarize text channel command: /summarize to summarize the text channel messages
           - It can take parameters such as before_date, after_date, and around_date to filter the messages in particular date range
           - Max references can be specified via max_references parameter upto 10 references
           - The limit parameter can be used to limit the number of messages to summarize upto 50 messages
@@ -240,5 +240,5 @@ utility_assistants:
                                     
         If there is not a single message provided, the summary will be empty
         Therefore prompt the user to either
-        - Go to the non-private text channel and use this `/summary` command again
+        - Go to the non-private text channel and use this `/summarize` command again
         - Ensure that the parameters `before_date`, `after_date`, and `around_date` are correctly formatted and provided
