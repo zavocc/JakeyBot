@@ -295,14 +295,22 @@ class Chat(commands.Cog):
         # Default model
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
 
+        # Check if "capability" is disabled
+        if capability == "disabled":
+            capability = None
+
         # Check default model
         if _feature == capability:
-            await ctx.respond("✅ Feature already enabled!")
+            await ctx.respond("✅ Feature already set!")
         else:
             # set config
             await self.DBConn.set_config(guild_id=guild_id, tool=capability)
             await self.DBConn.set_default_model(guild_id=guild_id, model=_model)
-            await ctx.respond(f"✅ Feature **{capability}** enabled successfully and chat is reset to reflect the changes")
+
+            if capability == None:
+                await ctx.respond(f"✅ Features disabled and chat is reset to reflect the changes")
+            else:
+                await ctx.respond(f"✅ Feature **{capability}** enabled successfully and chat is reset to reflect the changes")
         
     # Handle errors
     @feature.error

@@ -1,3 +1,6 @@
+# Null cannot be used as a tool_name because discord.OptionChoice takes tool_name as optional argument
+- tool_name: disabled
+  ui_name: Disabled
 - tool_name: code_execution
   ui_name: Code Execution with Python
 - tool_name: audio_editor

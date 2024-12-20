@@ -126,11 +126,15 @@ class Completions(APIParams):
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Tools
         try:
-            _Tool = importlib.import_module(f"tools.{(await db_conn.get_config(guild_id=self._guild_id))}").Tool(
-                method_send=self._discord_method_send,
-                discord_ctx=self._discord_ctx,
-                discord_bot=self._discord_bot
-            )
+            _tool_selection_name = await db_conn.get_config(guild_id=self._guild_id)
+            if _tool_selection_name is None:
+                _Tool = None
+            else:
+                _Tool = importlib.import_module(f"tools.{_tool_selection_name}").Tool(
+                    method_send=self._discord_method_send,
+                    discord_ctx=self._discord_ctx,
+                    discord_bot=self._discord_bot
+                )
         except ModuleNotFoundError as e:
             logging.error("I cannot import the tool because the module is not found: %s", e)
             raise ToolsUnavailable
@@ -140,9 +144,6 @@ class Completions(APIParams):
 
         if _chat_thread is None:
             _chat_thread = []
-
-        #print(_chat_thread)
-        #print(len(_chat_thread))
 
         # Parse prompts
         _prompt = [
@@ -160,10 +161,13 @@ class Completions(APIParams):
         ).model_dump())
 
         # Check if tool is code execution
-        if _Tool.tool_name == "code_execution":
-            _tool_schema = types.Tool(code_execution=types.ToolCodeExecution())
+        if _Tool:
+            if _Tool.tool_name == "code_execution":
+                _tool_schema = [types.Tool(code_execution=types.ToolCodeExecution())]
+            else:
+                _tool_schema = [types.Tool(function_declarations=[_Tool.tool_schema])]
         else:
-            _tool_schema = types.Tool(function_declarations=[_Tool.tool_schema])
+            _tool_schema = None
 
         # Create response
         _response = await self._gemini_api_client.aio.models.generate_content(
@@ -172,7 +176,7 @@ class Completions(APIParams):
             config=types.GenerateContentConfig(
                 **self._genai_params,
                 system_instruction=system_instruction or "You are a helpful assistant named Jakey",
-                tools=[_tool_schema]
+                tools=_tool_schema
             )
         )
 

@@ -16,7 +16,7 @@ class History:
         self._collection = self._db[environ.get("MONGO_DB_COLLECTION_NAME", "jakey_prod_db_collection")]
         logging.info("Connected to the database %s and collection %s", self._db.name, self._collection.name)
 
-    async def _ensure_document(self, guild_id: int, model: str = "gemini::gemini-1.5-flash-002", tool_use: str = "code_execution"):
+    async def _ensure_document(self, guild_id: int, model: str = "gemini::gemini-1.5-flash-002", tool_use: str = None):
         """Ensures a document exists for the given guild_id, creates one if it doesn't exist."""
         if guild_id is None or not isinstance(guild_id, int):
             raise TypeError("guild_id is required and must be an integer")
@@ -73,7 +73,7 @@ class History:
 
         await self._collection.delete_one({"guild_id": guild_id})
 
-    async def set_config(self, guild_id: int, tool: str = "code_execution") -> None:
+    async def set_config(self, guild_id: int, tool: str = None) -> None:
         await self.clear_history(guild_id)
         await self._ensure_document(guild_id, tool)
         
