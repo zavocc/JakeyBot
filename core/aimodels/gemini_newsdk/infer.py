@@ -12,7 +12,35 @@ import logging
 import typing
 import random
 
-class Completions():
+class APIParams:
+    def __init__(self):
+        self._genai_params = {
+            "candidate_count": 1,
+            "max_output_tokens": 8192, 
+            "temperature": 0.7,
+            "top_p": 0.95,
+            "top_k": 40,
+            "safety_settings": [
+                {
+                    "category": "HARM_CATEGORY_HARASSMENT",
+                    "threshold": "BLOCK_ONLY_HIGH"
+                },
+                {
+                    "category": "HARM_CATEGORY_HATE_SPEECH", 
+                    "threshold": "BLOCK_ONLY_HIGH"
+                },
+                {
+                    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    "threshold": "BLOCK_ONLY_HIGH"
+                },
+                {
+                    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    "threshold": "BLOCK_ONLY_HIGH"
+                }
+            ]
+        }
+
+class Completions(APIParams):
     _model_provider_thread = "gemini_newsdk"
 
     def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "gemini-1.5-flash-002"):
@@ -135,30 +163,8 @@ class Completions():
         _response = await self._gemini_api_client.aio.models.generate_content(
             model=self._model_name, 
             config=types.GenerateContentConfig(
-                candidate_count=1,
-                max_output_tokens=8192,
-                system_instruction=system_instruction or "You are a helpful assistant named Jakey.",
-                temperature=0.7,
-                top_p=0.95,
-                top_k=40,
-                safety_settings=[
-                    types.SafetySetting(
-                        category="HARM_CATEGORY_HARASSMENT",
-                        threshold="BLOCK_ONLY_HIGH"
-                    ),
-                    types.SafetySetting(
-                        category="HARM_CATEGORY_HATE_SPEECH",
-                        threshold="BLOCK_ONLY_HIGH"
-                    ),
-                    types.SafetySetting(
-                        category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                        threshold="BLOCK_ONLY_HIGH"
-                    ),
-                    types.SafetySetting(
-                        category="HARM_CATEGORY_DANGEROUS_CONTENT",
-                        threshold="BLOCK_ONLY_HIGH"
-                    ),
-                ]
+                **self._genai_params,
+                system_instruction=system_instruction or "You are a helpful assistant named Jakey"
             ),
             contents=_chat_thread
         )
