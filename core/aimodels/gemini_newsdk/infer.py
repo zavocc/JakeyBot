@@ -159,19 +159,126 @@ class Completions(APIParams):
             role="user"
         ).model_dump())
 
+        # Check if tool is code execution
+        if _Tool.tool_name == "code_execution":
+            _tool_schema = types.Tool(code_execution=types.ToolCodeExecution())
+        else:
+            _tool_schema = types.Tool(function_declarations=[_Tool.tool_schema])
+
         # Create response
         _response = await self._gemini_api_client.aio.models.generate_content(
             model=self._model_name, 
+            contents=_chat_thread,
             config=types.GenerateContentConfig(
                 **self._genai_params,
-                system_instruction=system_instruction or "You are a helpful assistant named Jakey"
-            ),
-            contents=_chat_thread
+                system_instruction=system_instruction or "You are a helpful assistant named Jakey",
+                tools=[_tool_schema]
+            )
         )
 
+        # First candidate response
         _candidateContentResponse = _response.candidates[0].content
-        _chat_thread.append(_candidateContentResponse.model_dump())
 
+        # Tools
+        _toolInvoke = None
+        _codeExecutionResult = None
+        _codeExecutionCode = None
+        for _part in _candidateContentResponse.parts:
+            if _part.function_call:
+                _toolInvoke = _part.function_call
+                break
+
+            if _part.executable_code and not _codeExecutionCode:
+                _codeExecutionCode = _part.executable_code
+
+            if _part.code_execution_result and not _codeExecutionResult:
+                _codeExecutionResult = _part.code_execution_result
+
+
+        # Check if code execution was invoked
+        # https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/code-execution
+        if _codeExecutionCode and _codeExecutionResult:
+            await self._discord_method_send(f"✅ Used: **{_Tool.tool_human_name}**")
+
+            # Add the code execution result
+            _chat_thread.append(types.Content(
+                parts=[
+                    types.Part.from_executable_code(
+                        code=_codeExecutionCode.code,
+                        language=_codeExecutionCode.language,
+                    ),
+                    types.Part.from_code_execution_result(
+                        outcome=_codeExecutionResult.outcome,
+                        output=_codeExecutionResult.output,
+                    )
+                ],
+                role = "model"
+            ).model_dump())
+
+            _chat_thread.append(types.Content(
+                parts=[
+                    types.Part.from_text(
+                        text="Explain the result of the code execution"
+                    )
+                ],
+                role = "user"
+            ).model_dump())
+            
+            # Re-run the model
+            _response = await self._gemini_api_client.aio.models.generate_content(
+                model=self._model_name, 
+                config=types.GenerateContentConfig(
+                    **self._genai_params,
+                    system_instruction=system_instruction or "You are a helpful assistant named Jakey",
+                ),
+                contents=_chat_thread
+            )
+
+            _candidateContentResponse = _response.candidates[0].content
+            
+        # Check if we need to execute tools
+        if _toolInvoke:
+            # Ensure it has the context
+            _chat_thread.append(_candidateContentResponse.model_dump())
+
+            # Indicate the tool is called
+            await self._discord_method_send(f"✅ Used: **{_Tool.tool_human_name}**")
+
+            # Call the tool
+            try:
+                if not hasattr(_Tool, "_tool_function"):
+                    logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s", e)
+                    raise ToolsUnavailable
+                _toolResult = {"toolResult": (await _Tool._tool_function(**_toolInvoke.args))}
+            # For other exceptions, log the error and add it as part of the chat thread
+            except Exception as e:
+                # Also print the error to the console
+                logging.error("Something when calling specific tool lately, reason: %s", e)
+                _toolResult = {"error": f"⚠️ Something went wrong while executing the tool: {e}, please tell the developer or the user to check console logs"}
+
+            # Return the tool result
+            _chat_thread.append(types.Content(
+                parts=[types.Part.from_function_response
+                    (
+                        name=_toolInvoke.name,
+                        response=_toolResult
+                    )
+                ]).model_dump())
+            
+            # Re-run the model
+            _response = await self._gemini_api_client.aio.models.generate_content(
+                model=self._model_name, 
+                config=types.GenerateContentConfig(
+                    **self._genai_params,
+                    system_instruction=system_instruction or "You are a helpful assistant named Jakey",
+                ),
+                contents=_chat_thread
+            )
+
+            _candidateContentResponse = _response.candidates[0].content
+
+        # Append the response to the chat thread
+        _chat_thread.append(_candidateContentResponse.model_dump())
         return {"answer": _response.text, "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):

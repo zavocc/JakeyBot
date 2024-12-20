@@ -17,13 +17,13 @@ class Tool:
             "name": self.tool_name,
             "description": "Restyle images to line drawings based from the given image",
             "parameters": {
-                "type": "object",
+                "type": "OBJECT",
                 "properties": {
                     "discord_attachment_url": {
-                        "type": "string"
+                        "type": "STRING"
                     },
                     "mode": {
-                        "type": "string",
+                        "type": "STRING",
                         "enum": ["Simple Lines", "Complex Lines"]
                     }
                 },

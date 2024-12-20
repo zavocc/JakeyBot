@@ -18,19 +18,19 @@ class Tool:
             "name": self.tool_name,
             "description": "Edit audio, simply provide the description for editing, and EzAudio will do the rest",
             "parameters": {
-                "type": "object",
+                "type": "OBJECT",
                 "properties": {
                     "discord_attachment_url": {
-                        "type": "string"
+                        "type": "STRING"
                     },
                     "prompt": {
-                        "type": "string"
+                        "type": "STRING"
                     },
                     "edit_start_in_seconds": {
-                        "type": "number"
+                        "type": "NUMBER"
                     },
                     "edit_length_in_seconds": {
-                        "type": "number"
+                        "type": "NUMBER"
                     }
                 },
                 "required": ["discord_attachment_url", "prompt"]

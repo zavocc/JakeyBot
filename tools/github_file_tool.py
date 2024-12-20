@@ -16,25 +16,25 @@ class Tool:
             "name": self.tool_name,
             "description": "Retrieve file content from a GitHub repository or set of files, brainstorm and debug code.",
             "parameters": {
-                "type": "object",
+                "type": "OBJECT",
                 "properties": {
                     "filepath": {
-                        "type": "object",
+                        "type": "OBJECT",
                         "properties": {
                             "files": {
-                                "type": "array",
+                                "type": "ARRAY",
                                 "items": {
-                                    "type": "string"
+                                    "type": "STRING"
                                 }
                             }
                         },
                         "required": ["files"]
                     },
                     "repo": {
-                        "type": "string"
+                        "type": "STRING"
                     },
                     "branch": {
-                        "type": "string"
+                        "type": "STRING"
                     }
                 },
                 "required": ["filepath", "repo"]
@@ -111,6 +111,6 @@ class Tool:
         return _codebasemetadatas
 
 
-           
-            
-            
+
+
+

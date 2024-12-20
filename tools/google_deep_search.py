@@ -16,16 +16,16 @@ class Tool:
             "name": self.tool_name,
             "description": "Iteratively search and fetch latest information, get informed and verifiable results from Google search, and understand relationships between different sources between different queries.",
             "parameters": {
-                "type": "object",
+                "type": "OBJECT",
                 "properties": {
                     "queries": {
-                        "type": "array",
+                        "type": "ARRAY",
                         "items": {
-                            "type": "string"
+                            "type": "STRING"
                         }
                     },
                     "n_results": {
-                        "type": "integer",
+                        "type": "INTEGER",
                     },
                 },
                 "required": ["queries"]
@@ -133,5 +133,5 @@ class Tool:
 
         return _output
 
-            
-            
+
+

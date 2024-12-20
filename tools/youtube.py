@@ -15,13 +15,13 @@ class Tool:
             "name": self.tool_name,
             "description": "Summarize and gather insights from a YouTube video.",
             "parameters": {
-                "type": "object",
+                "type": "OBJECT",
                 "properties": {
                     "query": {
-                        "type": "string"
+                        "type": "STRING"
                     },
                     "n_results": {
-                        "type": "integer",
+                        "type": "INTEGER",
                     },
                 },
                 "required": ["query"]
@@ -97,5 +97,5 @@ class Tool:
 
         return _videos
 
-            
-            
+
+

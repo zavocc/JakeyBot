@@ -6,5 +6,3 @@ class Tool:
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
-
-        self.tool_schema = {"code_execution": {}}

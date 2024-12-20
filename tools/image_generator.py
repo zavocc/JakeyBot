@@ -17,16 +17,16 @@ class Tool:
             "name": self.tool_name,
             "description": "Generate or restyle images using natural language or from description",
             "parameters": {
-                "type": "object",
+                "type": "OBJECT",
                 "properties": {
                     "image_description": {
-                        "type": "string"
+                        "type": "STRING"
                     },
                     "width": {
-                        "type": "number"
+                        "type": "NUMBER"
                     },
                     "height": {
-                        "type": "number"
+                        "type": "NUMBER"
                     }
                 },
                 "required": ["image_description", "width", "height"]

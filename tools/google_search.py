@@ -16,13 +16,13 @@ class Tool:
             "name": self.tool_name,
             "description": "Search and fetch latest information, get detailed and verifiable answers with Google Search. Use Google Search to provide up-to-date and quality verifiable answers.",
             "parameters": {
-                "type": "object",
+                "type": "OBJECT",
                 "properties": {
                     "query": {
-                        "type": "string"
+                        "type": "STRING"
                     },
                     "n_results": {
-                        "type": "integer",
+                        "type": "INTEGER",
                     },
                 },
                 "required": ["query"]
@@ -119,5 +119,5 @@ class Tool:
 
         return _output
 
-            
-            
+
+

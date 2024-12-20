@@ -16,16 +16,16 @@ class Tool:
             "name": self.tool_name,
             "description": "Search and fetch latest information and pull videos with Bing.",
             "parameters": {
-                "type": "object",
+                "type": "OBJECT",
                 "properties": {
                     "query": {
-                        "type": "string"
+                        "type": "STRING"
                     },
                     "n_results": {
-                        "type": "integer",
+                        "type": "INTEGER",
                     },
                     "show_youtube_videos": {
-                        "type": "boolean"
+                        "type": "BOOLEAN"
                     }
                 },
                 "required": ["query"]

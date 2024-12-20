@@ -12,24 +12,24 @@ class Tool:
             "name": self.tool_name,
             "description": "Ideate, brainstorm, and create draft content inside Discord thread to continue conversation with specified topic and content",
             "parameters": {
-                "type": "object",
+                "type": "OBJECT",
                 "properties": {
                     "thread_title": {
-                        "type": "string"
+                        "type": "STRING"
                     },
                     "plan": {
-                        "type": "string",
+                        "type": "STRING",
                     },
                     "content": {
-                        "type": "string",
+                        "type": "STRING",
                     },
                     "code": {
-                        "type": "string",
+                        "type": "STRING",
                     },
                     "todos": {
-                        "type": "array",
+                        "type": "ARRAY",
                         "items": {
-                            "type": "string"
+                            "type": "STRING"
                         }
                     }
                 },

@@ -18,13 +18,13 @@ class Tool:
             "name": self.tool_name,
             "description": "Clone voices and perform TTS tasks from the given audio files",
             "parameters": {
-                "type": "object",
+                "type": "OBJECT",
                 "properties": {
                     "discord_attachment_url": {
-                        "type": "string"
+                        "type": "STRING"
                     },
                     "text": {
-                        "type": "string"
+                        "type": "STRING"
                     }
                 },
                 "required": ["discord_attachment_url", "text"]
