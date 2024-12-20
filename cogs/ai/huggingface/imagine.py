@@ -2,7 +2,7 @@ from discord.ext import commands
 from gradio_client import Client
 import asyncio
 import discord
-import gradio_client
+import logging
 
 class HFGenAITools(commands.Cog):
     def __init__(self, bot):
@@ -52,28 +52,26 @@ class HFGenAITools(commands.Cog):
         _default_negative_prompt = "low quality, distorted, bad art, violence, sexually explicit, disturbing"
 
         # Create image
-        try:
-            result = await asyncio.to_thread(
-                Client("stabilityai/stable-diffusion-3-medium").predict,
-                prompt=prompt,
-                negative_prompt=f"{_default_negative_prompt}{', ' + negative_prompt if negative_prompt is not None else ' '}",
-                width=width,
-                height=height,
-                guidance_scale=guidance_scale,
-                seed=0,
-                randomize_seed=True,
-                num_inference_steps=25,
-                api_name="/infer"
-            )
-        except gradio_client.exceptions.AppError as e:
-            raise e
+        result = await asyncio.to_thread(
+            Client("stabilityai/stable-diffusion-3-medium").predict,
+            prompt=prompt,
+            negative_prompt=f"{_default_negative_prompt}{', ' + negative_prompt if negative_prompt is not None else ' '}",
+            width=width,
+            height=height,
+            guidance_scale=guidance_scale,
+            seed=0,
+            randomize_seed=True,
+            num_inference_steps=25,
+            api_name="/infer"
+        )
 
         # Send the image
         await ctx.respond(f"Hi, I am **Image generator**, I can help you create images, I see you wanted **{prompt}** so I created an image for you. I hope you like it!", file=discord.File(fp=result[0]))
     
     @imagine.error
     async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
-        await ctx.respond("⛔ I'm sorry but theres an internal error occured while generating an image. Please try again later")
+        await ctx.respond("⛔ I'm sorry but theres an internal error occurred while generating an image. Please try again later")
+        logging.error("An error has occurred while executing imagine command, reason: ", exc_info=True)
 
 def setup(bot):
     bot.add_cog(HFGenAITools(bot))

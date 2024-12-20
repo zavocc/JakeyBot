@@ -1,5 +1,4 @@
 # Huggingface spaces endpoints 
-import google.generativeai as genai
 import aiofiles.os
 import asyncio
 import discord
@@ -9,27 +8,34 @@ import importlib
 class Tool:
     tool_human_name = "Image Generator with Stable Diffusion 3.5"
     tool_name = "image_generator"
-    def __init__(self, method_send):
+    def __init__(self, method_send, discord_ctx, discord_bot):
         self.method_send = method_send
+        self.discord_ctx = discord_ctx
+        self.discord_bot = discord_bot
 
-        # Image generator
-        self.tool_schema = genai.protos.Tool(
-            function_declarations=[
-                genai.protos.FunctionDeclaration(
-                    name = self.tool_name,
-                    description = "Generate or restyle images using natural language or from description",
-                    parameters=genai.protos.Schema(
-                        type=genai.protos.Type.OBJECT,
-                        properties={
-                            'image_description':genai.protos.Schema(type=genai.protos.Type.STRING),
-                            'width':genai.protos.Schema(type=genai.protos.Type.NUMBER),
-                            'height':genai.protos.Schema(type=genai.protos.Type.NUMBER)
+        self.tool_schema = {
+            "functionDeclarations": [
+                {
+                    "name": self.tool_name,
+                    "description": "Generate or restyle images using natural language or from description",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "image_description": {
+                                "type": "string"
+                            },
+                            "width": {
+                                "type": "number"
+                            },
+                            "height": {
+                                "type": "number"
+                            }
                         },
-                        required=['image_description', 'width', 'height']
-                    )
-                )
+                        "required": ["image_description", "width", "height"]
+                    }
+                }
             ]
-        )
+        }
 
     # Image generator
     async def _tool_function(self, image_description: str, width: int, height: int):
