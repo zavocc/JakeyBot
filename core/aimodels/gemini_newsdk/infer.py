@@ -181,60 +181,18 @@ class Completions(APIParams):
 
         # Tools
         _toolInvoke = None
-        _codeExecutionResult = None
-        _codeExecutionCode = None
         for _part in _candidateContentResponse.parts:
             if _part.function_call:
                 _toolInvoke = _part.function_call
                 break
 
-            if _part.executable_code and not _codeExecutionCode:
-                _codeExecutionCode = _part.executable_code
+            if _part.executable_code:
+                await self._discord_method_send(f"✅ Used: **{_Tool.tool_human_name}**")
+                await self._discord_method_send(f"```py\n{_part.executable_code.code[:1988]}\n```")
 
-            if _part.code_execution_result and not _codeExecutionResult:
-                _codeExecutionResult = _part.code_execution_result
-
-
-        # Check if code execution was invoked
-        # https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/code-execution
-        if _codeExecutionCode and _codeExecutionResult:
-            await self._discord_method_send(f"✅ Used: **{_Tool.tool_human_name}**")
-
-            # Add the code execution result
-            _chat_thread.append(types.Content(
-                parts=[
-                    types.Part.from_executable_code(
-                        code=_codeExecutionCode.code,
-                        language=_codeExecutionCode.language,
-                    ),
-                    types.Part.from_code_execution_result(
-                        outcome=_codeExecutionResult.outcome,
-                        output=_codeExecutionResult.output,
-                    )
-                ],
-                role = "model"
-            ).model_dump())
-
-            _chat_thread.append(types.Content(
-                parts=[
-                    types.Part.from_text(
-                        text="Explain the result of the code execution"
-                    )
-                ],
-                role = "user"
-            ).model_dump())
-            
-            # Re-run the model
-            _response = await self._gemini_api_client.aio.models.generate_content(
-                model=self._model_name, 
-                config=types.GenerateContentConfig(
-                    **self._genai_params,
-                    system_instruction=system_instruction or "You are a helpful assistant named Jakey",
-                ),
-                contents=_chat_thread
-            )
-
-            _candidateContentResponse = _response.candidates[0].content
+            if _part.code_execution_result:
+                # Send the code execution result
+                await self._discord_method_send(f"```{_part.code_execution_result.output[:1994]}```")
             
         # Check if we need to execute tools
         if _toolInvoke:
@@ -243,6 +201,10 @@ class Completions(APIParams):
 
             # Indicate the tool is called
             await self._discord_method_send(f"✅ Used: **{_Tool.tool_human_name}**")
+
+            # Send text
+            if _candidateContentResponse.parts[0].text:
+                await self._discord_method_send(_candidateContentResponse.parts[0].text)
 
             # Call the tool
             try:
@@ -275,11 +237,11 @@ class Completions(APIParams):
                 contents=_chat_thread
             )
 
+            # Second candidate response, reassign so we can get the text
             _candidateContentResponse = _response.candidates[0].content
 
-        # Append the response to the chat thread
         _chat_thread.append(_candidateContentResponse.model_dump())
-        return {"answer": _response.text, "chat_thread": _chat_thread}
+        return {"answer": _candidateContentResponse.parts[-1].text, "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
         await db_conn.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)
