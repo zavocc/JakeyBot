@@ -113,10 +113,10 @@ class Completions():
         if _chat_thread is None:
             _chat_thread = []
 
-        print(_chat_thread)
-        print(len(_chat_thread))
+        #print(_chat_thread)
+        #print(len(_chat_thread))
 
-        # Prompt
+        # Parse prompts
         _prompt = [
             types.Part.from_text(prompt),
         ]
@@ -125,6 +125,7 @@ class Completions():
         if self._file_data is not None:
             _prompt.append(types.Part.from_uri(**self._file_data))
 
+        # Add to chat thread so that the model can generate a response
         _chat_thread.append(types.Content(
             parts=_prompt,
             role="user"
@@ -161,18 +162,6 @@ class Completions():
             ),
             contents=_chat_thread
         )
-
-        # Send the message
-        #_response = await _chat_session.send_message(_prompt)
-    
-        # Dump the _chat_session list to pydantic v2 dictionary model to be saved in the database
-        #for _history in _chat_session._curated_history:
-        #    print(_history.model_dump())
-        #    if type(_history) != dict:
-        #        _chat_thread.append(_history.model_dump())
-
-        #_chat_thread.extend([_chat.model_dump() for _chat in _chat_session._curated_history if type(_chat) != dict])
-        #_chat_thread.extend([{"parts": _chat.parts, "role": _chat.role} for _chat in _chat_session._curated_history])
 
         _candidateContentResponse = _response.candidates[0].content
         _chat_thread.append(_candidateContentResponse.model_dump())
