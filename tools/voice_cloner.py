@@ -15,26 +15,21 @@ class Tool:
         self.discord_bot = discord_bot
 
         self.tool_schema = {
-            "functionDeclarations": [
-                {
-                    "name": self.tool_name,
-                    "description": "Clone voices and perform TTS tasks from the given audio files",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "discord_attachment_url": {
-                                "type": "string"
-                            },
-                            "text": {
-                                "type": "string"
-                            }
-                        },
-                        "required": ["discord_attachment_url", "text"]
+            "name": self.tool_name,
+            "description": "Clone voices and perform TTS tasks from the given audio files",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "discord_attachment_url": {
+                        "type": "string"
+                    },
+                    "text": {
+                        "type": "string"
                     }
-                }
-            ]
+                },
+                "required": ["discord_attachment_url", "text"]
+            }
         }
-
 
     async def _tool_function(self, discord_attachment_url: str, text: str):
         # Import

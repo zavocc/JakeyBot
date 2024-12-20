@@ -13,27 +13,23 @@ class Tool:
         self.discord_bot = discord_bot
 
         self.tool_schema = {
-            "functionDeclarations": [
-                {
-                    "name": self.tool_name,
-                    "description": "Search and fetch latest information and pull videos with Bing.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string"
-                            },
-                            "n_results": {
-                                "type": "integer",
-                            },
-                            "show_youtube_videos": {
-                                "type": "boolean"
-                            }
-                        },
-                        "required": ["query"]
+            "name": self.tool_name,
+            "description": "Search and fetch latest information and pull videos with Bing.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string"
+                    },
+                    "n_results": {
+                        "type": "integer",
+                    },
+                    "show_youtube_videos": {
+                        "type": "boolean"
                     }
-                }
-            ]
+                },
+                "required": ["query"]
+            }
         }
 
     

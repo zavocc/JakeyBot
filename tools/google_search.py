@@ -13,24 +13,20 @@ class Tool:
         self.discord_bot = discord_bot
 
         self.tool_schema = {
-            "functionDeclarations": [
-                {
-                    "name": self.tool_name,
-                    "description": "Search and fetch latest information, get detailed and verifiable answers with Google Search. Use Google Search to provide up-to-date and quality verifiable answers.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string"
-                            },
-                            "n_results": {
-                                "type": "integer",
-                            },
-                        },
-                        "required": ["query"]
-                    }
-                }
-            ]
+            "name": self.tool_name,
+            "description": "Search and fetch latest information, get detailed and verifiable answers with Google Search. Use Google Search to provide up-to-date and quality verifiable answers.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string"
+                    },
+                    "n_results": {
+                        "type": "integer",
+                    },
+                },
+                "required": ["query"]
+            }
         }
 
     

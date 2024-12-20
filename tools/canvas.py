@@ -9,36 +9,32 @@ class Tool:
         self.discord_bot = discord_bot
 
         self.tool_schema = {
-            "functionDeclarations": [
-                {
-                    "name": self.tool_name,
-                    "description": "Ideate, brainstorm, and create draft content inside Discord thread to continue conversation with specified topic and content",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "thread_title": {
-                                "type": "string"
-                            },
-                            "plan": {
-                                "type": "string",
-                            },
-                            "content": {
-                                "type": "string",
-                            },
-                            "code": {
-                                "type": "string",
-                            },
-                            "todos": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            }
-                        },
-                        "required": ["thread_title", "plan", "content"]
+            "name": self.tool_name,
+            "description": "Ideate, brainstorm, and create draft content inside Discord thread to continue conversation with specified topic and content",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "thread_title": {
+                        "type": "string"
+                    },
+                    "plan": {
+                        "type": "string",
+                    },
+                    "content": {
+                        "type": "string",
+                    },
+                    "code": {
+                        "type": "string",
+                    },
+                    "todos": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
                     }
-                }
-            ]
+                },
+                "required": ["thread_title", "plan", "content"]
+            }
         }
 
     

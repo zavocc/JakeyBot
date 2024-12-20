@@ -14,25 +14,21 @@ class Tool:
         self.discord_bot = discord_bot
 
         self.tool_schema = {
-            "functionDeclarations": [
-                {
-                    "name": self.tool_name,
-                    "description": "Restyle images to line drawings based from the given image",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "discord_attachment_url": {
-                                "type": "string"
-                            },
-                            "mode": {
-                                "type": "string",
-                                "enum": ["Simple Lines", "Complex Lines"]
-                            }
-                        },
-                        "required": ["discord_attachment_url", "mode"]
+            "name": self.tool_name,
+            "description": "Restyle images to line drawings based from the given image",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "discord_attachment_url": {
+                        "type": "string"
+                    },
+                    "mode": {
+                        "type": "string",
+                        "enum": ["Simple Lines", "Complex Lines"]
                     }
-                }
-            ]
+                },
+                "required": ["discord_attachment_url", "mode"]
+            }
         }
 
 

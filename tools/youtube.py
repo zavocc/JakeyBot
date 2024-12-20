@@ -12,26 +12,21 @@ class Tool:
         self.discord_bot = discord_bot
 
         self.tool_schema = {
-            "functionDeclarations": [
-                {
-                    "name": self.tool_name,
-                    "description": "Summarize and gather insights from a YouTube video.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string"
-                            },
-                            "n_results": {
-                                "type": "integer",
-                            },
-                        },
-                        "required": ["query"]
-                    }
-                }
-            ]
+            "name": self.tool_name,
+            "description": "Summarize and gather insights from a YouTube video.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string"
+                    },
+                    "n_results": {
+                        "type": "integer",
+                    },
+                },
+                "required": ["query"]
+            }
         }
-
     
     async def _tool_function(self, query: str, n_results: int = 10):
         # Must not be above 50

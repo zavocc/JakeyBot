@@ -14,27 +14,23 @@ class Tool:
         self.discord_bot = discord_bot
 
         self.tool_schema = {
-            "functionDeclarations": [
-                {
-                    "name": self.tool_name,
-                    "description": "Generate or restyle images using natural language or from description",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "image_description": {
-                                "type": "string"
-                            },
-                            "width": {
-                                "type": "number"
-                            },
-                            "height": {
-                                "type": "number"
-                            }
-                        },
-                        "required": ["image_description", "width", "height"]
+            "name": self.tool_name,
+            "description": "Generate or restyle images using natural language or from description",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "image_description": {
+                        "type": "string"
+                    },
+                    "width": {
+                        "type": "number"
+                    },
+                    "height": {
+                        "type": "number"
                     }
-                }
-            ]
+                },
+                "required": ["image_description", "width", "height"]
+            }
         }
 
     # Image generator

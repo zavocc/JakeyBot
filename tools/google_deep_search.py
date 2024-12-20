@@ -13,29 +13,24 @@ class Tool:
         self.discord_bot = discord_bot
 
         self.tool_schema = {
-            "functionDeclarations": [
-                {
-                    "name": self.tool_name,
-                    "description": "Iteratively search and fetch latest information, get informed and verifiable results from Google search, and understand relationships between different sources between different queries.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "queries": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "n_results": {
-                                "type": "integer",
-                            },
-                        },
-                        "required": ["queries"]
-                    }
-                }
-            ]
+            "name": self.tool_name,
+            "description": "Iteratively search and fetch latest information, get informed and verifiable results from Google search, and understand relationships between different sources between different queries.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "queries": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "n_results": {
+                        "type": "integer",
+                    },
+                },
+                "required": ["queries"]
+            }
         }
-
     
     async def _tool_function(self, queries: list, n_results: int = 10):
         # Must not be above 10
