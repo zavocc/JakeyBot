@@ -113,8 +113,25 @@ class Completions():
         if _chat_thread is None:
             _chat_thread = []
 
-        # Initialize chat session config
-        _chat_session = self._gemini_api_client.aio.chats.create(
+        print(_chat_thread)
+        print(len(_chat_thread))
+
+        # Prompt
+        _prompt = [
+            types.Part.from_text(prompt),
+        ]
+
+        # File attachment
+        if self._file_data is not None:
+            _prompt.append(types.Part.from_uri(**self._file_data))
+
+        _chat_thread.append(types.Content(
+            parts=_prompt,
+            role="user"
+        ).model_dump())
+
+        # Create response
+        _response = await self._gemini_api_client.aio.models.generate_content(
             model=self._model_name, 
             config=types.GenerateContentConfig(
                 candidate_count=1,
@@ -142,24 +159,25 @@ class Completions():
                     ),
                 ]
             ),
-            history=_chat_thread
+            contents=_chat_thread
         )
 
-        # Prompt
-        _prompt = [
-            types.Part.from_text(prompt)
-        ]
-
-        # File attachment
-        if self._file_data is not None:
-            _prompt.append(types.Part.from_uri(**self._file_data))
-
         # Send the message
-        _response = await _chat_session.send_message(_prompt)
+        #_response = await _chat_session.send_message(_prompt)
+    
+        # Dump the _chat_session list to pydantic v2 dictionary model to be saved in the database
+        #for _history in _chat_session._curated_history:
+        #    print(_history.model_dump())
+        #    if type(_history) != dict:
+        #        _chat_thread.append(_history.model_dump())
 
-        return {"answer": _response.text, "chat_thread": None}
+        #_chat_thread.extend([_chat.model_dump() for _chat in _chat_session._curated_history if type(_chat) != dict])
+        #_chat_thread.extend([{"parts": _chat.parts, "role": _chat.role} for _chat in _chat_session._curated_history])
+
+        _candidateContentResponse = _response.candidates[0].content
+        _chat_thread.append(_candidateContentResponse.model_dump())
+
+        return {"answer": _response.text, "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
-        await self._discord_method_send("Function save not implemented yet")
-        raise NotImplementedError
         await db_conn.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)
