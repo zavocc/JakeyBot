@@ -8,15 +8,18 @@ class HistoryDatabaseError(Exception):
         self.message = message
 
 class MultiModalUnavailable(Exception):
-    pass
+    def __init__(self, message):
+        self.message = message
 
 class ModelUnavailable(ModuleNotFoundError):
-    pass
-
-class SafetyFilterError(Exception):
-    pass
+    def __init__(self, message):
+        self.message = message
 
 class ToolsUnavailable(ModuleNotFoundError):
+    def __init__(self, message):
+        self.message = message
+
+class SafetyFilterError(Exception):
     pass
 
 

@@ -37,7 +37,7 @@ class Completions:
     async def input_files(self, attachment: discord.Attachment):
         # Check if the attachment is an image
         if not attachment.content_type.startswith("image"):
-            raise MultiModalUnavailable
+            raise MultiModalUnavailable("⚠️ This model only supports image attachments")
 
         _attachment_prompt = {
             "type":"image_url",
@@ -91,7 +91,7 @@ class Completions:
             if "openai" in self._model_name or "anthropic" in self._model_name or "gemini" in self._model_name or "grok" in self._model_name:
                 _chat_thread[-1]["content"].append(self._file_data)
             else:
-                raise MultiModalUnavailable
+                await self._discord_method_send(f"⚠️ The model **{self._model_name}** doesn't support file attachments, thus will be ignored")
 
         # Params
         _params = {

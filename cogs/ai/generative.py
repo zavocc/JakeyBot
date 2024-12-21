@@ -48,14 +48,14 @@ class BaseChat():
                 guild_id=guild_id,
                 model_name=_model_name)
         except ModuleNotFoundError:
-            raise ModelUnavailable
+            raise ModelUnavailable(f"⚠️ The model you've chosen is not available at the moment, please choose another model")
 
         ###############################################
         # File attachment processing
         ###############################################
         if attachment is not None:
             if not hasattr(_infer, "input_files"):
-                raise MultiModalUnavailable
+                raise MultiModalUnavailable("🚫 This model cannot process file attachments, please try another model")
 
             await _infer.input_files(attachment=attachment)
 

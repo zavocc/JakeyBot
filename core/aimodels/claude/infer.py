@@ -39,7 +39,7 @@ class Completions:
     async def input_files(self, attachment: discord.Attachment):
         # Check if the attachment is an image
         if not attachment.content_type.startswith("image"):
-            raise MultiModalUnavailable
+            raise MultiModalUnavailable("⚠️ This model only supports image attachments")
 
         _attachment_prompt = {
             "type":"image_url",

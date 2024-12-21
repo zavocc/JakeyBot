@@ -90,13 +90,13 @@ class Chat(commands.Cog):
         elif isinstance(_error, HistoryDatabaseError):
             await ctx.respond(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
         elif isinstance(_error, MultiModalUnavailable):
-            await ctx.respond("🚫 This model cannot process certain files, choose another model to continue")
+            await ctx.respond(f"{_error.message}")
         elif isinstance(_error, ModelUnavailable):
-            await ctx.respond(f"⚠️ The model you've chosen is not available at the moment, please choose another model")
+            await ctx.respond(f"{_error.message}")
+        elif isinstance(_error, ToolsUnavailable):
+            await ctx.respond(f"{_error.message}")
         elif isinstance(_error, SafetyFilterError):
             await ctx.respond(f"🤬 I detected unsafe content in your prompt, please rephrase your question")
-        elif isinstance(_error, ToolsUnavailable):
-            await ctx.respond(f"⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
         else:
             await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, check console logs. What exactly happened: **`{type(_error).__name__}`**")
 

@@ -147,7 +147,7 @@ class Completions(APIParams):
                 )
         except ModuleNotFoundError as e:
             logging.error("I cannot import the tool because the module is not found: %s", e)
-            raise ToolsUnavailable
+            raise ToolsUnavailable(f"⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
 
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
@@ -234,7 +234,7 @@ class Completions(APIParams):
             try:
                 if not hasattr(_Tool, "_tool_function"):
                     logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s", e)
-                    raise ToolsUnavailable
+                    raise ToolsUnavailable(f"⚠️ An error has occurred while calling tools, please try again later or choose another tool")
                 _toolResult = {"toolResult": (await _Tool._tool_function(**_toolInvoke.args))}
             # For other exceptions, log the error and add it as part of the chat thread
             except Exception as e:

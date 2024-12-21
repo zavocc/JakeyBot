@@ -77,7 +77,7 @@ class BaseChat():
                 guild_id=guild_id,
                 model_name=_model_name)
         except ModuleNotFoundError:
-            raise ModelUnavailable
+            raise ModelUnavailable(f"⚠️ The model you've chosen is not available at the moment, please choose another model")
         _infer._discord_method_send = prompt.channel.send
 
         ###############################################
@@ -89,7 +89,7 @@ class BaseChat():
         
         if prompt.attachments:
             if not hasattr(_infer, "input_files"):
-                raise MultiModalUnavailable
+                raise MultiModalUnavailable("🚫 This model cannot process file attachments, please try another model")
 
             await _thinking_message.edit(f"📄 Processing the file: **{prompt.attachments[0].filename}**")
             await _infer.input_files(attachment=prompt.attachments[0])
@@ -211,11 +211,11 @@ class BaseChat():
                 elif isinstance(_error, HistoryDatabaseError):
                     await prompt_message.reply(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
                 elif isinstance(_error, MultiModalUnavailable):
-                    await prompt_message.reply("🚫 This model cannot process certain files, choose another model to continue")
+                    await prompt_message.reply(f"{_error.message}")
                 elif isinstance(_error, ModelUnavailable):
-                    await prompt_message.reply(f"⚠️ The model you've chosen is not available at the moment, please choose another model")
+                    await prompt_message.reply(f"{_error.message}")
                 elif isinstance(_error, ToolsUnavailable):
-                    await prompt_message.reply(f"⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
+                    await prompt_message.reply(f"{_error.message}")
                 elif isinstance(_error, SafetyFilterError):
                     await prompt_message.reply(f"🤬 I detected unsafe content in your prompt, please rephrase your question")
                 else:
