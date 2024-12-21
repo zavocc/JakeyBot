@@ -31,7 +31,6 @@ chat_assistants:
           - It can take parameters such as before_date, after_date, and around_date to filter the messages in particular date range
           - Max references can be specified via max_references parameter upto 10 references
           - The limit parameter can be used to limit the number of messages to summarize upto 50 messages
-        - Create images using /imagine command to generate images based on the given text using latest models
         See below how users can answer any questions
 
         You also have apps which is used to take action with selected messages, it can be accessed via message context menu and Apps

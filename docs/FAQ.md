@@ -25,7 +25,7 @@ Gemini 1.5 models benefits from full multimodality, you can provide files like i
 OpenAI and Claude models can only accept images at this time.
 
 ### I get some error when using JakeyBot in DMs
-You can use `/ask`, `/imagine` and `/sweep` commands in the bot's DM once you install this app by tapping "Add app" in its profile card and clicking "Try it yourself" otherwise you will get "Integration error" when directly using these commands in DMs.
+You can use `/ask` and `/sweep` commands in the bot's DM once you install this app by tapping "Add app" in its profile card and clicking "Try it yourself" otherwise you will get "Integration error" when directly using these commands in DMs.
 
 ### When I use ask command in other servers, I get an error saying "This commmand can only be used in DMs or authorized guilds!"
 When you authorize your app to be usable in DMs as mentioned [above](#i-get-some-error-when-using-jakeybot-in-dms) but you cannot use it outside servers where JakeyBot isn't fully authorized
