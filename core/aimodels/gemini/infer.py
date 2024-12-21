@@ -1,5 +1,6 @@
-from core.exceptions import ToolsUnavailable
+from core.exceptions import SafetyFilterError, ToolsUnavailable
 from google import genai
+from google.genai import errors
 from google.genai import types
 from os import environ
 from pathlib import Path
@@ -23,19 +24,19 @@ class APIParams:
             "safety_settings": [
                 {
                     "category": "HARM_CATEGORY_HARASSMENT",
-                    "threshold": "BLOCK_ONLY_HIGH"
+                    "threshold": "BLOCK_LOW_AND_ABOVE"
                 },
                 {
                     "category": "HARM_CATEGORY_HATE_SPEECH", 
-                    "threshold": "BLOCK_ONLY_HIGH"
+                    "threshold": "BLOCK_LOW_AND_ABOVE"
                 },
                 {
                     "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                    "threshold": "BLOCK_ONLY_HIGH"
+                    "threshold": "BLOCK_LOW_AND_ABOVE"
                 },
                 {
                     "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                    "threshold": "BLOCK_ONLY_HIGH"
+                    "threshold": "BLOCK_LOW_AND_ABOVE"
                 }
             ]
         }
@@ -184,15 +185,48 @@ class Completions(APIParams):
             _tool_schema = None
 
         # Create response
-        _response = await self._gemini_api_client.aio.models.generate_content(
-            model=self._model_name, 
-            contents=_chat_thread,
-            config=types.GenerateContentConfig(
-                **self._genai_params,
-                system_instruction=system_instruction or "You are a helpful assistant named Jakey",
-                tools=_tool_schema
+        try:
+            # First try
+            _response = await self._gemini_api_client.aio.models.generate_content(
+                model=self._model_name, 
+                contents=_chat_thread,
+                config=types.GenerateContentConfig(
+                    **self._genai_params,
+                    system_instruction=system_instruction or "You are a helpful assistant named Jakey",
+                    tools=_tool_schema
+                )
             )
-        )
+        # Check if we get ClientError and has PERMISSION_DENIED
+        except errors.ClientError as e:
+            logging.error("1st try: I think I found a problem related to the request... doing first fixes: %s", e.message)
+            if "do not have permission" in e.message:
+                for _chat_turns in _chat_thread:
+                    for _parts in _chat_turns["parts"]:
+                        # Since pydantic always has file_data key even None, we just set it as None and set the text to "Expired"
+                        if _parts["file_data"]:
+                            _parts["file_data"] = None
+                            _parts["text"] = "⚠️ The file attachment expired and was removed."
+                
+                # Notify the user that the chat session has been re-initialized
+                await self._discord_method_send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
+
+                # Retry the request
+                _response = await self._gemini_api_client.aio.models.generate_content(
+                    model=self._model_name, 
+                    contents=_chat_thread,
+                    config=types.GenerateContentConfig(
+                        **self._genai_params,
+                        system_instruction=system_instruction or "You are a helpful assistant named Jakey",
+                        tools=_tool_schema
+                    )
+                )
+            else:
+                logging.error("2nd try: I think I found a problem related to the request: %s", e.message)
+                raise e
+
+        # Check if the response was blocked due to safety
+        if _response.candidates[0].finish_reason == "SAFETY":
+            raise SafetyFilterError
 
         # First candidate response
         _candidateContentResponse = _response.candidates[0].content

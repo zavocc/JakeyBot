@@ -3,6 +3,7 @@ from core.ai.core import ModelsList
 from core.exceptions import *
 from core.ai.history import History # type hinting
 from discord import Message
+from google.genai import errors as genai_errors
 from os import environ
 import core.aimodels._template_ # For type hinting
 import aiofiles
@@ -206,8 +207,8 @@ class BaseChat():
             try:
                 await self.ask_core(prompt_message)
             except Exception as _error:
-                if isinstance(_error, GeminiClientRequestError):
-                    await prompt_message.reply(f"😨 Uh oh, something happened to our end while processing requests code **{_error.error_code}** with reason: **{_error.message}**")
+                if isinstance(_error, genai_errors.ClientError) or isinstance(_error, genai_errors.ServerError):
+                    await prompt_message.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: \n> {_error.message}")
                 elif isinstance(_error, HistoryDatabaseError):
                     await prompt_message.reply(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
                 elif isinstance(_error, MultiModalUnavailable):
@@ -224,6 +225,4 @@ class BaseChat():
                 # Log the error
                 logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)
 
-                # Raise error
-                #raise _error
     
