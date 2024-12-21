@@ -72,15 +72,9 @@
 ############################################
 # Mistral models
 ############################################
-- model: mistralai::mistral-large-2407
-  name: Mistral Large 2
-  description: Advanced multilingual model with top reasoning capabilities
-- model: mistralai::open-mixtral-8x7b
-  name: Mixtral 8x7B
-  description: The OG Mistral's sparse mixture of experts model with low moderation
-- model: mistralai::codestral-latest
-  name: Codestral
-  description: Optimized for code chat
+- model: mistralai::pixtral-large-latest
+  name: Mistral Large 2 with Vision
+  description: Pixtral Large 2
 
 ############################################
 # X.AI

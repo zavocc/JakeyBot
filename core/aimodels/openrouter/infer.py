@@ -64,13 +64,15 @@ class Completions:
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
         
-        if _chat_thread is None:
+        # PaLM models don't have system prompt
+        if _chat_thread is None and not "palm" in self._model_name:
             # Begin with system prompt
             _chat_thread = [{
                 "role": "system",
                 "content": system_instruction   
             }]
-
+        else:
+            _chat_thread = []
         
         # Craft prompt
         _chat_thread.append(
@@ -86,12 +88,12 @@ class Completions:
         )
 
         # Check if we have an attachment
-        # It is only supported with OpenAI, Anthropic, or XAI models for now
+        # It is only supported with OpenAI, Anthropic, Google or XAI models for now
         if self._file_data is not None:
             if "openai" in self._model_name or "anthropic" in self._model_name or "gemini" in self._model_name or "grok" in self._model_name:
                 _chat_thread[-1]["content"].append(self._file_data)
             else:
-                await self._discord_method_send(f"⚠️ The model **{self._model_name}** doesn't support file attachments, thus will be ignored")
+                raise MultiModalUnavailable(f"🚫 The model **{self._model_name}** doesn't support file attachments, choose another model")
 
         # Params
         _params = {

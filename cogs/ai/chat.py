@@ -234,7 +234,7 @@ class Chat(commands.Cog):
         await self.DBConn.set_key(guild_id=guild_id, key="chat_thread_openrouter", value=None)
 
         # Success
-        await ctx.respond(f"✅ Default OpenRouter model set to **{_setkeymodel}** and chat history for OpenRouter chats are cleared!")
+        await ctx.respond(f"✅ Default OpenRouter model set to **{_setkeymodel}** and chat history for OpenRouter chats are cleared!\nTo use this model, please set the model to OpenRouter using `/model set` command")
 
     @openrouter.error
     async def on_application_command_error(self, ctx: discord.ApplicationContext):

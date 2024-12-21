@@ -93,7 +93,7 @@ class Completions:
         _response = await litellm.acompletion(
             messages=_chat_thread,
             model=self._model_name,
-            max_tokens=3024,
+            max_tokens=4096,
             temperature=0.7,
             api_key=environ.get("ANTHROPIC_API_KEY")
         )

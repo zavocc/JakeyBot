@@ -2,10 +2,10 @@
 # provider::model_name
 
 # Google Gemini
-- model: google/gemini-pro-1.5-exp
+- model: google/gemini-pro-1.5
   name: Gemini 1.5 Pro
   description: Advanced chat tasks
-- model: google/gemini-flash-1.5-exp
+- model: google/gemini-flash-1.5
   name: Gemini 1.5 Flash
   description: General purpose tasks
 

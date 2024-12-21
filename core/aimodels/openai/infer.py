@@ -89,7 +89,7 @@ class Completions:
         _params = {
             "messages": _chat_thread,
             "model": self._model_name,
-            "max_tokens": 3024,
+            "max_tokens": 4096,
             "temperature": 0.7,
             "base_url": self._oai_endpoint,
             "api_key": environ.get("OPENAI_API_KEY")

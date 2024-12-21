@@ -1,3 +1,4 @@
+from core.exceptions import MultiModalUnavailable
 from os import environ
 import discord
 import litellm
@@ -34,13 +35,25 @@ class Completions:
 
         self._guild_id = guild_id
 
+    async def input_files(self, attachment: discord.Attachment):
+        # Check if the attachment is an image
+        if not attachment.content_type.startswith("image"):
+            raise MultiModalUnavailable("⚠️ This model only supports image attachments")
+
+        _attachment_prompt = {
+            "type":"image_url",
+            "image_url": {
+                    "url": attachment.url
+                }
+            }
+
+        self._file_data = _attachment_prompt
+
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
 
         # System prompt
-        # Check if codestral model is used since it's not necessary to put system instructions as its designed for code
-        # And to prevent tokens from being depleted quickly
         if _chat_thread is None:
             _chat_thread = [{
                 "role": "system",
@@ -60,11 +73,15 @@ class Completions:
             }
         )
 
+        # Check for file attachments
+        if self._file_data is not None:
+            _chat_thread[-1]["content"].append(self._file_data)
+
         # Generate completion
         _response = await litellm.acompletion(
             messages=_chat_thread,
             model=self._model_name,
-            max_tokens=3024,
+            max_tokens=4096,
             temperature=0.7,
             api_key=environ.get("MISTRAL_API_KEY")
         )
