@@ -1,6 +1,7 @@
 from core.ai.assistants import Assistants
 from core.aimodels.gemini import Completions
 from discord.ext import commands
+from google.genai import types
 from os import environ
 import aiofiles
 import datetime
@@ -80,6 +81,15 @@ class GenAITools(commands.Cog):
                 }
             ]
         }]
+
+        _prompt_feed = [
+            types.Part.from_text(
+                text = inspect.cleandoc(
+                    f"""Date today is {datetime.datetime.now().strftime('%m/%d/%Y')}
+                    OK, now generate summaries for me:"""
+                )
+            )
+        ]
         
 
         _messages = ctx.channel.history(limit=limit, before=before_date, after=after_date, around=around_date)
@@ -87,25 +97,20 @@ class GenAITools(commands.Cog):
             # Handle 2000 characters limit since 4000 characters is considered spam
             if len(x.content) <= 2000:
                 _prompt_feed.append(
-                    {
-                        "role": "user",
-                        "parts": [
-                            {
-                            "text": inspect.cleandoc(
-                                f"""# Message by: {x.author.name} at {x.created_at}
+                    types.Part.from_text(
+                        text = inspect.cleandoc(
+                            f"""# Message by: {x.author.name} at {x.created_at}
 
-                                # Message body:
-                                {x.content}
+                            # Message body:
+                            {x.content}
 
-                                # Message jump link:
-                                {x.jump_url}
+                            # Message jump link:
+                            {x.jump_url}
 
-                                # Additional information:
-                                - Discord User ID: {x.author.id}
-                                - Discord User Display Name: {x.author.display_name}""")
-                            }
-                        ]
-                    }
+                            # Additional information:
+                            - Discord User ID: {x.author.id}
+                            - Discord User Display Name: {x.author.display_name}""")
+                    )
                 )
             else:
                 continue
@@ -118,23 +123,23 @@ class GenAITools(commands.Cog):
         _system_prompt = await Assistants.set_assistant_type("discord_msg_summarizer_prompt", type=1)
 
         # Constrain the output to JSON
-        _completions._generation_config.update({
+        _completions._genai_params.update({
             "response_schema": {
                 "type": "object",
                 "properties": {
                     "summary": {
-                        "type": "string"
+                        "type": "STRING"
                     },
                     "links": {
                         "type": "array",
                         "items": {
-                            "type": "object",
+                            "type": "OBJECT",
                             "properties": {
                                 "description": {
-                                    "type": "string"
+                                    "type": "STRING"
                                 },
                                 "jump_url": {
-                                    "type": "string"
+                                    "type": "STRING"
                                 }
                             },
                             "required": ["description", "jump_url"]
@@ -143,8 +148,14 @@ class GenAITools(commands.Cog):
                 },
                 "required": ["summary", "links"]
             },
-            "response_mime_type": "application/json",
+            "response_mime_type": "application/json"
         })
+
+        # Turn prompt feed to content
+        _prompt_feed = types.Content(
+            parts=_prompt_feed,
+            role="user"
+        )
 
         _summary = json.loads(await _completions.completion(_prompt_feed, system_instruction=_system_prompt))
 

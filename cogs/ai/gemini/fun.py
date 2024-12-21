@@ -1,8 +1,8 @@
 from core.aimodels.gemini import Completions
 from discord.ext import commands
 from discord import Member, DiscordException
+from google.genai import types
 from os import environ
-import base64
 import discord
 import logging
 
@@ -11,7 +11,6 @@ class GeminiUtils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
-
         
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild},
@@ -50,7 +49,7 @@ class GeminiUtils(commands.Cog):
                 async with self.bot._aiohttp_main_client_session.get(avatar_url) as response:
                     # Get mime type
                     _mime_type = response.headers.get("Content-Type")
-                    _filedata = base64.b64encode(await response.content.read()).decode("utf-8")
+                    _filedata = await response.content.read()
                 
                 # Check filedata
                 if not _filedata:
@@ -59,18 +58,11 @@ class GeminiUtils(commands.Cog):
                 # Generate description
                 _infer = Completions(discord_ctx=ctx, discord_bot=self.bot)
                 _description = await _infer.completion([
-                    {
-                        "parts":[
-                            {"text": "Generate image descriptions but one sentence short to describe, straight to the point"},
-                            {
-                                "inlineData": {
-                                    "mimeType": _mime_type,
-                                    "data": _filedata
-                                }
-                            }
-                        ],
-                        "role": "user"
-                    }
+                    "Generate image descriptions but one sentence short to describe, straight to the point",
+                    types.Part.from_bytes(
+                        data=_filedata,
+                        mime_type=_mime_type
+                    )
                 ])
             except Exception as e:
                 logging.error("An error occurred while generating image descriptions: %s", e)
