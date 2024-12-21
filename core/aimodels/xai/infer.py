@@ -1,3 +1,5 @@
+
+from core.exceptions import MultiModalUnavailable
 from os import environ
 import discord
 import litellm
