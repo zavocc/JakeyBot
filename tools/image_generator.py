@@ -23,24 +23,14 @@ class Tool:
                 "properties": {
                     "image_description": {
                         "type": "STRING"
-                    },
-                    "width": {
-                        "type": "NUMBER"
-                    },
-                    "height": {
-                        "type": "NUMBER"
                     }
                 },
-                "required": ["image_description", "width", "height"]
+                "required": ["image_description"]
             }
         }
 
     # Image generator
-    async def _tool_function(self, image_description: str, width: int, height: int):
-        # Validate parameters
-        if width > 2048 or width == 0 or height > 2048 or height == 0:
-            height, width = 2048, 2048
-
+    async def _tool_function(self, image_description: str):
         # Check if HF_TOKEN is set
         if not environ.get("HF_TOKEN"):
             return "HuggingFace API token is not set, please set it in the environment variables"
@@ -56,7 +46,7 @@ class Tool:
         
         # Payload
         _payload = {
-            "inputs": image_description
+            "inputs": image_description,
         }
 
         _headers = {
