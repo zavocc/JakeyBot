@@ -111,7 +111,7 @@ class Completions:
         # Check if we have an attachment
         # It is only supported with OpenAI, Anthropic, Google or XAI models for now
         if self._file_data is not None:
-            if "openai" in self._model_name or "anthropic" in self._model_name or "gemini" in self._model_name or "grok" in self._model_name:
+            if "gpt-4" in self._model_name or "anthropic" in self._model_name or "gemini" in self._model_name or "grok" in self._model_name:
                 _chat_thread[-1]["content"].append(self._file_data)
             else:
                 raise MultiModalUnavailable(f"🚫 The model **{self._model_name}** doesn't support file attachments, choose another model")
