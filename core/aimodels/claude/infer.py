@@ -53,6 +53,10 @@ class Completions:
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
+
+        # Count prompt tokens
+        _tok_prompt = litellm.token_counter(text=prompt)
+
         if _chat_thread is None:
             # Begin with system prompt
             _chat_thread = [{
@@ -68,7 +72,6 @@ class Completions:
                 ] 
             }]
 
-        
         # Craft prompt
         _chat_thread.append(
             {
@@ -77,13 +80,16 @@ class Completions:
                     {
                         "type": "text",
                         "text": prompt,
-                        "cache_control": {
-                            "type": "ephemeral"
-                        }
                     }
                 ]
             }
         )
+
+        if _tok_prompt >= 1024:
+            await self._discord_method_send(f"-# This prompt has been cached to save costs")
+            _chat_thread[-1]["content"][0]["cache_control"] = {
+                "type": "ephemeral"
+            }
 
         # Check if we have an attachment
         if self._file_data is not None:
@@ -116,6 +122,13 @@ class Completions:
                 ]
             }
         )
+
+        # Cache the assistant response if it exceeds 1024 tokens
+        if litellm.token_counter(text=_answer) >= 1024:
+            await self._discord_method_send(f"-# The response has been cached to save costs")
+            _chat_thread[-1]["content"][0]["cache_control"] = {
+                "type": "ephemeral"
+            }
 
         return {"answer":_answer, "chat_thread": _chat_thread}
 

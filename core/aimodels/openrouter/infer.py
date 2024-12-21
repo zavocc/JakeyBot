@@ -64,15 +64,29 @@ class Completions:
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
         
+        # Count prompt tokens
+        _tok_prompt = litellm.token_counter(text=prompt)
+
         # PaLM models don't have system prompt
-        if _chat_thread is None and not "palm" in self._model_name:
-            # Begin with system prompt
-            _chat_thread = [{
-                "role": "system",
-                "content": system_instruction   
-            }]
-        else:
-            _chat_thread = []
+        if _chat_thread is None:
+            if not "palm" in self._model_name:
+                # Begin with system prompt
+                _chat_thread = [{
+                    "role": "system",
+                    "content": [{
+                        "type": "text",
+                        "text": system_instruction
+                    }]
+                }]
+
+                # If it's from Anthropic, also append "cache_control" block
+                if "claude" in self._model_name:
+                    _chat_thread[-1]["content"][0]["cache_control"] = {
+                        "type": "ephemeral"
+                    }
+    
+            else:
+                _chat_thread = []
         
         # Craft prompt
         _chat_thread.append(
@@ -86,6 +100,13 @@ class Completions:
                 ]
             }
         )
+
+        # If it's from Anthropic, also append "cache_control" block
+        if "claude" in self._model_name and _tok_prompt >= 1024:
+            await self._discord_method_send(f"-# This prompt has been cached to save costs")
+            _chat_thread[-1]["content"][0]["cache_control"] = {
+                "type": "ephemeral"
+            }
 
         # Check if we have an attachment
         # It is only supported with OpenAI, Anthropic, Google or XAI models for now
@@ -124,6 +145,13 @@ class Completions:
                 ]
             }
         )
+
+        # Also add cache control for Claude model
+        if "claude" in self._model_name and litellm.token_counter(text=_answer) >= 1024:
+            await self._discord_method_send(f"-# The response has been cached to save costs")
+            _chat_thread[-1]["content"][0]["cache_control"] = {
+                "type": "ephemeral"
+            }
 
         # Send message what model used
         await self._discord_method_send(f"-# Using OpenRouter model: **{self._model_name}**")
