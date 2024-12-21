@@ -21,6 +21,8 @@ class History:
         if guild_id is None or not isinstance(guild_id, int):
             raise TypeError("guild_id is required and must be an integer")
 
+        default_openrouter_model = None
+        
         # Do not override tool_use and default_model if it already exists
         # This checks if the user didn't execute /sweep command with reset_prefs to True
         # If it does, then it will use the default values from kwargs and therefore upserting the document with new one
@@ -31,13 +33,16 @@ class History:
                 tool_use = _existing["tool_use"]
             if "default_model" in _existing:
                 model = _existing["default_model"]
+            if "default_openrouter_model" in _existing:
+                default_openrouter_model = _existing["default_openrouter_model"]
 
         await self._collection.update_one(
             {"guild_id": guild_id}, 
             {"$set": {
                 "guild_id": guild_id,
                 "tool_use": tool_use,
-                "default_model": model
+                "default_model": model,
+                "default_openrouter_model": default_openrouter_model or None
             }}, 
             upsert=True
         )
@@ -117,4 +122,37 @@ class History:
         except Exception as e:
             logging.error("Error getting default model: %s", e)
             raise HistoryDatabaseError("Error getting default model")
+        
+    # Directly set custom keys and values to the document
+    async def set_key(self, guild_id: int, key: str, value) -> None:
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
+
+        await self._ensure_document(guild_id)
+        
+        try:
+            await self._collection.update_one(
+                {"guild_id": guild_id}, 
+                {"$set": {key: value}},
+                upsert=True
+            )
+        except Exception as e:
+            logging.error("Error setting keys: %s", e)
+            raise HistoryDatabaseError(f"Error setting keys: {key}")
+        
+    # Directly get custom keys and values from the document
+    async def get_key(self, guild_id: int, key: str):
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
+
+        # Must be string
+        if not key or not isinstance(key, str):
+            raise ValueError("Key must be a non-empty string")
+
+        await self._ensure_document(guild_id)
+        try:
+            return (await self._collection.find_one({"guild_id": guild_id}))[key]
+        except Exception as e:
+            logging.error("Error getting key: %s", e)
+            raise HistoryDatabaseError(f"Error getting key: {key}")
 

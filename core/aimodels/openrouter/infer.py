@@ -1,13 +1,14 @@
 from core.exceptions import MultiModalUnavailable
+from core.ai.history import History
 from os import environ
 import discord
 import litellm
 import logging
 
 class Completions:
-    _model_provider_thread = "openai"
+    _model_provider_thread = "openrouter"
 
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "gpt-4o-mini"):
+    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = None):
         # Discord context
         self._discord_ctx = discord_ctx
 
@@ -28,17 +29,8 @@ class Completions:
 
         self._file_data = None
 
-        if environ.get("OPENAI_API_KEY"):
-            # Set endpoint if OPENAI_API_ENDPOINT is set
-            if environ.get("OPENAI_API_ENDPOINT"):
-                self._oai_endpoint = environ.get("OPENAI_API_ENDPOINT")
-                logging.info("Using OpenAI API endpoint: %s", self._oai_endpoint)
-            else:
-                self._oai_endpoint = None
-                logging.info("Using default OpenAI API endpoint")
-            self._model_name = "openai/" + model_name
-        else:
-            raise ValueError("No OpenAI API key was set, this model isn't available")
+        if not environ.get("OPENROUTER_API_KEY"):
+            raise ValueError("No OpenRouter API key was set, this model isn't available")
 
         self._guild_id = guild_id
 
@@ -56,7 +48,19 @@ class Completions:
 
         self._file_data = _attachment_prompt
 
-    async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
+    async def chat_completion(self, prompt, db_conn: History, system_instruction: str = None):
+        # Before we begin, get the OpenRouter model name and override self._model_name
+        _model_name = await db_conn.get_key(guild_id=self._guild_id, key="default_openrouter_model")
+
+        # If the key returns none, use gpt-4o-mini as default
+        if _model_name is None:
+            self._model_name = "openrouter/gpt-4o-mini"
+        else:
+            self._model_name = "openrouter/" + _model_name
+
+        # Indicate the model name
+        logging.info("Using OpenRouter model: %s", self._model_name)
+
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
         
@@ -82,24 +86,21 @@ class Completions:
         )
 
         # Check if we have an attachment
+        # It is only supported with OpenAI, Anthropic, or XAI models for now
         if self._file_data is not None:
-            _chat_thread[-1]["content"].append(self._file_data)
+            if "openai" in self._model_name or "anthropic" in self._model_name or "gemini" in self._model_name or "grok" in self._model_name:
+                _chat_thread[-1]["content"].append(self._file_data)
+            else:
+                raise MultiModalUnavailable
 
         # Params
         _params = {
             "messages": _chat_thread,
             "model": self._model_name,
-            "max_tokens": 3024,
+            "max_tokens": 4096,
             "temperature": 0.7,
-            "base_url": self._oai_endpoint,
-            "api_key": environ.get("OPENAI_API_KEY")
+            "api_key": environ.get("OPENROUTER_API_KEY")
         }
-
-        # When O1 model is used, set reasoning effort to medium
-        # Since higher can be costly and lower performs similarly to GPT-4o 
-        if "o1" in self._model_name:
-            _interstitial = await self._discord_method_send("🔍 Used O1 model, please wait while I'm thinking...")
-            _params["reasoning_effort"] = "medium"
 
         # Generate completion
         _response = await litellm.acompletion(
@@ -122,8 +123,8 @@ class Completions:
             }
         )
 
-        if _interstitial:
-            await _interstitial.delete()
+        # Send message what model used
+        await self._discord_method_send(f"-# Using OpenRouter model: **{self._model_name}**")
 
         return {"answer":_answer, "chat_thread": _chat_thread}
 

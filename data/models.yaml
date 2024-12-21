@@ -85,6 +85,13 @@
 ############################################
 # X.AI
 ############################################
-- model: xai::grok-2-1212
-  name: Grok 2.0 (Text Only)
-  description: Twitter aka X (XAI) based model, good for most tasks.
+- model: xai::grok-2-vision-1212
+  name: Grok 2.0
+  description: XAI's Grok 2 model
+
+############################################
+# More models on OpenRouter
+############################################
+- model: openrouter::openrouter
+  name: OpenRouter
+  description: Use OpenRouter models, see the openrouter command.

@@ -199,7 +199,47 @@ class Chat(commands.Cog):
     @model.error
     async def on_application_command_error(self, ctx: discord.ApplicationContext):
         await ctx.respond("❌ Something went wrong, please check the console logs for details.")
-        logging.error("An error has occurred while executing models list command, reason: ", exc_info=True)
+        logging.error("An error has occurred while executing models command, reason: ", exc_info=True)
+
+    ###############################################
+    # Set OpenRouter models command
+    ###############################################
+    @commands.slash_command(
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
+    )
+    @discord.option(
+        "model",
+        description="Choose default model for the conversation",
+        choices=ModelsList.get_openrouter_models_list(),
+        required=True
+    )
+    async def openrouter(self, ctx, model: str):
+        """Set the default OpenRouter model"""
+        await ctx.response.defer(ephemeral=False)
+
+        # Check if SHARED_CHAT_HISTORY is enabled
+        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
+        else:
+            guild_id = ctx.author.id
+
+        # Set the model
+        await self.DBConn.set_key(guild_id=guild_id, key="default_openrouter_model", value=model)
+
+        # Ensure by getting the key
+        _setkeymodel = await self.DBConn.get_key(guild_id=guild_id, key="default_openrouter_model")
+
+        # Clear the "chat_thread_openrouter" when possible
+        await self.DBConn.set_key(guild_id=guild_id, key="chat_thread_openrouter", value=None)
+
+        # Success
+        await ctx.respond(f"✅ Default OpenRouter model set to **{_setkeymodel}** and chat history for OpenRouter chats are cleared!")
+
+    @openrouter.error
+    async def on_application_command_error(self, ctx: discord.ApplicationContext):
+        await ctx.respond("❌ Something went wrong, please check the console logs for details.")
+        logging.error("An error has occurred while setting openrouter models, reason: ", exc_info=True)
 
     ###############################################
     # Clear context command
@@ -233,6 +273,7 @@ class Chat(commands.Cog):
         # Get current feature and model
         _feature = await self.DBConn.get_config(guild_id=guild_id)
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
+        _openrouter_model = await self.DBConn.get_key(guild_id=guild_id, key="default_openrouter_model")
 
         # Clear and set feature and model
         await self.DBConn.clear_history(guild_id=guild_id)
@@ -240,6 +281,7 @@ class Chat(commands.Cog):
         if not reset_prefs:
             await self.DBConn.set_config(guild_id=guild_id, tool=_feature)
             await self.DBConn.set_default_model(guild_id=guild_id, model=_model)
+            await self.DBConn.set_key(guild_id=guild_id, key="default_openrouter_model", value=_openrouter_model)
             await ctx.respond("✅ Chat history reset!")
         else:
             await ctx.respond("✅ Chat history reset, model and feature settings are cleared!")

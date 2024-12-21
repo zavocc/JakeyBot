@@ -31,21 +31,6 @@ class Completions:
         if environ.get("ANTHROPIC_API_KEY"):
             logging.info("Using default Anthropic API endpoint")
             self._model_name = "anthropic/" + model_name
-        elif environ.get("OPENROUTER_API_KEY"):
-            logging.info("Using OpenRouter API for Anthropic")
-
-            # Normalize model names since the naming convention is different here
-            if model_name == "claude-3-haiku-20240307":
-                self._model_name = "openrouter/anthropic/" + "claude-3-haiku"
-            elif model_name == "claude-3-5-sonnet-latest":
-                self._model_name = "openrouter/anthropic/" + "claude-3.5-sonnet"
-            elif model_name == "claude-3-5-sonnet-20240620":
-                self._model_name = "openrouter/anthropic/" + "claude-3.5-sonnet-20240620"
-            else:
-                self._model_name = "openrouter/anthropic/" + model_name
-            
-            logging.info("Using normalized model name: %s", self._model_name)
-        
         else:
             raise ValueError("No Anthropic API key was set, this model isn't available")
     

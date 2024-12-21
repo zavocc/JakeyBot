@@ -28,20 +28,6 @@ class Completions:
         if environ.get("MISTRAL_API_KEY"):
             logging.info("Using default Mistral API endpoint")
             self._model_name = "mistral/" + model_name
-        elif environ.get("OPENROUTER_API_KEY"):
-            logging.info("Using OpenRouter API for Mistral")
-            
-            # Normalize model names since the naming convention is different here
-            if model_name == "mistral-large-2407":
-                self._model_name = "openrouter/mistralai/" + "mistral-large"
-            elif model_name == "open-mixtral-8x7b":
-                self._model_name = "openrouter/mistralai/" + "mixtral-8x7b-instruct"
-            elif model_name == "codestral-latest":
-                # Only codestral-mamba is available in Mistral OpenRouter API while this one is the larger code model
-                raise ValueError("codestral-latest model is not available in Mistral OpenRouter API")
-            else:
-                self._model_name = "openrouter/mistralai/" + model_name
-
             logging.info("Using normalized model name: %s", self._model_name)
         else:
             raise ValueError("No Mistral API key was set, this model isn't available")

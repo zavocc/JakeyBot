@@ -33,6 +33,20 @@ class Completions:
 
         self._guild_id = guild_id
 
+    async def input_files(self, attachment: discord.Attachment):
+        # Check if the attachment is an image
+        if not attachment.content_type.startswith("image"):
+            raise MultiModalUnavailable
+
+        _attachment_prompt = {
+            "type":"image_url",
+            "image_url": {
+                    "url": attachment.url
+                }
+            }
+
+        self._file_data = _attachment_prompt
+
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
@@ -44,7 +58,6 @@ class Completions:
                 "content": system_instruction   
             }]
 
-        
         # Craft prompt
         _chat_thread.append(
              {
@@ -57,6 +70,11 @@ class Completions:
                 ]
             }
         )
+
+        # Check for file attachments
+        if self._file_data is not None:
+            _chat_thread[-1]["content"].append(self._file_data)
+        
 
         # Generate completion
         _response = await litellm.acompletion(

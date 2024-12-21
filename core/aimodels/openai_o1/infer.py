@@ -36,10 +36,6 @@ class Completions:
                 self._oai_endpoint = None
                 logging.info("Using default OpenAI API endpoint for O1 models")
             self._model_name = "openai/" + model_name
-        elif environ.get("OPENROUTER_API_KEY"):
-            logging.info("Using OpenRouter API for OpenAI (O1)")
-            self._model_name = "openrouter/openai/" + model_name
-            self._oai_endpoint = None
         else:
             raise ValueError("No OpenAI API key was set, this O1 model isn't available")
 
