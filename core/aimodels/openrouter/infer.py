@@ -54,7 +54,7 @@ class Completions:
 
         # If the key returns none, use gpt-4o-mini as default
         if _model_name is None:
-            self._model_name = "openrouter/gpt-4o-mini"
+            self._model_name = "openrouter/openai/gpt-4o-mini"
         else:
             self._model_name = "openrouter/" + _model_name
 
