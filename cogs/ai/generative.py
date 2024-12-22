@@ -5,6 +5,7 @@ import core.aimodels._template_ # For type hinting
 import discord
 import importlib
 import io
+import logging
 
 class BaseChat():
     def __init__(self, bot, author, history):
@@ -34,7 +35,16 @@ class BaseChat():
                 return
 
         # Set model
-        _model = model.split("::")
+        if model is None:
+            # Set default model
+            _model = await self.DBConn.get_default_model(guild_id=guild_id)
+            if _model is None:
+                logging.info("No default model found, using default optimized model")
+                _model = "gemini::gemini-1.5-flash-002"
+        else:
+            _model = model
+
+        _model = _model.split("::")
         _model_provider = _model[0]
         _model_name = _model[-1]
 

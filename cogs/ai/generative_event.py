@@ -33,13 +33,11 @@ class BaseChat():
         # Thinking message
         _thinking_message = await prompt.channel.send("🤔 Determining what to do...")
 
-        # Check if we can switch models
-        try:
-            _model = await self.DBConn.get_default_model(guild_id=guild_id)
-        except Exception as e:
-            # Set the default model
+        # Set default model
+        _model = await self.DBConn.get_default_model(guild_id=guild_id)
+        if _model is None:
+            logging.info("No default model found, using default model")
             _model = "gemini::gemini-1.5-flash-002"
-            logging.error("Something went wrong while getting default model %s", e)
 
         _model_provider = _model.split("::")[0]
         _model_name = _model.split("::")[-1]
