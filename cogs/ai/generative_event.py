@@ -38,7 +38,7 @@ class BaseChat():
             _model = await self.DBConn.get_default_model(guild_id=guild_id)
         except Exception as e:
             # Set the default model
-            _model = "__gemini__gemini-1.5-flash-002"
+            _model = "gemini::gemini-1.5-flash-002"
             logging.error("Something went wrong while getting default model %s", e)
 
         _model_provider = _model.split("::")[0]
