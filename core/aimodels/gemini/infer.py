@@ -261,8 +261,9 @@ class Completions(APIParams):
             await self._discord_method_send(f"✅ Used: **{_Tool.tool_human_name}**")
 
             # Send text
-            if _candidateContentResponse.parts[0].text:
-                await self._discord_method_send(_candidateContentResponse.parts[0].text)
+            _iFirstPartToolText = _candidateContentResponse.parts[0].text
+            if _iFirstPartToolText and len(_iFirstPartToolText) <= 2000:
+                await self._discord_method_send(_iFirstPartToolText)
 
             # Call the tool
             try:
