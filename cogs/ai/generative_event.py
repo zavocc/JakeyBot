@@ -6,13 +6,11 @@ from discord import Message
 from google.genai import errors as genai_errors
 from os import environ
 import core.aimodels._template_ # For type hinting
-import aiofiles
-import aiofiles.os
 import discord
 import importlib
 import inspect
+import io
 import logging
-import random
 import re
 
 class BaseChat():
@@ -116,22 +114,23 @@ class BaseChat():
         await _thinking_message.delete()
 
         # Model usage and context size
-        if len(_result["answer"]) > 2000 and len(_result["answer"]) < 4096:
+        if len(_formatted_response) > 2000 and len(_formatted_response) < 4096:
             _system_embed = discord.Embed(
                 # Truncate the title to (max 256 characters) if it exceeds beyond that since discord wouldn't allow it
                 title=str(_final_prompt)[0:100],
-                description=str(_result["answer"]),
+                description=str(_formatted_response),
                 color=discord.Color.random()
             )
         else:
             if _show_info:
-                _system_embed = discord.Embed()
+                _system_embed = discord.Embed(description="Chat information")
+                _minifiedModelInfoInterstitial = None
             else:
                 _system_embed = None
-                # Add minified version of chat information
-                _formatted_response = f"{_result['answer'].rstrip()}\n-# {_model_name.upper()} {"(this response isn't saved)" if not _append_history else ''}"
+                _minifiedModelInfoInterstitial = f"-# {_model_name.upper()} {"(this response isn't saved)" if not _append_history else ''}"
 
-        if not _system_embed is None:
+
+        if _system_embed:
             # Model used
             _system_embed.add_field(name="Model used", value=_model_name)
                 
@@ -152,14 +151,16 @@ class BaseChat():
         # Check to see if this message is more than 2000 characters which embeds will be used for displaying the message
         if len(_formatted_response) > 4096:
             # Send the response as file
-            response_file = f"{environ.get('TEMP_DIR')}/response{random.randint(6000,7000)}.md"
-            async with aiofiles.open(response_file, "w+") as f:
-                await f.write(_formatted_response)
-            await prompt.channel.send("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(response_file, "response.md"), embed=_system_embed)
+            await prompt.channel.send("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(io.StringIO(_formatted_response), "response.md"), embed=_system_embed)
         elif len(_formatted_response) > 2000:
+            # Since this is already an embed, we don't need minified interstitial
+            _minifiedModelInfoInterstitial = None
             await prompt.channel.send(embed=_system_embed)
         else:
             await prompt.channel.send(_formatted_response, embed=_system_embed)
+
+        if _minifiedModelInfoInterstitial:
+            await prompt.channel.send(_minifiedModelInfoInterstitial)
 
         # Save to chat history
         if _append_history:
