@@ -114,10 +114,7 @@ class Completions:
                 "content": [
                     {
                         "type": "text",
-                        "text": _answer,
-                        "cache_control": {
-                            "type": "ephemeral"
-                        }
+                        "text": _answer
                     }
                 ]
             }

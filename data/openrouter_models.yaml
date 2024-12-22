@@ -32,6 +32,9 @@
 - model: anthropic/claude-3.5-sonnet-20241022
   name: Claude 3.5 Sonnet v2
   description: Top notch intelligence with greater accuracy for coding and other tasks
+- model: anthropic/claude-3-opus
+  name: Claude 3 Opus
+  description: Anthropic's largest model
 
 # Amazon
 - model: amazon/nova-pro-v1

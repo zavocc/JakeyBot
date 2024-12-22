@@ -66,6 +66,16 @@ class Completions:
         
         # Count prompt tokens
         _tok_prompt = litellm.token_counter(text=prompt)
+        _CLAUDE_3_CACHABLES = (
+            "claude-3-opus",
+            "claude-3.5",
+            "claude-3-5"
+            "claude-3-haiku"
+        )
+        if any(_claude_models in self._model_name for _claude_models in _CLAUDE_3_CACHABLES):
+            _cacheClaudePrompt = True
+        else:
+            _cacheClaudePrompt = False
 
         # PaLM models don't have system prompt
         if _chat_thread is None:
@@ -80,7 +90,7 @@ class Completions:
                 }]
 
                 # If it's from Anthropic, also append "cache_control" block
-                if "claude" in self._model_name:
+                if _cacheClaudePrompt:
                     _chat_thread[-1]["content"][0]["cache_control"] = {
                         "type": "ephemeral"
                     }
@@ -102,7 +112,7 @@ class Completions:
         )
 
         # If it's from Anthropic, also append "cache_control" block
-        if "claude" in self._model_name and _tok_prompt >= 1024:
+        if _cacheClaudePrompt and _tok_prompt >= 1024:
             await self._discord_method_send(f"-# This prompt has been cached to save costs")
             _chat_thread[-1]["content"][0]["cache_control"] = {
                 "type": "ephemeral"
@@ -147,7 +157,7 @@ class Completions:
         )
 
         # Also add cache control for Claude model
-        if "claude" in self._model_name and litellm.token_counter(text=_answer) >= 1024:
+        if _cacheClaudePrompt and litellm.token_counter(text=_answer) >= 1024:
             await self._discord_method_send(f"-# The response has been cached to save costs")
             _chat_thread[-1]["content"][0]["cache_control"] = {
                 "type": "ephemeral"
