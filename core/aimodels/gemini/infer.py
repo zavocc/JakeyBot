@@ -9,6 +9,7 @@ import aiofiles
 import asyncio
 import discord
 import importlib
+import json
 import logging
 import typing
 import random
@@ -241,6 +242,17 @@ class Completions(APIParams):
         _toolInvoke = None
         for _part in _candidateContentResponse.parts:
             if _part.function_call:
+                # Before we save it, unicode escape the function call arguments
+                # This is because the generated arguments will provide literal escape characters, we need to parse it
+                for _key, _value in _part.function_call.args.items():
+                    if isinstance(_value, str):
+                        _part.function_call.args[_key] = _value.encode().decode('unicode_escape')
+                    # If it's a list, we need to iterate through it and check if it's a string
+                    elif isinstance(_value, list):
+                        for _index, _list_item in enumerate(_value):
+                            if isinstance(_list_item, str):
+                                _part.function_call.args[_key][_index] = _list_item.encode().decode('unicode_escape')
+
                 _toolInvoke = _part.function_call
                 break
 
@@ -265,7 +277,6 @@ class Completions(APIParams):
             if _iFirstPartToolText and len(_iFirstPartToolText) <= 2000:
                 await self._discord_method_send(_iFirstPartToolText)
 
-            # Call the tool
             try:
                 if not hasattr(_Tool, "_tool_function"):
                     logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s", e)

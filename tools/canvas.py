@@ -1,5 +1,3 @@
-from os import environ
-
 class Tool:
     tool_human_name = "Canvas"
     tool_name = "canvas"
@@ -45,12 +43,12 @@ class Tool:
 
         # Send the plan
         # Encode and decode using bytes and later decode it again using string escape
-        await _thread.send(f"**Plan:**\n{bytes(plan, "utf-8").decode('unicode_escape')}")
+        await _thread.send(f"**Plan:**\n{plan}")
         # Send the content
-        await _thread.send(f"**Content:**\n{bytes(content, "utf-8").decode('unicode_escape')}")
+        await _thread.send(f"**Content:**\n{content}")
         # Send the code if available
         if code:
-            await _thread.send(f"**Code:**\n```{bytes(code, "utf-8").decode('unicode_escape')}```")
+            await _thread.send(f"**Code:**\n```{code}```")
         # Send the todos if available
         if todos:
             await _thread.send(f"**Todos:**\n")
