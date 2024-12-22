@@ -44,7 +44,7 @@
   name: Amazon Nova Lite 1.0
   description: Amazon's medium model
 - model: amazon/nova-micro-v1
-  name: Amazon Nova Pro 1.0
+  name: Amazon Nova Micro 1.0
   description: Amazon's smallest model
 
 # XAI
