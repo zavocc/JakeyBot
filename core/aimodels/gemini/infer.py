@@ -336,6 +336,10 @@ class Completions(APIParams):
                 config=types.GenerateContentConfig(
                     **self._genai_params,
                     system_instruction=system_instruction or "You are a helpful assistant named Jakey",
+                    tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(
+                            mode="NONE"
+                        )
+                    )
                 ),
                 contents=_chat_thread
             )
