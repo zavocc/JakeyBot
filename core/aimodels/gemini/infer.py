@@ -304,7 +304,8 @@ class Completions(APIParams):
                         name=_toolInvoke.name,
                         response=_toolResult
                     )
-                ]).model_dump())
+                ],
+                role="user").model_dump())
             
             # Re-run the model
             _response = await self._gemini_api_client.aio.models.generate_content(
