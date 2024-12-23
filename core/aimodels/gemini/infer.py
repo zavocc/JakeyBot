@@ -236,7 +236,7 @@ class Completions(APIParams):
         # Here we assume the CoT is always at the first index of the parts
         if self._model_name == "gemini-2.0-flash-thinking-exp-1219":
             await self._discord_method_send(f"> ℹ️ Below is Gemini's 2.0 thinking process and can produce undesirable outputs. Keep in mind that this model doesn't support tools, has 32k context, and only supports image and text inputs.")
-            await self._discord_method_send(f"> {_candidateContentResponse.parts[0].text.replace('\n', '\n> ')[:2000]}")
+            await self._discord_method_send(f"> {_candidateContentResponse.parts[0].text.replace('\n', '\n> ')[:1950]}")
 
         # Iterate through the parts and perform tasks
         _toolInvoke = []
