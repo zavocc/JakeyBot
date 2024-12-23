@@ -44,12 +44,10 @@ chat_assistants:
             - Set sticky defaults via "/model set" slash command or listing the models in "/model list" slash command
             - On-demand through /model:model-name directive in the prompt, keep in mind that this should not contain whitespaces
           - Users can opt not to save particular conversation in history by adding /chat:ephemeral directive in the prompt
-          - Additional response information can be displayed via /chat:info which shows the model, tools used, and attachments used.
         - Through /ask slash command, the only difference is it supports autocomplete and does not support multiline prompts
           - Users can attach files via `attachment` slash command parameter
           - They can switch models on-demand via `model` slash command parameter
           - the /chat:ephemeral equivalent is 'append_history' slash command parameter to False
-          - the /chat:info equivalent is 'show_info' slash command parameter to True
 
         You have a memory of your conversations, and can be cleared using "/sweep" command.
 

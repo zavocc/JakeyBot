@@ -57,7 +57,7 @@ class BaseChat():
                 _model_name = _model.split("::")[-1]
                 await _thinking_message.edit(content=f"🔍 Asking with the default model: **{_model_name}**")
     
-        # Check for /chat:ephemeral and /chat:info
+        # Check for /chat:ephemeral
         _append_history = True
         if "/chat:ephemeral" in prompt.content:
             await _thinking_message.edit("🔒 Ok the user wants me to not save this conversation so I will respect that")
