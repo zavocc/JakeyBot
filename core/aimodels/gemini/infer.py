@@ -324,10 +324,10 @@ class Completions(APIParams):
                 ))
 
 
-            # Save the first content response containing function calls
+            # Save the first content response containing text and function calls to chat thread so the context gets picked up
             _chat_thread.append(_candidateContentResponse.model_dump())
 
-            # Add the tool result to chat history
+            # Then add the tool result to chat history
             _chat_thread.append(types.Content(parts=_toolParts).model_dump())
             
             # Re-run the model
@@ -345,7 +345,10 @@ class Completions(APIParams):
             )
 
             # Edit interstitial message
-            await _interstitial.edit(f"✅ Used: **{_Tool.tool_human_name}**")
+            if _toHalt:
+                await _interstitial.edit(f"⚠️ Error executing tool: **{_Tool.tool_human_name}**")
+            else:
+                await _interstitial.edit(f"✅ Used: **{_Tool.tool_human_name}**")
 
             # Second candidate response, reassign so we can get the text
             _candidateContentResponse = _response.candidates[0].content
