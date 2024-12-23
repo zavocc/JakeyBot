@@ -33,7 +33,7 @@ class Tool:
     async def _tool_function(self, image_description: str):
         # Check if HF_TOKEN is set
         if not environ.get("HF_TOKEN"):
-            return "HuggingFace API token is not set, please set it in the environment variables"
+            raise ValueError("HuggingFace API token is not set, please set it in the environment variables")
 
         # Create image
         message_curent = await self.method_send(f"⌛ Generating **{image_description}**... this may take few minutes")
@@ -59,7 +59,7 @@ class Tool:
             # Check if the response is not 200 which may print JSON
             # Response 200 would return the binary image
             if _response.status != 200:
-                return f"Failed to generate image with code {_response.status}, reason: {_response.reason}"
+                raise Exception(f"Failed to generate image with code {_response.status}, reason: {_response.reason}")
             
             # Send the image
             _imagedata = await _response.content.read()

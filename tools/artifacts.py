@@ -31,4 +31,4 @@ class Tool:
         # Send the file
         await self.method_send(file=discord.File(io.StringIO(file_contents), file_name))
 
-        return "Artifact created successfully"
+        return f"Artifact {file_name} created successfully"

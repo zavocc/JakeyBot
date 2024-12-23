@@ -91,7 +91,7 @@ class Tool:
 
         # If the videos list is empty
         if not _videos[0]["videos"]:
-            return "No videos found for the given query"
+            return f"No videos found for the given query: {query}"
 
         await self.method_send(f"🔍 Searched for **{query}**")
 

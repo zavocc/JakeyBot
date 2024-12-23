@@ -94,7 +94,7 @@ class Tool:
 
         # If the webpages list is empty
         if not _output[0]["results"]:
-            return "No results found for the given query"
+            return f"No results found for the given query **{query}**"
 
         # Embed that contains first 10 sources
         _sembed = discord.Embed(

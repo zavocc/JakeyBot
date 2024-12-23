@@ -39,7 +39,7 @@ class Tool:
     async def _tool_function(self, thread_title: str, plan: str, content: str, code: str = None, todos: list = None):
         # Check if we're in a server
         if not self.discord_ctx.guild:
-            return "This tool can only be used in a server"
+            raise Exception("This tool can only be used in a server")
 
         # Create a new thread
         _msgstarter = await self.discord_ctx.channel.send(f"📃 Planning **{thread_title}**")

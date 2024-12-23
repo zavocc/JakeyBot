@@ -14,9 +14,7 @@
 - tool_name: github_file_tool
   ui_name: GitHub
 - tool_name: google_search
-  ui_name: Grounding with Google Search (Faster)
-- tool_name: google_deep_search
-  ui_name: Grounding with Google Deep Search (Slower)
+  ui_name: Grounding with Google Search
 - tool_name: image_generator
   ui_name: Image Generator with Stable Diffusion 3.5
 - tool_name: image_to_linedrawing

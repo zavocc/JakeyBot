@@ -82,7 +82,7 @@ class Tool:
             async with _session.get(_endpoint, headers=_headers, params={"ref": branch}) as _response:
                 # Check if the response is successful
                 if _response.status != 200:
-                    raise ValueError(f"GitHub API returned status code {_response.status}")
+                    raise Exception(f"GitHub API returned status code {_response.status}")
                 
                 # Parse the response
                 _response_json = await _response.json()

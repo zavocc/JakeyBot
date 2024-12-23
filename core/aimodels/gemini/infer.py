@@ -239,7 +239,7 @@ class Completions(APIParams):
             await self._discord_method_send(f"> {_candidateContentResponse.parts[0].text.replace('\n', '\n> ')[:2000]}")
 
         # Check if tools are used
-        _toolInvoke = None
+        _toolInvoke = []
         for _part in _candidateContentResponse.parts:
             if _part.function_call:
                 # Before we save it, unicode escape the function call arguments
@@ -262,8 +262,7 @@ class Completions(APIParams):
                                 _list_value = _list_value.encode().decode('unicode_escape')
                                 _part.function_call.args[_key][_index] = _list_value
 
-                _toolInvoke = _part.function_call
-                break
+                _toolInvoke.append(_part.function_call)
 
             if _part.executable_code:
                 await self._discord_method_send(f"✅ Used: **{_Tool.tool_human_name}**")
@@ -275,37 +274,47 @@ class Completions(APIParams):
             
         # Check if we need to execute tools
         if _toolInvoke:
-            # Ensure it has the context
-            _chat_thread.append(_candidateContentResponse.model_dump())
-
             # Indicate the tool is called
-            await self._discord_method_send(f"✅ Used: **{_Tool.tool_human_name}**")
+            _interstitial = await self._discord_method_send(f"✅ Executing tool: **{_Tool.tool_human_name}**")
 
             # Send text
-            _iFirstPartToolText = _candidateContentResponse.parts[0].text
-            if _iFirstPartToolText and len(_iFirstPartToolText) <= 2000:
-                await self._discord_method_send(_iFirstPartToolText)
+            _firstTextResponseChunk = _candidateContentResponse.parts[0].text
+            if _firstTextResponseChunk and len(_firstTextResponseChunk) <= 2000:
+                await self._discord_method_send(_firstTextResponseChunk)
 
-            try:
-                if not hasattr(_Tool, "_tool_function"):
-                    logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s", e)
-                    raise ToolsUnavailable(f"⚠️ An error has occurred while calling tools, please try again later or choose another tool")
-                _toolResult = {"toolResult": (await _Tool._tool_function(**_toolInvoke.args))}
-            # For other exceptions, log the error and add it as part of the chat thread
-            except Exception as e:
-                # Also print the error to the console
-                logging.error("Something when calling specific tool lately, reason: %s", e)
-                _toolResult = {"error": f"⚠️ Something went wrong while executing the tool: {e}, please tell the developer or the user to check console logs"}
+            # If it has more than one function call arguments, we need to iterate through it
+            # This is the case for Gemini 2.0, which otherwise it will error that it doesn't match the function call parts
+            _toolParts = []
+            for _invokes in _toolInvoke:
+                try:
+                    # Indicator if there are errors
+                    _toHalt = False
+
+                    if not hasattr(_Tool, "_tool_function"):
+                        logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s", e)
+                        raise ToolsUnavailable(f"⚠️ An error has occurred while calling tools, please try again later or choose another tool")
+                    _toolResult = {"toolResult": (await _Tool._tool_function(**_invokes.args))}
+                # For other exceptions, log the error and add it as part of the chat thread
+                except Exception as e:
+                    _toHalt = True
+
+                    # Also print the error to the console
+                    logging.error("Something when calling specific tool lately, reason: %s", e)
+                    _toolResult = {"error": f"⚠️ Something went wrong while executing the tool: {e}, please tell the developer or the user to check console logs and operation was halted"}
+
+                _toolParts.append(types.Part.from_function_response(
+                    name=_invokes.name,
+                    response=_toolResult
+                ))
+
+                if _toHalt:
+                    break
+
+            # Save the first content response containing function calls
+            _chat_thread.append(_candidateContentResponse.model_dump())
 
             # Return the tool result
-            _chat_thread.append(types.Content(
-                parts=[types.Part.from_function_response
-                    (
-                        name=_toolInvoke.name,
-                        response=_toolResult
-                    )
-                ],
-                role="user").model_dump())
+            _chat_thread.append(types.Content(parts=_toolParts).model_dump())
             
             # Re-run the model
             _response = await self._gemini_api_client.aio.models.generate_content(
@@ -316,6 +325,9 @@ class Completions(APIParams):
                 ),
                 contents=_chat_thread
             )
+
+            # Edit interstitial message
+            await _interstitial.edit(f"✅ Used: **{_Tool.tool_human_name}**")
 
             # Second candidate response, reassign so we can get the text
             _candidateContentResponse = _response.candidates[0].content
