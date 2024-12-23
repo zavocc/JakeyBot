@@ -314,7 +314,7 @@ class Completions(APIParams):
             # Save the first content response containing function calls
             _chat_thread.append(_candidateContentResponse.model_dump())
 
-            # Return the tool result
+            # Add the tool result to chat history
             _chat_thread.append(types.Content(parts=_toolParts).model_dump())
             
             # Re-run the model
