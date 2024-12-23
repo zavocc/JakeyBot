@@ -246,12 +246,21 @@ class Completions(APIParams):
                 # This is because the generated arguments will provide literal escape characters, we need to parse it
                 for _key, _value in _part.function_call.args.items():
                     if isinstance(_value, str):
-                        _part.function_call.args[_key] = _value.encode().decode('unicode_escape')
-                    # If it's a list, we need to iterate through it and check if it's a string
+                        # First try to fix common encoding issues
+                        # This handles cases like Ã¢ÂÂ -> '
+                        _value = _value.encode('utf-8').decode('utf-8')
+                        _value = _value.encode().decode('unicode_escape')
+                        _part.function_call.args[_key] = _value
+                    # If the argument is a list, we need to iterate through it and fix string encoding issues in the list
                     elif isinstance(_value, list):
-                        for _index, _list_item in enumerate(_value):
-                            if isinstance(_list_item, str):
-                                _part.function_call.args[_key][_index] = _list_item.encode().decode('unicode_escape')
+                        # Iterate through the list _list_value is the value of the list and _index is the index of the list
+                        # We use enumerate to get the index of the list value each
+                        for _index, _list_value in enumerate(_value):
+                            if isinstance(_list_value, str):
+                                # Also for this fix common encoding issues
+                                _list_value = _list_value.encode('utf-8').decode('utf-8')
+                                _list_value = _list_value.encode().decode('unicode_escape')
+                                _part.function_call.args[_key][_index] = _list_value
 
                 _toolInvoke = _part.function_call
                 break
