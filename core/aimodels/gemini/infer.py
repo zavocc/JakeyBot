@@ -286,30 +286,43 @@ class Completions(APIParams):
             # If it has more than one function call arguments, we need to iterate through it
             # This is the case for Gemini 2.0, which otherwise it will error that it doesn't match the function call parts
             _toolParts = []
+
+            # Indicator if there are errors
+            _toHalt = False
             for _invokes in _toolInvoke:
                 try:
-                    # Indicator if there are errors
-                    _toHalt = False
-
                     if not hasattr(_Tool, "_tool_function"):
                         logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s", e)
                         raise ToolsUnavailable(f"⚠️ An error has occurred while calling tools, please try again later or choose another tool")
-                    _toolResult = {"toolResult": (await _Tool._tool_function(**_invokes.args))}
+            
+                    # Check if _toHalts is True, if it is, we just need to tell the model to try again later
+                    # Since its not possible to just break the loop, it has to match the number of parts of toolInvoke
+                    if _toHalt:
+                        _toolResult = {
+                            "error": f"⚠️ Error occurred previously which in order to prevent further issues, the operation was halted",
+                            "tool_args": _invokes.args
+                        }
+                    else:
+                        _toolResult = {
+                            "toolResult": (await _Tool._tool_function(**_invokes.args)),
+                            "tool_args": _invokes.args
+                        }
                 # For other exceptions, log the error and add it as part of the chat thread
                 except Exception as e:
                     _toHalt = True
 
                     # Also print the error to the console
                     logging.error("Something when calling specific tool lately, reason: %s", e)
-                    _toolResult = {"error": f"⚠️ Something went wrong while executing the tool: {e}, please tell the developer or the user to check console logs and operation was halted"}
+                    _toolResult = {
+                        "error": f"⚠️ Something went wrong while executing the tool: {e}, please tell the developer or the user to check console logs and operation was halted",
+                        "tool_args": _invokes.args
+                    }
 
                 _toolParts.append(types.Part.from_function_response(
                     name=_invokes.name,
                     response=_toolResult
                 ))
 
-                if _toHalt:
-                    break
 
             # Save the first content response containing function calls
             _chat_thread.append(_candidateContentResponse.model_dump())
@@ -333,6 +346,7 @@ class Completions(APIParams):
             # Second candidate response, reassign so we can get the text
             _candidateContentResponse = _response.candidates[0].content
 
+        # Finally, append the final updated history to chat thread
         _chat_thread.append(_candidateContentResponse.model_dump())
         return {"answer": _candidateContentResponse.parts[-1].text, "chat_thread": _chat_thread}
 
