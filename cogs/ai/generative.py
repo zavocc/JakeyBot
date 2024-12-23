@@ -17,7 +17,7 @@ class BaseChat():
     # Ask slash command
     ###############################################
     async def ask(self, ctx: discord.ApplicationContext, prompt: str, attachment: discord.Attachment, model: str,
-        append_history: bool, show_info: bool):
+        append_history: bool):
         await ctx.response.defer(ephemeral=False)
 
         # Check if SHARED_CHAT_HISTORY is enabled
@@ -86,21 +86,14 @@ class BaseChat():
                 color=discord.Color.random()
             )
         else:
-            if show_info:
-                _system_embed = discord.Embed(description="Chat information")
-                _minifiedModelInfoInterstitial = None
-            else:
-                _system_embed = None
-                _minifiedModelInfoInterstitial = f"-# {_model_name.upper()} {"(this response isn't saved)" if not append_history else ''}"
+            _system_embed = None
+
+        # Model information footer 
+        _modelInfoFooter = f"-# {_model_name.upper()} {"(this response isn't saved)" if not append_history else ''}"
 
         if _system_embed:
             # Model used
             _system_embed.add_field(name="Model used", value=_model_name)
-
-            # Check if this conversation isn't appended to chat history
-            if not append_history: 
-                _system_embed.add_field(name="Privacy", value="This conversation isn't saved")
-
             # Check if there is _tokens_used attribute
             if hasattr(_infer, "_tokens_used"):
                 _system_embed.add_field(name="Tokens used", value=_infer._tokens_used)
@@ -116,14 +109,12 @@ class BaseChat():
             # Send the response as file
             _jakey_response = await ctx.send("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(io.StringIO(_formatted_response), "response.md"), embed=_system_embed)
         elif len(_formatted_response) > 2000:
-            # Since this is already an embed, we don't need minified interstitial
-            _minifiedModelInfoInterstitial = None
             _jakey_response = await ctx.send(embed=_system_embed)
         else:
             _jakey_response = await ctx.send(_formatted_response, embed=_system_embed)
         
-        if _minifiedModelInfoInterstitial:
-            await ctx.send(_minifiedModelInfoInterstitial)
+        # Show model information
+        await ctx.send(_modelInfoFooter)
 
         # Save to chat history
         if append_history:

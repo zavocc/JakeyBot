@@ -59,14 +59,10 @@ class BaseChat():
     
         # Check for /chat:ephemeral and /chat:info
         _append_history = True
-        _show_info = False
         if "/chat:ephemeral" in prompt.content:
             await _thinking_message.edit("🔒 Ok the user wants me to not save this conversation so I will respect that")
             _append_history = False
-        if "/chat:info" in prompt.content:
-            await _thinking_message.edit("ℹ️ Ok the user wants me to show the information about the model, tool, files used")
-            _show_info = True
-
+      
         try:
             _infer: core.aimodels._template_.Completions = importlib.import_module(f"core.aimodels.{_model_provider}").Completions(
                 discord_ctx=prompt,
@@ -97,13 +93,16 @@ class BaseChat():
         await _thinking_message.edit(f"⌛ Formulating an answer...")
 
         # Through capturing group, we can remove the mention and the model selection from the prompt at both in the middle and at the end
-        _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/model:{_model_name}(\s|$)|\/chat:ephemeral(\s|$)|\/chat:info(\s|$))", "", prompt.content).strip()
+        _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/model:{_model_name}(\s|$)|\/chat:ephemeral(\s|$))", "", prompt.content).strip()
         # If we have attachments, also add the URL to the prompt so that it can be used for tools
         if prompt.attachments:
             _final_prompt += f"\n\nThis additional prompt metadata is autoinserted by system:\nAttachment URL of the data provided for later reference: {prompt.attachments[0].url}"
         
         _system_prompt = await Assistants.set_assistant_type("jakey_system_prompt", type=0)
-        _result = await _infer.chat_completion(prompt=_final_prompt, db_conn=self.DBConn, system_instruction=_system_prompt)
+
+        # Generate the response and simulate the typing
+        async with prompt.channel.typing():
+            _result = await _infer.chat_completion(prompt=_final_prompt, db_conn=self.DBConn, system_instruction=_system_prompt)
         
         # Format the response
         _formatted_response = _result["answer"].rstrip()
@@ -120,22 +119,12 @@ class BaseChat():
                 color=discord.Color.random()
             )
         else:
-            if _show_info:
-                _system_embed = discord.Embed(description="Chat information")
-                _minifiedModelInfoInterstitial = None
-            else:
-                _system_embed = None
-                _minifiedModelInfoInterstitial = f"-# {_model_name.upper()} {"(this response isn't saved)" if not _append_history else ''}"
+            _system_embed = None
+        
+        # Model information footer
+        _modelInfoFooter = f"-# {_model_name.upper()} {"(this response isn't saved)" if not _append_history else ''}"
 
-
-        if _system_embed:
-            # Model used
-            _system_embed.add_field(name="Model used", value=_model_name)
-                
-            # Check if this conversation isn't appended to chat history
-            if not _append_history: 
-                _system_embed.add_field(name="Privacy", value="This conversation isn't saved")
-
+        if _system_embed: 
             # Check if there is _tokens_used attribute
             if hasattr(_infer, "_tokens_used"):
                 _system_embed.add_field(name="Tokens used", value=_infer._tokens_used)
@@ -151,14 +140,12 @@ class BaseChat():
             # Send the response as file
             await prompt.channel.send("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(io.StringIO(_formatted_response), "response.md"), embed=_system_embed)
         elif len(_formatted_response) > 2000:
-            # Since this is already an embed, we don't need minified interstitial
-            _minifiedModelInfoInterstitial = None
             await prompt.channel.send(embed=_system_embed)
         else:
             await prompt.channel.send(_formatted_response, embed=_system_embed)
 
-        if _minifiedModelInfoInterstitial:
-            await prompt.channel.send(_minifiedModelInfoInterstitial)
+        # Show model information
+        await prompt.channel.send(_modelInfoFooter)
 
         # Save to chat history
         if _append_history:

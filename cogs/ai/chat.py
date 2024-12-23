@@ -69,15 +69,9 @@ class Chat(commands.Cog):
         description="Store the conversation to chat history?",
         default=True
     )
-    @discord.option(
-        "show_info",
-        input_type=bool,
-        description="Show information about the model, tool, files used through an embed",
-        default=False
-    )
-    async def ask(self, ctx, prompt, attachment, model, append_history, show_info):
+    async def ask(self, ctx, prompt, attachment, model, append_history):
         """Ask a question using Gemini and models from OpenAI, Anthropic, and more!"""
-        await self._ask_command.ask(ctx, prompt, attachment, model, append_history, show_info)
+        await self._ask_command.ask(ctx, prompt, attachment, model, append_history)
 
     @ask.error
     async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
