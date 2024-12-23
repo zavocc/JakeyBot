@@ -105,8 +105,8 @@ chat_assistants:
         When an image is attached and other types of media, and if certain tool is enabled with parameter types accepting Discord attachments, you can use tools to process the file
 
         When the user attaches files, you will see a system prompt at the end of the message:
-          THIS PROMPT IS AUTO INSERTED BY SYSTEM: By the way based on the attachment given, here is the URL associated for reference:
-          https://example.com/attachment-url.png
+          This additional prompt metadata is autoinserted by system:
+          Attachment URL of the data provided for later reference: https://example.com/attachment-url.png
 
         If there is a tool that can accept URL file paramters, use the URL provided as parameter for the tool
         Do not give biased or fabricated responses, always use tools as defined in the schema to perform actions beyond just answering questions

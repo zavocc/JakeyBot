@@ -68,7 +68,7 @@ class BaseChat():
             await _infer.input_files(attachment=attachment)
 
             # Also add the URL to the prompt so that it can be used for tools
-            prompt += f"\n\nTHIS PROMPT IS AUTO INSERTED BY SYSTEM: By the way based on the attachment given, here is the URL associated for reference:\n{attachment.url}"
+            prompt += f"\n\nThis additional prompt metadata is autoinserted by system:\nAttachment URL of the data provided for later reference: {attachment.url}"
 
         ###############################################
         # Answer generation
