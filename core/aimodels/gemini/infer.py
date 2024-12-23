@@ -229,7 +229,7 @@ class Completions(APIParams):
         if _response.candidates[0].finish_reason == "SAFETY":
             raise SafetyFilterError
 
-        # First candidate response
+        # First candidate response -> (Content) pydantic model object used for chat context of the model
         _candidateContentResponse = _response.candidates[0].content
 
         # Send the CoT process of the model if "gemin-2.0-flash-thinking-exp-1219" is used
@@ -237,6 +237,10 @@ class Completions(APIParams):
         if self._model_name == "gemini-2.0-flash-thinking-exp-1219":
             await self._discord_method_send(f"> ℹ️ Below is Gemini's 2.0 thinking process and can produce undesirable outputs. Keep in mind that this model doesn't support tools, has 32k context, and only supports image and text inputs.")
             await self._discord_method_send(f"> {_candidateContentResponse.parts[0].text.replace('\n', '\n> ')[:1950]}")
+
+            # And discard the first part of the response since when switching Gemini models, it will intentionally produce a CoT
+            # And save tokens, so we remove the first index
+            _candidateContentResponse.parts.pop(0)
 
         # Iterate through the parts and perform tasks
         _toolInvoke = []
@@ -353,7 +357,7 @@ class Completions(APIParams):
             # Second candidate response, reassign so we can get the text
             _candidateContentResponse = _response.candidates[0].content
 
-        # Finally, append the final updated history to chat thread
+        # Finally, append the final updated candidate response (Content) to chat thread
         _chat_thread.append(_candidateContentResponse.model_dump())
         return {"answer": _candidateContentResponse.parts[-1].text, "chat_thread": _chat_thread}
 
