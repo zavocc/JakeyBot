@@ -115,7 +115,7 @@ class BaseChat():
         if len(_formatted_response) > 2000 and len(_formatted_response) < 4096:
             _system_embed = discord.Embed(
                 # Truncate the title to (max 256 characters) if it exceeds beyond that since discord wouldn't allow it
-                title=str(_final_prompt)[0:100],
+                title=str(_final_prompt)[0:15] + "...",
                 description=str(_formatted_response),
                 color=discord.Color.random()
             )
