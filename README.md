@@ -110,6 +110,8 @@ Jakey provides slash commands such as:
   - You can choose between models using `model:` parameter
 - `/sweep` - Clear the conversation
 - `/feature` - Extend Jakey skills by activating chat tools! (Clears conversation when feature are set, only supports Gemini models)
+- `/model set` and `/model list` to list available models.
+- `/openrouter` - Access additional models from OpenRouter (`/model set:openrouter` must be set)
 - `/summarize` - Summarize the current text channel or thread and gather insights into a single summary thanks to Gemini 1.5 Flash's long context it can understand conversations even from the past decade!
 - `/mimic` - Mimics other users using webhook
 - `/voice` - Basic streaming audio functionality from YouTube, soundcloud and more!
