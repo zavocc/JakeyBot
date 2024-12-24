@@ -1,5 +1,4 @@
 # Huggingface spaces endpoints 
-import google.generativeai as genai
 import aiofiles.os
 import asyncio
 import discord
@@ -10,25 +9,27 @@ class Tool:
     tool_human_name = "Voice Cloner"
     tool_name = "voice_cloner"
 
-    def __init__(self, method_send):
+    def __init__(self, method_send, discord_ctx, discord_bot):
         self.method_send = method_send
+        self.discord_ctx = discord_ctx
+        self.discord_bot = discord_bot
 
-        self.tool_schema = genai.protos.Tool(
-            function_declarations=[
-                genai.protos.FunctionDeclaration(
-                    name = self.tool_name,
-                    description = "Clone voices and perform TTS tasks from the given audio files",
-                    parameters=genai.protos.Schema(
-                        type=genai.protos.Type.OBJECT,
-                        properties={
-                            'discord_attachment_url':genai.protos.Schema(type=genai.protos.Type.STRING),
-                            'text':genai.protos.Schema(type=genai.protos.Type.STRING),
-                        },
-                        required=['discord_attachment_url', 'text']
-                    )
-                )
-            ]
-        )
+        self.tool_schema = {
+            "name": self.tool_name,
+            "description": "Clone voices and perform TTS tasks from the given audio files",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "discord_attachment_url": {
+                        "type": "STRING"
+                    },
+                    "text": {
+                        "type": "STRING"
+                    }
+                },
+                "required": ["discord_attachment_url", "text"]
+            }
+        }
 
     async def _tool_function(self, discord_attachment_url: str, text: str):
         # Import

@@ -1,0 +1,67 @@
+# Syntax
+# provider::model_name
+
+# Google Gemini
+- model: google/gemini-pro-1.5
+  name: Gemini 1.5 Pro
+  description: Advanced chat tasks
+- model: google/gemini-flash-1.5
+  name: Gemini 1.5 Flash
+  description: General purpose tasks
+
+# Google PaLM on Vertex
+- model: google/palm-2-chat-bison-32k
+  name: PaLM 2
+  description: Bison 32K
+- model: google/palm-2-codechat-bison-32k
+  name: PaLM 2 CodeChat
+  description: Bison 32K
+
+# OpenAI
+- model: openai/gpt-4o-2024-11-20
+  name: GPT-4o
+  description: OpenAI's flagship multimodal model for advanced tasks
+- model: openai/gpt-4o-mini
+  name: GPT-4o Mini
+  description: A smaller version of GPT-4o for speed and cost with multimodal capabilities
+
+# Anthropic
+- model: anthropic/claude-3.5-haiku-20241022
+  name: Claude 3.5 Haiku
+  description: Lightning fast chat with such intelligence
+- model: anthropic/claude-3.5-sonnet-20241022
+  name: Claude 3.5 Sonnet v2
+  description: Top notch intelligence with greater accuracy for coding and other tasks
+- model: anthropic/claude-3-opus
+  name: Claude 3 Opus
+  description: Anthropic's largest model
+
+# Amazon
+- model: amazon/nova-pro-v1
+  name: Amazon Nova Pro 1.0
+  description: Amazon's largest model
+- model: amazon/nova-lite-v1
+  name: Amazon Nova Lite 1.0
+  description: Amazon's medium model
+- model: amazon/nova-micro-v1
+  name: Amazon Nova Micro 1.0
+  description: Amazon's smallest model
+
+# XAI
+- model: x-ai/grok-2-vision-1212
+  name: Grok 2 Vision
+  description: XAI's Grok 2 vision model
+
+# Other Models
+- model: meta-llama/llama-3.3-70b-instruct
+  name: LLaMA 3.3 70B
+  description: LLaMA 3.3
+- model: meta-llama/llama-3.1-405b-instruct
+  name: LLaMA 3.1 405B
+  description: the largest GPT-4o level LLaMA model
+- model: qwen/qwq-32b-preview
+  name: QWQ 32B Preview
+  description: Alibaba's reasoning model
+- model: deepseek/deepseek-chat
+  name: DeepSeek Chat
+  description: DeepSeek's chat model

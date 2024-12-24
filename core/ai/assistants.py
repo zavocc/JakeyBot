@@ -1,23 +1,22 @@
+import aiofiles
 import yaml
 
 # Assistants
 class Assistants:
-    def __init__(self):
-        # Parse YAML file
-        with open("data/assistants.yaml", "r") as f:
-            assistants = yaml.safe_load(f)
+    # function to get the assistants
+    @staticmethod
+    async def set_assistant_type(assistant_name: str, type: int = 0):
+        # 0 - chat_assistants
+        # 1 - utility_assistants
 
-        # Jakey
-        self.jakey_system_prompt = assistants["chat_assistants"]["jakey_system_prompt"].strip()
-        # Discord text channel summarizer
-        self.discord_msg_summarizer_prompt = assistants["utility_assistants"]["discord_msg_summarizer_prompt"].strip()
+        # Load the assistants from YAML file
+        async with aiofiles.open("data/assistants.yaml", "r") as assistants:
+            _assistants_data = yaml.safe_load(await assistants.read())
 
-        ###############################################
-        # Apps
-        ###############################################
-        # Message rephraser
-        self.message_rephraser_prompt = assistants["utility_assistants"]["message_rephraser_prompt"].strip()
-        # Message summarizer
-        self.message_summarizer_prompt = assistants["utility_assistants"]["message_summarizer_prompt"].strip()
-        # Message suggester
-        self.message_suggestions_prompt = assistants["utility_assistants"]["message_suggestions_prompt"].strip()
+        if type == 0:
+            _assistants_mode = _assistants_data["chat_assistants"]
+        else:
+            _assistants_mode = _assistants_data["utility_assistants"]
+
+        # Return the assistant
+        return _assistants_mode[assistant_name].strip()

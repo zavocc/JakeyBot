@@ -1,13 +1,13 @@
 from core.ai.assistants import Assistants
-from core.ai.models.gemini.infer import Completions
+from core.aimodels.gemini import Completions
 from discord.ext import commands
-from google.ai.generativelanguage_v1beta.types import content
+from google.genai import types
 from os import environ
-import google.generativeai as genai
 import aiofiles
 import datetime
 import discord
 import inspect
+import logging
 import json
 import random
 
@@ -15,9 +15,6 @@ class GenAITools(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
-
-        # default system prompt - load assistants
-        self._assistants_system_prompt = Assistants()
 
    ###############################################
     # Summarize discord messages
@@ -63,9 +60,6 @@ class GenAITools(commands.Cog):
         if ctx.channel.is_nsfw():
             await ctx.respond("❌ Sorry, I can't summarize messages in NSFW channels!")
             return
-        
-        # Discord channel conversation context
-        _current_discord_convo_context = []
 
         # Parse the dates
         if before_date is not None:
@@ -75,73 +69,95 @@ class GenAITools(commands.Cog):
         if around_date is not None:
             around_date = datetime.datetime.strptime(around_date, '%m/%d/%Y')
 
-        messages = ctx.channel.history(limit=limit, before=before_date, after=after_date, around=around_date)
-        async for x in messages:
+        # Prompt feed which contains the messages
+        _prompt_feed = [{
+            "role": "user",
+            "parts":[
+                {
+                    "text": inspect.cleandoc(
+                        f"""Date today is {datetime.datetime.now().strftime('%m/%d/%Y')}
+                        OK, now generate summaries for me:"""
+                    )
+                }
+            ]
+        }]
+
+        _prompt_feed = [
+            types.Part.from_text(
+                text = inspect.cleandoc(
+                    f"""Date today is {datetime.datetime.now().strftime('%m/%d/%Y')}
+                    OK, now generate summaries for me:"""
+                )
+            )
+        ]
+        
+
+        _messages = ctx.channel.history(limit=limit, before=before_date, after=after_date, around=around_date)
+        async for x in _messages:
             # Handle 2000 characters limit since 4000 characters is considered spam
             if len(x.content) <= 2000:
-                _current_discord_convo_context.append(inspect.cleandoc(f"""                                        
-                        ---
-                        # Message by: {x.author.name} at {x.created_at}
+                _prompt_feed.append(
+                    types.Part.from_text(
+                        text = inspect.cleandoc(
+                            f"""# Message by: {x.author.name} at {x.created_at}
 
-                        # Message body:
-                        {x.content}
+                            # Message body:
+                            {x.content}
 
-                        # Message jump link:
-                        {x.jump_url}
+                            # Message jump link:
+                            {x.jump_url}
 
-                        # Additional information:
-                        - Discord User ID: {x.author.id}
-                        - Discord User Display Name: {x.author.display_name}
-                        ---
-                """))
+                            # Additional information:
+                            - Discord User ID: {x.author.id}
+                            - Discord User Display Name: {x.author.display_name}""")
+                    )
+                )
             else:
                 continue
-
-        _current_discord_convo_context = "\n".join(_current_discord_convo_context)
 
         #################
         # MODEL
         #################
         # set model
-        _completions = Completions()
+        _completions = Completions(discord_ctx=ctx, discord_bot=self.bot)
+        _system_prompt = await Assistants.set_assistant_type("discord_msg_summarizer_prompt", type=1)
 
         # Constrain the output to JSON
-        _completions.generation_config.update({
-            "response_schema": content.Schema(
-                type=content.Type.OBJECT,
-                enum=[],
-                required=["summary", "links"],
-                properties={
-                    "summary": content.Schema(
-                        type=content.Type.STRING,
-                    ),
-                    "links": content.Schema(
-                        type=content.Type.ARRAY,
-                        items=content.Schema(
-                            type=content.Type.OBJECT,
-                            enum=[],
-                            required=["description", "jump_url"],
-                            properties={
-                                "description": content.Schema(
-                                    type=content.Type.STRING,
-                                ),
-                                "jump_url": content.Schema(
-                                    type=content.Type.STRING,
-                                ),
+        _completions._genai_params.update({
+            "response_schema": {
+                "type": "object",
+                "properties": {
+                    "summary": {
+                        "type": "STRING"
+                    },
+                    "links": {
+                        "type": "array",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "description": {
+                                    "type": "STRING"
+                                },
+                                "jump_url": {
+                                    "type": "STRING"
+                                }
                             },
-                        ),
-                    ),
+                            "required": ["description", "jump_url"]
+                        }
+                    }
                 },
-            ),
-            "response_mime_type": "application/json",
+                "required": ["summary", "links"]
+            },
+            "response_mime_type": "application/json"
         })
 
-        _summary = json.loads(await _completions.completion(inspect.cleandoc(f"""                                       
-            Date today is {datetime.datetime.now().strftime('%m/%d/%Y')}
-            OK, now generate summaries for me:
+        # Turn prompt feed to content
+        _prompt_feed = types.Content(
+            parts=_prompt_feed,
+            role="user"
+        )
 
-             {_current_discord_convo_context}
-            """).rstrip(), system_instruction=self._assistants_system_prompt.discord_msg_summarizer_prompt))
+        _summary = json.loads(await _completions.completion(_prompt_feed, system_instruction=_system_prompt))
 
         # If arguments are given, also display the date
         _app_title = f"Summary for {ctx.channel.name}"
@@ -177,33 +193,27 @@ class GenAITools(commands.Cog):
             for _links in _summary["links"]:
                 if len(_embed.fields) >= max_references:
                     break
-                _embed.add_field(name=_links["description"], value=_links["jump_url"], inline=False)
+                # Truncate the description to 256 characters if it exceeds beyond that since discord wouldn't allow it
+                _embed.add_field(name=_links["description"][:256], value=_links["jump_url"], inline=False)
                 
             _embed.set_footer(text="Responses generated by AI may not give accurate results! Double check with facts!")
             await ctx.respond(embed=_embed)
 
     # Handle errors
     @summarize.error
-    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
-        # Check for safety or blocked prompt errors
-        _exceptions = [genai.types.StopCandidateException, ValueError]
-        
+    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):        
         # Check if this command is executed in a guild
         if isinstance(error, commands.NoPrivateMessage):
             await ctx.respond("❌ Sorry, this command is only to be used in a guild!")
-            raise error
 
         # Get original exception from the DiscordException.original attribute
-        error = getattr(error, "original", error)
-        if any(_iter for _iter in _exceptions if isinstance(error, _iter)):
-            if "time data" in str(error):
-                await ctx.respond("⚠️ Sorry, I couldn't summarize messages with that date format! Please use **mm/dd/yyyy** format.")
-            else:
-                await ctx.respond("❌ Sorry, I can't summarize messages at the moment, I'm still learning! Please try again.")
+        _error = getattr(error, "original", error)
+        if "time data" in str(_error):
+            await ctx.respond("⚠️ Sorry, I couldn't summarize messages with that date format! Please use **mm/dd/yyyy** format.")
         else:
-            await ctx.respond(f"⚠️ Uh oh! I couldn't answer your question, something happend to our end!\nHere is the logs for reference and troubleshooting:\n ```{error}```")
+            await ctx.respond("❌ Sorry, I can't summarize messages at the moment, I'm still learning! Please try again, and please check console logs.")
         
-        raise error
+        logging.error("An error has occurred while generating an summaries, reason: %s", _error, exc_info=True)
 
     
 def setup(bot):

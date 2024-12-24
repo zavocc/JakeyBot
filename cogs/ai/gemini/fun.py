@@ -1,8 +1,9 @@
+from core.aimodels.gemini import Completions
 from discord.ext import commands
 from discord import Member, DiscordException
+from google.genai import types
 from os import environ
 import discord
-import importlib
 import logging
 
 class GeminiUtils(commands.Cog):
@@ -10,7 +11,6 @@ class GeminiUtils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
-
         
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild},
@@ -37,33 +37,35 @@ class GeminiUtils(commands.Cog):
         _description = None
         if describe:
             try:
-                # Import modules
-                aiohttp = importlib.import_module("aiohttp")
-                PIL = importlib.import_module("PIL")
-                io = importlib.import_module("io")
-                Completions = importlib.import_module("core.ai.models.gemini.infer").Completions
-
                 _filedata = None
+                _mime_type = None
                 # Download the image as files like
-                async with aiohttp.ClientSession() as _session:
-                    # Maximum file size is 3MB so check it
-                    async with _session.head(avatar_url) as _response:
-                        if int(_response.headers.get("Content-Length")) > 1500000:
-                            raise Exception("Max file size reached")
-                    
-                    # Save it as bytes so io.BytesIO can read it
-                    async with _session.get(avatar_url) as response:
-                        _filedata = await response.read()
+                # Maximum file size is 3MB so check it
+                async with self.bot._aiohttp_main_client_session.head(avatar_url) as _response:
+                    if int(_response.headers.get("Content-Length")) > 1500000:
+                        raise Exception("Max file size reached")
+                
+                # Save it as bytes so base64 can read it
+                async with self.bot._aiohttp_main_client_session.get(avatar_url) as response:
+                    # Get mime type
+                    _mime_type = response.headers.get("Content-Type")
+                    _filedata = await response.content.read()
                 
                 # Check filedata
                 if not _filedata:
                     raise Exception("No file data")
                 
                 # Generate description
-                _infer = Completions()
-                _description = await _infer.completion([PIL.Image.open(io.BytesIO(_filedata)), "Generate image descriptions but one sentence short to describe, straight to the point"])
+                _infer = Completions(discord_ctx=ctx, discord_bot=self.bot)
+                _description = await _infer.completion([
+                    "Generate image descriptions but one sentence short to describe, straight to the point",
+                    types.Part.from_bytes(
+                        data=_filedata,
+                        mime_type=_mime_type
+                    )
+                ])
             except Exception as e:
-                logging.error("commands>avatar: An errored occured while generating image descriptions: %s", e)
+                logging.error("An error occurred while generating image descriptions: %s", e)
                 _description = "Failed to generate image descriptions, check console for more info."
 
         # Embed
@@ -77,9 +79,9 @@ class GeminiUtils(commands.Cog):
         await ctx.respond(embed=embed, ephemeral=True)
 
     @avatar.error
-    async def on_command_error(self, ctx: commands.Context, error: DiscordException):
+    async def on_application_command_error(self, ctx: commands.Context, error: DiscordException):
         await ctx.respond("⛔ Something went wrong, please check console log for details")
-        raise error
+        logging.error("An error has occurred while executing avatar command, reason: ", exc_info=True)
 
 def setup(bot):
     bot.add_cog(GeminiUtils(bot))

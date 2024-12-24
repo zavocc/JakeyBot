@@ -1,24 +1,23 @@
+from core.ai.assistants import Assistants
 from core.exceptions import ModelUnavailable, MultiModalUnavailable
 from os import environ
-import core.ai.models._template_.infer # For type hinting
-import aiofiles
-import aiofiles.os
+import core.aimodels._template_ # For type hinting
 import discord
 import importlib
-import random
+import io
+import logging
 
 class BaseChat():
-    def __init__(self, bot, author, history, assistants):
+    def __init__(self, bot, author, history):
         self.bot: discord.Bot = bot
         self.author = author
         self.DBConn = history
-        self._assistants_system_prompt = assistants
 
     ###############################################
     # Ask slash command
     ###############################################
     async def ask(self, ctx: discord.ApplicationContext, prompt: str, attachment: discord.Attachment, model: str,
-        append_history: bool, show_info: bool):
+        append_history: bool):
         await ctx.response.defer(ephemeral=False)
 
         # Check if SHARED_CHAT_HISTORY is enabled
@@ -36,84 +35,90 @@ class BaseChat():
                 return
 
         # Set model
-        _model = model.split("::")
+        if model is None:
+            # Set default model
+            _model = await self.DBConn.get_default_model(guild_id=guild_id)
+            if _model is None:
+                logging.info("No default model found, using default optimized model")
+                _model = "gemini::gemini-1.5-flash-002"
+        else:
+            _model = model
+
+        _model = _model.split("::")
         _model_provider = _model[0]
         _model_name = _model[-1]
 
         # Configure inference
         try:
-            _infer: core.ai.models._template_.infer.Completions = importlib.import_module(f"core.ai.models.{_model_provider}.infer").Completions(
+            _infer: core.aimodels._template_.Completions = importlib.import_module(f"core.aimodels.{_model_provider}").Completions(
+                discord_ctx=ctx,
+                discord_bot=self.bot,
                 guild_id=guild_id,
-                model_name=_model_name,
-                db_conn = self.DBConn,
-            )
+                model_name=_model_name)
         except ModuleNotFoundError:
-            raise ModelUnavailable
-        _infer._discord_method_send = ctx.send
+            raise ModelUnavailable(f"⚠️ The model you've chosen is not available at the moment, please choose another model")
 
         ###############################################
         # File attachment processing
         ###############################################
         if attachment is not None:
             if not hasattr(_infer, "input_files"):
-                raise MultiModalUnavailable
+                raise MultiModalUnavailable("🚫 This model cannot process file attachments, please try another model")
 
             await _infer.input_files(attachment=attachment)
 
             # Also add the URL to the prompt so that it can be used for tools
-            prompt += f"\n\nTHIS PROMPT IS AUTO INSERTED BY SYSTEM: By the way based on the attachment given, here is the URL associated for reference:\n{attachment.url}"
+            prompt += f"\n\nThis additional prompt metadata is autoinserted by system:\nAttachment URL of the data provided for later reference: {attachment.url}"
 
         ###############################################
         # Answer generation
         ###############################################
-        _result = await _infer.chat_completion(prompt=prompt, system_instruction=self._assistants_system_prompt.jakey_system_prompt)
+        _system_prompt = await Assistants.set_assistant_type("jakey_system_prompt", type=0)
+        _result = await _infer.chat_completion(prompt=prompt, db_conn=self.DBConn, system_instruction=_system_prompt)
         _formatted_response = _result["answer"].rstrip()
 
         # Model usage and context size
-        if len(_result["answer"]) > 2000 and len(_result["answer"]) < 4096:
+        if len(_formatted_response) > 2000 and len(_formatted_response) < 4096:
             _system_embed = discord.Embed(
                 # Truncate the title to (max 256 characters) if it exceeds beyond that since discord wouldn't allow it
-                title=str(prompt)[0:100],
-                description=str(_result["answer"]),
+                title=str(prompt)[0:15] + "...",
+                description=str(_formatted_response),
                 color=discord.Color.random()
             )
         else:
-            if show_info:
-                _system_embed = discord.Embed()
-            else:
-                _system_embed = None
-                # Add minified version of chat information
-                _formatted_response = f"{_result['answer'].rstrip()}\n-# {_model_name.upper()} {"(this response isn't saved)" if not append_history else ''}"
+            _system_embed = None
 
-        if not _system_embed is None:
+        # Model information footer 
+        _modelInfoFooter = f"-# {_model_name.upper()} {"(this response isn't saved)" if not append_history else ''}"
+
+        if _system_embed:
             # Model used
             _system_embed.add_field(name="Model used", value=_model_name)
-
-            # Check if this conversation isn't appended to chat history
-            if not append_history: _system_embed.add_field(name="Privacy", value="This conversation isn't saved")
+            # Check if there is _tokens_used attribute
+            if hasattr(_infer, "_tokens_used"):
+                _system_embed.add_field(name="Tokens used", value=_infer._tokens_used)
                 
-            # Tool use
-            if hasattr(_infer, "_used_tool_name"): _system_embed.add_field(name="Tool used", value=_infer._used_tool_name)
             # Files used
-            if attachment is not None: _system_embed.add_field(name="File used", value=attachment.filename)
+            if attachment is not None: 
+                _system_embed.add_field(name="File used", value=attachment.filename)
             _system_embed.set_footer(text="Responses generated by AI may not give accurate results! Double check with facts!")
 
         # Embed the response if the response is more than 2000 characters
         # Check to see if this message is more than 2000 characters which embeds will be used for displaying the message
         if len(_formatted_response) > 4096:
             # Send the response as file
-            response_file = f"{environ.get('TEMP_DIR')}/response{random.randint(6000,7000)}.md"
-            async with aiofiles.open(response_file, "w+") as f:
-                await f.write(_formatted_response)
-            _jakey_response = await ctx.send("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(response_file, "response.md"), embed=_system_embed)
+            _jakey_response = await ctx.send("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(io.StringIO(_formatted_response), "response.md"), embed=_system_embed)
         elif len(_formatted_response) > 2000:
             _jakey_response = await ctx.send(embed=_system_embed)
         else:
             _jakey_response = await ctx.send(_formatted_response, embed=_system_embed)
+        
+        # Show model information
+        await ctx.send(_modelInfoFooter)
 
         # Save to chat history
         if append_history:
-            await _infer.save_to_history(chat_thread=_result["chat_thread"])
+            await _infer.save_to_history(db_conn=self.DBConn, chat_thread=_result["chat_thread"])
 
         # Done
         await ctx.respond(f"✅ Done {ctx.author.mention}! check out the response: {_jakey_response.jump_url}")

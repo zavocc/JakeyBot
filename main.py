@@ -1,8 +1,12 @@
 from discord.ext import bridge, commands
 from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 from inspect import cleandoc
-from os import chdir, environ, mkdir
+from os import chdir, mkdir, environ
 from pathlib import Path
+import aiohttp
+import aiofiles.os
 import discord
 import importlib
 import logging
@@ -15,7 +19,9 @@ chdir(Path(__file__).parent.resolve())
 load_dotenv("dev.env")
 
 # Logging
-logging.basicConfig(format='%(levelname)s %(asctime)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
+logging.basicConfig(format='%(levelname)s %(asctime)s [%(filename)s:%(lineno)d - %(funcName)s()]: %(message)s', 
+                    datefmt='%m/%d/%Y %I:%M:%S %p', 
+                    level=logging.INFO)
 
 # Check if TOKEN is set
 if "TOKEN" in environ and (environ.get("TOKEN") == "INSERT_DISCORD_TOKEN") or (environ.get("TOKEN") is None) or (environ.get("TOKEN") == ""):
@@ -26,15 +32,49 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-# Bot
-bot = bridge.Bot(command_prefix=environ.get("BOT_PREFIX", "$"), intents = intents)
+# Subclass this bot
+class InitBot(bridge.Bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-# Playback support
-try:
-    bot._wavelink = importlib.import_module("wavelink")
-except ModuleNotFoundError as e:
-    logging.warning("Playback support is disabled: %s", e)
-    bot._wavelink = None
+        # Prepare temporary directory
+        if environ.get("TEMP_DIR") is not None:
+            if Path(environ.get("TEMP_DIR")).exists():
+                for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
+                    file.unlink()
+            else:
+                mkdir(environ.get("TEMP_DIR"))
+        else:
+            environ["TEMP_DIR"] = "temp"
+            mkdir(environ.get("TEMP_DIR"))
+
+        # Wavelink
+        self._wavelink = None
+        try:
+            self._wavelink = importlib.import_module("wavelink")
+        except ModuleNotFoundError as e:
+            logging.warning("Playback support is disabled: %s", e)
+            self._wavelink = None
+
+        # Gemini API Client
+        self._gemini_api_client = genai.Client(api_key=environ.get("GEMINI_API_KEY"))
+
+        # Everything else (mostly GET requests)
+        self._aiohttp_main_client_session = aiohttp.ClientSession(loop=self.loop)
+
+    # Shutdown the bot
+    async def close(self):
+        # Close aiohttp client sessions
+        await self._aiohttp_main_client_session.close()
+
+        # Remove temp files
+        if Path(environ.get("TEMP_DIR", "temp")).exists():
+            for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
+                await aiofiles.os.remove(file)
+
+        await super().close()
+
+bot = InitBot(command_prefix=environ.get("BOT_PREFIX", "$"), intents = intents)
 
 ###############################################
 # ON READY
@@ -61,32 +101,12 @@ async def on_ready():
                 nodes=[node]
             )
         except Exception as e:
-            logging.error(f"Failed to setup wavelink: {e}... Disabling playback support")
+            logging.error("Failed to setup wavelink: %s... Disabling playback support", e)
             bot._wavelink = None
-    
-    # Prepare temporary directory
-    if environ.get("TEMP_DIR") is not None:
-        if Path(environ.get("TEMP_DIR")).exists():
-            for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
-                file.unlink()
-        else:
-            mkdir(environ.get("TEMP_DIR"))
-    else:
-        environ["TEMP_DIR"] = "temp"
-        mkdir(environ.get("TEMP_DIR"))
 
     #https://stackoverflow.com/a/65780398 - for multiple statuses
     await bot.change_presence(activity=discord.Game(f"/ask me anything or {bot.command_prefix}help"))
-    print(f"{bot.user} is ready and online!")
-
-    # Check if we can load gemini api
-    try:
-        _genai = importlib.import_module("google.generativeai")
-        _genai.configure(api_key=environ.get("GEMINI_API_KEY"))
-    except Exception as e:
-        logging.error("Failed to configure Gemini API: %s\nexpect errors later", e)
-    else:
-        logging.info("Gemini API is ready")
+    logging.info("%s is ready and online!", bot.user)
 
 ###############################################
 # ON USER MESSAGE
@@ -122,13 +142,13 @@ with open('commands.yaml', 'r') as file:
     for command in cog_commands:
         # Disable voice commands if playback support is not enabled
         if "voice" in command and not bot._wavelink:
-           logging.warning(f"Skipping {command}... Playback support is disabled")
+           logging.warning("Skipping %s... Playback support is disabled", command)
            continue
 
         try:
             bot.load_extension(f'cogs.{command}')
         except Exception as e:
-            logging.error(f"\ncogs.{command} failed to load, skipping... The following error of the cog: %s", e)
+            logging.error("cogs.%s failed to load, skipping... The following error of the cog: %s", command, e)
             continue
 
 # Initialize custom help

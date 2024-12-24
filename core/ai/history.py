@@ -1,3 +1,4 @@
+from core.exceptions import HistoryDatabaseError
 from os import environ
 import logging
 import motor.motor_asyncio
@@ -11,130 +12,147 @@ class History:
             raise ConnectionError("Please set MONGO_DB_URL in dev.env")
         
         # Create a new database if it doesn't exist, access chat_history database
-        self._db = self._db_conn[environ.get("MONGO_DB_NAME", "chat_history_prod")]
-        self._collection = self._db["db_collection"]
-        logging.info(f"Connected to the database {self._db.name} and collection {self._collection.name}")
+        self._db = self._db_conn[environ.get("MONGO_DB_NAME", "jakey_prod_db")]
+        self._collection = self._db[environ.get("MONGO_DB_COLLECTION_NAME", "jakey_prod_db_collection")]
+        logging.info("Connected to the database %s and collection %s", self._db.name, self._collection.name)
 
-    async def _document_template(self, guild_id, tool_use = "code_execution"):
-        return {
-            "guild_id": guild_id,
-            "tool_use": tool_use,
-            "default_model": "gemini::gemini-1.5-flash-002"
-        }
+    async def _ensure_document(self, guild_id: int, model: str = "gemini::gemini-1.5-flash-002", tool_use: str = None):
+        """Ensures a document exists for the given guild_id, creates one if it doesn't exist."""
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
 
-    async def load_history(self, guild_id, model_provider = None):
-        if model_provider is None:
-            raise ConnectionError("Please set a provider")
-
-        if guild_id is None and type(guild_id) != int:
-            raise TypeError("guild_id is required")
+        default_openrouter_model = None
         
-        if (await self._collection.find_one({"guild_id": guild_id})) is None:
-            _template = await self._document_template(guild_id, "code_execution")
+        # Do not override tool_use and default_model if it already exists
+        # This checks if the user didn't execute /sweep command with reset_prefs to True
+        # If it does, then it will use the default values from kwargs and therefore upserting the document with new one
+        # Since guild_id entry doesn't exists
+        _existing = await self._collection.find_one({"guild_id": guild_id})
+        if _existing:
+            if "tool_use" in _existing:
+                tool_use = _existing["tool_use"]
+            if "default_model" in _existing:
+                model = _existing["default_model"]
+            if "default_openrouter_model" in _existing:
+                default_openrouter_model = _existing["default_openrouter_model"]
 
-            # Create a document if it doesn't exist
-            await self._collection.update_one({"guild_id": guild_id},{"$set": _template}, upsert=True)
+        await self._collection.update_one(
+            {"guild_id": guild_id}, 
+            {"$set": {
+                "guild_id": guild_id,
+                "tool_use": tool_use,
+                "default_model": model,
+                "default_openrouter_model": default_openrouter_model or None
+            }}, 
+            upsert=True
+        )
+
+    async def load_history(self, guild_id: int, model_provider: str):
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
+            
+        await self._ensure_document(guild_id)
 
         # Check if model_provider_{model_provider} exists in the document
         if f"chat_thread_{model_provider}" not in (await self._collection.find_one({"guild_id": guild_id})):
             await self._collection.update_one({"guild_id": guild_id}, {
-                "$set": {
-                    f"chat_thread_{model_provider}": None
-                }
+                "$set": {f"chat_thread_{model_provider}": None}
             })
 
-        # Load the document
         _document = await self._collection.find_one({"guild_id": guild_id})
-            
-        # Return the prompt history and chat context
         return _document[f"chat_thread_{model_provider}"]
 
-    async def save_history(self, guild_id, chat_thread, model_provider = None):
-        if model_provider is None:
-            raise ConnectionError("Please set a provider")
-
-        if guild_id is None and type(guild_id) != int:
-            raise TypeError("guild_id is required")
-
-        if (await self._collection.find_one({"guild_id": guild_id})) is None:
-            _template = await self._document_template(guild_id, "code_execution")
-
-            # Create a document if it doesn't exist
-            await self._collection.update_one({"guild_id": guild_id},{"$set": _template}, upsert=True)
-
-        # Update the document
-        await self._collection.update_one({"guild_id": guild_id}, {
-            "$set": {
-                f"chat_thread_{model_provider}": chat_thread
-            }
-        }, upsert=True)
-
-    async def clear_history(self, guild_id):
-        if guild_id is None and type(guild_id) != int:
+    async def save_history(self, guild_id: int, chat_thread, model_provider: str) -> None:
+        if guild_id is None or not isinstance(guild_id, int):
             raise TypeError("guild_id is required and must be an integer")
 
-        # Check if the document exists
-        if (await self._collection.find_one({"guild_id": guild_id})) is None:
-            return
-
-        # Remove the document
-        await self._collection.delete_one({"guild_id": guild_id})
-
-    async def set_config(self, guild_id, tool="code_execution", model_provider = "gemini"):
-        if guild_id is None and type(guild_id) != int:
-            raise TypeError("guild_id is required")
+        await self._ensure_document(guild_id)
         
-        await self.clear_history(guild_id)
-
-        if (await self._collection.find_one({"guild_id": guild_id})) is None:
-            _template = await self._document_template(guild_id, tool)
-
-            # Create a document if it doesn't exist
-            await self._collection.update_one({"guild_id": guild_id},{"$set": _template}, upsert=True)
-
-        await self._collection.update_one({"guild_id": guild_id},{"$set": {
-            "tool_use": tool
-        }}, upsert=True)
-
-    async def get_config(self, guild_id):
-        if guild_id is None and type(guild_id) != int:
-            raise TypeError("guild_id is required")
-                
-        if (await self._collection.find_one({"guild_id": guild_id})) is None:
-            _template = await self._document_template(guild_id, "code_execution")
-
-            # Create a document if it doesn't exist
-            await self._collection.update_one({"guild_id": guild_id},{"$set": _template}, upsert=True)
-            return "code_execution"
-
-        return (await self._collection.find_one({"guild_id": guild_id}))["tool_use"]
-    
-    async def set_default_model(self, guild_id, model):
-        if guild_id is None and type(guild_id) != int:
-            raise TypeError("guild_id is required")
-
-        if (await self._collection.find_one({"guild_id": guild_id})) is None:
-            _template = self._document_template(guild_id, "code_execution")
-
-            # Create a document if it doesn't exist
-            await self._collection.update_one({"guild_id": guild_id},{"$set": _template}, upsert=True)
-
         await self._collection.update_one({"guild_id": guild_id}, {
-            "$set": {
-                "default_model": model
-            }
+            "$set": {f"chat_thread_{model_provider}": chat_thread}
         }, upsert=True)
 
-    async def get_default_model(self, guild_id):
-        if guild_id is None and type(guild_id) != int:
-            raise TypeError("guild_id is required")
+    async def clear_history(self, guild_id: int) -> None:
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
 
+        await self._collection.delete_one({"guild_id": guild_id})
+
+    async def set_config(self, guild_id: int, tool: str = None) -> None:
+        await self.clear_history(guild_id)
+        await self._ensure_document(guild_id, tool)
+        
+        await self._collection.update_one({"guild_id": guild_id}, {
+            "$set": {"tool_use": tool}
+        }, upsert=True)
+
+    async def get_config(self, guild_id: int):
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
+
+        await self._ensure_document(guild_id)
+        return (await self._collection.find_one({"guild_id": guild_id}))["tool_use"]
+
+    async def set_default_model(self, guild_id: int, model: str) -> None:
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
+
+        if not model or not isinstance(model, str):
+            raise ValueError("Model must be a non-empty string")
+
+        await self._ensure_document(guild_id, model=model)
+        
         try:
-            _dc = await self._collection.find_one({"guild_id": guild_id})
-            if _dc is None or "default_model" not in _dc:
-                return "gemini::gemini-1.5-flash-002"
-            return _dc["default_model"]
-        except Exception:
-            logging.error("An error occurred while fetching the default model from the database")
-            return "gemini::gemini-1.5-flash-002"
+            await self._collection.update_one(
+                {"guild_id": guild_id}, 
+                {"$set": {"default_model": model}},
+                upsert=True
+            )
+        except Exception as e:
+            logging.error("Error setting default model: %s", e)
+            raise HistoryDatabaseError("Error setting default model")
+
+    async def get_default_model(self, guild_id: int):
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
+
+        await self._ensure_document(guild_id)
+        try:
+            return (await self._collection.find_one({"guild_id": guild_id}))["default_model"]
+        except Exception as e:
+            logging.error("Error getting default model: %s", e)
+            raise HistoryDatabaseError("Error getting default model")
+        
+    # Directly set custom keys and values to the document
+    async def set_key(self, guild_id: int, key: str, value) -> None:
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
+
+        await self._ensure_document(guild_id)
+        
+        try:
+            await self._collection.update_one(
+                {"guild_id": guild_id}, 
+                {"$set": {key: value}},
+                upsert=True
+            )
+        except Exception as e:
+            logging.error("Error setting keys: %s", e)
+            raise HistoryDatabaseError(f"Error setting keys: {key}")
+        
+    # Directly get custom keys and values from the document
+    async def get_key(self, guild_id: int, key: str):
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
+
+        # Must be string
+        if not key or not isinstance(key, str):
+            raise ValueError("Key must be a non-empty string")
+
+        await self._ensure_document(guild_id)
+        try:
+            return (await self._collection.find_one({"guild_id": guild_id}))[key]
+        except Exception as e:
+            logging.error("Error getting key: %s", e)
+            raise HistoryDatabaseError(f"Error getting key: {key}")
 

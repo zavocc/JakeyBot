@@ -2,6 +2,15 @@
 # provider::model_name
 
 # Hosted through Gemini API
+- model: gemini::gemini-exp-1206
+  name: Gemini 2.0 Advanced Experimental
+  description: Gemini's superior experimental model from 12/06/2024
+- model: gemini::gemini-2.0-flash-exp
+  name: Gemini 2.0 Flash Experimental
+  description: New and better omni-modal model surpasses Gemini 1.5 Pro
+- model: gemini::gemini-2.0-flash-thinking-exp-1219
+  name: Gemini 2.0 Flash with Reasoning Experimental
+  description: Google's latest model that thinks before it responds
 - model: gemini::gemini-1.5-pro-002
   name: Gemini 1.5 Pro
   description: Advanced chat tasks with low availability
@@ -17,9 +26,6 @@
 - model: gemini::gemini-1.5-flash-8b
   name: Gemini 1.5 Flash 8B
   description: Lighter and faster version of Gemini 1.5 Flash 
-- model: gemini::gemini-exp-1114
-  name: Gemini Experimental (1114)
-  description: Gemini latest experimental model from 11/14/24
 - model: gemini::gemini-exp-1121
   name: Gemini Experimental (1121)
   description: Gemini latest experimental model from 11/21/24
@@ -36,6 +42,9 @@
 - model: openai::gpt-4o-mini
   name: GPT-4o Mini
   description: A smaller version of GPT-4o for speed and cost with multimodal capabilities
+- model: openai::o1
+  name: OpenAI O1
+  description: OpenAI's latest model that spends time thinking before responding
 - model: openai_o1::o1-preview
   name: O1 Preview
   description: OpenAI's latest model that spends time thinking before responding
@@ -47,35 +56,33 @@
 # Claude models
 ############################################
 # Claude models
-- model: claude::claude-3-haiku-20240307
-  name: Claude 3 Haiku
-  description: Lightning fast chat with such intelligence
 - model: claude::claude-3-5-haiku-20241022
   name: Claude 3.5 Haiku
   description: A Claude 3 Haiku predecessor with intelligence improvements
 - model: claude::claude-3-5-sonnet-20241022
   name: Claude 3.5 Sonnet v2
   description: Top notch intelligence with greater accuracy for coding and other tasks
-- model: claude::claude-3-5-sonnet-20240620
-  name: Claude 3.5 Sonnet
-  description: Oldstable version but with balanced speed and accuracy
+- model: claude::claude-3-opus-20240229
+  name: Claude 3 Opus
+  description: Anthropic's largest model
 
 ############################################
 # Mistral models
 ############################################
-- model: mistralai::mistral-large-2407
-  name: Mistral Large 2
-  description: Advanced multilingual model with top reasoning capabilities
-- model: mistralai::open-mixtral-8x7b
-  name: Mixtral 8x7B
-  description: The OG Mistral's sparse mixture of experts model with low moderation
-- model: mistralai::codestral-latest
-  name: Codestral
-  description: Optimized for code chat
+- model: mistralai::pixtral-large-latest
+  name: Mistral Large 2 with Vision
+  description: Pixtral Large 2
 
 ############################################
 # X.AI
 ############################################
-- model: xai::grok-beta
+- model: xai::grok-2-vision-1212
   name: Grok 2.0
-  description: Twitter aka X (XAI) based model, good for most tasks.
+  description: XAI's Grok 2 model
+
+############################################
+# More models on OpenRouter
+############################################
+- model: openrouter::openrouter
+  name: OpenRouter
+  description: Use OpenRouter models, see the openrouter command.

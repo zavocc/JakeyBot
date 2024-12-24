@@ -2,6 +2,7 @@ from discord.commands import SlashCommandGroup
 from discord.ext import commands
 import asyncio
 import discord
+import logging
 import typing
 import wavelink
 
@@ -321,8 +322,10 @@ class Voice(commands.Cog):
         elif isinstance(_error, wavelink.InvalidNodeException):
             await ctx.respond("No nodes are currently active right now, please try again later.")
         else:
-            await ctx.respond(f"❌ An error has occured! Reason:\n```{_error}```")
-            raise error
+            await ctx.respond(f"❌ An error has occurred! Reason:\n```{_error}```")
+        
+        # Log the error
+        logging.error("An error has occurred when using the voice command features, reason: ", exc_info=True)
 
 def setup(bot):
     bot.add_cog(Voice(bot))

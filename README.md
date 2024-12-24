@@ -26,7 +26,7 @@ Jakey AI is available as Discord Bot. Other platforms is coming soon!
 - Summarize text channels and messages
 - Multimodality support and summarize file attachments!\*
 - Browse, run python code, edit images right within chat\**
-- Create images using FLUX.1 and Stable Diffusion 3!
+- Create images using and Stable Diffusion 3.5!
 
 Other non-AI extras include:
 - Listen to music using wavelink! Play with your tunes from Spotify, SoundCloud, YouTube, and more! Right within Discord!
@@ -38,7 +38,7 @@ Other non-AI extras include:
 ## Installation and setup
 ### Required permissions for Discord bot
 - Read message history (see [#faq](#faq) for privacy implications)
-- Embed messages (required for rendering text more than 4096 and for most commands)
+- Embed messages (required for rendering text more than 2000 and for most commands)
 - Send messages (obviously)
 - Attach files
 - Create webhooks
@@ -49,7 +49,7 @@ Other non-AI extras include:
 The best way to get started is through Docker method... You can directly pull the image from my Docker 🐳 Hub repository and simply run the bot below:
 ```
 ~ $ docker pull zavocc/jakey:sugilite
-~ $ docker run -it --env-file dev.env --rm jakey:sugilite
+~ $ docker run -it --env-file dev.env --rm zavocc/jakey:sugilite
 ```
 
 NOTE: You need to provide [the dev.env file](#configuring) as explained below
@@ -71,7 +71,7 @@ NOTE: You need to provide [the dev.env file](#configuring) as explained below
   pip3 install -r requirements.txt
 
   # This is optional
-  pip3 install wavelink
+  pip3 install wavelink gradio_client
   pip3 uninstall py-cord discord.py
   pip3 install py-cord
   ```
@@ -98,7 +98,7 @@ After everything is configured, you can run `main.py`
 ## Get Started
 Get started by asking Jakey `/ask prompt:Who are you and how can I get started` or **@Jakey what can you do?**
 
-By default, it uses **Gemini 1.5 Flash** due to versatility with long context and multimodality, matching the performance of, but other models can be used as well.
+By default, it uses **Gemini 1.5 Flash (002)** due to versatility with long context and multimodality, matching the performance of Gemini 1.5 Pro (0514), but other models can be used as well.
 
 If you decide to use other models please see [Models comparison](https://github.com/zavocc/JakeyBot/wiki/Supported-Models) and [the LLM arena by livebench](https://livebench.ai/) to understand your models use cases
 
@@ -107,11 +107,11 @@ Jakey provides slash commands such as:
   - Get started by asking `/ask` `prompt:` `Hey Jakey, I'm new, tell me your commands, features, and capabilities`
   - Use multimodal features by passing `attachment:` parameter
   - Ephemeral conversation with `append_hist:False`
-  - Show logs, conversation and model info with `show_info:True`
   - You can choose between models using `model:` parameter
 - `/sweep` - Clear the conversation
 - `/feature` - Extend Jakey skills by activating chat tools! (Clears conversation when feature are set, only supports Gemini models)
-- `/imagine` - Create images using Stable Diffusion 3
+- `/model set` and `/model list` to list available models.
+- `/openrouter` - Access additional models from OpenRouter (`/model set:openrouter` must be set)
 - `/summarize` - Summarize the current text channel or thread and gather insights into a single summary thanks to Gemini 1.5 Flash's long context it can understand conversations even from the past decade!
 - `/mimic` - Mimics other users using webhook
 - `/voice` - Basic streaming audio functionality from YouTube, soundcloud and more!

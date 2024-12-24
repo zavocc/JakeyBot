@@ -1,7 +1,20 @@
+# Null cannot be used as a tool_name because discord.OptionChoice takes tool_name as optional argument
+- tool_name: disabled
+  ui_name: Disabled
 - tool_name: code_execution
   ui_name: Code Execution with Python
+- tool_name: artifacts
+  ui_name: Artifacts
 - tool_name: audio_editor
   ui_name: Audio Editor with EzAudio
+- tool_name: bing_search
+  ui_name: Browse with Bing
+- tool_name: canvas
+  ui_name: Canvas
+- tool_name: github_file_tool
+  ui_name: GitHub
+- tool_name: google_search
+  ui_name: Grounding with Google Search
 - tool_name: image_generator
   ui_name: Image Generator with Stable Diffusion 3.5
 - tool_name: image_to_linedrawing

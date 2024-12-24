@@ -2,6 +2,7 @@ from discord.ext import commands
 from discord import Member, DiscordException
 from os import environ
 import discord
+import logging
 
 class Misc(commands.Cog):
     """Use my other utilities here that can help make your server more active and entertaining"""
@@ -50,7 +51,7 @@ class Misc(commands.Cog):
         elif isinstance(error, commands.ApplicationCommandInvokeError):
             await ctx.respond("⚠️ Please input a member")
         else:
-            raise error
+            logging.error("An error has occurred while executing mimic command, reason: ", exc_info=True)
 
 def setup(bot):
     bot.add_cog(Misc(bot))
