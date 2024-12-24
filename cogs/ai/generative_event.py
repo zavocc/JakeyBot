@@ -198,7 +198,7 @@ class BaseChat():
                 elif isinstance(_error, ToolsUnavailable):
                     await prompt_message.reply(f"{_error.message}")
                 elif isinstance(_error, SafetyFilterError):
-                    await prompt_message.reply(f"🤬 I detected unsafe content in your prompt, please rephrase your question")
+                    await prompt_message.reply(f"🤬 I detected unsafe content in your prompt, reason: `{_error.reason}`. Please rephrase your question")
                 else:
                     await prompt_message.reply(f"❌ Sorry, I couldn't answer your question at the moment, check console logs. What exactly happened: **`{type(_error).__name__}`**")
 

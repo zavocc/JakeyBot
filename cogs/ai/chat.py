@@ -90,7 +90,7 @@ class Chat(commands.Cog):
         elif isinstance(_error, ToolsUnavailable):
             await ctx.respond(f"{_error.message}")
         elif isinstance(_error, SafetyFilterError):
-            await ctx.respond(f"🤬 I detected unsafe content in your prompt, please rephrase your question")
+            await ctx.respond(f"🤬 I detected unsafe content in your prompt, reason: `{_error.reason}`. Please rephrase your question")
         else:
             await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, check console logs. What exactly happened: **`{type(_error).__name__}`**")
 

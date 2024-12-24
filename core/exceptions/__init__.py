@@ -15,7 +15,8 @@ class ToolsUnavailable(ModuleNotFoundError):
         self.message = message
 
 class SafetyFilterError(Exception):
-    pass
+    def __init__(self, reason=None):
+        self.reason = reason
 
 
 __all__ = [

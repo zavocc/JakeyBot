@@ -225,9 +225,10 @@ class Completions(APIParams):
                 logging.error("2nd try: I think I found a problem related to the request: %s", e.message)
                 raise e
 
-        # Check if the response was blocked due to safety
-        if _response.candidates[0].finish_reason == "SAFETY":
-            raise SafetyFilterError
+        # Check if the response was blocked due to safety and other reasons than STOP
+        # https://ai.google.dev/api/generate-content#FinishReason
+        if _response.candidates[0].finish_reason != "STOP":
+            raise SafetyFilterError(reason=_response.candidates[0].finish_reason)
 
         # First candidate response -> (Content) pydantic model object used for chat context of the model
         _candidateContentResponse = _response.candidates[0].content
