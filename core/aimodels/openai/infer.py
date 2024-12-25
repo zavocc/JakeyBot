@@ -97,6 +97,7 @@ class Completions:
 
         # When O1 model is used, set reasoning effort to medium
         # Since higher can be costly and lower performs similarly to GPT-4o 
+        _interstitial = None
         if "o1" in self._model_name:
             _interstitial = await self._discord_method_send("🔍 Used O1 model, please wait while I'm thinking...")
             _params["reasoning_effort"] = "medium"
