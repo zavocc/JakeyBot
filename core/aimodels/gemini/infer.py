@@ -181,7 +181,10 @@ class Completions(APIParams):
             if _Tool.tool_name == "code_execution":
                 _tool_schema = [types.Tool(code_execution=types.ToolCodeExecution())]
             else:
-                _tool_schema = [types.Tool(function_declarations=[_Tool.tool_schema])]
+                if type(_Tool.tool_schema) == list:
+                    _tool_schema = [types.Tool(function_declarations=_Tool.tool_schema)]
+                else:
+                    _tool_schema = [types.Tool(function_declarations=[_Tool.tool_schema])]
         else:
             _tool_schema = None
 
@@ -296,7 +299,11 @@ class Completions(APIParams):
             _toHalt = False
             for _invokes in _toolInvoke:
                 try:
-                    if not hasattr(_Tool, "_tool_function"):
+                    if hasattr(_Tool, "_tool_function"):
+                        _toExec = getattr(_Tool, "_tool_function")
+                    elif hasattr(_Tool, f"_tool_function_{_invokes.name}"):
+                        _toExec = getattr(_Tool, f"_tool_function_{_invokes.name}")
+                    else:
                         logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s", e)
                         raise ToolsUnavailable(f"⚠️ An error has occurred while calling tools, please try again later or choose another tool")
             
@@ -309,7 +316,7 @@ class Completions(APIParams):
                         }
                     else:
                         _toolResult = {
-                            "toolResult": (await _Tool._tool_function(**_invokes.args)),
+                            "toolResult": (await _toExec(**_invokes.args)),
                             "tool_args": _invokes.args
                         }
                 # For other exceptions, log the error and add it as part of the chat thread
