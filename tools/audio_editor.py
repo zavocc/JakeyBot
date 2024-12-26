@@ -13,28 +13,30 @@ class Tool:
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-        self.tool_schema = {
-            "name": "audio_editor",
-            "description": "Edit audio, simply provide the description for editing, and EzAudio will do the rest",
-            "parameters": {
-                "type": "OBJECT",
-                "properties": {
-                    "discord_attachment_url": {
-                        "type": "STRING"
+        self.tool_schema = [
+            {
+                "name": "audio_editor",
+                "description": "Edit audio, simply provide the description for editing, and EzAudio will do the rest",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "discord_attachment_url": {
+                            "type": "STRING"
+                        },
+                        "prompt": {
+                            "type": "STRING"
+                        },
+                        "edit_start_in_seconds": {
+                            "type": "NUMBER"
+                        },
+                        "edit_length_in_seconds": {
+                            "type": "NUMBER"
+                        }
                     },
-                    "prompt": {
-                        "type": "STRING"
-                    },
-                    "edit_start_in_seconds": {
-                        "type": "NUMBER"
-                    },
-                    "edit_length_in_seconds": {
-                        "type": "NUMBER"
-                    }
-                },
-                "required": ["discord_attachment_url", "prompt"]
+                    "required": ["discord_attachment_url", "prompt"]
+                }
             }
-        }
+        ]
 
     async def _tool_function(self, discord_attachment_url: str, prompt: str, edit_start_in_seconds: int = 3, edit_length_in_seconds: int = 5):
         # Validate parameters

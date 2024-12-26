@@ -11,19 +11,21 @@ class Tool:
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-        self.tool_schema = {
-            "name": "image_generator",
-            "description": "Generate or restyle images using natural language or from description",
-            "parameters": {
-                "type": "OBJECT",
-                "properties": {
-                    "image_description": {
-                        "type": "STRING"
-                    }
-                },
-                "required": ["image_description"]
+        self.tool_schema = [
+            {
+                "name": "image_generator",
+                "description": "Generate or restyle images using natural language or from description",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "image_description": {
+                            "type": "STRING"
+                        }
+                    },
+                    "required": ["image_description"]
+                }
             }
-        }
+        ]
 
     # Image generator
     async def _tool_function(self, image_description: str):

@@ -10,22 +10,24 @@ class Tool:
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-        self.tool_schema = {
-            "name": "youtube",
-            "description": "Summarize and gather insights from a YouTube video.",
-            "parameters": {
-                "type": "OBJECT",
-                "properties": {
-                    "query": {
-                        "type": "STRING"
+        self.tool_schema = [
+            {
+                "name": "youtube",
+                "description": "Summarize and gather insights from a YouTube video.",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "query": {
+                            "type": "STRING"
+                        },
+                        "n_results": {
+                            "type": "INTEGER",
+                        },
                     },
-                    "n_results": {
-                        "type": "INTEGER",
-                    },
-                },
-                "required": ["query"]
+                    "required": ["query"]
+                }
             }
-        }
+        ]
     
     async def _tool_function(self, query: str, n_results: int = 10):
         # Must not be above 50

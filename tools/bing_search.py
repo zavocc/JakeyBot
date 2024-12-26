@@ -11,28 +11,45 @@ class Tool:
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-        self.tool_schema = {
-            "name": "bing_search",
-            "description": "Search and fetch latest information and pull videos with Bing.",
-            "parameters": {
-                "type": "OBJECT",
-                "properties": {
-                    "query": {
-                        "type": "STRING"
+        self.tool_schema = [ 
+            {
+                "name": "bing_search",
+                "description": "Search and fetch latest information and pull videos with Bing.",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "query": {
+                            "type": "STRING"
+                        },
+                        "n_results": {
+                            "type": "INTEGER",
+                        },
+                        "show_youtube_videos": {
+                            "type": "BOOLEAN"
+                        }
                     },
-                    "n_results": {
-                        "type": "INTEGER",
+                    "required": ["query"]
+                }
+            },
+            {
+                "name": "url_extractor",
+                "description": "Extract URLs to summarize",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "urls": {
+                            "type": "ARRAY",
+                            "items": {
+                                "type": "STRING"
+                            }
+                        }
                     },
-                    "show_youtube_videos": {
-                        "type": "BOOLEAN"
-                    }
-                },
-                "required": ["query"]
+                    "required": ["urls"]
+                }
             }
-        }
+        ]
 
-    
-    async def _tool_function(self, query: str, n_results: int = 10, show_youtube_videos: bool = False):
+    async def _tool_function_bing_search(self, query: str, n_results: int = 10, show_youtube_videos: bool = False):
         # Must not be 50
         if n_results > 50:
             n_results = 10
@@ -138,4 +155,39 @@ class Tool:
         await self.method_send(embed=_sembed)
 
         await _imsg.delete()
+        return _output
+
+
+    # URL Extractor
+    async def _tool_function_url_extractor(self, urls: list):
+        # check for the aiohttp client session
+        if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
+            raise Exception("aiohttp client session for get requests not initialized and URL extraction cannot continue, please check the bot configuration")
+        
+        _session: aiohttp.ClientSession = self.discord_bot._aiohttp_main_client_session
+
+        # Download the URLs
+        _output = []
+        for _url in urls:
+            async with _session.get(_url) as _response:
+                # Check if the response is successful
+                if _response.status != 200:
+                    _output.append({
+                        "url": _url,
+                        "content": f"Failed to fetch URL with status code {_response.status}"
+                    })
+
+                # Check if its a binary file which must error out
+                if "application/octet-stream" in _response.headers["Content-Type"] and "Content-Disposition" in _response.headers:
+                    _output.append({
+                        "url": _url,
+                        "content": "Binary file, cannot extract text"
+                    })
+
+                _data = await _response.text()
+                _output.append({
+                    "url": _url,
+                    "content": _data
+                })
+
         return _output

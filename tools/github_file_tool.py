@@ -11,34 +11,36 @@ class Tool:
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-        self.tool_schema = {
-            "name": "github_file_tool",
-            "description": "Retrieve file content from a GitHub repository or set of files, brainstorm and debug code.",
-            "parameters": {
-                "type": "OBJECT",
-                "properties": {
-                    "filepath": {
-                        "type": "OBJECT",
-                        "properties": {
-                            "files": {
-                                "type": "ARRAY",
-                                "items": {
-                                    "type": "STRING"
+        self.tool_schema = [
+            {
+                "name": "github_file_tool",
+                "description": "Retrieve file content from a GitHub repository or set of files, brainstorm and debug code.",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "filepath": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "files": {
+                                    "type": "ARRAY",
+                                    "items": {
+                                        "type": "STRING"
+                                    }
                                 }
-                            }
+                            },
+                            "required": ["files"]
                         },
-                        "required": ["files"]
+                        "repo": {
+                            "type": "STRING"
+                        },
+                        "branch": {
+                            "type": "STRING"
+                        }
                     },
-                    "repo": {
-                        "type": "STRING"
-                    },
-                    "branch": {
-                        "type": "STRING"
-                    }
-                },
-                "required": ["filepath", "repo"]
+                    "required": ["filepath", "repo"]
+                }
             }
-        }
+        ]
     
     async def _tool_function(self, filepath: dict, repo: str, branch: str = "master"):
         # Must initialize the aiohttp client session
