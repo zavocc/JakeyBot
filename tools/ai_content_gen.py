@@ -15,7 +15,7 @@ class Tool:
         self.tool_schema = [
             {
                 "name": "image_generator",
-                "description": "Generate or restyle images using natural language or from description",
+                "description": "Generate or restyle images using natural language or from description using Stable Diffusion 3.5",
                 "parameters": {
                     "type": "OBJECT",
                     "properties": {
@@ -28,7 +28,7 @@ class Tool:
             },
             {
                 "name": "audio_generator",
-                "description": "Generate audio from text",
+                "description": "Generate audio from text using Azure Text-to-Speech",
                 "parameters": {
                     "type": "OBJECT",
                     "properties": {
