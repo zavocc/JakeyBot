@@ -15,8 +15,6 @@
   ui_name: Grounding with Google Search
 - tool_name: ideation_tools
   ui_name: Ideation Tools
-- tool_name: image_generator
-  ui_name: Image Generator with Stable Diffusion 3.5
 - tool_name: image_to_linedrawing
   ui_name: Image to Line drawing
 - tool_name: internet
