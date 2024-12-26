@@ -1,7 +1,6 @@
 from discord.ext import bridge, commands
 from dotenv import load_dotenv
 from google import genai
-from google.genai import types
 from inspect import cleandoc
 from os import chdir, mkdir, environ
 from pathlib import Path
@@ -10,6 +9,7 @@ import aiofiles.os
 import discord
 import importlib
 import logging
+import re
 import yaml
 
 # Go to project root directory
@@ -112,29 +112,34 @@ async def on_ready():
 # ON USER MESSAGE
 ###############################################
 @bot.event
-async def on_message(message):
+async def on_message(message: discord.Message):
     # https://discord.com/channels/881207955029110855/1146373275669241958
     await bot.process_commands(message)
 
     if message.author == bot.user:
        return
     
-    if bot.user.mentioned_in(message) and message.content == f"<@{bot.user.id}>".strip():
-        await message.channel.send(cleandoc(f"""Hello <@{message.author.id}>! I am **{bot.user.name}** ✨
-                                            I am an AI bot and I can also make your server fun and entertaining! 🎉
+    # Check if the bot was only mentioned without any content or image attachments
+    # On generative ask command, the same logic is used but it will just invoke return and the bot will respond with this
+    if bot.user.mentioned_in(message) \
+        and not message.attachments \
+        and not re.sub(f"<@{bot.user.id}>", '', message.content).strip():
+        await message.channel.send(
+            cleandoc(f"""Hello <@{message.author.id}>! I am **{bot.user.name}** ✨
+                    I am an AI bot and I can also make your server fun and entertaining! 🎉
 
-                                            You just pinged me, but what can I do for you? 🤔
-                                            
-                                            - You can ask me anything by typing **/ask** and get started or by mentioning me again but with a message
-                                            - You can access most of my useful commands with **/**slash commands or use `{bot.command_prefix}help` to see the list prefixed commands I have.
-                                            - You can access my apps by **tapping and holding any message** or **clicking the three-dots menu** and click **Apps** to see the list of apps I have
-                                            
-                                            You can ask me questions, such as:
-                                            - **@{bot.user.name}** How many R's in the word strawberry?  
-                                            - **/ask** `prompt:`Can you tell me a joke?  
-                                            - Hey **@{bot.user.name}** can you give me quotes for today?  
+                    You just pinged me, but what can I do for you? 🤔
+                    
+                    - You can ask me anything by typing **/ask** and get started or by mentioning me again but with a message
+                    - You can access most of my useful commands with **/**slash commands or use `{bot.command_prefix}help` to see the list prefixed commands I have.
+                    - You can access my apps by **tapping and holding any message** or **clicking the three-dots menu** and click **Apps** to see the list of apps I have
+                    
+                    You can ask me questions, such as:
+                    - **@{bot.user.name}** How many R's in the word strawberry?  
+                    - **/ask** `prompt:`Can you tell me a joke?  
+                    - Hey **@{bot.user.name}** can you give me quotes for today?  
 
-                                            If you have any questions, you can visit my [documentation or contact me here](https://zavocc.github.io)"""))
+                    If you have any questions, you can visit my [documentation or contact me here](https://zavocc.github.io)"""))
 
 
 with open('commands.yaml', 'r') as file:

@@ -22,16 +22,12 @@ class BaseChat():
     ###############################################
     # Events-based chat
     ###############################################
-    # This is a private function
-    async def ask_core(self, prompt: Message):
+    async def _ask(self, prompt: Message):
         # Check if SHARED_CHAT_HISTORY is enabled
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
             guild_id = prompt.guild.id if prompt.guild else prompt.author.id # Always fallback to ctx.author.id for DMs since ctx.guild is None
         else:
             guild_id = prompt.author.id
-
-        # Thinking message
-        _thinking_message = await prompt.channel.send("🤔 Determining what to do...")
 
         # Set default model
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
@@ -42,7 +38,7 @@ class BaseChat():
         _model_provider = _model.split("::")[0]
         _model_name = _model.split("::")[-1]
         if "/model:" in prompt.content:
-            await _thinking_message.edit(f"🔍 Using specific model")
+            _modelUsed = await prompt.channel.send(f"🔍 Using specific model")
             async for _model_selection in ModelsList.get_models_list_async():
                 _model_provider = _model_selection.split("::")[0]
                 _model_name = _model_selection.split("::")[-1]
@@ -50,17 +46,17 @@ class BaseChat():
                 # In this regex, we are using \s at the end since when using gpt-4o-mini, it will match with gpt-4o at first
                 # So, we are using \s|$ to match the end of the string and the suffix gets matched or if it's placed at the end of the string
                 if re.search(rf"\/model:{_model_name}(\s|$)", prompt.content):
-                    await _thinking_message.edit(content=f"🔍 Asking with specific model: **{_model_name}**")
+                    await _modelUsed.edit(content=f"🔍 Using model: **{_model_name}**")
                     break
             else:
                 _model_provider = _model.split("::")[0]
                 _model_name = _model.split("::")[-1]
-                await _thinking_message.edit(content=f"🔍 Asking with the default model: **{_model_name}**")
+                await _modelUsed.edit(content=f"🔍 Using model: **{_model_name}**")
     
         # Check for /chat:ephemeral
         _append_history = True
         if "/chat:ephemeral" in prompt.content:
-            await _thinking_message.edit("🔒 Ok the user wants me to not save this conversation so I will respect that")
+            await prompt.channel.send("🔒 This conversation is not saved and Jakey won't remember this")
             _append_history = False
       
         try:
@@ -84,14 +80,13 @@ class BaseChat():
             if not hasattr(_infer, "input_files"):
                 raise MultiModalUnavailable("🚫 This model cannot process file attachments, please try another model")
 
-            await _thinking_message.edit(f"📄 Processing the file: **{prompt.attachments[0].filename}**")
+            _processFileInterstitial = await prompt.channel.send(f"📄 Processing the file: **{prompt.attachments[0].filename}**")
             await _infer.input_files(attachment=prompt.attachments[0])
+            await _processFileInterstitial.edit(f"✅ Used: **{prompt.attachments[0].filename}**")
 
         ###############################################
         # Answer generation
         ###############################################
-        await _thinking_message.edit(f"⌛ Formulating an answer...")
-
         # Through capturing group, we can remove the mention and the model selection from the prompt at both in the middle and at the end
         _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/model:{_model_name}(\s|$)|\/chat:ephemeral(\s|$))", "", prompt.content).strip()
         # If we have attachments, also add the URL to the prompt so that it can be used for tools
@@ -106,9 +101,6 @@ class BaseChat():
         
         # Format the response
         _formatted_response = _result["answer"].rstrip()
-
-        # Delete the thinking message
-        await _thinking_message.delete()
 
         # Model usage and context size
         if len(_formatted_response) > 2000 and len(_formatted_response) < 4096:
@@ -158,11 +150,14 @@ class BaseChat():
 
         # Must be mentioned and check if it's not starts with prefix or slash command
         if prompt_message.guild is None or self.bot.user.mentioned_in(prompt_message):
+            # Ensure it must not be triggered by command prefix or slash command
             if prompt_message.content.startswith(self.bot.command_prefix) or prompt_message.content.startswith("/"):
                 return
             
-            # Check if the prompt is empty
-            if prompt_message.content == f"<@{self.bot.user.id}>".strip():
+            # Check if the bot was only mentioned without any content or image attachments
+            # If none, then on main.py event, proceed sending the introductory message
+            if not prompt_message.attachments \
+                and not re.sub(f"<@{self.bot.user.id}>", '', prompt_message.content).strip():
                 return
             
             # If the bot is mentioned through reply with mentions, also add its previous message as context
@@ -185,7 +180,7 @@ class BaseChat():
             # For now the entire function is under try 
             # Maybe this can be separated into another function
             try:
-                await self.ask_core(prompt_message)
+                await self._ask(prompt_message)
             except Exception as _error:
                 if isinstance(_error, genai_errors.ClientError) or isinstance(_error, genai_errors.ServerError):
                     await prompt_message.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: \n> {_error.message}")
