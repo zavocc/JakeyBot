@@ -1,5 +1,4 @@
 from discord.ext import bridge, commands
-from dotenv import load_dotenv
 from google import genai
 from inspect import cleandoc
 from os import chdir, mkdir, environ
@@ -7,6 +6,7 @@ from pathlib import Path
 import aiohttp
 import aiofiles.os
 import discord
+import dotenv
 import importlib
 import logging
 import re
@@ -16,7 +16,7 @@ import yaml
 chdir(Path(__file__).parent.resolve())
 
 # Load environment variables
-load_dotenv("dev.env")
+dotenv.load_dotenv("dev.env")
 
 # Logging
 logging.basicConfig(format='%(levelname)s %(asctime)s [%(filename)s:%(lineno)d - %(funcName)s()]: %(message)s', 

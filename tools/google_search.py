@@ -137,6 +137,10 @@ class Tool:
     
     # URL Extractor
     async def _tool_function_url_extractor(self, urls: list):
+        # Must be 5 or below else error out
+        if len(urls) > 5:
+            raise ValueError("URLs must be 10 or below")
+
         # check for the aiohttp client session
         if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
             raise Exception("aiohttp client session for get requests not initialized and URL extraction cannot continue, please check the bot configuration")
@@ -145,7 +149,9 @@ class Tool:
 
         # Download the URLs
         _output = []
+        _imsg = await self.method_send("🔍 Extracting URLs")
         for _url in urls:
+            _imsg = await _imsg.edit(f"🔍 Extracting URL: **{_url}**")
             async with _session.get(_url) as _response:
                 # Check if the response is successful
                 if _response.status != 200:
@@ -166,6 +172,10 @@ class Tool:
                     "url": _url,
                     "content": _data
                 })
+
+        # Delete the message
+        if _imsg:
+            await _imsg.delete()
 
         return _output
 

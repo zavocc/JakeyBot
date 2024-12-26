@@ -69,8 +69,6 @@ class Tool:
 
         # Make a request
         async with _session.get(_endpoint, headers=_header, params=_params) as _response:
-            _imsg = await self.method_send(f"🔍 Searching for **{query}**")
-
             # Raise an exception
             try:
                 _response.raise_for_status()
@@ -92,8 +90,6 @@ class Tool:
             "results": []
         }]
         for _results in _data:
-            await _imsg.edit(f"🔍 Reading **{_results["name"]}**")
-
             # Append the data
             _output[0]["results"].append({
                 "title": _results["name"],
@@ -107,23 +103,17 @@ class Tool:
             _endpoint_video = "https://api.bing.microsoft.com/v7.0/videos/search"
 
             async with _session.get(_endpoint_video, headers=_header, params=_params) as _response:
-                await _imsg.edit(f"🔍 Searching for **{query}** videos")
-
                 try:
                     _response.raise_for_status()
                 except aiohttp.ClientConnectionError:
                     _output[0]["video_results"] = "No video results found"
-                    await _imsg.delete()
                     return _output
                 
                 _data = (await _response.json())["value"]
                 if not _data:
                     _output[0]["video_results"] = "No video results found"
-                    await _imsg.delete()
                     return _output
-                
-                await _imsg.edit("📽️ Let me look some relevant videos for you")
-                
+                        
                 # Add additional guidelines
                 _output[0]["video_result_guidelines"] = "Same as the former guidelines but only rank relevant YouTube videos to the user!"
                 _output[0]["video_result_rules"] = "You can only choose one YouTube video and put it at the end of your responses so it will be displayed to the user better."
@@ -153,13 +143,15 @@ class Tool:
         # Add footer about Microsoft Privacy Statement
         _sembed.set_footer(text="Used Bing search tool to fetch results, https://www.microsoft.com/en-us/privacy/privacystatement")
         await self.method_send(embed=_sembed)
-
-        await _imsg.delete()
         return _output
 
 
     # URL Extractor
     async def _tool_function_url_extractor(self, urls: list):
+        # Must be 5 or below else error out
+        if len(urls) > 5:
+            raise ValueError("URLs must be 10 or below")
+        
         # check for the aiohttp client session
         if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
             raise Exception("aiohttp client session for get requests not initialized and URL extraction cannot continue, please check the bot configuration")
@@ -168,7 +160,9 @@ class Tool:
 
         # Download the URLs
         _output = []
+        _imsg = await self.method_send("🔍 Extracting URLs")
         for _url in urls:
+            _imsg = await _imsg.edit(f"🔍 Extracting URL: **{_url}**")
             async with _session.get(_url) as _response:
                 # Check if the response is successful
                 if _response.status != 200:
@@ -189,5 +183,9 @@ class Tool:
                     "url": _url,
                     "content": _data
                 })
+
+        # Delete the message
+        if _imsg:
+            await _imsg.delete()
 
         return _output
