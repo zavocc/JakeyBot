@@ -1,10 +1,7 @@
 from os import environ
-import aiofiles
-import aiofiles.os
 import aiohttp
 import discord
 import io
-import random
 
 # Function implementations
 class Tool:

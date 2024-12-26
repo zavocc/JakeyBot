@@ -27,20 +27,6 @@ class ModelsList:
                 continue
 
             yield discord.OptionChoice(f"{model['name']} - {model['description']}", model["model"])
-
-    @staticmethod
-    def get_openrouter_models_list():
-        # Load the models list from YAML file
-        with open("data/openrouter_models.yaml", "r") as models:
-            _internal_model_data = yaml.safe_load(models)
-
-        # Iterate through the models and yield each as a discord.OptionChoice
-        for model in _internal_model_data:
-            # Check if the model dict has hide_ui key
-            if model.get("hide_ui") is not None and model.get("hide_ui") == True:
-                continue
-
-            yield discord.OptionChoice(f"{model['name']} - {model['description']}", model["model"])
         
     @staticmethod
     def get_tools_list():

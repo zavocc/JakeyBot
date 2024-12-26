@@ -204,8 +204,7 @@ class Chat(commands.Cog):
     )
     @discord.option(
         "model",
-        description="Choose default model for the conversation",
-        choices=ModelsList.get_openrouter_models_list(),
+        description="Choose models at https://openrouter.ai/models",
         required=True
     )
     async def openrouter(self, ctx, model: str):
