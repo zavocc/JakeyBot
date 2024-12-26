@@ -181,6 +181,9 @@ class Completions(APIParams):
             if _tool_selection_name == "code_execution":
                 _tool_schema = [types.Tool(code_execution=types.ToolCodeExecution())]
             else:
+                # Check if the tool schema is a list or not
+                # Since a list of tools could be a collection of tools, sometimes it's just a single tool
+                # But depends on the tool implementation
                 if type(_Tool.tool_schema) == list:
                     _tool_schema = [types.Tool(function_declarations=_Tool.tool_schema)]
                 else:
