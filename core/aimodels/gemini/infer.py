@@ -137,8 +137,8 @@ class Completions(APIParams):
     # Chat Completion
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Tools
+        _tool_selection_name = await db_conn.get_config(guild_id=self._guild_id)
         try:
-            _tool_selection_name = await db_conn.get_config(guild_id=self._guild_id)
             if _tool_selection_name is None:
                 _Tool = None
             else:
@@ -178,7 +178,7 @@ class Completions(APIParams):
 
         # Check if tool is code execution
         if _Tool:
-            if _Tool.tool_name == "code_execution":
+            if _tool_selection_name == "code_execution":
                 _tool_schema = [types.Tool(code_execution=types.ToolCodeExecution())]
             else:
                 if type(_Tool.tool_schema) == list:

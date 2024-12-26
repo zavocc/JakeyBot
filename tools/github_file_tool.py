@@ -6,14 +6,13 @@ import base64
 # Function implementations
 class Tool:
     tool_human_name = "GitHub"
-    tool_name = "github_file_tool"
     def __init__(self, method_send, discord_ctx, discord_bot):
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
         self.tool_schema = {
-            "name": self.tool_name,
+            "name": "github_file_tool",
             "description": "Retrieve file content from a GitHub repository or set of files, brainstorm and debug code.",
             "parameters": {
                 "type": "OBJECT",

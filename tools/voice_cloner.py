@@ -7,7 +7,6 @@ import importlib
 # Function implementations
 class Tool:
     tool_human_name = "Voice Cloner"
-    tool_name = "voice_cloner"
 
     def __init__(self, method_send, discord_ctx, discord_bot):
         self.method_send = method_send
@@ -15,7 +14,7 @@ class Tool:
         self.discord_bot = discord_bot
 
         self.tool_schema = {
-            "name": self.tool_name,
+            "name": "voice_cloner",
             "description": "Clone voices and perform TTS tasks from the given audio files",
             "parameters": {
                 "type": "OBJECT",

@@ -1,13 +1,12 @@
 class Tool:
     tool_human_name = "Canvas"
-    tool_name = "canvas"
     def __init__(self, method_send, discord_ctx, discord_bot):
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
         self.tool_schema = {
-            "name": self.tool_name,
+            "name": "canvas",
             "description": "Ideate, brainstorm, and create draft content inside Discord thread to continue conversation with specified topic and content",
             "parameters": {
                 "type": "OBJECT",

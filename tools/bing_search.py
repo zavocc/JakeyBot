@@ -6,14 +6,13 @@ import discord
 # Function implementations
 class Tool:
     tool_human_name = "Browse with Bing"
-    tool_name = "bing_search"
     def __init__(self, method_send, discord_ctx, discord_bot):
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
         self.tool_schema = {
-            "name": self.tool_name,
+            "name": "bing_search",
             "description": "Search and fetch latest information and pull videos with Bing.",
             "parameters": {
                 "type": "OBJECT",

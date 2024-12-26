@@ -3,14 +3,13 @@ import discord
 import io
 class Tool:
     tool_human_name = "Artifacts"
-    tool_name = "artifacts"
     def __init__(self, method_send, discord_ctx, discord_bot):
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
         self.tool_schema = {
-            "name": self.tool_name,
+            "name": "artifacts",
             "description": "Create convenient downloadable artifacts when writing code, markdown, text, or any other human readable content. When enabled, responses with code snippets and other things that demands file operations implicit or explictly will be saved as artifacts as Discord attachment.",
             "parameters": {
                 "type": "OBJECT",
