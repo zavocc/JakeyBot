@@ -303,7 +303,7 @@ class Completions(APIParams):
             for _invokes in _toolInvoke:
                 try:
                     # Edit the interstitial message
-                    await _interstitial.edit(f"✅ Executing tool: **{_invokes.name}**")
+                    await _interstitial.edit(f"⚙️ Executing tool: **{_invokes.name}**")
 
                     if hasattr(_Tool, "_tool_function"):
                         _toExec = getattr(_Tool, "_tool_function")
@@ -349,6 +349,7 @@ class Completions(APIParams):
             _chat_thread.append(types.Content(parts=_toolParts).model_dump())
             
             # Re-run the model
+            await _interstitial.edit(f"✅ Generating a response with tool result from: **{_Tool.tool_human_name}**")
             _response = await self._gemini_api_client.aio.models.generate_content(
                 model=self._model_name, 
                 config=types.GenerateContentConfig(

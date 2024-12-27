@@ -36,5 +36,5 @@ class ModelsList:
 
         # Iterate through the tools and yield each as a discord.OptionChoice
         for tool in _tools_list:
-            yield discord.OptionChoice(tool["ui_name"], tool['tool_name'])
+            yield discord.OptionChoice(tool["ui_name"], tool['tool_module_name'])
         
