@@ -127,17 +127,13 @@ class Completions:
                 raise MultiModalUnavailable(f"🚫 The model **{self._model_name}** doesn't support file attachments, choose another model")
 
         # Params
-        _params = {
-            "messages": _chat_thread,
-            "model": self._model_name,
-            "max_tokens": 4096,
-            "temperature": 0.7,
-            "api_key": environ.get("OPENROUTER_API_KEY")
-        }
-
+        litellm.api_key = environ.get("OPENROUTER_API_KEY")
         # Generate completion
         _response = await litellm.acompletion(
-            **_params
+            messages=_chat_thread,
+            model=self._model_name,
+            max_tokens=4096,
+            temperature=0.7
         )
 
         # AI response

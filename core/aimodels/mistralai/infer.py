@@ -78,12 +78,12 @@ class Completions:
             _chat_thread[-1]["content"].append(self._file_data)
 
         # Generate completion
+        litellm.api_key = environ.get("MISTRAL_API_KEY")
         _response = await litellm.acompletion(
             messages=_chat_thread,
             model=self._model_name,
             max_tokens=4096,
-            temperature=0.7,
-            api_key=environ.get("MISTRAL_API_KEY")
+            temperature=0.7
         )
 
         # AI response

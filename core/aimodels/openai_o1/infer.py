@@ -71,12 +71,14 @@ class Completions:
             _chat_thread[-1]["content"].append(self._file_data)
 
         # Generate completion
+        litellm.api_key = environ.get("OPENAI_API_KEY")
+        if self._oai_endpoint:
+            litellm.api_base = self._oai_endpoint
         _response = await litellm.acompletion(
             messages=_chat_thread,
             model=self._model_name,
             max_tokens=12000,
             base_url=self._oai_endpoint,
-            api_key=environ.get("OPENAI_API_KEY")
         )
 
         # AI response
