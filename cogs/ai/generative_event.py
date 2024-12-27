@@ -146,28 +146,31 @@ class BaseChat():
         if _append_history:
             await _infer.save_to_history(db_conn=self.DBConn, chat_thread=_result["chat_thread"])
 
-    async def on_message(self, prompt_message: Message):
+        # Remove the reaction
+        await prompt.remove_reaction("🤖", self.bot.user)
+
+    async def on_message(self, pmessage: Message):
         # Ignore messages from the bot itself
-        if prompt_message.author.id == self.bot.user.id:
+        if pmessage.author.id == self.bot.user.id:
             return
 
         # Must be mentioned and check if it's not starts with prefix or slash command
-        if prompt_message.guild is None or self.bot.user.mentioned_in(prompt_message):
+        if pmessage.guild is None or self.bot.user.mentioned_in(pmessage):
             # Ensure it must not be triggered by command prefix or slash command
-            if prompt_message.content.startswith(self.bot.command_prefix) or prompt_message.content.startswith("/"):
+            if pmessage.content.startswith(self.bot.command_prefix) or pmessage.content.startswith("/"):
                 return
             
             # Check if the bot was only mentioned without any content or image attachments
             # If none, then on main.py event, proceed sending the introductory message
-            if not prompt_message.attachments \
-                and not re.sub(f"<@{self.bot.user.id}>", '', prompt_message.content).strip():
+            if not pmessage.attachments \
+                and not re.sub(f"<@{self.bot.user.id}>", '', pmessage.content).strip():
                 return
             
             # If the bot is mentioned through reply with mentions, also add its previous message as context
             # So that the bot will reply to that query without quoting the message providing relevant response
-            if prompt_message.reference:
-                _context_message = await prompt_message.channel.fetch_message(prompt_message.reference.message_id)
-                prompt_message.content = inspect.cleandoc(
+            if pmessage.reference:
+                _context_message = await pmessage.channel.fetch_message(pmessage.reference.message_id)
+                pmessage.content = inspect.cleandoc(
                     f"""# Replying to referenced message excerpt from {_context_message.author.display_name} (username: @{_context_message.author.name}):
                     <|begin|>\n
                     {_context_message.content}
@@ -175,28 +178,28 @@ class BaseChat():
 
                     ## Actual question, answer this prompt with the referenced message context mentioned above:
                     <|begin|>\n
-                    {prompt_message.content}
+                    {pmessage.content}
                     \n<|end|>""".strip()
                 )
-                await prompt_message.channel.send(f"✅ Referenced message: {_context_message.jump_url}")
+                await pmessage.channel.send(f"✅ Referenced message: {_context_message.jump_url}")
 
             # For now the entire function is under try 
             # Maybe this can be separated into another function
             try:
-                await self._ask(prompt_message)
+                await self._ask(pmessage)
             except Exception as _error:
                 if isinstance(_error, genai_errors.ClientError) or isinstance(_error, genai_errors.ServerError):
-                    await prompt_message.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: \n> {_error.message}")
+                    await pmessage.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: \n> {_error.message}")
                 elif isinstance(_error, HistoryDatabaseError):
-                    await prompt_message.reply(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
+                    await pmessage.reply(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
                 elif isinstance(_error, MultiModalUnavailable) or isinstance(_error, ModelUnavailable) or isinstance(_error, ToolsUnavailable):
-                    await prompt_message.reply(f"{_error.message}")
+                    await pmessage.reply(f"{_error.message}")
                 elif isinstance(_error, SafetyFilterError):
-                    await prompt_message.reply(f"🤬 I detected unsafe content in your prompt, reason: `{_error.reason}`. Please rephrase your question")
+                    await pmessage.reply(f"🤬 I detected unsafe content in your prompt, reason: `{_error.reason}`. Please rephrase your question")
                 else:
                     # Handles all errors including from LiteLLM
                     # https://docs.litellm.ai/docs/exception_mapping#litellm-exceptions
-                    await prompt_message.reply(f"❌ Sorry, I couldn't answer your question at the moment, check console logs or change another model. What exactly happened: **`{type(_error).__name__}`**")
+                    await pmessage.reply(f"❌ Sorry, I couldn't answer your question at the moment, check console logs or change another model. What exactly happened: **`{type(_error).__name__}`**")
 
                 # Log the error
                 logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)
