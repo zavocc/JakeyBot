@@ -83,16 +83,14 @@ class Chat(commands.Cog):
             await ctx.respond(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: \n> {_error.message}")
         elif isinstance(_error, HistoryDatabaseError):
             await ctx.respond(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
-        elif isinstance(_error, MultiModalUnavailable):
-            await ctx.respond(f"{_error.message}")
-        elif isinstance(_error, ModelUnavailable):
-            await ctx.respond(f"{_error.message}")
-        elif isinstance(_error, ToolsUnavailable):
+        elif isinstance(_error, MultiModalUnavailable) or isinstance(_error, ModelUnavailable) or isinstance(_error, ToolsUnavailable):
             await ctx.respond(f"{_error.message}")
         elif isinstance(_error, SafetyFilterError):
             await ctx.respond(f"🤬 I detected unsafe content in your prompt, reason: `{_error.reason}`. Please rephrase your question")
         else:
-            await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, check console logs. What exactly happened: **`{type(_error).__name__}`**")
+            # Handles all errors including from LiteLLM
+            # https://docs.litellm.ai/docs/exception_mapping#litellm-exceptions
+            await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, check console logs or change another model. What exactly happened: **`{type(_error).__name__}`**")
 
         # Log the error
         logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)

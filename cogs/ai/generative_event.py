@@ -29,6 +29,9 @@ class BaseChat():
         else:
             guild_id = prompt.author.id
 
+        # Add reaction to the message to acknowledge the message
+        await prompt.add_reaction("🤖")
+
         # Set default model
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
         if _model is None:
@@ -186,16 +189,14 @@ class BaseChat():
                     await prompt_message.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: \n> {_error.message}")
                 elif isinstance(_error, HistoryDatabaseError):
                     await prompt_message.reply(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
-                elif isinstance(_error, MultiModalUnavailable):
-                    await prompt_message.reply(f"{_error.message}")
-                elif isinstance(_error, ModelUnavailable):
-                    await prompt_message.reply(f"{_error.message}")
-                elif isinstance(_error, ToolsUnavailable):
+                elif isinstance(_error, MultiModalUnavailable) or isinstance(_error, ModelUnavailable) or isinstance(_error, ToolsUnavailable):
                     await prompt_message.reply(f"{_error.message}")
                 elif isinstance(_error, SafetyFilterError):
                     await prompt_message.reply(f"🤬 I detected unsafe content in your prompt, reason: `{_error.reason}`. Please rephrase your question")
                 else:
-                    await prompt_message.reply(f"❌ Sorry, I couldn't answer your question at the moment, check console logs. What exactly happened: **`{type(_error).__name__}`**")
+                    # Handles all errors including from LiteLLM
+                    # https://docs.litellm.ai/docs/exception_mapping#litellm-exceptions
+                    await prompt_message.reply(f"❌ Sorry, I couldn't answer your question at the moment, check console logs or change another model. What exactly happened: **`{type(_error).__name__}`**")
 
                 # Log the error
                 logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)
