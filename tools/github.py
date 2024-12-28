@@ -64,6 +64,58 @@ class Tool:
             }
         ]
     
+    # A method to extract relevant result from GitHub API to only extract the necessary information
+    # https://docs.github.com/en/rest/search/search?apiVersion=2022-11-28#about-search
+    async def _search_extractor(self, search_type: str, search_result: dict):
+        _search_results = [
+            {
+                "total_count": search_result["total_count"],
+                "incomplete_results": search_result["incomplete_results"],
+                "guidelines": "As a GitHub Search Agent, you must format the search results [with hyperlinks](to://format/nicely/the/links)",
+                "ranking_guidelines": "Rank the search results based on the score provided by the GitHub API"
+            }
+        ]
+
+        if search_type == "CODE":
+            for _result in search_result["items"]:
+                _search_results.append({
+                    "name": _result["name"],
+                    "path": _result["path"],
+                    "url": _result["html_url"],
+                    "repository": _result["repository"]["full_name"],
+                    "score": _result["score"]
+                })
+        elif search_type == "COMMITS":
+            for _result in search_result["items"]:
+                _search_results.append({
+                    "commit": _result["commit"]["message"],
+                    "commit_author": _result["commit"]["author"],
+                    "commiter": _result["commit"]["committer"],
+                    "message": _result["commit"]["message"],
+                    "repository": _result["repository"]["full_name"],
+                    "url": _result["html_url"],
+                    "score": _result["score"]
+                })
+        elif search_type == "REPOSITORIES":
+            for _result in search_result["items"]:
+                _search_results.append({
+                    "name": _result["name"],
+                    "url": _result["html_url"],
+                    "description": _result["description"],
+                    "is_fork": _result["fork"],
+                    "score": _result["score"]
+                })
+        elif search_type == "ISSUE" or search_type == "PR":
+            for _result in search_result["items"]:
+                _search_results.append({
+                    "title": _result["title"],
+                    "repository": _result["repository"]["full_name"],
+                    "url": _result["html_url"],
+                    "score": _result["score"]
+                })
+        
+        return _search_results
+
     async def _tool_function_github_file_tool(self, files: list, repo: str, branch: str = "master"):
         # Must initialize the aiohttp client session
         if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
@@ -201,14 +253,17 @@ class Tool:
         # Search
         await self.method_send(f"🔍 Using GitHub API to search for **{query}**")
 
-        # We cap the search results to 3 so that LLM doesn't get overwhelmed
-        async with _session.get(_search_endpoint, headers=_headers, params={"q": html.escape(query), "page": page, "per_page": 3}) as _response:
+        # We cap the search results to 7 so that LLM doesn't get overwhelmed
+        async with _session.get(_search_endpoint, headers=_headers, params={"q": html.escape(query), "page": page, "per_page": 7}) as _response:
             # Check if the response is successful
             if _response.status != 200:
                 raise Exception(f"GitHub API returned status code {_response.status}")
             
             # Parse the response
             _searchResult = await _response.json()
+
+            # Extract the search results
+            _searchResult = await self._search_extractor(search_type, _searchResult)
 
         # Check if the search result is empty
         if not _searchResult:
