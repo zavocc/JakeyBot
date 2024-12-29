@@ -109,8 +109,10 @@ class Tool:
             for _result in search_result["items"]:
                 _search_results.append({
                     "title": _result["title"],
-                    "repository": _result["repository"]["full_name"],
+                    "body": _result["body"],
                     "url": _result["html_url"],
+                    "state": _result["state"],
+                    "locked": _result["locked"],
                     "score": _result["score"]
                 })
         
