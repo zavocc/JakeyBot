@@ -6,31 +6,47 @@ import discord
 # Function implementations
 class Tool:
     tool_human_name = "Google Search"
-    tool_name = "google_search"
     def __init__(self, method_send, discord_ctx, discord_bot):
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-        self.tool_schema = {
-            "name": self.tool_name,
-            "description": "Search and fetch latest information, get detailed and verifiable answers with Google Search. Use Google Search to provide up-to-date and quality verifiable answers.",
-            "parameters": {
-                "type": "OBJECT",
-                "properties": {
-                    "query": {
-                        "type": "STRING"
+        self.tool_schema = [
+            {
+                "name": "google_search",
+                "description": "Search and fetch latest information, get detailed and verifiable answers with Google Search. Use Google Search to provide up-to-date and quality verifiable answers.",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "query": {
+                            "type": "STRING"
+                        },
+                        "n_results": {
+                            "type": "INTEGER",
+                        },
                     },
-                    "n_results": {
-                        "type": "INTEGER",
+                    "required": ["query"]
+                }
+            },
+            {
+                "name": "url_extractor",
+                "description": "Extract URLs to summarize",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "urls": {
+                            "type": "ARRAY",
+                            "items": {
+                                "type": "STRING"
+                            }
+                        }
                     },
-                },
-                "required": ["query"]
+                    "required": ["urls"]
+                }
             }
-        }
-
+        ]
     
-    async def _tool_function(self, query: str, n_results: int = 10):
+    async def _tool_function_google_search(self, query: str, n_results: int = 10):
         # Must not be above 10
         if n_results > 10:
             n_results = 10
@@ -116,6 +132,50 @@ class Tool:
 
         _sembed.set_footer(text="Used Google search tool to fetch results, verify the information before using it.")
         await self.method_send(embed=_sembed)
+
+        return _output
+    
+    # URL Extractor
+    async def _tool_function_url_extractor(self, urls: list):
+        # Must be 5 or below else error out
+        if len(urls) > 5:
+            raise ValueError("URLs must be 10 or below")
+
+        # check for the aiohttp client session
+        if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
+            raise Exception("aiohttp client session for get requests not initialized and URL extraction cannot continue, please check the bot configuration")
+        
+        _session: aiohttp.ClientSession = self.discord_bot._aiohttp_main_client_session
+
+        # Download the URLs
+        _output = []
+        _imsg = await self.method_send("🔍 Extracting URLs")
+        for _url in urls:
+            _imsg = await _imsg.edit(f"🔍 Extracting URL: **{_url}**")
+            async with _session.get(_url) as _response:
+                # Check if the response is successful
+                if _response.status != 200:
+                    _output.append({
+                        "url": _url,
+                        "content": f"Failed to fetch URL with status code {_response.status}"
+                    })
+
+                # Check if its a binary file which must error out
+                if "application/octet-stream" in _response.headers["Content-Type"] and "Content-Disposition" in _response.headers:
+                    _output.append({
+                        "url": _url,
+                        "content": "Binary file, cannot extract text"
+                    })
+
+                _data = await _response.text()
+                _output.append({
+                    "url": _url,
+                    "content": _data
+                })
+
+        # Delete the message
+        if _imsg:
+            await _imsg.delete()
 
         return _output
 

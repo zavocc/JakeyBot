@@ -6,25 +6,26 @@ import io
 # Function implementations
 class Tool:
     tool_human_name = "Image Generator with Stable Diffusion 3.5"
-    tool_name = "image_generator"
     def __init__(self, method_send, discord_ctx, discord_bot):
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-        self.tool_schema = {
-            "name": self.tool_name,
-            "description": "Generate or restyle images using natural language or from description",
-            "parameters": {
-                "type": "OBJECT",
-                "properties": {
-                    "image_description": {
-                        "type": "STRING"
-                    }
-                },
-                "required": ["image_description"]
+        self.tool_schema = [
+            {
+                "name": "image_generator",
+                "description": "Generate or restyle images using natural language or from description using Stable Diffusion 3.5",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "image_description": {
+                            "type": "STRING"
+                        }
+                    },
+                    "required": ["image_description"]
+                }
             }
-        }
+        ]
 
     # Image generator
     async def _tool_function(self, image_description: str):

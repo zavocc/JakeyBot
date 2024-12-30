@@ -34,11 +34,32 @@ class Completions:
 
         self._guild_id = guild_id
 
+        # Claude 3 cachables
+        self._CLAUDE_3_CACHABLES = (
+            "claude-3-opus",
+            "claude-3.5",
+            "claude-3-5"
+            "claude-3-haiku"
+        )
+        # Multi-modal models
+        self._MULTIMODAL_MODELS = (
+            "gpt-4",
+            "claude-3", 
+            "gemini-pro-1.5",
+            "gemini-flash-1.5",
+            "gemini-1.5",
+            "gemini-exp",
+            "gemini-2.0",
+            "grok-2-vision",
+            "pixtral"
+        )
+
     async def input_files(self, attachment: discord.Attachment):
         # Check if the attachment is an image
         if not attachment.content_type.startswith("image"):
             raise MultiModalUnavailable("⚠️ This model only supports image attachments")
 
+        # Strip the ? and everything after it
         _attachment_prompt = {
             "type":"image_url",
             "image_url": {
@@ -66,13 +87,7 @@ class Completions:
         
         # Count prompt tokens
         _tok_prompt = litellm.token_counter(text=prompt)
-        _CLAUDE_3_CACHABLES = (
-            "claude-3-opus",
-            "claude-3.5",
-            "claude-3-5"
-            "claude-3-haiku"
-        )
-        if any(_claude_models in self._model_name for _claude_models in _CLAUDE_3_CACHABLES):
+        if any(_claude_models in self._model_name for _claude_models in self._CLAUDE_3_CACHABLES):
             _cacheClaudePrompt = True
         else:
             _cacheClaudePrompt = False
@@ -119,9 +134,8 @@ class Completions:
             }
 
         # Check if we have an attachment
-        # It is only supported with OpenAI, Anthropic, Google or XAI models for now
         if self._file_data is not None:
-            if "gpt-4" in self._model_name or "anthropic" in self._model_name or "gemini" in self._model_name or "grok" in self._model_name:
+            if any(model in self._model_name for model in self._MULTIMODAL_MODELS):
                 _chat_thread[-1]["content"].append(self._file_data)
             else:
                 raise MultiModalUnavailable(f"🚫 The model **{self._model_name}** doesn't support file attachments, choose another model")

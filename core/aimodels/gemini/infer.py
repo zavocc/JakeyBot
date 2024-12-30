@@ -137,8 +137,8 @@ class Completions(APIParams):
     # Chat Completion
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Tools
+        _tool_selection_name = await db_conn.get_config(guild_id=self._guild_id)
         try:
-            _tool_selection_name = await db_conn.get_config(guild_id=self._guild_id)
             if _tool_selection_name is None:
                 _Tool = None
             else:
@@ -178,10 +178,16 @@ class Completions(APIParams):
 
         # Check if tool is code execution
         if _Tool:
-            if _Tool.tool_name == "code_execution":
+            if _tool_selection_name == "code_execution":
                 _tool_schema = [types.Tool(code_execution=types.ToolCodeExecution())]
             else:
-                _tool_schema = [types.Tool(function_declarations=[_Tool.tool_schema])]
+                # Check if the tool schema is a list or not
+                # Since a list of tools could be a collection of tools, sometimes it's just a single tool
+                # But depends on the tool implementation
+                if type(_Tool.tool_schema) == list:
+                    _tool_schema = [types.Tool(function_declarations=_Tool.tool_schema)]
+                else:
+                    _tool_schema = [types.Tool(function_declarations=[_Tool.tool_schema])]
         else:
             _tool_schema = None
 
@@ -281,7 +287,7 @@ class Completions(APIParams):
         # Check if we need to execute tools
         if _toolInvoke:
             # Indicate the tool is called
-            _interstitial = await self._discord_method_send(f"✅ Executing tool: **{_Tool.tool_human_name}**")
+            _interstitial = await self._discord_method_send(f"✅ Tool started: **{_Tool.tool_human_name}**")
 
             # Send text
             _firstTextResponseChunk = _candidateContentResponse.parts[0].text
@@ -296,7 +302,14 @@ class Completions(APIParams):
             _toHalt = False
             for _invokes in _toolInvoke:
                 try:
-                    if not hasattr(_Tool, "_tool_function"):
+                    # Edit the interstitial message
+                    await _interstitial.edit(f"⚙️ Executing tool: **{_invokes.name}**")
+
+                    if hasattr(_Tool, "_tool_function"):
+                        _toExec = getattr(_Tool, "_tool_function")
+                    elif hasattr(_Tool, f"_tool_function_{_invokes.name}"):
+                        _toExec = getattr(_Tool, f"_tool_function_{_invokes.name}")
+                    else:
                         logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s", e)
                         raise ToolsUnavailable(f"⚠️ An error has occurred while calling tools, please try again later or choose another tool")
             
@@ -309,7 +322,7 @@ class Completions(APIParams):
                         }
                     else:
                         _toolResult = {
-                            "toolResult": (await _Tool._tool_function(**_invokes.args)),
+                            "toolResult": (await _toExec(**_invokes.args)),
                             "tool_args": _invokes.args
                         }
                 # For other exceptions, log the error and add it as part of the chat thread
@@ -336,6 +349,7 @@ class Completions(APIParams):
             _chat_thread.append(types.Content(parts=_toolParts).model_dump())
             
             # Re-run the model
+            await _interstitial.edit(f"✅ Generating a response with tool result from: **{_Tool.tool_human_name}**")
             _response = await self._gemini_api_client.aio.models.generate_content(
                 model=self._model_name, 
                 config=types.GenerateContentConfig(
