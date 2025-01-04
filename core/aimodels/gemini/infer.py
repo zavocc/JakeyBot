@@ -251,6 +251,7 @@ class Completions(APIParams):
 
         # Iterate through the parts and perform tasks
         _toolInvoke = []
+        _codeExecuted = False
         for _part in _candidateContentResponse.parts:
             if _part.function_call:
                 # Before we save it, unicode escape the function call arguments
@@ -276,13 +277,15 @@ class Completions(APIParams):
                 _toolInvoke.append(_part.function_call)
 
             # Function calling and code execution doesn't mix
-            if _part.executable_code and len(_toolInvoke) == 0:
+            if _part.executable_code:
                 await self._discord_method_send(f"✅ Used: **{_Tool.tool_human_name}**")
                 await self._discord_method_send(f"```py\n{_part.executable_code.code[:1988]}\n```")
+                _codeExecuted = True
 
-            if _part.code_execution_result and len(_toolInvoke) == 0:
+            if _part.code_execution_result:
                 # Send the code execution result
                 await self._discord_method_send(f"```{_part.code_execution_result.output[:1994]}```")
+                _codeExecuted = True
             
         # Check if we need to execute tools
         if _toolInvoke:
@@ -370,6 +373,19 @@ class Completions(APIParams):
                 await _interstitial.edit(f"✅ Used: **{_Tool.tool_human_name}**")
 
             # Second candidate response, reassign so we can get the text
+            _candidateContentResponse = _response.candidates[0].content
+        
+        # Check if _toolExecuted is False, if it is, we need to send the text response without the Tool since most of the time it won't generate text response
+        if not _codeExecuted:
+            _response = await self._gemini_api_client.aio.models.generate_content(
+                model=self._model_name, 
+                contents=_chat_thread,
+                config=types.GenerateContentConfig(
+                    **self._genai_params,
+                    system_instruction=system_instruction or "You are a helpful assistant named Jakey"
+                )
+            )
+            
             _candidateContentResponse = _response.candidates[0].content
 
         # Finally, append the final updated candidate response (Content) to chat thread
