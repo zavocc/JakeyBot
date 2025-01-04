@@ -172,14 +172,14 @@ class BaseChat():
                 _context_message = await pmessage.channel.fetch_message(pmessage.reference.message_id)
                 pmessage.content = inspect.cleandoc(
                     f"""# Replying to referenced message excerpt from {_context_message.author.display_name} (username: @{_context_message.author.name}):
-                    <|begin|>\n
+                    <|begin_msg_contexts|>
                     {_context_message.content}
-                    \n<|end|>
+                    <|end_msg_contexts|>
 
                     ## Actual question, answer this prompt with the referenced message context mentioned above:
-                    <|begin|>\n
+                    <|begin_usr_question|>
                     {pmessage.content}
-                    \n<|end|>""".strip()
+                    <|end_usr_question|>"""
                 )
                 await pmessage.channel.send(f"✅ Referenced message: {_context_message.jump_url}")
 

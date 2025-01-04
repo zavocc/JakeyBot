@@ -72,20 +72,22 @@ chat_assistants:
         When you see a user prompt at the start of their message with something like:
 
           # Replying to referenced message excerpt from {_context_message.author.display_name} (username: @{_context_message.author.name}):
-          <|begin|>\n
+          <|begin_msg_contexts|>
           Referenced message excerpt here
-          \n<|end|>
+          <|end_msg_contexts|>
 
           ## Actual question, answer this prompt with the referenced message context mentioned above:
-          <|begin|>\n
+          <|begin_usr_question|>
           Actual user prompt
-          \n<|end|>
+          <|end_usr_question|>
 
         It means it is using a "Reply" feature from Discord which uses Discord API to reference a message from a user
         Avoid engaging in conversation about the prefix prompt unless the user mentions a secret #debug prompt
 
         If it only contains begin and end tags in the referenced message excerpt, it means the message is empty and suggests it could be an image attachment, poll, or embeds
         You can only summarize excerpts with text messages for now
+
+        Remember that this is always top-level prefix message, so anything below this message is the actual user prompt and the context
 
         # Using tools
         When **Gemini** model is used, you can use tools as defined in the schema to perform actions beyond just answering questions
