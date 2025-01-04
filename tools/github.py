@@ -24,13 +24,16 @@ class Tool:
                             "type": "ARRAY",
                             "items": {
                                 "type": "STRING"
-                            }
+                            },
+                            "description": "The file paths to retrieve from the repository. Must start with /"
                         },
                         "repo": {
-                            "type": "STRING"
+                            "type": "STRING",
+                            "description": "The repository in the format owner/repo"
                         },
                         "branch": {
-                            "type": "STRING"
+                            "type": "STRING",
+                            "description": "The branch name, default is master"
                         }
                     },
                     "required": ["files", "repo"]
@@ -38,25 +41,28 @@ class Tool:
             },
             {
                 "name": "github_search_tool",
-                "description": "Search for code, commits, repositories, issues and PRs on GitHub. Optimize search queries for 256 characters or less, use GitHub search qualifiers to narrow down the search.",
+                "description": "Search for code, commits, repositories, issues and PRs on GitHub.",
                 "parameters": {
                     "type": "OBJECT",
                     "properties": {
                         "search_type": {
-                                "type": "STRING",
-                                "enum": [
-                                    "CODE",
-                                    "COMMITS",
-                                    "REPOSITORIES",
-                                    "ISSUE",
-                                    "PR"
-                                ]
+                            "type": "STRING",
+                            "enum": [
+                                "CODE",
+                                "COMMITS",
+                                "REPOSITORIES",
+                                "ISSUE",
+                                "PR"
+                            ],
+                            "description": "The type of search to perform"
                         },
                         "query": {
-                            "type": "STRING"
+                            "type": "STRING",
+                            "description": "The search query to search for, you can use search qualifiers, the character limit is 256"
                         },
                         "page": {
-                            "type": "INTEGER"
+                            "type": "INTEGER",
+                            "description": "Pagination, default is 1. You can paginate for more results"
                         }
                     },
                     "required": ["search_type", "query"]

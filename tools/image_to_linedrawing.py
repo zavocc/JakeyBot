@@ -20,11 +20,13 @@ class Tool:
                     "type": "OBJECT",
                     "properties": {
                         "discord_attachment_url": {
-                            "type": "STRING"
+                            "type": "STRING",
+                            "description": "The discord attachment URL of the image file"
                         },
                         "mode": {
                             "type": "STRING",
-                            "enum": ["Simple Lines", "Complex Lines"]
+                            "enum": ["Simple Lines", "Complex Lines"],
+                            "description": "The style of the line drawing, use your image analysis capabilities to see which suites best for conversion. Use simple lines for images that look simple and animated, complex for detailed images"
                         }
                     },
                     "required": ["discord_attachment_url", "mode"]

@@ -15,22 +15,27 @@ class Tool:
                     "type": "OBJECT",
                     "properties": {
                         "thread_title": {
-                            "type": "STRING"
+                            "type": "STRING",
+                            "description": "The title of the thread"
                         },
                         "plan": {
                             "type": "STRING",
+                            "description": "The plan for the topic"
                         },
                         "content": {
                             "type": "STRING",
+                            "description": "The elaborate overview of the topic within the thread"
                         },
                         "code": {
                             "type": "STRING",
+                            "description": "Optional code snippet for the topic"
                         },
                         "todos": {
                             "type": "ARRAY",
                             "items": {
                                 "type": "STRING"
-                            }
+                            },
+                            "description": "Optional potential todos"
                         }
                     },
                     "required": ["thread_title", "plan", "content"]
@@ -43,10 +48,12 @@ class Tool:
                     "type": "OBJECT",
                     "properties": {
                         "file_contents": {
-                            "type": "STRING"
+                            "type": "STRING",
+                            "description": "The content of the file, it can be a code snippet, markdown content, body of text."
                         },
                         "file_name": {
                             "type": "STRING",
+                            "description": "The filename of the file, it's recommended to avoid using binary file extensions like .exe, .zip, .png, etc."
                         }
                     },
                     "required": ["file_contents", "file_name"]

@@ -19,7 +19,8 @@ class Tool:
                     "type": "OBJECT",
                     "properties": {
                         "image_description": {
-                            "type": "STRING"
+                            "type": "STRING",
+                            "description": "The prompt of the image to generate"
                         }
                     },
                     "required": ["image_description"]

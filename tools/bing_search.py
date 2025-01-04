@@ -19,13 +19,16 @@ class Tool:
                     "type": "OBJECT",
                     "properties": {
                         "query": {
-                            "type": "STRING"
+                            "type": "STRING",
+                            "description": "The query to search for, you can use search operators for more sophisticated searches"
                         },
                         "n_results": {
                             "type": "INTEGER",
+                            "description": "The number of results to fetch, it's recommended to set from 1-3 for simple queries, 4-6 for queries require more corroborating sources, and 7-10 for complex queries"
                         },
                         "show_youtube_videos": {
-                            "type": "BOOLEAN"
+                            "type": "BOOLEAN",
+                            "description": "Show relevant YouTube videos"
                         }
                     },
                     "required": ["query"]

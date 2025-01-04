@@ -21,10 +21,12 @@ class Tool:
                     "type": "OBJECT",
                     "properties": {
                         "discord_attachment_url": {
-                            "type": "STRING"
+                            "type": "STRING",
+                            "description": "The discord attachment URL of the audio file"
                         },
                         "text": {
-                            "type": "STRING"
+                            "type": "STRING",
+                            "description": "The text for the target voice to dictate the text"
                         }
                     },
                     "required": ["discord_attachment_url", "text"]

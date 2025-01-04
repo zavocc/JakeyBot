@@ -18,10 +18,12 @@ class Tool:
                     "type": "OBJECT",
                     "properties": {
                         "query": {
-                            "type": "STRING"
+                            "type": "STRING",
+                            "description": "The query to search for"
                         },
                         "n_results": {
                             "type": "INTEGER",
+                            "description": "The number of results to fetch"
                         },
                     },
                     "required": ["query"]

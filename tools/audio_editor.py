@@ -21,16 +21,20 @@ class Tool:
                     "type": "OBJECT",
                     "properties": {
                         "discord_attachment_url": {
-                            "type": "STRING"
+                            "type": "STRING",
+                            "description": "The discord attachment URL of the audio file"
                         },
                         "prompt": {
-                            "type": "STRING"
+                            "type": "STRING",
+                            "description": "The prompt for the model to add elements to the audio"
                         },
                         "edit_start_in_seconds": {
-                            "type": "NUMBER"
+                            "type": "NUMBER",
+                            "description": "The start time in seconds to edit the audio"
                         },
                         "edit_length_in_seconds": {
-                            "type": "NUMBER"
+                            "type": "NUMBER",
+                            "description": "The length in seconds to edit the audio"
                         }
                     },
                     "required": ["discord_attachment_url", "prompt"]
