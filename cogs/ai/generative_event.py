@@ -196,6 +196,9 @@ class BaseChat():
                     await pmessage.reply(f"{_error.message}")
                 elif isinstance(_error, SafetyFilterError):
                     await pmessage.reply(f"🤬 I detected unsafe content in your prompt, reason: `{_error.reason}`. Please rephrase your question")
+                # Check if the error is about empty message
+                elif isinstance(_error, discord.errors.HTTPException) and "Cannot send an empty message" in str(_error):
+                    await pmessage.reply("🤔 Please provide a message to ask a question")
                 else:
                     # Handles all errors including from LiteLLM
                     # https://docs.litellm.ai/docs/exception_mapping#litellm-exceptions

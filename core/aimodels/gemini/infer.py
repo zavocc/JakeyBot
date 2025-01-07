@@ -9,7 +9,6 @@ import aiofiles
 import asyncio
 import discord
 import importlib
-import json
 import logging
 import typing
 import random
@@ -166,12 +165,6 @@ class Completions(APIParams):
         if self._file_data is not None:
             _prompt.append(types.Part.from_uri(**self._file_data))
 
-        # Add to chat thread so that the model can generate a response
-        _chat_thread.append(types.Content(
-            parts=_prompt,
-            role="user"
-        ).model_dump())
-
         # Disable tools entirely if the model has "gemini-2.0-flash-thinking-exp-1219"
         if self._model_name == "gemini-2.0-flash-thinking-exp-1219":
             _Tool = None
@@ -191,18 +184,20 @@ class Completions(APIParams):
         else:
             _tool_schema = None
 
-        # Create response
+        # Create chat session
+        _chat_session = self._gemini_api_client.aio.chats.create(
+            model=self._model_name,
+            history=_chat_thread,
+            config=types.GenerateContentConfig(
+                **self._genai_params,
+                system_instruction=system_instruction or "You are a helpful assistant named Jakey",
+                tools=_tool_schema
+            )
+        )
+
         try:
             # First try
-            _response = await self._gemini_api_client.aio.models.generate_content(
-                model=self._model_name, 
-                contents=_chat_thread,
-                config=types.GenerateContentConfig(
-                    **self._genai_params,
-                    system_instruction=system_instruction or "You are a helpful assistant named Jakey",
-                    tools=_tool_schema
-                )
-            )
+            _response = await _chat_session.send_message(_prompt)
         # Check if we get ClientError and has PERMISSION_DENIED
         except errors.ClientError as e:
             logging.error("1st try: I think I found a problem related to the request... doing first fixes: %s", e.message)
@@ -218,15 +213,7 @@ class Completions(APIParams):
                 await self._discord_method_send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
 
                 # Retry the request
-                _response = await self._gemini_api_client.aio.models.generate_content(
-                    model=self._model_name, 
-                    contents=_chat_thread,
-                    config=types.GenerateContentConfig(
-                        **self._genai_params,
-                        system_instruction=system_instruction or "You are a helpful assistant named Jakey",
-                        tools=_tool_schema
-                    )
-                )
+                _response = await _chat_session.send_message(_chat_thread)
             else:
                 logging.error("2nd try: I think I found a problem related to the request: %s", e.message)
                 raise e
@@ -237,22 +224,23 @@ class Completions(APIParams):
             raise SafetyFilterError(reason=_response.candidates[0].finish_reason)
 
         # First candidate response -> (Content) pydantic model object used for chat context of the model
-        _candidateContentResponse = _response.candidates[0].content
+        _response.candidates[0].content = _response.candidates[0].content
+
+        print(_response.candidates[0].content.parts)
 
         # Send the CoT process of the model if "gemin-2.0-flash-thinking-exp-1219" is used
         # Here we assume the CoT is always at the first index of the parts
         if self._model_name == "gemini-2.0-flash-thinking-exp-1219":
             await self._discord_method_send(f"> ℹ️ Below is Gemini's 2.0 thinking process and can produce undesirable outputs. Keep in mind that this model doesn't support tools, has 32k context, and only supports image and text inputs.")
-            await self._discord_method_send(f"> {_candidateContentResponse.parts[0].text.replace('\n', '\n> ')[:1950]}")
+            await self._discord_method_send(f"> {_response.candidates[0].content.parts[0].text.replace('\n', '\n> ')[:1950]}")
 
             # And discard the first part of the response since when switching Gemini models, it will intentionally produce a CoT
             # And save tokens, so we remove the first index
-            _candidateContentResponse.parts.pop(0)
+            _response.candidates[0].content.parts.pop(0)
 
         # Iterate through the parts and perform tasks
         _toolInvoke = []
-        _codeExecuted = False
-        for _part in _candidateContentResponse.parts:
+        for _part in _response.candidates[0].content.parts:
             if _part.function_call:
                 # Before we save it, unicode escape the function call arguments
                 # This is because the generated arguments will provide literal escape characters, we need to parse it
@@ -274,18 +262,17 @@ class Completions(APIParams):
                                 _list_value = _list_value.encode().decode('unicode_escape')
                                 _part.function_call.args[_key][_index] = _list_value
 
+                # Append the function call to the toolInvoke list
                 _toolInvoke.append(_part.function_call)
 
             # Function calling and code execution doesn't mix
             if _part.executable_code:
                 await self._discord_method_send(f"✅ Used: **{_Tool.tool_human_name}**")
                 await self._discord_method_send(f"```py\n{_part.executable_code.code[:1988]}\n```")
-                _codeExecuted = True
 
             if _part.code_execution_result:
                 # Send the code execution result
                 await self._discord_method_send(f"```{_part.code_execution_result.output[:1994]}```")
-                _codeExecuted = True
             
         # Check if we need to execute tools
         if _toolInvoke:
@@ -293,7 +280,7 @@ class Completions(APIParams):
             _interstitial = await self._discord_method_send(f"✅ Tool started: **{_Tool.tool_human_name}**")
 
             # Send text
-            _firstTextResponseChunk = _candidateContentResponse.parts[0].text
+            _firstTextResponseChunk = _response.candidates[0].content.parts[0].text
             if _firstTextResponseChunk and len(_firstTextResponseChunk) <= 2000:
                 await self._discord_method_send(_firstTextResponseChunk)
 
@@ -344,27 +331,9 @@ class Completions(APIParams):
                     response=_toolResult
                 ))
 
-
-            # Save the first content response containing text and function calls to chat thread so the context gets picked up
-            _chat_thread.append(_candidateContentResponse.model_dump())
-
-            # Then add the tool result to chat history
-            _chat_thread.append(types.Content(parts=_toolParts).model_dump())
-            
             # Re-run the model
             await _interstitial.edit(f"✅ Generating a response with tool result from: **{_Tool.tool_human_name}**")
-            _response = await self._gemini_api_client.aio.models.generate_content(
-                model=self._model_name, 
-                config=types.GenerateContentConfig(
-                    **self._genai_params,
-                    system_instruction=system_instruction or "You are a helpful assistant named Jakey",
-                    tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(
-                            mode="NONE"
-                        )
-                    )
-                ),
-                contents=_chat_thread
-            )
+            _response = await _chat_session.send_message(_toolParts)
 
             # Edit interstitial message
             if _toHalt:
@@ -372,25 +341,11 @@ class Completions(APIParams):
             else:
                 await _interstitial.edit(f"✅ Used: **{_Tool.tool_human_name}**")
 
-            # Second candidate response, reassign so we can get the text
-            _candidateContentResponse = _response.candidates[0].content
-        
-        # Check if _toolExecuted is False, if it is, we need to send the text response without the Tool since most of the time it won't generate text response
-        if not _codeExecuted:
-            _response = await self._gemini_api_client.aio.models.generate_content(
-                model=self._model_name, 
-                contents=_chat_thread,
-                config=types.GenerateContentConfig(
-                    **self._genai_params,
-                    system_instruction=system_instruction or "You are a helpful assistant named Jakey"
-                )
-            )
-            
-            _candidateContentResponse = _response.candidates[0].content
+        # Save the latest messages to chat thread, if it's not a dict, it's a pydantic model object which we need to convert to dict
+        _chat_thread = [_item if isinstance(_item, dict) else _item.model_dump(exclude_unset=True) for _item in _chat_session._curated_history]
 
-        # Finally, append the final updated candidate response (Content) to chat thread
-        _chat_thread.append(_candidateContentResponse.model_dump())
-        return {"answer": _candidateContentResponse.parts[-1].text, "chat_thread": _chat_thread}
+        # Return the response
+        return {"answer": _response.text, "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
         await db_conn.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)
