@@ -345,7 +345,8 @@ class Completions(APIParams):
         _chat_thread = [_item if isinstance(_item, dict) else _item.model_dump(exclude_unset=True) for _item in _chat_session._curated_history]
 
         # Return the response
-        return {"answer": _response.candidates[0].content.parts[-1].text, "chat_thread": _chat_thread}
+        _final_candidate_response = _response.candidates[0].content.parts
+        return {"answer": _final_candidate_response[-1].text, "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
         await db_conn.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)
