@@ -1,4 +1,4 @@
-from core.exceptions import MultiModalUnavailable
+from core.exceptions import CustomErrorMessage
 from os import environ
 import discord
 import logging
@@ -39,7 +39,7 @@ class Completions:
     async def input_files(self, attachment: discord.Attachment):
         # Check if the attachment is an image
         if not attachment.content_type.startswith("image"):
-            raise MultiModalUnavailable("⚠️ This model only supports image attachments")
+            raise CustomErrorMessage("⚠️ This model only supports image attachments")
 
         _attachment_prompt = {
             "type":"image_url",

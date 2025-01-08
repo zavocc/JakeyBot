@@ -1,4 +1,4 @@
-from core.exceptions import SafetyFilterError, ToolsUnavailable
+from core.exceptions import CustomErrorMessage
 from google import genai
 from google.genai import errors
 from google.genai import types
@@ -148,7 +148,7 @@ class Completions(APIParams):
                 )
         except ModuleNotFoundError as e:
             logging.error("I cannot import the tool because the module is not found: %s", e)
-            raise ToolsUnavailable(f"⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
+            raise CustomErrorMessage(f"⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
 
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
@@ -221,7 +221,7 @@ class Completions(APIParams):
         # Check if the response was blocked due to safety and other reasons than STOP
         # https://ai.google.dev/api/generate-content#FinishReason
         if _response.candidates[0].finish_reason != "STOP":
-            raise SafetyFilterError(reason=_response.candidates[0].finish_reason)
+            raise CustomErrorMessage("🤬 I detected unsafe content in your prompt, reason: `{}`. Please rephrase your question_response.candidates[0].finish_reason".format(_response.candidates[0].finish_reason))
 
         # First candidate response -> (Content) pydantic model object used for chat context of the model
         _response.candidates[0].content = _response.candidates[0].content
@@ -301,7 +301,7 @@ class Completions(APIParams):
                         _toExec = getattr(_Tool, f"_tool_function_{_invokes.name}")
                     else:
                         logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s", e)
-                        raise ToolsUnavailable(f"⚠️ An error has occurred while calling tools, please try again later or choose another tool")
+                        raise CustomErrorMessage("⚠️ An error has occurred while calling tools, please try again later or choose another tool")
             
                     # Check if _toHalts is True, if it is, we just need to tell the model to try again later
                     # Since its not possible to just break the loop, it has to match the number of parts of toolInvoke
