@@ -25,7 +25,7 @@ class Chat(commands.Cog):
             raise e(f"Failed to connect to MongoDB: {e}...\n\nPlease set MONGO_DB_URL in dev.env")
 
         # Initialize the chat system
-        self._ask_command = BaseChat(bot, self.author, self.DBConn)
+        self._ask_command = BaseChat(bot)
         self._ask_event = BaseChatEvent(bot, self.author, self.DBConn)
 
     ###############################################
@@ -46,32 +46,13 @@ class Chat(commands.Cog):
     @discord.option(
         "prompt",
         input_type=str,
-        description="Enter your prompt, ask real questions, or provide a context for the model to generate a response",
+        description="Ask Jakey any question",
         max_length=4096,
         required=True
     )
-    @discord.option(
-        "attachment",
-        input_type=discord.Attachment,
-        description="Attach your files to answer from. Supports image, audio, video, text, and PDF files",
-        required=False,
-    )
-    @discord.option(
-        "model",
-        input_type=str,
-        description="Choose a model to use for the conversation",
-        choices=ModelsList.get_models_list(),
-        required=False
-    )
-    @discord.option(
-        "append_history",
-        input_type=bool,
-        description="Store the conversation to chat history?",
-        default=True
-    )
-    async def ask(self, ctx, prompt, attachment, model, append_history):
-        """Ask a question using Gemini and models from OpenAI, Anthropic, and more!"""
-        await self._ask_command.ask(ctx, prompt, attachment, model, append_history)
+    async def ask(self, ctx, prompt):
+        """Ask me quick questions!"""
+        await self._ask_command.ask(ctx, prompt)
 
     @ask.error
     async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
@@ -79,17 +60,7 @@ class Chat(commands.Cog):
         # Cooldown error
         if isinstance(_error, commands.CommandOnCooldown):
             await ctx.respond(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
-        elif isinstance(_error, genai_errors.ClientError) or isinstance(_error, genai_errors.ServerError):
-            await ctx.respond(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: \n> {_error.message}")
-        elif isinstance(_error, HistoryDatabaseError):
-            await ctx.respond(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
-        elif isinstance(_error, MultiModalUnavailable) or isinstance(_error, ModelUnavailable) or isinstance(_error, ToolsUnavailable):
-            await ctx.respond(f"{_error.message}")
-        elif isinstance(_error, SafetyFilterError):
-            await ctx.respond(f"🤬 I detected unsafe content in your prompt, reason: `{_error.reason}`. Please rephrase your question")
         else:
-            # Handles all errors including from LiteLLM
-            # https://docs.litellm.ai/docs/exception_mapping#litellm-exceptions
             await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, check console logs or change another model. What exactly happened: **`{type(_error).__name__}`**")
 
         # Log the error
