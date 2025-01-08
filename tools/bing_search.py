@@ -35,6 +35,24 @@ class Tool:
                 }
             },
             {
+                "name": "bing_image_search",
+                "description": "Search for similar images using Bing's reverse visual image search capability",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "discord_attachment_url": {
+                            "type": "STRING",
+                            "description": "The Discord attachment URL of the image to be sent on Bing's visual search"
+                        },
+                        "n_results": {
+                            "type": "INTEGER",
+                            "description": "The number of similar image results to fetch (1-10)"
+                        }
+                    },
+                    "required": ["discord_attachment_url"]
+                }
+            },
+            {
                 "name": "url_extractor",
                 "description": "Extract URLs to summarize",
                 "parameters": {
@@ -147,7 +165,94 @@ class Tool:
         _sembed.set_footer(text="Used Bing search tool to fetch results, https://www.microsoft.com/en-us/privacy/privacystatement")
         await self.method_send(embed=_sembed)
         return _output
+    
+    async def _tool_function_bing_image_search(self, discord_attachment_url: str, n_results: int = 5):
+        # Validate number of results
+        if n_results > 10:
+            n_results = 5
 
+        if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
+            raise Exception("aiohttp client session for get requests not initialized and image search cannot continue")
+
+        _session: aiohttp.ClientSession = self.discord_bot._aiohttp_main_client_session
+
+        # Bing Subscription Key check
+        if not environ.get("BING_SUBSCRIPTION_KEY"):
+            raise ValueError("Bing subscription key not set")
+        
+        # Perform pre-request by downloading the CDN of the image and store it{'image' : ('myfile', open(imagePath, 'rb'))}
+        # We use aiofiles and aiohttp to download the image
+        # We also need to make sure if its less than 1MB
+        async with _session.get(discord_attachment_url) as _response:
+            if _response.content_length > 1048576:
+                raise ValueError("Image size must be less than 1MB")
+            
+            # Check if the response is successful and is an image
+            if _response.status != 200 or not _response.headers["Content-Type"].startswith("image"):
+                raise ValueError("Invalid image URL provided")
+            
+            # Store it on memory
+            _image_data = await _response.read()
+
+        _header = {"Ocp-Apim-Subscription-Key": environ.get("BING_SUBSCRIPTION_KEY")}
+        _endpoint = "https://api.bing.microsoft.com/v7.0/images/visualsearch"
+
+        # Create form data
+        _formdata = aiohttp.FormData()
+        _formdata.add_field("image", _image_data, filename="image.jpg")
+
+        # Make the request
+        async with _session.post(_endpoint, headers=_header, data=_formdata) as _response:
+            try:
+                _response.raise_for_status()
+            except aiohttp.ClientConnectionError:
+                raise Exception(f"Failed to perform reverse image search with code {_response.status}, reason: {_response.reason}")
+
+            _data = await _response.json()
+            
+            # Check if we have results
+            if "tags" not in _data:
+                return "No similar images found"
+
+        # Process the results
+        _output = [{
+            "guidelines": "You must gather insights of Image search result based on the majority of the results",
+            "formatting_rules": "Format links as [Title](Webpage URL)",
+            "results": []
+        }]
+
+        # Ground the response based on the results returned from the image search
+        for tag in _data["tags"]:
+            if "actions" in tag:
+                for action in tag["actions"]:
+                    if action.get("actionType") == "VisualSearch":
+                        for item in action.get("data", {}).get("value", []):
+                            _output[0]["results"].append({
+                                "title": item.get("name", "Untitled Image"),
+                                "host_page_url": item.get("hostPageUrl"),
+                                "thumbnail_url": item.get("thumbnailUrl")
+                            })
+
+                            
+        
+        # Create and send embed with results
+        _sembed = discord.Embed(
+            title="Similar Images Found"
+        )
+
+        # Add results to embed
+        _desclinks = []
+        for result in _output[0]["results"][:10]:  # Limit to first 10 results
+            _desclinks.append(f"- [{result['title']}]({result['host_page_url']})")
+        
+        _sembed.description = "\n".join(_desclinks)
+        _sembed.set_footer(text="Powered by Bing Visual Search API")
+        
+        # Add the original image as thumbnail
+        _sembed.set_thumbnail(url=discord_attachment_url)
+        
+        await self.method_send(embed=_sembed)
+        return _output
 
     # URL Extractor
     async def _tool_function_url_extractor(self, urls: list):
