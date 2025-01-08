@@ -148,7 +148,7 @@ class Completions(APIParams):
                 )
         except ModuleNotFoundError as e:
             logging.error("I cannot import the tool because the module is not found: %s", e)
-            raise CustomErrorMessage(f"⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
+            raise CustomErrorMessage("⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
 
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)

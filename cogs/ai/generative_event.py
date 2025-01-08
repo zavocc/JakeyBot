@@ -114,7 +114,7 @@ class BaseChat():
             _system_embed = None
         
         # Model information footer
-        _modelInfoFooter = f"-# {_model_name.upper()} {"(this response isn't saved)" if not _append_history else ''}"
+        _modelInfoFooter = f"-# Chatting with {_model_name.upper()} {"(this response isn't saved)" if not _append_history else ''}"
 
         if _system_embed: 
             # Check if there is _tokens_used attribute
