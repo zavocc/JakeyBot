@@ -263,11 +263,11 @@ class Completions(APIParams):
             # Function calling and code execution doesn't mix
             if _part.executable_code:
                 await self._discord_method_send(f"✅ Used: **{_Tool.tool_human_name}**")
-                await self._discord_method_send(f"```py\n{_part.executable_code.code[:1988]}\n```")
+                await self._discord_method_send(f"```py\n{_part.executable_code.code[:1975]}\n```")
 
             if _part.code_execution_result:
                 # Send the code execution result
-                await self._discord_method_send(f"```{_part.code_execution_result.output[:1994]}```")
+                await self._discord_method_send(f"```{_part.code_execution_result.output[:1975]}```")
             
         # Check if we need to execute tools
         if _toolInvoke:
