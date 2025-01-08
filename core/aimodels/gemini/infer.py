@@ -223,10 +223,7 @@ class Completions(APIParams):
         if _response.candidates[0].finish_reason != "STOP":
             raise CustomErrorMessage("🤬 I detected unsafe content in your prompt, reason: `{}`. Please rephrase your question_response.candidates[0].finish_reason".format(_response.candidates[0].finish_reason))
 
-        # First candidate response -> (Content) pydantic model object used for chat context of the model
-        _response.candidates[0].content = _response.candidates[0].content
-
-        print(_response.candidates[0].content.parts)
+        print(_response.candidates[0].content)
 
         # Send the CoT process of the model if "gemin-2.0-flash-thinking-exp-1219" is used
         # Here we assume the CoT is always at the first index of the parts
