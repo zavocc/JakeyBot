@@ -13,6 +13,8 @@
   ui_name: GitHub
 - tool_module_name: google_search
   ui_name: Grounding with Google Search
+- tool_module_name: google_search_grounding
+  ui_name: Grounding with Google Search v2
 - tool_module_name: ideation_tools
   ui_name: Ideation Tools
 - tool_module_name: image_generator

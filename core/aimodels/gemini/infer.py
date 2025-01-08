@@ -173,6 +173,12 @@ class Completions(APIParams):
         if _Tool:
             if _tool_selection_name == "code_execution":
                 _tool_schema = [types.Tool(code_execution=types.ToolCodeExecution())]
+            elif _tool_selection_name == "google_search_grounding":
+                _tool_schema = [types.Tool(google_search=types.GoogleSearch())]
+
+                # Gemini 2.0 only supports Search as a Tool, if another model is selected, then raise an error
+                if self._model_name != "gemini-2.0-flash-exp":
+                    raise ToolsUnavailable(f"⚠️ Google search grounding v2 is only available for Gemini 2.0 models")
             else:
                 # Check if the tool schema is a list or not
                 # Since a list of tools could be a collection of tools, sometimes it's just a single tool
@@ -183,6 +189,7 @@ class Completions(APIParams):
                     _tool_schema = [types.Tool(function_declarations=[_Tool.tool_schema])]
         else:
             _tool_schema = None
+
 
         # Create chat session
         _chat_session = self._gemini_api_client.aio.chats.create(
@@ -223,10 +230,26 @@ class Completions(APIParams):
         if _response.candidates[0].finish_reason != "STOP":
             raise SafetyFilterError(reason=_response.candidates[0].finish_reason)
 
-        # First candidate response -> (Content) pydantic model object used for chat context of the model
-        _response.candidates[0].content = _response.candidates[0].content
+        # Check for Google Search grounding metadata
+        if hasattr(_response.candidates[0].grounding_metadata, "grounding_chunks"):
+            _webSources = []
 
-        print(_response.candidates[0].content.parts)
+            # Send the Web queries
+            if _response.candidates[0].grounding_metadata.web_search_queries:
+                for _queries in _response.candidates[0].grounding_metadata.web_search_queries:
+                    await self._discord_method_send(f"✅ Searched for **{_queries}**")
+
+            if _response.candidates[0].grounding_metadata.grounding_chunks:
+                for _chunk in _response.candidates[0].grounding_metadata.grounding_chunks:
+                    _webSources.append(f"[{_chunk.web.title}](<{_chunk.web.uri}>)")
+
+            # Check if webSources is less than 2000 characters
+            if _webSources:
+                if len(', '.join(_webSources)) <= 2000:
+                    await self._discord_method_send(f"🔗 **Learn More**: {', '.join(_webSources)}")
+                else:
+                    for _source in _webSources:
+                        await self._discord_method_send(f"🔗 **Learn More**: {_source}")
 
         # Send the CoT process of the model if "gemin-2.0-flash-thinking-exp-1219" is used
         # Here we assume the CoT is always at the first index of the parts
