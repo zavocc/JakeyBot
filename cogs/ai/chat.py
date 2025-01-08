@@ -65,9 +65,6 @@ class Chat(commands.Cog):
 
         # Log the error
         logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)
-
-        # Raise error
-        #raise _error
     
     ###############################################
     # For /model slash command group

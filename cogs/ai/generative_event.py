@@ -29,9 +29,6 @@ class BaseChat():
         else:
             guild_id = prompt.author.id
 
-        # Add reaction to the message to acknowledge the message
-        await prompt.add_reaction("🤖")
-
         # Set default model
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
         if _model is None:
@@ -146,9 +143,6 @@ class BaseChat():
         if _append_history:
             await _infer.save_to_history(db_conn=self.DBConn, chat_thread=_result["chat_thread"])
 
-        # Remove the reaction
-        await prompt.remove_reaction("🤖", self.bot.user)
-
     async def on_message(self, pmessage: Message):
         # Ignore messages from the bot itself
         if pmessage.author.id == self.bot.user.id:
@@ -186,6 +180,8 @@ class BaseChat():
             # For now the entire function is under try 
             # Maybe this can be separated into another function
             try:
+                # Add reaction to the message to acknowledge the message
+                await pmessage.add_reaction("🤖")
                 await self._ask(pmessage)
             except Exception as _error:
                 if isinstance(_error, genai_errors.ClientError) or isinstance(_error, genai_errors.ServerError):
@@ -204,5 +200,8 @@ class BaseChat():
 
                 # Log the error
                 logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)
+            finally:
+                # Remove the reaction
+                await pmessage.remove_reaction("🤖", self.bot.user)
 
     
