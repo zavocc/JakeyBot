@@ -117,7 +117,7 @@ class Completions(APIParams):
             if _msgstatus: await _msgstatus.delete()
             await aiofiles.os.remove(_xfilename)
 
-        self._file_data = {"file_uri": _filedata.uri, "mime_type": _mimetype}
+        self._file_data = {"file_uri": _filedata.uri, "mime_type": _filedata.mime_type}
 
     ############################
     # Inferencing
@@ -159,14 +159,18 @@ class Completions(APIParams):
         if _chat_thread is None:
             _chat_thread = []
 
-        # Parse prompts
-        _prompt = [
-            types.Part.from_text(prompt),
-        ]
-
-        # File attachment
+        # Attach file attachment if it exists
         if self._file_data is not None:
-            _prompt.append(types.Part.from_uri(**self._file_data))
+            _chat_thread.append(types.Content(
+                    parts=[
+                        types.Part.from_uri(**self._file_data)
+                    ],
+                    role="user"
+                ).model_dump(exclude_unset=True)
+            )
+
+        # Parse prompts
+        _prompt = types.Part.from_text(prompt)
 
         # Disable tools entirely if the model has "gemini-2.0-flash-thinking-exp-1219"
         if self._model_name == "gemini-2.0-flash-thinking-exp-1219":
