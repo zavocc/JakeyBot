@@ -82,8 +82,11 @@ class Completions(APIParams):
         self._guild_id = guild_id
 
     async def input_files(self, attachment: discord.Attachment):
-       # Download the attachment
+        # Download the attachment
         _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(518301839, 6582482111)}.{attachment.filename}"
+
+        # Sometimes mimetype has text/plain; charset=utf-8, we need to grab the first part
+        _mimetype = attachment.content_type.split(";")[0]
         try:
             async with self._aiohttp_main_client_session.get(attachment.url, allow_redirects=True) as _xattachments:
                 # write to file with random number ID
@@ -100,7 +103,7 @@ class Completions(APIParams):
         # Upload the file
         _msgstatus = None
         try:
-            _filedata = await self._gemini_api_client.aio.files.upload(path=_xfilename, config=types.UploadFileConfig(mime_type=attachment.content_type))
+            _filedata = await self._gemini_api_client.aio.files.upload(path=_xfilename, config=types.UploadFileConfig(mime_type=_mimetype))
 
             while _filedata.state == "PROCESSING":
                 if _msgstatus is None:
@@ -114,7 +117,7 @@ class Completions(APIParams):
             if _msgstatus: await _msgstatus.delete()
             await aiofiles.os.remove(_xfilename)
 
-        self._file_data = {"file_uri": _filedata.uri, "mime_type": attachment.content_type}
+        self._file_data = {"file_uri": _filedata.uri, "mime_type": _mimetype}
 
     ############################
     # Inferencing
