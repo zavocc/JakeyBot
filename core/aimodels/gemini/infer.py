@@ -205,9 +205,11 @@ class Completions(APIParams):
         except errors.ClientError as e:
             logging.error("1st try: I think I found a problem related to the request... doing first fixes: %s", e.message)
             if "do not have permission" in e.message:
+                # Curated history attribute are list of multipart chat turns under Content structured datatype
+                # Inside, it has "part" -> List and "role" -> str fields, so we iterate on the parts
                 for _chat_turns in _chat_session._curated_history:
                     for _part in _chat_turns["parts"]:
-                        # Since pydantic always has file_data key even None, we just set it as None and set the text to "Expired"
+                        # Check if we have file_data key then we just set it as None and set the text to "Expired"
                         if _part.get("file_data"):
                             _part["file_data"] = None
                             _part["text"] = "⚠️ The file attachment expired and was removed."
