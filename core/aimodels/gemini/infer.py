@@ -206,11 +206,11 @@ class Completions(APIParams):
             logging.error("1st try: I think I found a problem related to the request... doing first fixes: %s", e.message)
             if "do not have permission" in e.message:
                 for _chat_turns in _chat_session._curated_history:
-                    for _parts in _chat_turns["parts"]:
+                    for _part in _chat_turns["parts"]:
                         # Since pydantic always has file_data key even None, we just set it as None and set the text to "Expired"
-                        if _parts.get("file_data"):
-                            _parts["file_data"] = None
-                            _parts["text"] = "⚠️ The file attachment expired and was removed."
+                        if _part.get("file_data"):
+                            _part["file_data"] = None
+                            _part["text"] = "⚠️ The file attachment expired and was removed."
                 
                 # Notify the user that the chat session has been re-initialized
                 await self._discord_method_send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
