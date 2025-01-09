@@ -1,17 +1,21 @@
 - [Jakey Bot](#jakey-bot)
-- [Platform availability](#platform-availability)
-- [Features](#features)
+  - [Platform availability](#platform-availability)
+  - [Features](#features)
 - [Installation and setup](#installation-and-setup)
   - [Required permissions for Discord bot](#required-permissions-for-discord-bot)
   - [Installation](#installation)
-- [Configuring](#configuring)
+  - [Configuring](#configuring)
   - [Music features](#music-features)
-- [Running](#running)
+  - [Running](#running)
 - [Get Started](#get-started)
+  - [Chat](#chat)
+    - [Chat Variables](#chat-variables)
+  - [Model used](#model-used)
+- [Commands](#commands)
 - [FAQ](#faq)
 
 
-## Jakey Bot
+# Jakey Bot
 Jakey Bot is a multi-model AI and music bot with personality, designed to give you access to popular AI chatbots from Google, OpenAI, Anthropic, Mistral right within Discord! 
 
 ![Jakey Bot Banner](./assets/banner.png)
@@ -35,8 +39,8 @@ Other non-AI extras include:
 > \* - Gemini can take images, videos, audio, certain text files, and full PDFs as input while others only accept image inputs \
 > \** - Tools are only supported through Gemini models
 
-## Installation and setup
-### Required permissions for Discord bot
+# Installation and setup
+## Required permissions for Discord bot
 - Read message history (see [#faq](#faq) for privacy implications)
 - Embed messages (required for rendering text more than 2000 and for most commands)
 - Send messages (obviously)
@@ -45,7 +49,7 @@ Other non-AI extras include:
 - Create slash commands
 - Voice related features such as connect, disconnect
 
-### Installation
+## Installation
 The best way to get started is through Docker method... You can directly pull the image from my Docker 🐳 Hub repository and simply run the bot below:
 ```
 ~ $ docker pull zavocc/jakey:sugilite
@@ -84,7 +88,7 @@ You will need to provide Discord bot token from the developers portal.
 
 Please see [CONFIG.md](./docs/CONFIG.md) for more information about configuration.
 
-### Music features
+## Music features
 You can enable VC-related commands such as `/voice play` (which plays videos from YouTube and other supported sources) by providing appropriate Lavalink sources
 
 Please see [CONFIG.md#voice](./docs/CONFIG.md#voice) to configure wavelink
@@ -95,19 +99,31 @@ Alternatively, you can also host your own... Refer to [lavalink documentation](h
 ## Running
 After everything is configured, you can run `main.py`
 
-## Get Started
+# Get Started
 Get started by asking Jakey `/ask prompt:Who are you and how can I get started` or **@Jakey what can you do?**
 
+## Chat
+Once you added or installed Jakey to your server or yourself, you can mention @Jakey along with your prompt or directly message Jakey in DMs. If you use Gemini model, you can prompt files such as images, audio, video, and visual PDFs too!
+
+### Chat Variables
+When you enter a prompt to Jakey... you can use chat variables which are substrings to detect which action to perform before sending the request to LLM
+
+- `prompt /chat:ephemeral` - Do not append the last message turn to chat history while having its previous memory
+- `prompt /model:model-name` - Set model for the response on demand. (See `/model list` to choose available model names)
+
+## Model used
 By default, it uses **Gemini 1.5 Flash (002)** due to versatility with long context and multimodality, matching the performance of Gemini 1.5 Pro (0514), but other models can be used as well.
+
+You can sticky set the model using `/model set` command, or list models using `/model list` command. \
+If you decide to use OpenRouter model, you will need to configure `/openrouter` command first by setting the model names through https://openrouter.ai/models
+
+When you set a model, you are switching chat threads to that model associated for that provider... So switching to GPT-4o model would have its own chat thread and files, but you can always switch back to previous provider with it's memory. Note that switching models for OpenRouter would result in chat thread being cleared to ensure consistency 
 
 If you decide to use other models please see [Models comparison](https://github.com/zavocc/JakeyBot/wiki/Supported-Models) and [the LLM arena by livebench](https://livebench.ai/) to understand your models use cases
 
+# Commands
 Jakey provides slash commands such as:
-- `/ask` - Ask Jakey anything!
-  - Get started by asking `/ask` `prompt:` `Hey Jakey, I'm new, tell me your commands, features, and capabilities`
-  - Use multimodal features by passing `attachment:` parameter
-  - Ephemeral conversation with `append_hist:False`
-  - You can choose between models using `model:` parameter
+- `/ask` - Ask Jakey quick questions.
 - `/sweep` - Clear the conversation
 - `/feature` - Extend Jakey skills by activating chat tools! (Clears conversation when feature are set, only supports Gemini models)
 - `/model set` and `/model list` to list available models.
@@ -120,5 +136,5 @@ Jakey also has message actions or apps which is used to take action on a selecte
 
 ![apps](./assets/apps.png)
 
-## FAQ
+# FAQ
 Please see [FAQ](./docs/FAQ.md) for more information.
