@@ -230,7 +230,7 @@ class Completions(APIParams):
         # Check if the response was blocked due to safety and other reasons than STOP
         # https://ai.google.dev/api/generate-content#FinishReason
         if _response.candidates[0].finish_reason != "STOP":
-            raise CustomErrorMessage("🤬 I detected unsafe content in your prompt, reason: `{}`. Please rephrase your question_response.candidates[0].finish_reason".format(_response.candidates[0].finish_reason))
+            raise CustomErrorMessage("🤬 I detected unsafe content in your prompt, reason: `{}`. Please rephrase your question".format(_response.candidates[0].finish_reason))
 
         # Send the CoT process of the model if "gemin-2.0-flash-thinking-exp-1219" is used
         # Here we assume the CoT is always at the first index of the parts
