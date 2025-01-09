@@ -208,7 +208,7 @@ class Completions(APIParams):
                 for _chat_turns in _chat_session._curated_history:
                     for _parts in _chat_turns["parts"]:
                         # Since pydantic always has file_data key even None, we just set it as None and set the text to "Expired"
-                        if _parts["file_data"]:
+                        if _parts.get("file_data"):
                             _parts["file_data"] = None
                             _parts["text"] = "⚠️ The file attachment expired and was removed."
                 
