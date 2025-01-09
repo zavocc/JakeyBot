@@ -81,8 +81,10 @@ bot = InitBot(command_prefix=environ.get("BOT_PREFIX", "$"), intents = intents)
 ###############################################
 @bot.event
 async def on_ready():
+    await bot.change_presence(activity=discord.Game(f"Preparing the bot for it's first use..."))
     # start wavelink setup if playback support is enabled
     if bot._wavelink is not None:
+        await bot.change_presence(activity=discord.Game(f"Connecting to wavelink server..."))
         try:
             # https://wavelink.dev/en/latest/recipes.html
             ENV_LAVALINK_URI = environ.get("ENV_LAVALINK_URI") if environ.get("ENV_LAVALINK_URI") is not None else "http://127.0.0.1:2222"
