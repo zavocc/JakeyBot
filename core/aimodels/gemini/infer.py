@@ -205,7 +205,7 @@ class Completions(APIParams):
         except errors.ClientError as e:
             logging.error("1st try: I think I found a problem related to the request... doing first fixes: %s", e.message)
             if "do not have permission" in e.message:
-                for _chat_turns in _chat_thread:
+                for _chat_turns in _chat_session._curated_history:
                     for _parts in _chat_turns["parts"]:
                         # Since pydantic always has file_data key even None, we just set it as None and set the text to "Expired"
                         if _parts["file_data"]:
