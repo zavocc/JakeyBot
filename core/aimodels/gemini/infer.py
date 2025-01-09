@@ -216,7 +216,7 @@ class Completions(APIParams):
                 await self._discord_method_send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
 
                 # Retry the request
-                _response = await _chat_session.send_message(_chat_thread)
+                _response = await _chat_session.send_message(_prompt)
             else:
                 logging.error("2nd try: I think I found a problem related to the request: %s", e.message)
                 raise e
