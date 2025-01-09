@@ -2,6 +2,7 @@
 - ai.chat
 - ai.gemini.fun
 - ai.gemini.message_actions
+- ai.gemini.oneoff
 - ai.gemini.summarize
 - admin
 - misc

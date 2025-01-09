@@ -29,9 +29,6 @@ class BaseChat():
         else:
             guild_id = prompt.author.id
 
-        # Add reaction to the message to acknowledge the message
-        await prompt.add_reaction("🤖")
-
         # Set default model
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
         if _model is None:
@@ -69,7 +66,7 @@ class BaseChat():
                 guild_id=guild_id,
                 model_name=_model_name)
         except ModuleNotFoundError:
-            raise ModelUnavailable(f"⚠️ The model you've chosen is not available at the moment, please choose another model")
+            raise CustomErrorMessage("⚠️ The model you've chosen is not available at the moment, please choose another model")
         _infer._discord_method_send = prompt.channel.send
 
         ###############################################
@@ -81,7 +78,7 @@ class BaseChat():
         
         if prompt.attachments:
             if not hasattr(_infer, "input_files"):
-                raise MultiModalUnavailable("🚫 This model cannot process file attachments, please try another model")
+                raise CustomErrorMessage("🚫 This model cannot process file attachments, please try another model")
 
             _processFileInterstitial = await prompt.channel.send(f"📄 Processing the file: **{prompt.attachments[0].filename}**")
             await _infer.input_files(attachment=prompt.attachments[0])
@@ -117,7 +114,7 @@ class BaseChat():
             _system_embed = None
         
         # Model information footer
-        _modelInfoFooter = f"-# {_model_name.upper()} {"(this response isn't saved)" if not _append_history else ''}"
+        _modelInfoFooter = f"-# Chatting with {_model_name.upper()} {"(this response isn't saved)" if not _append_history else ''}"
 
         if _system_embed: 
             # Check if there is _tokens_used attribute
@@ -145,9 +142,6 @@ class BaseChat():
         # Save to chat history
         if _append_history:
             await _infer.save_to_history(db_conn=self.DBConn, chat_thread=_result["chat_thread"])
-
-        # Remove the reaction
-        await prompt.remove_reaction("🤖", self.bot.user)
 
     async def on_message(self, pmessage: Message):
         # Ignore messages from the bot itself
@@ -186,16 +180,19 @@ class BaseChat():
             # For now the entire function is under try 
             # Maybe this can be separated into another function
             try:
+                # Add reaction to the message to acknowledge the message
+                await pmessage.add_reaction("🤖")
                 await self._ask(pmessage)
             except Exception as _error:
                 if isinstance(_error, genai_errors.ClientError) or isinstance(_error, genai_errors.ServerError):
                     await pmessage.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: \n> {_error.message}")
                 elif isinstance(_error, HistoryDatabaseError):
                     await pmessage.reply(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
-                elif isinstance(_error, MultiModalUnavailable) or isinstance(_error, ModelUnavailable) or isinstance(_error, ToolsUnavailable):
+                elif isinstance(_error, CustomErrorMessage):
                     await pmessage.reply(f"{_error.message}")
-                elif isinstance(_error, SafetyFilterError):
-                    await pmessage.reply(f"🤬 I detected unsafe content in your prompt, reason: `{_error.reason}`. Please rephrase your question")
+                # Check if the error is about empty message
+                elif isinstance(_error, discord.errors.HTTPException) and "Cannot send an empty message" in str(_error):
+                    await pmessage.reply("⚠️ I recieved an empty response, please rephrase your question or change another model")
                 else:
                     # Handles all errors including from LiteLLM
                     # https://docs.litellm.ai/docs/exception_mapping#litellm-exceptions
@@ -203,5 +200,8 @@ class BaseChat():
 
                 # Log the error
                 logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)
+            finally:
+                # Remove the reaction
+                await pmessage.remove_reaction("🤖", self.bot.user)
 
     

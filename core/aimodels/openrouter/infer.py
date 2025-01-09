@@ -1,4 +1,4 @@
-from core.exceptions import MultiModalUnavailable
+from core.exceptions import CustomErrorMessage
 from core.ai.history import History
 from os import environ
 import discord
@@ -57,7 +57,7 @@ class Completions:
     async def input_files(self, attachment: discord.Attachment):
         # Check if the attachment is an image
         if not attachment.content_type.startswith("image"):
-            raise MultiModalUnavailable("⚠️ This model only supports image attachments")
+            raise CustomErrorMessage("⚠️ This model only supports image attachments")
 
         # Strip the ? and everything after it
         _attachment_prompt = {
@@ -138,7 +138,7 @@ class Completions:
             if any(model in self._model_name for model in self._MULTIMODAL_MODELS):
                 _chat_thread[-1]["content"].append(self._file_data)
             else:
-                raise MultiModalUnavailable(f"🚫 The model **{self._model_name}** doesn't support file attachments, choose another model")
+                raise CustomErrorMessage(f"🚫 The model **{self._model_name}** doesn't support file attachments, choose another model")
 
         # Params
         litellm.api_key = environ.get("OPENROUTER_API_KEY")
