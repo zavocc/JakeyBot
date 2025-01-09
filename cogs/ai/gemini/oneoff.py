@@ -1,17 +1,32 @@
 from core.ai.assistants import Assistants
+from discord.ext import commands
 import core.aimodels._template_ # For type hinting
 import discord
 import importlib
 import io
+import logging
 
-class BaseChat():
+class GeminiQuickChat(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Bot = bot
 
     ###############################################
     # Ask slash command
     ###############################################
+    @commands.slash_command(
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
+    )
+    @commands.cooldown(3, 6, commands.BucketType.user) # Add cooldown to prevent abuse
+    @discord.option(
+        "prompt",
+        input_type=str,
+        description="Ask Jakey any question",
+        max_length=4096,
+        required=True
+    )
     async def ask(self, ctx: discord.ApplicationContext, prompt):
+        """Ask Jakey any quick question"""
         await ctx.response.defer(ephemeral=True)
 
         _infer: core.aimodels._template_.Completions = importlib.import_module(f"core.aimodels.gemini").Completions(
@@ -19,7 +34,7 @@ class BaseChat():
             discord_bot=self.bot,
             model_name="gemini-1.5-flash-002")
        
-         ###############################################
+        ###############################################
         # Answer generation
         ###############################################
         _system_prompt = await Assistants.set_assistant_type("jakey_system_prompt", type=0)
@@ -41,3 +56,18 @@ class BaseChat():
             await ctx.respond("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(io.StringIO(_result), "response.md"))
         else:
             await ctx.respond(embed=_system_embed)
+
+    @ask.error
+    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
+        _error = getattr(error, "original", error)
+        # Cooldown error
+        if isinstance(_error, commands.CommandOnCooldown):
+            await ctx.respond(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
+        else:
+            await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, check console logs or change another model. What exactly happened: **`{type(_error).__name__}`**")
+
+        # Log the error
+        logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)
+
+def setup(bot):
+    bot.add_cog(GeminiQuickChat(bot))

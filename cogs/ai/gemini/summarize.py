@@ -11,7 +11,7 @@ import logging
 import json
 import random
 
-class GenAITools(commands.Cog):
+class GeminiAITools(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
@@ -217,4 +217,4 @@ class GenAITools(commands.Cog):
 
     
 def setup(bot):
-    bot.add_cog(GenAITools(bot))
+    bot.add_cog(GeminiAITools(bot))

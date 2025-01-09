@@ -5,7 +5,7 @@ from os import environ
 import discord
 import logging
 
-class GenAIApps(commands.Cog):
+class GeminiAIApps(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
@@ -128,14 +128,8 @@ class GenAIApps(commands.Cog):
             await ctx.respond("❌ Sorry, this feature is not supported in DMs, please use this command inside the guild.")
             return
         
-         # Check for safety or blocked prompt errors
-        #_exceptions = [genai.types.BlockedPromptException, genai.types.StopCandidateException, ValueError]
-
-        # Get original exception from the DiscordException.original attribute
-        #error = getattr(error, "original", error)
-        #if any(_iter for _iter in _exceptions if isinstance(error, _iter)):
         await ctx.respond("❌ Sorry, this is embarrasing but I couldn't suggest good responses. I'm still learning!")
         logging.error("An error has occurred while generating message explanations, reason: ", exc_info=True)
 
 def setup(bot):
-    bot.add_cog(GenAIApps(bot))
+    bot.add_cog(GeminiAIApps(bot))

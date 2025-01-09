@@ -1,11 +1,9 @@
 from core.ai.core import ModelsList
-from cogs.ai.generative import BaseChat
-from cogs.ai.generative_event import BaseChat as BaseChatEvent
+from cogs.ai.generative_event import BaseChat
 from core.ai.history import History
 from core.exceptions import *
 from discord.commands import SlashCommandGroup
 from discord.ext import commands
-from google.genai import errors as genai_errors
 from os import environ
 import discord
 import inspect
@@ -25,8 +23,7 @@ class Chat(commands.Cog):
             raise e(f"Failed to connect to MongoDB: {e}...\n\nPlease set MONGO_DB_URL in dev.env")
 
         # Initialize the chat system
-        self._ask_command = BaseChat(bot)
-        self._ask_event = BaseChatEvent(bot, self.author, self.DBConn)
+        self._ask_event = BaseChat(bot, self.author, self.DBConn)
 
     ###############################################
     # Ask event slash command
@@ -35,36 +32,6 @@ class Chat(commands.Cog):
     async def on_message(self, message):
         await self._ask_event.on_message(message)
 
-    ###############################################
-    # Ask slash command
-    ###############################################
-    @commands.slash_command(
-        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
-        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
-    )
-    @commands.cooldown(3, 6, commands.BucketType.user) # Add cooldown to prevent abuse
-    @discord.option(
-        "prompt",
-        input_type=str,
-        description="Ask Jakey any question",
-        max_length=4096,
-        required=True
-    )
-    async def ask(self, ctx, prompt):
-        """Ask me quick questions!"""
-        await self._ask_command.ask(ctx, prompt)
-
-    @ask.error
-    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
-        _error = getattr(error, "original", error)
-        # Cooldown error
-        if isinstance(_error, commands.CommandOnCooldown):
-            await ctx.respond(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
-        else:
-            await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, check console logs or change another model. What exactly happened: **`{type(_error).__name__}`**")
-
-        # Log the error
-        logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)
     
     ###############################################
     # For /model slash command group
