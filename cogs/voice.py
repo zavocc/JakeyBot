@@ -30,8 +30,11 @@ class Voice(commands.Cog):
         try:
             if not vc:
                 vc = await ctx.author.voice.channel.connect(cls=wavelink.Player)
-        except AttributeError:
-            return await ctx.respond("🎙️ You must be in a voice channel to use this command.")
+        except AttributeError as e:
+            if str(e) == "'NoneType' object has no attribute 'channel'":
+                await ctx.respond("🎙️ You must be in a voice channel to use this command.")
+                return
+            raise e
 
         # Check if there is a playback on the voice client, otherwise, clear the current user record
         #if self.current_user.get(ctx.guild.id) is not None and hasattr(vc, "playing") or hasattr(vc, "paused"):
