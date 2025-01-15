@@ -166,7 +166,15 @@ class Tool:
         # Check if we're in a server
         if not self.discord_ctx.guild:
             raise Exception("This tool can only be used in a server")
+
+        # Check if the bot has permissions to create events
+        if not self.discord_ctx.guild.me.guild_permissions.manage_events:
+            raise Exception("The bot does not have permissions to create events")
         
+        # Check if the user has permissions to create events
+        if not self.discord_ctx.author.guild_permissions.manage_events:
+            raise Exception("The Discord user does not have permissions to create events, the Discord bot can create events but refused due to user's lack of permissions for creating events or admin permissions")
+
         # Parse datetime strings to datetime objects
         _start_time = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
         _end_time = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
