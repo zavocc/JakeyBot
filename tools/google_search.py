@@ -1,5 +1,6 @@
 # Built in Tools
 from os import environ
+from urllib.parse import urlparse
 import aiohttp
 import discord
 
@@ -142,6 +143,17 @@ class Tool:
         # Must be 5 or below else error out
         if len(urls) > 5:
             raise ValueError("URLs must be 10 or below")
+        
+        # Ensure that URLs are http(s) and its not a localhost or private IP
+        for _url in urls:
+            _parsed = urlparse(_url)
+
+            # Must be http or https
+            if _parsed.scheme not in ["http", "https"]:
+                raise ValueError(f"URL {_url} must be http or https")
+            # Check if its a localhost or private IP
+            if _parsed.hostname in ["localhost", "127.0.0.1"]:
+                raise ValueError(f"URL {_url} must not be a localhost")
 
         # check for the aiohttp client session
         if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
@@ -161,19 +173,50 @@ class Tool:
                         "url": _url,
                         "content": f"Failed to fetch URL with status code {_response.status}"
                     })
+                    continue
 
-                # Check if its a binary file which must error out
-                if "application/octet-stream" in _response.headers["Content-Type"] and "Content-Disposition" in _response.headers:
+                # Check content length
+                _content_length = _response.headers.get('Content-Length')
+
+                # Error if there's no content length for bandwidth reasons
+                if not _content_length:
+                    await _imsg.delete()
+                    raise ValueError("No content length found, the URL cannot be fetched")
+
+                if _content_length and int(_content_length) > 3145728:
+                    #_output.append({
+                    #    "url": _url,
+                    #    "content": "File too large (>3MB)"
+                    #})
+                    #continue
+                    await _imsg.delete()
+                    raise ValueError("File too large, must not exceed 3MB")
+
+                # Read first chunk to detect binary content
+                _chunk = await _response.content.read(1024)
+                try:
+                    # Try to decode as text
+                    _chunk.decode('utf-8')
+                    # If successful, read the rest
+                    _data = _chunk.decode('utf-8') + (await _response.content.read()).decode('utf-8')
+                    
+                    # Additional binary check - looking for high concentration of null bytes
+                    _null_count = _data.count('\x00')
+                    if _null_count > len(_data) * 0.1:  # More than 10% null bytes
+                        raise UnicodeDecodeError("High concentration of null bytes")
+                        
                     _output.append({
                         "url": _url,
-                        "content": "Binary file, cannot extract text"
+                        "content": _data
                     })
-
-                _data = await _response.text()
-                _output.append({
-                    "url": _url,
-                    "content": _data
-                })
+                except UnicodeDecodeError:
+                    #_output.append({
+                    #    "url": _url,
+                    #    "content": "Binary content detected"
+                    #})
+                    if _imsg:
+                        await _imsg.delete()
+                    raise Exception("Binary content detected, I refuse to summarize this page for you.")
 
         # Delete the message
         if _imsg:

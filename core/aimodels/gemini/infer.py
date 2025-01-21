@@ -326,7 +326,7 @@ class Completions(APIParams):
                     # Also print the error to the console
                     logging.error("Something when calling specific tool lately, reason: %s", e)
                     _toolResult = {
-                        "error": f"⚠️ Something went wrong while executing the tool: {e}, please tell the developer or the user to check console logs and operation was halted",
+                        "error": f"⚠️ Something went wrong while executing the tool: {e}\nTell the user about this error",
                         "tool_args": _invokes.args
                     }
 
