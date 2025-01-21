@@ -177,12 +177,6 @@ class Tool:
 
                 # Check content length
                 _content_length = _response.headers.get('Content-Length')
-
-                # Error if there's no content length for bandwidth reasons
-                if not _content_length:
-                    await _imsg.delete()
-                    raise ValueError("No content length found, the URL cannot be fetched")
-
                 if _content_length and int(_content_length) > 3145728:
                     #_output.append({
                     #    "url": _url,
