@@ -17,7 +17,7 @@ class APIParams:
     def __init__(self):
         self._genai_params = {
             "candidate_count": 1,
-            "max_output_tokens": 8192, 
+            "max_output_tokens": 8192,
             "temperature": 0.7,
             "top_p": 0.95,
             "top_k": 40,
@@ -27,7 +27,7 @@ class APIParams:
                     "threshold": "BLOCK_ONLY_HIGH"
                 },
                 {
-                    "category": "HARM_CATEGORY_HATE_SPEECH", 
+                    "category": "HARM_CATEGORY_HATE_SPEECH",
                     "threshold": "BLOCK_ONLY_HIGH"
                 },
                 {
@@ -61,10 +61,10 @@ class Completions(APIParams):
         # Check if discord_bot whether if its a subclass of discord.Bot
         if not isinstance(discord_bot, discord.Bot):
             raise Exception("Invalid discord bot object provided")
-        
+
         # Discord bot object lifecycle instance
         self._discord_bot: discord.Bot = discord_bot
-        
+
         # Check if _gemini_api_client is in the self._discord_bot object
         if not hasattr(discord_bot, "_gemini_api_client"):
             raise Exception("Gemini API client for completions not initialized, please check the bot configuration")
@@ -72,7 +72,7 @@ class Completions(APIParams):
         # Check if _aiohttp_main_client_session is in the self._discord_bot object
         if not hasattr(discord_bot, "_aiohttp_main_client_session"):
             raise Exception("aiohttp client session for get requests not initialized, please check the bot configuration")
-        
+
         self._gemini_api_client: genai.Client = discord_bot._gemini_api_client
         self._aiohttp_main_client_session: aiohttp.ClientSession = discord_bot._aiohttp_main_client_session
 
@@ -99,7 +99,7 @@ class Completions(APIParams):
                 await aiofiles.os.remove(_xfilename)
             # Raise exception
             raise httperror
-        
+
         # Upload the file
         _msgstatus = None
         try:
@@ -126,7 +126,7 @@ class Completions(APIParams):
     async def completion(self, prompt: typing.Union[str, list], system_instruction: str = None):
         # Create response
         _response = await self._gemini_api_client.aio.models.generate_content(
-            model=self._model_name, 
+            model=self._model_name,
             contents=prompt,
             config=types.GenerateContentConfig(
                 **self._genai_params,
@@ -172,8 +172,9 @@ class Completions(APIParams):
         # Parse prompts
         _prompt = types.Part.from_text(prompt)
 
-        # Disable tools entirely if the model has "gemini-2.0-flash-thinking-exp-1219"
-        if self._model_name == "gemini-2.0-flash-thinking-exp-1219":
+        # Disable tools entirely if the model uses thinking process
+        if "gemini-2.0-flash-thinking" in self._model_name:
+            await self._discord_method_send("> ℹ️ NOTICE: Gemini 2.0 thinking models are experimental, it does not support tools, and responses may get cutoff or prematurely end.")
             _Tool = None
 
         # Check if tool is code execution
@@ -217,7 +218,7 @@ class Completions(APIParams):
                         if _part.get("file_data"):
                             _part["file_data"] = None
                             _part["text"] = "⚠️ The file attachment expired and was removed."
-                
+
                 # Notify the user that the chat session has been re-initialized
                 await self._discord_method_send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
 
@@ -230,18 +231,8 @@ class Completions(APIParams):
         # Check if the response was blocked due to safety and other reasons than STOP
         # https://ai.google.dev/api/generate-content#FinishReason
         if _response.candidates[0].finish_reason != "STOP":
-            raise CustomErrorMessage("🤬 I detected unsafe content in your prompt, reason: `{}`. Please rephrase your question".format(_response.candidates[0].finish_reason))
-
-        # Send the CoT process of the model if "gemin-2.0-flash-thinking-exp-1219" is used
-        # Here we assume the CoT is always at the first index of the parts
-        if self._model_name == "gemini-2.0-flash-thinking-exp-1219":
-            await self._discord_method_send(f"> ℹ️ Below is Gemini's 2.0 thinking process and can produce undesirable outputs. Keep in mind that this model doesn't support tools, has 32k context, and only supports image and text inputs.")
-            await self._discord_method_send(f"> {_response.candidates[0].content.parts[0].text.replace('\n', '\n> ')[:1950]}")
-
-            # And discard the first part of the response since when switching Gemini models, it will intentionally produce a CoT
-            # And save tokens, so we remove the first index
-            _response.candidates[0].content.parts.pop(0)
-
+            raise CustomErrorMessage("🤬 I detected unsafe content in your prompt, reason: `{}`. Please rephrase your question".format(_response.candidates[0].finish_reason))\
+        
         # Iterate through the parts and perform tasks
         _toolInvoke = []
         for _part in _response.candidates[0].content.parts:
@@ -277,7 +268,7 @@ class Completions(APIParams):
             if _part.code_execution_result:
                 # Send the code execution result
                 await self._discord_method_send(f"```{_part.code_execution_result.output[:1975]}```")
-            
+
         # Check if we need to execute tools
         if _toolInvoke:
             # Indicate the tool is called
@@ -306,7 +297,7 @@ class Completions(APIParams):
                     else:
                         logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s", e)
                         raise CustomErrorMessage("⚠️ An error has occurred while calling tools, please try again later or choose another tool")
-            
+
                     # Check if _toHalts is True, if it is, we just need to tell the model to try again later
                     # Since its not possible to just break the loop, it has to match the number of parts of toolInvoke
                     if _toHalt:

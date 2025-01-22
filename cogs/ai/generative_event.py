@@ -185,7 +185,7 @@ class BaseChat():
                 await self._ask(pmessage)
             except Exception as _error:
                 if isinstance(_error, genai_errors.ClientError) or isinstance(_error, genai_errors.ServerError):
-                    await pmessage.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: \n> {_error.message}")
+                    await pmessage.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: **{_error.message}**")
                 elif isinstance(_error, HistoryDatabaseError):
                     await pmessage.reply(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
                 elif isinstance(_error, CustomErrorMessage):
