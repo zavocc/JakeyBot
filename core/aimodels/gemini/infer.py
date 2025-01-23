@@ -239,23 +239,28 @@ class Completions(APIParams):
             if _part.function_call:
                 # Before we save it, unicode escape the function call arguments
                 # This is because the generated arguments will provide literal escape characters, we need to parse it
-                for _key, _value in _part.function_call.args.items():
-                    if isinstance(_value, str):
-                        # First try to fix common encoding issues
-                        # This handles cases like Ã¢ÂÂ -> '
-                        _value = _value.encode('utf-8').decode('utf-8')
-                        _value = _value.encode().decode('unicode_escape')
-                        _part.function_call.args[_key] = _value
-                    # If the argument is a list, we need to iterate through it and fix string encoding issues in the list
-                    elif isinstance(_value, list):
-                        # Iterate through the list _list_value is the value of the list and _index is the index of the list
-                        # We use enumerate to get the index of the list value each
-                        for _index, _list_value in enumerate(_value):
-                            if isinstance(_list_value, str):
-                                # Also for this fix common encoding issues
-                                _list_value = _list_value.encode('utf-8').decode('utf-8')
-                                _list_value = _list_value.encode().decode('unicode_escape')
-                                _part.function_call.args[_key][_index] = _list_value
+                # for _key, _value in _part.function_call.args.items():
+                #     if isinstance(_value, str):
+                #         print(f"{_key} {_value}")
+                #         # First try to fix common encoding issues
+                #         # This handles cases like Ã¢ÂÂ -> '
+                #         #_value = _value.encode('utf-8').decode('utf-8')
+
+                #         # NOTE: THIS IS A PROPOSED FIX FOR NON-LATIN CHARACTERS... 
+                #         It was _value = _value.encode().decode('unicode_escape')
+                #         # BUT IT SEEMS API HAVE FIXED ESCAPE CHARACTERS SO COMMENT ALL OF THIS
+                #         _value = _value.encode("raw_unicode_escape").decode("unicode_escape")
+                #         _part.function_call.args[_key] = _value
+                #     # If the argument is a list, we need to iterate through it and fix string encoding issues in the list
+                #     elif isinstance(_value, list):
+                #         # Iterate through the list _list_value is the value of the list and _index is the index of the list
+                #         # We use enumerate to get the index of the list value each
+                #         for _index, _list_value in enumerate(_value):
+                #             if isinstance(_list_value, str):
+                #                 # Also for this fix common encoding issues
+                #                 #_list_value = _list_value.encode('utf-8').decode('utf-8')
+                #                 _list_value = _list_value.encode("raw_unicode_escape").decode("unicode_escape")
+                #                 _part.function_call.args[_key][_index] = _list_value
 
                 # Append the function call to the toolInvoke list
                 _toolInvoke.append(_part.function_call)

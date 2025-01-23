@@ -1,5 +1,5 @@
 aiofiles >= 24.1.0
-google-genai
+google-genai >= 0.6.0
 litellm >= 1.48.18
 motor >= 3.5.1
 py-cord >= 2.6.0
