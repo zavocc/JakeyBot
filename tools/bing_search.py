@@ -141,12 +141,13 @@ class Tool:
             if len(_desclinks) <= 10:
                 _desclinks.append(f"- [{_results['title']}]({_results['url']})")
             else:
+                _desclinks.append("...and more results")
                 break
         _sembed.description = "\n".join(_desclinks)
 
         # Add footer about Microsoft Privacy Statement
         _sembed.set_footer(text="Used Bing search tool to fetch results, https://www.microsoft.com/en-us/privacy/privacystatement")
-        await self.method_send(embed=_sembed)
+        await self.method_send(f"🔍 Searched for **{query}**", embed=_sembed)
         return _output
 
 
