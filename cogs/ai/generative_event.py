@@ -18,17 +18,12 @@ class BaseChat():
         self.bot: discord.Bot = bot
         self.author = author
         self.DBConn = history
+        self.active_users = []
 
     ###############################################
     # Events-based chat
     ###############################################
-    async def _ask(self, prompt: Message):
-        # Check if SHARED_CHAT_HISTORY is enabled
-        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
-            guild_id = prompt.guild.id if prompt.guild else prompt.author.id # Always fallback to ctx.author.id for DMs since ctx.guild is None
-        else:
-            guild_id = prompt.author.id
-
+    async def _ask(self, guild_id, prompt: Message):
         # Set default model
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
         if _model is None:
@@ -147,6 +142,17 @@ class BaseChat():
         # Ignore messages from the bot itself
         if pmessage.author.id == self.bot.user.id:
             return
+        
+        # Check if SHARED_CHAT_HISTORY is enabled
+        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+            _guild_id = pmessage.guild.id if pmessage.guild else pmessage.author.id # Always fallback to ctx.author.id for DMs since ctx.guild is None
+        else:
+            _guild_id = pmessage.author.id
+
+        # Check if the user is already in the queue
+        if _guild_id in self.active_users:
+            await pmessage.reply("🤖 I'm currently busy replying from your previous request, please wait for a moment...")
+            return
 
         # Must be mentioned and check if it's not starts with prefix or slash command
         if pmessage.guild is None or self.bot.user.mentioned_in(pmessage):
@@ -180,9 +186,12 @@ class BaseChat():
             # For now the entire function is under try 
             # Maybe this can be separated into another function
             try:
+                # Add to queue
+                self.active_users.append(pmessage.author.id)
+
                 # Add reaction to the message to acknowledge the message
                 await pmessage.add_reaction("🤖")
-                await self._ask(pmessage)
+                await self._ask(_guild_id, pmessage)
             except Exception as _error:
                 if isinstance(_error, genai_errors.ClientError) or isinstance(_error, genai_errors.ServerError):
                     await pmessage.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: **{_error.message}**")
@@ -201,6 +210,9 @@ class BaseChat():
                 # Log the error
                 logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)
             finally:
+                # Remove the user from the queue
+                self.active_users.remove(pmessage.author.id)
+
                 # Remove the reaction
                 await pmessage.remove_reaction("🤖", self.bot.user)
 

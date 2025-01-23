@@ -25,13 +25,16 @@ class Chat(commands.Cog):
         # Initialize the chat system
         self._ask_event = BaseChat(bot, self.author, self.DBConn)
 
+        # Check if active_users attribute is not set
+        if not hasattr(self._ask_event, "active_users"):
+            self._ask_event.active_users = []
+
     ###############################################
     # Ask event slash command
     ###############################################
     @commands.Cog.listener()
     async def on_message(self, message):
         await self._ask_event.on_message(message)
-
     
     ###############################################
     # For /model slash command group
@@ -60,6 +63,11 @@ class Chat(commands.Cog):
             guild_id = ctx.guild.id if ctx.guild else ctx.author.id
         else:
             guild_id = ctx.author.id
+
+        # Check if the user is in queue
+        if guild_id in self._ask_event.active_users:
+            await ctx.respond("🤖 I'm currently busy replying from your previous request, please wait for a moment...")
+            return
 
         # Save the default model in the database
         await self.DBConn.set_default_model(guild_id=guild_id, model=model)
@@ -188,13 +196,18 @@ class Chat(commands.Cog):
         else:
             guild_id = ctx.author.id
 
+        # Check if the user is in queue
+        if guild_id in self._ask_event.active_users:
+            await ctx.respond("🤖 I'm currently busy replying from your previous request, please wait for a moment...")
+            return
+
         # This command is available in DMs
         if ctx.guild is not None:
             # This returns None if the bot is not installed or authorized in guilds
             # https://docs.pycord.dev/en/stable/api/models.html#discord.AuthorizingIntegrationOwners
             if ctx.interaction.authorizing_integration_owners.guild == None:
                 await ctx.respond("🚫 This commmand can only be used in DMs or authorized guilds!")
-                return  
+                return
 
         # Get current feature and model
         _feature = await self.DBConn.get_config(guild_id=guild_id)
@@ -248,6 +261,11 @@ class Chat(commands.Cog):
             guild_id = ctx.guild.id if ctx.guild else ctx.author.id
         else:
             guild_id = ctx.author.id
+
+        # Check if the user is in queue
+        if guild_id in self._ask_event.active_users:
+            await ctx.respond("🤖 I'm currently busy replying from your previous request, please wait for a moment...")
+            return
 
         # This command is available in DMs
         if ctx.guild is not None:
