@@ -88,7 +88,7 @@ class Tool:
             
         # Return the data as dict
         _output = [{
-            "guidelines": "You must always provide references and format links with [Page Title](Page URL)",
+            "guidelines": "You must always provide references and format links with [Page Title](Page URL). As possible, rank the most relevant and fresh sources based on dates.",
             "formatting_rules": "Do not provide links as [Page URL](Page URL), always provide a title as this [Page Title](Page URL), if it doesn't just directly send the URL",
             "formatting_reason": "Now the reason for this is Discord doesn't nicely format the links if you don't provide a title",
             "results": []
@@ -98,7 +98,9 @@ class Tool:
             _output[0]["results"].append({
                 "title": _results["name"],
                 "excerpts": _results["snippet"],
-                "url": _results["url"]
+                "url": _results["url"],
+                "dateLastCrawled": _results.get("dateLastCrawled") or "Date last crawled data not available",
+                "datePublished": _results.get("datePublished") or "Date published data not available"
             })
 
         # If the user wants to show relevant videos

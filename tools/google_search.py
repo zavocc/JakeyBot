@@ -105,10 +105,17 @@ class Tool:
             if _item["kind"] != "customsearch#result":
                 continue
 
+            # Get the webpage date IF "date" in pagemap/metatags is present
+            _date = "No date from metatags extracted"
+            if "pagemap" in _item and "metatags" in _item["pagemap"]:
+                if "date" in _item["pagemap"]["metatags"][0]:
+                    _date = _item["pagemap"]["metatags"][0]["date"]
+
             _output[0]["results"].append({
                 "title": _item["title"],
                 "link": _item["link"],
-                "excerpt": _item["snippet"]
+                "excerpt": _item["snippet"],
+                "date": _date
             })
 
         # If the webpages list is empty
