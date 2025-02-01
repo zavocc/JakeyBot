@@ -42,12 +42,9 @@
 - model: openai::o1
   name: OpenAI O1
   description: OpenAI's latest model that spends time thinking before responding
-- model: openai_o1::o1-preview
-  name: O1 Preview
-  description: OpenAI's latest model that spends time thinking before responding
-- model: openai_o1::o1-mini
-  name: O1 Mini
-  description: A smaller version of O1 for speed and cost good for math and coding tasks
+- model: openai::o3-mini
+  name: OpenAI O3 Mini
+  description: OpenAI's latest and fast reasoning model
 
 ############################################
 # Claude models
