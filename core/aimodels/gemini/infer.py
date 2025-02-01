@@ -170,7 +170,7 @@ class Completions(APIParams):
             )
 
         # Parse prompts
-        _prompt = types.Part.from_text(prompt)
+        _prompt = types.Part.from_text(text=prompt)
 
         # Disable tools entirely if the model uses thinking process
         if "gemini-2.0-flash-thinking" in self._model_name:
