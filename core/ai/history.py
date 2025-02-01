@@ -1,12 +1,13 @@
 from core.exceptions import HistoryDatabaseError
 from os import environ
 from pymongo import ReturnDocument
+import discord as typehint_Discord
 import logging
 import motor.motor_asyncio
 
 # A class that is responsible for managing and manipulating the chat history
 class History:
-    def __init__(self, db_conn: motor.motor_asyncio.AsyncIOMotorClient = None):
+    def __init__(self, bot: typehint_Discord.Bot, db_conn: motor.motor_asyncio.AsyncIOMotorClient = None):
         self._db_conn = db_conn
 
         if db_conn is None:
@@ -16,6 +17,13 @@ class History:
         self._db = self._db_conn[environ.get("MONGO_DB_NAME", "jakey_prod_db")]
         self._collection = self._db[environ.get("MONGO_DB_COLLECTION_NAME", "jakey_prod_db_collection")]
         logging.info("Connected to the database %s and collection %s", self._db.name, self._collection.name)
+
+        # Create task for indexing the collection
+        bot.loop.create_task(self._init_indexes())
+
+    async def _init_indexes(self):
+        await self._collection.create_index([("guild_id", 1)], name="guild_id_index", background=True, unique=True)
+        logging.info("Created index for guild_id")
 
     async def _ensure_document(self, guild_id: int, model: str = "gemini::gemini-1.5-flash-002", tool_use: str = None):
         """Ensures a document exists for the given guild_id, creates one if it doesn't exist.

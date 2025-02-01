@@ -1,11 +1,11 @@
 from core.ai.assistants import Assistants
 from core.ai.core import ModelsList
 from core.exceptions import *
-from core.ai.history import History # type hinting
+from core.ai.history import History as typehint_History
 from discord import Message
 from google.genai import errors as genai_errors
 from os import environ
-import core.aimodels._template_ # For type hinting
+import core.aimodels._template_ as typehint_AIModelTemplate
 import discord
 import importlib
 import inspect
@@ -14,7 +14,7 @@ import logging
 import re
 
 class BaseChat():
-    def __init__(self, bot, author, history: History):
+    def __init__(self, bot, author, history: typehint_History):
         self.bot: discord.Bot = bot
         self.author = author
         self.DBConn = history
@@ -60,7 +60,7 @@ class BaseChat():
             _append_history = False
       
         try:
-            _infer: core.aimodels._template_.Completions = importlib.import_module(f"core.aimodels.{_model_provider}").Completions(
+            _infer: typehint_AIModelTemplate.Completions = importlib.import_module(f"core.aimodels.{_model_provider}").Completions(
                 discord_ctx=prompt,
                 discord_bot=self.bot,
                 guild_id=guild_id,
@@ -194,9 +194,11 @@ class BaseChat():
                 elif isinstance(_error, discord.errors.HTTPException) and "Cannot send an empty message" in str(_error):
                     await pmessage.reply("⚠️ I recieved an empty response, please rephrase your question or change another model")
                 else:
-                    # Handles all errors including from LiteLLM
-                    # https://docs.litellm.ai/docs/exception_mapping#litellm-exceptions
-                    await pmessage.reply(f"❌ Sorry, I couldn't answer your question at the moment, check console logs or change another model. What exactly happened: **`{type(_error).__name__}`**")
+                    # Check if the error has message attribute
+                    if hasattr(_error, "message"):
+                        await pmessage.reply(f"❌ Sorry, I couldn't answer your question at the moment, please try again later or change another model. What exactly happened: **{_error.message}**")
+                    else:
+                        await pmessage.reply(f"❌ Sorry, I couldn't answer your question at the moment, please try again later or change another model. What exactly happened: **`{type(_error).__name__}`**")
 
                 # Log the error
                 logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)

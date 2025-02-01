@@ -18,6 +18,7 @@ class Chat(commands.Cog):
         # Initialize the MongoDB connection and History management
         try:
             self.DBConn: History = History(
+                bot=bot,
                 db_conn=motor.motor_asyncio.AsyncIOMotorClient(environ.get("MONGO_DB_URL"))
             )
         except Exception as e:

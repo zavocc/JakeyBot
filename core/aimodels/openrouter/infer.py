@@ -1,5 +1,5 @@
 from core.exceptions import CustomErrorMessage
-from core.ai.history import History
+from core.ai.history import History as typehint_History
 from os import environ
 import discord
 import litellm
@@ -69,7 +69,7 @@ class Completions:
 
         self._file_data = _attachment_prompt
 
-    async def chat_completion(self, prompt, db_conn: History, system_instruction: str = None):
+    async def chat_completion(self, prompt, db_conn: typehint_History, system_instruction: str = None):
         # Before we begin, get the OpenRouter model name and override self._model_name
         _model_name = await db_conn.get_key(guild_id=self._guild_id, key="default_openrouter_model")
 

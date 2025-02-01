@@ -1,6 +1,6 @@
 from core.ai.assistants import Assistants
 from discord.ext import commands
-import core.aimodels._template_ # For type hinting
+import core.aimodels._template_ as typehint_AIModelTemplate
 import discord
 import importlib
 import io
@@ -29,7 +29,7 @@ class GeminiQuickChat(commands.Cog):
         """Ask Jakey any quick question"""
         await ctx.response.defer(ephemeral=True)
 
-        _infer: core.aimodels._template_.Completions = importlib.import_module(f"core.aimodels.gemini").Completions(
+        _infer: typehint_AIModelTemplate.Completions = importlib.import_module(f"core.aimodels.gemini").Completions(
             discord_ctx=ctx,
             discord_bot=self.bot,
             model_name="gemini-1.5-flash-002")

@@ -10,6 +10,7 @@ import dotenv
 import importlib
 import logging
 import re
+import socket
 import yaml
 
 # Go to project root directory
@@ -35,6 +36,9 @@ intents.members = True
 # Subclass this bot
 class InitBot(bridge.Bot):
     def __init__(self, *args, **kwargs):
+        # Create socket instance and bind socket to 45769
+        self._lock_socket_instance(45769)
+
         super().__init__(*args, **kwargs)
 
         # Prepare temporary directory
@@ -62,6 +66,15 @@ class InitBot(bridge.Bot):
         # Everything else (mostly GET requests)
         self._aiohttp_main_client_session = aiohttp.ClientSession(loop=self.loop)
 
+    def _lock_socket_instance(self, port):
+        try:
+            self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._socket.bind(('localhost', port))
+            logging.info("Socket bound to port %s", port)
+        except socket.error as e:
+            logging.error("Failed to bind socket port: %s, reason: %s", port, str(e))
+            raise e
+
     # Shutdown the bot
     async def close(self):
         # Close aiohttp client sessions
@@ -71,6 +84,9 @@ class InitBot(bridge.Bot):
         if Path(environ.get("TEMP_DIR", "temp")).exists():
             for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
                 await aiofiles.os.remove(file)
+
+        # Close socket
+        self._socket.close()
 
         await super().close()
 
