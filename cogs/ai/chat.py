@@ -15,47 +15,45 @@ class Chat(commands.Cog):
         self.bot: discord.Bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
-        # Load the database and initialize the HistoryManagement class
-        # MongoDB database connection for chat history and possibly for other things
+        # Initialize the MongoDB connection and History management
         try:
-            self.DBConn: History = History(db_conn=motor.motor_asyncio.AsyncIOMotorClient(environ.get("MONGO_DB_URL")))
+            self.DBConn: History = History(
+                db_conn=motor.motor_asyncio.AsyncIOMotorClient(environ.get("MONGO_DB_URL"))
+            )
         except Exception as e:
             raise e(f"Failed to connect to MongoDB: {e}...\n\nPlease set MONGO_DB_URL in dev.env")
 
         # Initialize the chat system
         self._ask_event = BaseChat(bot, self.author, self.DBConn)
 
-    ###############################################
-    # Ask event slash command
-    ###############################################
+    #######################################################
+    # Event Listeners
+    #######################################################
     @commands.Cog.listener()
     async def on_message(self, message):
         await self._ask_event.on_message(message)
 
-    
-    ###############################################
-    # For /model slash command group
-    ###############################################
+    #######################################################
+    # Slash Command Groups & Commands
+    #######################################################
+    # Model Slash Command Group
     model = SlashCommandGroup(name="model", description="Configure default models for the conversation")
 
-    ###############################################
-    # Set default model command
-    ###############################################
     @model.command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
-        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
     )
     @discord.option(
         "model",
         description="Choose default model for the conversation",
         choices=ModelsList.get_models_list(),
-        required=True
+        required=True,
     )
     async def set(self, ctx, model: str):
-        """Set the default model whenever you mention the me!"""
+        """Set the default model whenever you mention me!"""
         await ctx.response.defer(ephemeral=False)
 
-        # Check if SHARED_CHAT_HISTORY is enabled
+        # Determine guild/user based on SHARED_CHAT_HISTORY setting
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
             guild_id = ctx.guild.id if ctx.guild else ctx.author.id
         else:
@@ -64,8 +62,7 @@ class Chat(commands.Cog):
         # Save the default model in the database
         await self.DBConn.set_default_model(guild_id=guild_id, model=model)
 
-        # Split the model name to get the provider and model name
-        # If it has :: prefix
+        # Validate model format
         if "::" not in model:
             await ctx.respond("❌ Invalid model name, please choose a model from the list")
             return
@@ -74,105 +71,87 @@ class Chat(commands.Cog):
             _model_provider = _model[0]
             _model_name = _model[-1]
 
-        await ctx.respond(f"✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**")
+        await ctx.respond(
+            f"✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**"
+        )
 
-    ###############################################
-    # List models command
-    ###############################################
     @model.command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
-        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
     )
     async def list(self, ctx):
         """List all available models"""
         await ctx.response.defer(ephemeral=True)
 
-        # Create an embed
+        # Create an embed to list models
         _embed = discord.Embed(
             title="Available models",
             description=inspect.cleandoc(
                 f"""Here are the list of available models that you can use
 
                 You can set the default model for the conversation using `/model set` command or on demand through chat prompting
-                via `@{self.bot.user.name} /model:model-name` command
+                via `@{self.bot.user.name} /model:model-name` command.
                 
-                Each provider has its own chat history, skills, and capabilities. Choose what's best for you"""),
-            color=discord.Color.random()
+                Each provider has its own chat history, skills, and capabilities. Choose what's best for you."""
+            ),
+            color=discord.Color.random(),
         )
 
-        # Iterate over models
-        # Now we separate model provider into field and model names into value
-        # It is __provider__model-name so we need to split it and group them as per provider
+        # Group models by provider
         _model_provider_tabledict = {}
-
         async for _model in ModelsList.get_models_list_async():
             _model_provider = _model.split("::")[0]
             _model_name = _model.split("::")[-1]
+            _model_provider_tabledict.setdefault(_model_provider, []).append(_model_name)
 
-            # Add the model name to the corresponding provider in the dictionary
-            if _model_provider not in _model_provider_tabledict:
-                _model_provider_tabledict[_model_provider] = [_model_name]
-            else:
-                _model_provider_tabledict[_model_provider].append(_model_name)
-
-        # Add fields to the embed
+        # Add each provider and its models as a field in the embed
         for provider, models in _model_provider_tabledict.items():
             _embed.add_field(name=provider, value=", ".join(models), inline=False)
 
-        # Send the status
         await ctx.respond(embed=_embed)
 
-    # Handle errors
     @model.error
-    async def on_application_command_error(self, ctx: discord.ApplicationContext):
+    async def model_on_error(self, ctx: discord.ApplicationContext, error):
         await ctx.respond("❌ Something went wrong, please check the console logs for details.")
         logging.error("An error has occurred while executing models command, reason: ", exc_info=True)
 
-    ###############################################
-    # Set OpenRouter models command
-    ###############################################
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
-        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
     )
     @discord.option(
         "model",
         description="Choose models at https://openrouter.ai/models",
-        required=True
+        required=True,
     )
     async def openrouter(self, ctx, model: str):
         """Set the default OpenRouter model"""
         await ctx.response.defer(ephemeral=False)
 
-        # Check if SHARED_CHAT_HISTORY is enabled
+        # Determine guild/user based on SHARED_CHAT_HISTORY setting
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
             guild_id = ctx.guild.id if ctx.guild else ctx.author.id
         else:
             guild_id = ctx.author.id
 
-        # Set the model
+        # Set the default OpenRouter model and clear the OpenRouter chat thread
         await self.DBConn.set_key(guild_id=guild_id, key="default_openrouter_model", value=model)
-
-        # Ensure by getting the key
         _setkeymodel = await self.DBConn.get_key(guild_id=guild_id, key="default_openrouter_model")
-
-        # Clear the "chat_thread_openrouter" when possible
         await self.DBConn.set_key(guild_id=guild_id, key="chat_thread_openrouter", value=None)
 
-        # Success
-        await ctx.respond(f"✅ Default OpenRouter model set to **{_setkeymodel}** and chat history for OpenRouter chats are cleared!\nTo use this model, please set the model to OpenRouter using `/model set` command")
+        await ctx.respond(
+            f"✅ Default OpenRouter model set to **{_setkeymodel}** and chat history for OpenRouter chats are cleared!\n"
+            "To use this model, please set the model to OpenRouter using `/model set` command"
+        )
 
     @openrouter.error
-    async def on_application_command_error(self, ctx: discord.ApplicationContext):
+    async def openrouter_on_error(self, ctx: discord.ApplicationContext, error):
         await ctx.respond("❌ Something went wrong, please check the console logs for details.")
         logging.error("An error has occurred while setting openrouter models, reason: ", exc_info=True)
 
-    ###############################################
-    # Clear context command
-    ###############################################
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
-        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
     )
     @discord.option(
         "reset_prefs",
@@ -182,29 +161,28 @@ class Chat(commands.Cog):
         """Clear the context history of the conversation"""
         await ctx.response.defer()
 
-        # Check if SHARED_CHAT_HISTORY is enabled
+        # Determine guild/user based on SHARED_CHAT_HISTORY setting
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
             guild_id = ctx.guild.id if ctx.guild else ctx.author.id
         else:
             guild_id = ctx.author.id
 
-        # This command is available in DMs
+        # Command allowed only in DMs or in authorized guilds
         if ctx.guild is not None:
-            # This returns None if the bot is not installed or authorized in guilds
-            # https://docs.pycord.dev/en/stable/api/models.html#discord.AuthorizingIntegrationOwners
-            if ctx.interaction.authorizing_integration_owners.guild == None:
-                await ctx.respond("🚫 This commmand can only be used in DMs or authorized guilds!")
-                return  
+            if ctx.interaction.authorizing_integration_owners.guild is None:
+                await ctx.respond("🚫 This command can only be used in DMs or authorized guilds!")
+                return
 
-        # Get current feature and model
+        # Save current settings before clearing history
         _feature = await self.DBConn.get_config(guild_id=guild_id)
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
         _openrouter_model = await self.DBConn.get_key(guild_id=guild_id, key="default_openrouter_model")
 
-        # Clear and set feature and model
+        # Clear chat history
         await self.DBConn.clear_history(guild_id=guild_id)
 
         if not reset_prefs:
+            # Restore settings if not resetting preferences
             await self.DBConn.set_config(guild_id=guild_id, tool=_feature)
             await self.DBConn.set_default_model(guild_id=guild_id, model=_model)
             await self.DBConn.set_key(guild_id=guild_id, key="default_openrouter_model", value=_openrouter_model)
@@ -212,11 +190,9 @@ class Chat(commands.Cog):
         else:
             await ctx.respond("✅ Chat history reset, model and feature settings are cleared!")
 
-    # Handle errors
     @sweep.error
-    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
-        # Get original error
-        _error = getattr(error, "original")
+    async def sweep_on_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
+        _error = getattr(error, "original", error)
         if isinstance(_error, PermissionError):
             await ctx.respond("⚠️ An error has occurred while clearing chat history, logged the error to the owner")
         elif isinstance(_error, FileNotFoundError):
@@ -225,66 +201,56 @@ class Chat(commands.Cog):
             await ctx.respond("❌ Something went wrong, please check the console logs for details.")
             logging.error("An error has occurred while executing sweep command, reason: ", exc_info=True)
 
-
-    ###############################################
-    # Set chat features command
-    ###############################################
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
-        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
     )
     @discord.option(
         "capability",
-        description = "Integrate tools to chat! Setting chat features will clear your history!",
+        description="Integrate tools to chat! Setting chat features will clear your history!",
         choices=ModelsList.get_tools_list(),
     )
     async def feature(self, ctx, capability: str):
         """Enhance your chat with capabilities! Some are in BETA so things may not always pick up"""
-        # Defer
         await ctx.response.defer()
 
-        # Check if SHARED_CHAT_HISTORY is enabled
+        # Determine guild/user based on SHARED_CHAT_HISTORY setting
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
             guild_id = ctx.guild.id if ctx.guild else ctx.author.id
         else:
             guild_id = ctx.author.id
 
-        # This command is available in DMs
+        # Command allowed only in DMs or in authorized guilds
         if ctx.guild is not None:
-            # This returns None if the bot is not installed or authorized in guilds
-            # https://docs.pycord.dev/en/stable/api/models.html#discord.AuthorizingIntegrationOwners
-            if ctx.interaction.authorizing_integration_owners.guild == None:
-                await ctx.respond("🚫 This commmand can only be used in DMs or authorized guilds!")
+            if ctx.interaction.authorizing_integration_owners.guild is None:
+                await ctx.respond("🚫 This command can only be used in DMs or authorized guilds!")
                 return
 
-        # if tool use is the same, do not clear history
+        # Retrieve current settings
         _feature = await self.DBConn.get_config(guild_id=guild_id)
-
-        # Default model
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
 
-        # Check if "capability" is disabled
+        # Convert "disabled" to None
         if capability == "disabled":
             capability = None
 
-        # Check default model
         if _feature == capability:
             await ctx.respond("✅ Feature already set!")
         else:
-            # set config
+            # Set new capability and restore default model
             await self.DBConn.set_config(guild_id=guild_id, tool=capability)
             await self.DBConn.set_default_model(guild_id=guild_id, model=_model)
 
-            if capability == None:
-                await ctx.respond(f"✅ Features disabled and chat is reset to reflect the changes")
+            if capability is None:
+                await ctx.respond("✅ Features disabled and chat is reset to reflect the changes")
             else:
                 await ctx.respond(f"✅ Feature **{capability}** enabled successfully and chat is reset to reflect the changes")
-        
-    # Handle errors
+
     @feature.error
-    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
+    async def feature_on_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
         await ctx.respond("❌ Something went wrong, please check the console logs for details.")
         logging.error("An error has occurred while executing feature command, reason: ", exc_info=True)
+
 
 def setup(bot):
     bot.add_cog(Chat(bot))
