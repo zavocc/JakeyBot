@@ -52,7 +52,7 @@ class Chat(commands.Cog):
     )
     async def set(self, ctx, model: str):
         """Set the default model whenever you mention me!"""
-        await ctx.response.defer(ephemeral=False)
+        await ctx.response.defer(ephemeral=True)
 
         # Determine guild/user based on SHARED_CHAT_HISTORY setting
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
@@ -127,7 +127,7 @@ class Chat(commands.Cog):
     )
     async def openrouter(self, ctx, model: str):
         """Set the default OpenRouter model"""
-        await ctx.response.defer(ephemeral=False)
+        await ctx.response.defer(ephemeral=True)
 
         # Determine guild/user based on SHARED_CHAT_HISTORY setting
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
@@ -160,7 +160,7 @@ class Chat(commands.Cog):
     )
     async def sweep(self, ctx, reset_prefs: bool = False):
         """Clear the context history of the conversation"""
-        await ctx.response.defer()
+        await ctx.response.defer(ephemeral=True)
 
         # Determine guild/user based on SHARED_CHAT_HISTORY setting
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
@@ -213,7 +213,7 @@ class Chat(commands.Cog):
     )
     async def feature(self, ctx, capability: str):
         """Enhance your chat with capabilities! Some are in BETA so things may not always pick up"""
-        await ctx.response.defer()
+        await ctx.response.defer(ephemeral=True)
 
         # Determine guild/user based on SHARED_CHAT_HISTORY setting
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":

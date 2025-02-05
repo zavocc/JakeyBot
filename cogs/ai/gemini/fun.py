@@ -13,8 +13,8 @@ class GeminiUtils(commands.Cog):
         self.author = environ.get("BOT_NAME", "Jakey Bot")
         
     @commands.slash_command(
-        contexts={discord.InteractionContextType.guild},
-        integration_types={discord.IntegrationType.guild_install}
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
     )
     @discord.option(
         "user",
