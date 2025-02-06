@@ -31,8 +31,7 @@ class GeminiQuickChat(commands.Cog):
 
         _infer: typehint_AIModelTemplate.Completions = importlib.import_module(f"core.aimodels.gemini").Completions(
             discord_ctx=ctx,
-            discord_bot=self.bot,
-            model_name="gemini-1.5-flash-002")
+            discord_bot=self.bot)
        
         ###############################################
         # Answer generation

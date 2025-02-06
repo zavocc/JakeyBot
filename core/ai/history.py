@@ -25,7 +25,7 @@ class History:
         await self._collection.create_index([("guild_id", 1)], name="guild_id_index", background=True, unique=True)
         logging.info("Created index for guild_id")
 
-    async def _ensure_document(self, guild_id: int, model: str = "gemini::gemini-1.5-flash-002", tool_use: str = None):
+    async def _ensure_document(self, guild_id: int, model: str = "gemini::gemini-2.0-flash-001", tool_use: str = None):
         """Ensures a document exists for the given guild_id, creates one if it doesn't exist.
         Returns the current document."""
         if guild_id is None or not isinstance(guild_id, int):

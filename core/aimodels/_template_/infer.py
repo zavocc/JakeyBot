@@ -3,10 +3,10 @@ import discord
 
 # A base template for other models
 class Completions():
-    # This will be used for chat history thread, feel free to change it
-    _model_provider_thread = "ai_provider_company"
-
     def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "agi-5-latest"):
+        # Model provider thread
+        self._model_provider_thread = "ai_provider_company"
+
         # Discord context
         self._discord_ctx = discord_ctx
 

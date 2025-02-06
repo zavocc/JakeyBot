@@ -5,9 +5,10 @@ import litellm
 import logging
 
 class Completions:
-    _model_provider_thread = "mistralai"
-
     def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "mistral-large-2407"):
+        # Model provider thread
+        self._model_provider_thread = "mistralai"
+
         # Discord context
         self._discord_ctx = discord_ctx
 

@@ -9,6 +9,7 @@ import aiofiles
 import asyncio
 import discord
 import importlib
+import io
 import logging
 import typing
 import random
@@ -42,9 +43,10 @@ class APIParams:
         }
 
 class Completions(APIParams):
-    _model_provider_thread = "gemini"
+    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "gemini-2.0-flash-001"):
+        # Model provider thread
+        self._model_provider_thread = "gemini"
 
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "gemini-1.5-flash-002"):
         super().__init__()
 
         # Discord context
@@ -237,31 +239,6 @@ class Completions(APIParams):
         _toolInvoke = []
         for _part in _response.candidates[0].content.parts:
             if _part.function_call:
-                # Before we save it, unicode escape the function call arguments
-                # This is because the generated arguments will provide literal escape characters, we need to parse it
-                # for _key, _value in _part.function_call.args.items():
-                #     if isinstance(_value, str):
-                #         print(f"{_key} {_value}")
-                #         # First try to fix common encoding issues
-                #         # This handles cases like Ã¢ÂÂ -> '
-                #         #_value = _value.encode('utf-8').decode('utf-8')
-
-                #         # NOTE: THIS IS A PROPOSED FIX FOR NON-LATIN CHARACTERS... 
-                #         It was _value = _value.encode().decode('unicode_escape')
-                #         # BUT IT SEEMS API HAVE FIXED ESCAPE CHARACTERS SO COMMENT ALL OF THIS
-                #         _value = _value.encode("raw_unicode_escape").decode("unicode_escape")
-                #         _part.function_call.args[_key] = _value
-                #     # If the argument is a list, we need to iterate through it and fix string encoding issues in the list
-                #     elif isinstance(_value, list):
-                #         # Iterate through the list _list_value is the value of the list and _index is the index of the list
-                #         # We use enumerate to get the index of the list value each
-                #         for _index, _list_value in enumerate(_value):
-                #             if isinstance(_list_value, str):
-                #                 # Also for this fix common encoding issues
-                #                 #_list_value = _list_value.encode('utf-8').decode('utf-8')
-                #                 _list_value = _list_value.encode("raw_unicode_escape").decode("unicode_escape")
-                #                 _part.function_call.args[_key][_index] = _list_value
-
                 # Append the function call to the toolInvoke list
                 _toolInvoke.append(_part.function_call)
 
@@ -273,6 +250,15 @@ class Completions(APIParams):
             if _part.code_execution_result:
                 # Send the code execution result
                 await self._discord_method_send(f"```{_part.code_execution_result.output[:1975]}```")
+
+            # Render the code execution inline data when needed
+            if _part.inline_data:
+                if _part.inline_data.mime_type == "image/png":
+                    await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="image.png"))
+                elif _part.inline_data.mime_type == "image/jpeg":
+                    await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="image.jpeg"))
+                else:
+                    await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="code_exec_artifact.bin"))
 
         # Check if we need to execute tools
         if _toolInvoke:

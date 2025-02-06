@@ -23,7 +23,7 @@ class GeminiUtils(commands.Cog):
     )
     @discord.option(
         "describe",
-        description="Describe the avatar using Gemini 1.5 Flash",
+        description="Describe the avatar",
         required=False
     )
     async def avatar(self, ctx, user: Member = None, describe: bool = False):
@@ -75,7 +75,7 @@ class GeminiUtils(commands.Cog):
             color=discord.Color.random()
         )
         embed.set_image(url=avatar_url)
-        if _description: embed.set_footer(text="Using Gemini 1.5 Flash to generate descriptions, result may not be accurate")
+        if _description: embed.set_footer(text="Using Gemini 2.0 Flash to generate descriptions, result may not be accurate")
         await ctx.respond(embed=embed, ephemeral=True)
 
     @avatar.error

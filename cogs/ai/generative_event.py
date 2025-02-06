@@ -33,7 +33,7 @@ class BaseChat():
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
         if _model is None:
             logging.info("No default model found, using default model")
-            _model = "gemini::gemini-1.5-flash-002"
+            _model = "gemini::gemini-2.0-flash-001"
 
         _model_provider = _model.split("::")[0]
         _model_name = _model.split("::")[-1]

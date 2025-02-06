@@ -5,9 +5,10 @@ import litellm
 import logging
 
 class Completions:
-    _model_provider_thread = "openai"
-
     def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "gpt-4o-mini"):
+        # Model provider thread
+        self._model_provider_thread = "openai"
+
         # Discord context
         self._discord_ctx = discord_ctx
 

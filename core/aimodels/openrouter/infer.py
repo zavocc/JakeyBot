@@ -6,9 +6,10 @@ import litellm
 import logging
 
 class Completions:
-    _model_provider_thread = "openrouter"
-
     def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = None):
+        # Model provider thread
+        self._model_provider_thread = "openrouter"
+
         # Discord context
         self._discord_ctx = discord_ctx
 
