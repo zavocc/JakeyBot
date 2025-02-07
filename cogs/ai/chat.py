@@ -72,9 +72,15 @@ class Chat(commands.Cog):
             _model_provider = _model[0]
             _model_name = _model[-1]
 
-        await ctx.respond(
-            f"✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**"
-        )
+
+        if _model_provider != "gemini":
+            await ctx.respond(
+                f"> This model lacks real time information and tools\n\n✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**"
+            )
+        else:
+            await ctx.respond(
+                f"✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**"
+            )
 
     @model.command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},

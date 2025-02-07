@@ -94,6 +94,10 @@ class GeminiAITools(commands.Cog):
 
         _messages = ctx.channel.history(limit=limit, before=before_date, after=after_date, around=around_date)
         async for x in _messages:
+            # Check if the message is empty, has less than 3 characters
+            if len(x.content) < 3 or x.content.strip() == "":
+                continue
+
             # Handle 2000 characters limit since 4000 characters is considered spam
             if len(x.content) <= 2000:
                 _prompt_feed.append(
