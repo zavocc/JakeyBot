@@ -1,6 +1,39 @@
+from typing import Union
 import aiofiles
 import discord
+import io
 import yaml
+
+class Utils:
+    ###############################################
+    # Method to send message dynamically based on the length of the message
+    ###############################################
+    @staticmethod
+    async def send_ai_response(ctx: Union[discord.ApplicationContext, discord.Message], prompt: str, response: str, method_send, strip: bool = True) -> None:
+        """Optimized method to send message based on the length of the message"""
+        # Check if we can strip the message
+        if strip:
+            response = response.strip()
+
+        # Embed the response if the response is more than 2000 characters
+        # Check to see if this message is more than 2000 characters which embeds will be used for displaying the message
+        if len(response) > 4096:
+            # Send the response as file
+            if ctx.channel.permissions_for(ctx.guild.me).attach_files:
+                await method_send("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(io.StringIO(response), "response.md"))
+            else:
+                await method_send("⚠️ Your message was too long to be sent please ask a follow-up question of this answer in concise format.")
+        elif len(response) > 2000:
+            await method_send(
+                embed=discord.Embed(
+                    title=prompt.replace("\n", " ")[0:20] + "...",
+                    description=response,
+                    color=discord.Color.random()
+                )
+            )
+        else:
+            await method_send(response)
+
 
 class ModelsList:
     # Must be used everytime when needing to get the models list on demand

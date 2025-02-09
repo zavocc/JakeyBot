@@ -1,3 +1,4 @@
+from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage
 from google import genai
 from google.genai import errors
@@ -238,6 +239,9 @@ class Completions(APIParams):
         # Iterate through the parts and perform tasks
         _toolInvoke = []
         for _part in _response.candidates[0].content.parts:
+            if _part.text.strip():
+                await Utils.send_ai_response(self._discord_ctx, prompt, _part.text, self._discord_method_send)
+
             if _part.function_call:
                 # Append the function call to the toolInvoke list
                 _toolInvoke.append(_part.function_call)
@@ -330,9 +334,8 @@ class Completions(APIParams):
         # Save the latest messages to chat thread, if it's not a dict, it's a pydantic model object which we need to convert to dict
         _chat_thread = [_item if isinstance(_item, dict) else _item.model_dump(exclude_unset=True) for _item in _chat_session._curated_history]
 
-        # Return the response
-        _final_candidate_response = _response.candidates[0].content.parts
-        return {"answer": _final_candidate_response[-1].text, "chat_thread": _chat_thread}
+        # Return the status
+        return {"response": "OK", "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
         await db_conn.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)

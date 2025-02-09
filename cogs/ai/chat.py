@@ -1,5 +1,5 @@
 from core.ai.core import ModelsList
-from cogs.ai.generative_event import BaseChat
+from cogs.ai.generative_chat import BaseChat
 from core.ai.history import History
 from core.exceptions import *
 from discord.commands import SlashCommandGroup
