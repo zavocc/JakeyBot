@@ -151,7 +151,7 @@ class BaseChat():
             # Maybe this can be separated into another function
             try:
                 # Add reaction to the message to acknowledge the message
-                await pmessage.add_reaction("🤖")
+                await pmessage.add_reaction("⌛")
                 await self._ask(pmessage)
             except Exception as _error:
                 if isinstance(_error, genai_errors.ClientError) or isinstance(_error, genai_errors.ServerError):
@@ -174,6 +174,6 @@ class BaseChat():
                 logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)
             finally:
                 # Remove the reaction
-                await pmessage.remove_reaction("🤖", self.bot.user)
+                await pmessage.remove_reaction("⌛", self.bot.user)
 
     

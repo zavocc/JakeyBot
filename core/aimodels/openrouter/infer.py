@@ -1,3 +1,4 @@
+from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage
 from core.ai.history import History as typehint_History
 from os import environ
@@ -27,8 +28,6 @@ class Completions:
         
         # Discord bot object lifecycle instance
         self._discord_bot: discord.Bot = discord_bot
-
-        self._file_data = None
 
         if not environ.get("OPENROUTER_API_KEY"):
             raise ValueError("No OpenRouter API key was set, this model isn't available")
@@ -135,7 +134,7 @@ class Completions:
             }
 
         # Check if we have an attachment
-        if self._file_data is not None:
+        if hasattr(self, "_file_data"):
             if any(model in self._model_name for model in self._MULTIMODAL_MODELS):
                 _chat_thread[-1]["content"].append(self._file_data)
             else:
@@ -177,7 +176,9 @@ class Completions:
         # Send message what model used
         await self._discord_method_send(f"-# Using OpenRouter model: **{self._model_name}**")
 
-        return {"answer":_answer, "chat_thread": _chat_thread}
+        # Send the response
+        await Utils.send_ai_response(self._discord_ctx, prompt, _answer, self._discord_method_send)
+        return {"response":"OK", "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
         await db_conn.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)

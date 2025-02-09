@@ -27,8 +27,7 @@ class Utils:
             await method_send(
                 embed=discord.Embed(
                     title=prompt.replace("\n", " ")[0:20] + "...",
-                    description=response,
-                    color=discord.Color.random()
+                    description=response
                 )
             )
         else:

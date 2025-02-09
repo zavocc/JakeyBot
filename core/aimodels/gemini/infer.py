@@ -79,7 +79,7 @@ class Completions(APIParams):
         self._gemini_api_client: genai.Client = discord_bot._gemini_api_client
         self._aiohttp_main_client_session: aiohttp.ClientSession = discord_bot._aiohttp_main_client_session
 
-        self._file_data = None
+        #self._file_data = None
 
         self._model_name = model_name
         self._guild_id = guild_id
@@ -125,22 +125,7 @@ class Completions(APIParams):
     ############################
     # Inferencing
     ############################
-    # Completion
-    async def completion(self, prompt: typing.Union[str, list], system_instruction: str = None):
-        # Create response
-        _response = await self._gemini_api_client.aio.models.generate_content(
-            model=self._model_name,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                **self._genai_params,
-                system_instruction=system_instruction or "You are a helpful assistant",
-            )
-        )
-
-        return _response.text
-
-    # Chat Completion
-    async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
+    async def _fetch_tool(self, db_conn) -> dict:
         # Tools
         _tool_selection_name = await db_conn.get_config(guild_id=self._guild_id)
         try:
@@ -155,25 +140,6 @@ class Completions(APIParams):
         except ModuleNotFoundError as e:
             logging.error("I cannot import the tool because the module is not found: %s", e)
             raise CustomErrorMessage("⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
-
-        # Load history
-        _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
-
-        if _chat_thread is None:
-            _chat_thread = []
-
-        # Attach file attachment if it exists
-        if self._file_data is not None:
-            _chat_thread.append(types.Content(
-                    parts=[
-                        types.Part.from_uri(**self._file_data)
-                    ],
-                    role="user"
-                ).model_dump(exclude_unset=True)
-            )
-
-        # Parse prompts
-        _prompt = types.Part.from_text(text=prompt)
 
         # Check if tool is code execution
         if _Tool:
@@ -195,6 +161,52 @@ class Completions(APIParams):
         else:
             _tool_schema = None
 
+        return {
+            "tool_schema": _tool_schema,
+            "tool_human_name": _Tool.tool_human_name if _Tool else None,
+            "tool_object": _Tool
+        }
+
+    # Completion
+    async def completion(self, prompt: typing.Union[str, list], system_instruction: str = None):
+        # Create response
+        _response = await self._gemini_api_client.aio.models.generate_content(
+            model=self._model_name,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                **self._genai_params,
+                system_instruction=system_instruction or "You are a helpful assistant",
+            )
+        )
+
+        return _response.text
+
+
+    # Chat Completion
+    async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
+        # Load history
+        _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
+
+        # Fetch tool
+        _Tool = await self._fetch_tool(db_conn)
+
+        if _chat_thread is None:
+            _chat_thread = []
+
+        # Attach file attachment if it exists
+        if hasattr(self, "_file_data"):
+            _chat_thread.append(types.Content(
+                    parts=[
+                        types.Part.from_uri(**self._file_data)
+                    ],
+                    role="user"
+                ).model_dump(exclude_unset=True)
+            )
+
+        # Parse prompts
+        _prompt = types.Part.from_text(text=prompt)
+
+
         # Create chat session
         _chat_session = self._gemini_api_client.aio.chats.create(
             model=self._model_name,
@@ -202,7 +214,7 @@ class Completions(APIParams):
             config=types.GenerateContentConfig(
                 **self._genai_params,
                 system_instruction=system_instruction or "You are a helpful assistant named Jakey",
-                tools=_tool_schema
+                tools=_Tool["tool_schema"]
             )
         )
 
@@ -247,16 +259,16 @@ class Completions(APIParams):
             if _part.function_call:
                 # Indicate the tool is called
                 if not _interstitial:
-                    _interstitial = await self._discord_method_send(f"✅ Tool started: **{_Tool.tool_human_name}**")
+                    _interstitial = await self._discord_method_send(f"✅ Tool started: **{_Tool['tool_human_name']}**")
                 
                 try:
                     # Edit the interstitial message
                     await _interstitial.edit(f"⚙️ Executing tool: **{_part.function_call.name}**")
 
-                    if hasattr(_Tool, "_tool_function"):
-                        _toExec = getattr(_Tool, "_tool_function")
-                    elif hasattr(_Tool, f"_tool_function_{_part.function_call.name}"):
-                        _toExec = getattr(_Tool, f"_tool_function_{_part.function_call.name}")
+                    if hasattr(_Tool["tool_object"], "_tool_function"):
+                        _toExec = getattr(_Tool["tool_object"], "_tool_function")
+                    elif hasattr(_Tool["tool_object"], f"_tool_function_{_part.function_call.name}"):
+                        _toExec = getattr(_Tool["tool_object"], f"_tool_function_{_part.function_call.name}")
                     else:
                         logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s", e)
                         raise CustomErrorMessage("⚠️ An error has occurred while calling tools, please try again later or choose another tool")
@@ -291,7 +303,7 @@ class Completions(APIParams):
 
             # Function calling and code execution doesn't mix
             if _part.executable_code:
-                _interstitial = await self._discord_method_send(f"✅ Executing python code...")
+                await self._discord_method_send(f"✅ Code analysis complete")
                 await self._discord_method_send(f"```py\n{_part.executable_code.code[:1975]}\n```")
 
             if _part.code_execution_result:
@@ -308,10 +320,11 @@ class Completions(APIParams):
                     await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="code_exec_artifact.bin"))
 
         # Edit interstitial message
-        if _interstitial and _toHalt:
-            await _interstitial.edit(f"⚠️ Error executing tool: **{_Tool.tool_human_name}**")
-        else:
-            await _interstitial.edit(f"✅ Used: **{_Tool.tool_human_name}**")
+        if _toolParts and _interstitial:
+            if _toHalt:
+                await _interstitial.edit(f"⚠️ Error executing tool: **{_Tool['tool_human_name']}**")
+            else:
+                await _interstitial.edit(f"✅ Used: **{_Tool['tool_human_name']}**")
 
         # Add function call parts to the response
         if _toolParts:

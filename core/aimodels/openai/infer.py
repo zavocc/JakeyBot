@@ -1,3 +1,4 @@
+from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage
 from os import environ
 import discord
@@ -26,8 +27,6 @@ class Completions:
         
         # Discord bot object lifecycle instance
         self._discord_bot: discord.Bot = discord_bot
-
-        self._file_data = None
 
         if environ.get("OPENAI_API_KEY"):
             # Set endpoint if OPENAI_API_ENDPOINT is set
@@ -83,7 +82,7 @@ class Completions:
         )
 
         # Check if we have an attachment
-        if self._file_data is not None:
+        if hasattr(self, "_file_data"):
             # Raise an error if OpenAI o3-mini model is used
             if "o3-mini" in self._model_name:
                 raise CustomErrorMessage("⚠️ O3-mini doesn't support image attachments")
@@ -132,7 +131,10 @@ class Completions:
         if _interstitial:
             await _interstitial.delete()
 
-        return {"answer":_answer, "chat_thread": _chat_thread}
+        # Send the response
+        await Utils.send_ai_response(self._discord_ctx, prompt, _answer, self._discord_method_send)
+
+        return {"response":"OK", "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
         await db_conn.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)

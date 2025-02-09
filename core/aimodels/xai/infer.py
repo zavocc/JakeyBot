@@ -1,3 +1,4 @@
+from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage
 from os import environ
 import discord
@@ -25,8 +26,6 @@ class Completions:
         
         # Discord bot object lifecycle instance
         self._discord_bot: discord.Bot = discord_bot
-
-        self._file_data = None
 
         if environ.get("XAI_API_KEY"):
             self._model_name = "xai/" + model_name
@@ -74,7 +73,7 @@ class Completions:
         )
 
         # Check for file attachments
-        if self._file_data is not None:
+        if hasattr(self, "_file_data"):
             _chat_thread[-1]["content"].append(self._file_data)
         
 
@@ -103,7 +102,9 @@ class Completions:
             }
         )
 
-        return {"answer":_answer, "chat_thread": _chat_thread}
+        # Send the response
+        await Utils.send_ai_response(self._discord_ctx, prompt, _answer, self._discord_method_send)
+        return {"response":"OK", "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
         await db_conn.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)
