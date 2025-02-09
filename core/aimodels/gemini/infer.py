@@ -175,23 +175,23 @@ class Completions(APIParams):
         # Parse prompts
         _prompt = types.Part.from_text(text=prompt)
 
-        # Disable tools entirely if the model uses thinking process
-        if "gemini-2.0-flash-thinking" in self._model_name:
-            await self._discord_method_send("> ℹ️ NOTICE: Gemini 2.0 thinking models are experimental, it does not support tools, and responses may get cutoff or prematurely end.")
-            _Tool = None
-
         # Check if tool is code execution
         if _Tool:
             if _tool_selection_name == "code_execution":
                 _tool_schema = [types.Tool(code_execution=types.ToolCodeExecution())]
             else:
-                # Check if the tool schema is a list or not
-                # Since a list of tools could be a collection of tools, sometimes it's just a single tool
-                # But depends on the tool implementation
-                if type(_Tool.tool_schema) == list:
-                    _tool_schema = [types.Tool(function_declarations=_Tool.tool_schema)]
+                # Disable tools entirely if the model uses flash thinking
+                if "gemini-2.0-flash-thinking" in self._model_name:
+                    await self._discord_method_send("> ℹ️ NOTICE: Gemini 2.0 thinking models are experimental, it does not support tools, and responses may get cutoff or prematurely end.")
+                    _Tool = None
                 else:
-                    _tool_schema = [types.Tool(function_declarations=[_Tool.tool_schema])]
+                    # Check if the tool schema is a list or not
+                    # Since a list of tools could be a collection of tools, sometimes it's just a single tool
+                    # But depends on the tool implementation
+                    if type(_Tool.tool_schema) == list:
+                        _tool_schema = [types.Tool(function_declarations=_Tool.tool_schema)]
+                    else:
+                        _tool_schema = [types.Tool(function_declarations=[_Tool.tool_schema])]
         else:
             _tool_schema = None
 
@@ -237,18 +237,61 @@ class Completions(APIParams):
             raise CustomErrorMessage("🤬 I detected unsafe content in your prompt, reason: `{}`. Please rephrase your question".format(_response.candidates[0].finish_reason))\
         
         # Iterate through the parts and perform tasks
-        _toolInvoke = []
+        _toolParts = []
+        _toHalt = False
+        _interstitial = None
         for _part in _response.candidates[0].content.parts:
-            if _part.text.strip():
+            if _part.text and _part.text.strip():
                 await Utils.send_ai_response(self._discord_ctx, prompt, _part.text, self._discord_method_send)
 
             if _part.function_call:
-                # Append the function call to the toolInvoke list
-                _toolInvoke.append(_part.function_call)
+                # Indicate the tool is called
+                if not _interstitial:
+                    _interstitial = await self._discord_method_send(f"✅ Tool started: **{_Tool.tool_human_name}**")
+                
+                try:
+                    # Edit the interstitial message
+                    await _interstitial.edit(f"⚙️ Executing tool: **{_part.function_call.name}**")
+
+                    if hasattr(_Tool, "_tool_function"):
+                        _toExec = getattr(_Tool, "_tool_function")
+                    elif hasattr(_Tool, f"_tool_function_{_part.function_call.name}"):
+                        _toExec = getattr(_Tool, f"_tool_function_{_part.function_call.name}")
+                    else:
+                        logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s", e)
+                        raise CustomErrorMessage("⚠️ An error has occurred while calling tools, please try again later or choose another tool")
+
+                    # Check if _toHalts is True, if it is, we just need to tell the model to try again later
+                    # Since its not possible to just break the loop, it has to match the number of parts of toolInvoke
+                    if _toHalt:
+                        _toolResult = {
+                            "error": f"⚠️ Error occurred previously which in order to prevent further issues, the operation was halted",
+                            "tool_args": _part.function_call.args
+                        }
+                    else:
+                        _toolResult = {
+                            "toolResult": (await _toExec(**_part.function_call.args)),
+                            "tool_args": _part.function_call.args
+                        }
+                # For other exceptions, log the error and add it as part of the chat thread
+                except Exception as e:
+                    _toHalt = True
+
+                    # Also print the error to the console
+                    logging.error("Something when calling specific tool lately, reason: %s", e)
+                    _toolResult = {
+                        "error": f"⚠️ Something went wrong while executing the tool: {e}\nTell the user about this error",
+                        "tool_args": _part.function_call.args
+                    }
+
+                _toolParts.append(types.Part.from_function_response(
+                    name=_part.function_call.name,
+                    response=_toolResult
+                ))
 
             # Function calling and code execution doesn't mix
             if _part.executable_code:
-                await self._discord_method_send(f"✅ Used: **{_Tool.tool_human_name}**")
+                _interstitial = await self._discord_method_send(f"✅ Executing python code...")
                 await self._discord_method_send(f"```py\n{_part.executable_code.code[:1975]}\n```")
 
             if _part.code_execution_result:
@@ -264,72 +307,18 @@ class Completions(APIParams):
                 else:
                     await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="code_exec_artifact.bin"))
 
-        # Check if we need to execute tools
-        if _toolInvoke:
-            # Indicate the tool is called
-            _interstitial = await self._discord_method_send(f"✅ Tool started: **{_Tool.tool_human_name}**")
+        # Edit interstitial message
+        if _interstitial and _toHalt:
+            await _interstitial.edit(f"⚠️ Error executing tool: **{_Tool.tool_human_name}**")
+        else:
+            await _interstitial.edit(f"✅ Used: **{_Tool.tool_human_name}**")
 
-            # Send text
-            _firstTextResponseChunk = _response.candidates[0].content.parts[0].text
-            if _firstTextResponseChunk and len(_firstTextResponseChunk) <= 2000:
-                await self._discord_method_send(_firstTextResponseChunk)
-
-            # If it has more than one function call arguments, we need to iterate through it
-            # This is the case for Gemini 2.0, which otherwise it will error that it doesn't match the function call parts
-            _toolParts = []
-
-            # Indicator if there are errors
-            _toHalt = False
-            for _invokes in _toolInvoke:
-                try:
-                    # Edit the interstitial message
-                    await _interstitial.edit(f"⚙️ Executing tool: **{_invokes.name}**")
-
-                    if hasattr(_Tool, "_tool_function"):
-                        _toExec = getattr(_Tool, "_tool_function")
-                    elif hasattr(_Tool, f"_tool_function_{_invokes.name}"):
-                        _toExec = getattr(_Tool, f"_tool_function_{_invokes.name}")
-                    else:
-                        logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s", e)
-                        raise CustomErrorMessage("⚠️ An error has occurred while calling tools, please try again later or choose another tool")
-
-                    # Check if _toHalts is True, if it is, we just need to tell the model to try again later
-                    # Since its not possible to just break the loop, it has to match the number of parts of toolInvoke
-                    if _toHalt:
-                        _toolResult = {
-                            "error": f"⚠️ Error occurred previously which in order to prevent further issues, the operation was halted",
-                            "tool_args": _invokes.args
-                        }
-                    else:
-                        _toolResult = {
-                            "toolResult": (await _toExec(**_invokes.args)),
-                            "tool_args": _invokes.args
-                        }
-                # For other exceptions, log the error and add it as part of the chat thread
-                except Exception as e:
-                    _toHalt = True
-
-                    # Also print the error to the console
-                    logging.error("Something when calling specific tool lately, reason: %s", e)
-                    _toolResult = {
-                        "error": f"⚠️ Something went wrong while executing the tool: {e}\nTell the user about this error",
-                        "tool_args": _invokes.args
-                    }
-
-                _toolParts.append(types.Part.from_function_response(
-                    name=_invokes.name,
-                    response=_toolResult
-                ))
-
-            # Re-run the model
-            await _interstitial.edit(f"✅ Generating a response with tool result from: **{_Tool.tool_human_name}**")
+        # Add function call parts to the response
+        if _toolParts:
             _response = await _chat_session.send_message(_toolParts)
-
-            # Edit interstitial message
-            if _toHalt:
-                await _interstitial.edit(f"⚠️ Error executing tool: **{_Tool.tool_human_name}**")
-            else:
-                await _interstitial.edit(f"✅ Used: **{_Tool.tool_human_name}**")
+            # Check if it has text part
+            if _response.candidates[0].content.parts[0].text:
+                await self._discord_method_send(_response.candidates[0].content.parts[0].text)
 
         # Save the latest messages to chat thread, if it's not a dict, it's a pydantic model object which we need to convert to dict
         _chat_thread = [_item if isinstance(_item, dict) else _item.model_dump(exclude_unset=True) for _item in _chat_session._curated_history]
