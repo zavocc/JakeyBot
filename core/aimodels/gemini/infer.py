@@ -248,10 +248,7 @@ class Completions(APIParams):
             raise CustomErrorMessage("🤬 I detected unsafe content in your prompt, reason: `{}`. Please rephrase your question".format(_response.candidates[0].finish_reason))\
         
         _toolUseLoopTilEnd = True
-        while True:
-            if not _toolUseLoopTilEnd:
-                break
-
+        while _toolUseLoopTilEnd:
             # Reset the loop
             _toolUseLoopTilEnd = False
         
@@ -342,7 +339,7 @@ class Completions(APIParams):
                         break
 
                 # To avoid rate limits, sleep for atleast 6 seconds
-                await asyncio.sleep(13)
+                await asyncio.sleep(10)
 
                 # Send text
                 if not _toolUseLoopTilEnd:
