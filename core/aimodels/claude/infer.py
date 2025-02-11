@@ -1,8 +1,7 @@
 from core.ai.core import Utils
-from core.exceptions import CustomErrorMessage
+from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
 import discord
-import logging
 import litellm
 
 class Completions:
@@ -29,10 +28,9 @@ class Completions:
         self._discord_bot: discord.Bot = discord_bot
 
         if environ.get("ANTHROPIC_API_KEY"):
-            logging.info("Using default Anthropic API endpoint")
             self._model_name = "anthropic/" + model_name
         else:
-            raise ValueError("No Anthropic API key was set, this model isn't available")
+            raise ModelAPIKeyUnset("No Anthropic API key was set, this model isn't available")
     
         self._guild_id = guild_id
 

@@ -1,5 +1,5 @@
 from core.ai.core import Utils
-from core.exceptions import CustomErrorMessage
+from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
 import discord
 import litellm
@@ -38,7 +38,7 @@ class Completions:
                 logging.info("Using default OpenAI API endpoint")
             self._model_name = "openai/" + model_name
         else:
-            raise ValueError("No OpenAI API key was set, this model isn't available")
+            raise ModelAPIKeyUnset("No OpenAI API key was set, this model isn't available")
 
         self._guild_id = guild_id
 

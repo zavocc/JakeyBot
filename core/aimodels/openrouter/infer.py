@@ -1,5 +1,5 @@
 from core.ai.core import Utils
-from core.exceptions import CustomErrorMessage
+from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from core.ai.history import History as typehint_History
 from os import environ
 import discord
@@ -30,7 +30,7 @@ class Completions:
         self._discord_bot: discord.Bot = discord_bot
 
         if not environ.get("OPENROUTER_API_KEY"):
-            raise ValueError("No OpenRouter API key was set, this model isn't available")
+            raise ModelAPIKeyUnset("No OpenRouter API key was set, this model isn't available")
 
         self._guild_id = guild_id
 

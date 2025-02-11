@@ -6,7 +6,12 @@ class CustomErrorMessage(Exception):
     def __init__(self, message):
         self.message = message
 
+class ModelAPIKeyUnset(Exception):
+    def __init__(self, message):
+        self.message = message
+
 __all__ = [
     "HistoryDatabaseError",
     "CustomErrorMessage",
+    "ModelAPIKeyUnset"
 ]

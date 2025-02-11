@@ -1,5 +1,5 @@
 from core.ai.core import Utils
-from core.exceptions import CustomErrorMessage
+from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
 import discord
 import litellm
@@ -30,7 +30,7 @@ class Completions:
         if environ.get("XAI_API_KEY"):
             self._model_name = "xai/" + model_name
         else:
-            raise ValueError("No XAI API key was set, this model isn't available")
+            raise ModelAPIKeyUnset("No XAI API key was set, this model isn't available")
 
         self._guild_id = guild_id
 

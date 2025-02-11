@@ -1,5 +1,5 @@
 from core.ai.core import Utils
-from core.exceptions import CustomErrorMessage
+from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
 import discord
 import litellm
@@ -29,11 +29,9 @@ class Completions:
         self._discord_bot: discord.Bot = discord_bot
         
         if environ.get("MISTRAL_API_KEY"):
-            logging.info("Using default Mistral API endpoint")
             self._model_name = "mistral/" + model_name
-            logging.info("Using normalized model name: %s", self._model_name)
         else:
-            raise ValueError("No Mistral API key was set, this model isn't available")
+            raise ModelAPIKeyUnset("No Mistral API key was set, this model isn't available")
 
         self._guild_id = guild_id
 

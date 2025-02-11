@@ -76,7 +76,7 @@ class BaseChat():
         
         if prompt.attachments:
             if not hasattr(_infer, "input_files"):
-                raise CustomErrorMessage("🚫 This model cannot process file attachments, please try another model")
+                raise CustomErrorMessage(f"🚫 The model **{_model_name}** cannot process file attachments, please try another model")
 
             _processFileInterstitial = await prompt.channel.send(f"📄 Processing the file: **{prompt.attachments[0].filename}**")
             await _infer.input_files(attachment=prompt.attachments[0])
@@ -156,11 +156,13 @@ class BaseChat():
                 #    await pmessage.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: **{_error.message}**")
                 if isinstance(_error, HistoryDatabaseError):
                     await pmessage.reply(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
-                elif isinstance(_error, CustomErrorMessage):
-                    await pmessage.reply(f"{_error.message}")
+                elif isinstance(_error, ModelAPIKeyUnset):
+                    await pmessage.reply(f"⛔ The model you've chosen is not available at the moment, please choose another model, reason: **{_error.message}**")
                 # Check if the error is about empty message
                 elif isinstance(_error, discord.errors.HTTPException) and "Cannot send an empty message" in str(_error):
                     await pmessage.reply("⚠️ I recieved an empty response, please rephrase your question or change another model")
+                elif isinstance(_error, CustomErrorMessage):
+                    await pmessage.reply(f"{_error.message}")
                 else:
                     # Check if the error has message attribute
                     #if hasattr(_error, "message"):
