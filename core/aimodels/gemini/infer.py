@@ -245,8 +245,10 @@ class Completions(APIParams):
 
         # Check if the response was blocked due to safety and other reasons than STOP
         # https://ai.google.dev/api/generate-content#FinishReason
-        if _response.candidates[0].finish_reason != "STOP":
-            raise CustomErrorMessage("🤬 I detected unsafe content in your prompt, reason: `{}`. Please rephrase your question".format(_response.candidates[0].finish_reason))\
+        if _response.candidates[0].finish_reason == "SAFETY":
+            raise CustomErrorMessage("🤬 I detected unsafe content in your prompt, Please rephrase your question.")
+        elif _response.candidates[0].finish_reason == "MAX_TOKENS":
+            raise CustomErrorMessage("⚠️ Response reached max tokens limit, please make your message concise.")
         
         # Iterate through the parts and perform tasks
         _toolParts = []

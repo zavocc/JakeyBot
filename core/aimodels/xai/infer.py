@@ -39,14 +39,12 @@ class Completions:
         if not attachment.content_type.startswith("image"):
             raise CustomErrorMessage("⚠️ This model only supports image attachments")
 
-        _attachment_prompt = {
+        self._file_data = {
             "type":"image_url",
             "image_url": {
                     "url": attachment.url
                 }
             }
-
-        self._file_data = _attachment_prompt
 
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
@@ -76,31 +74,24 @@ class Completions:
         if hasattr(self, "_file_data"):
             _chat_thread[-1]["content"].append(self._file_data)
         
-
         # Generate completion
         litellm.api_key = environ.get("XAI_API_KEY")
-        _response = await litellm.acompletion(
-            messages=_chat_thread,
-            model=self._model_name,
-            max_tokens=4096,
-            temperature=0.7
-        )
+        litellm._turn_on_debug() # Enable debugging
+
+        # Params and response
+        _params = {
+            "messages": _chat_thread,
+            "model": self._model_name,
+            "max_tokens": 4096,
+            "temperature": 0.7
+        }
+        _response = await litellm.acompletion(**_params)
 
         # AI response
         _answer = _response.choices[0].message.content
 
         # Append to chat thread
-        _chat_thread.append(
-            {
-                "role": "assistant",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": _answer
-                    }
-                ]
-            }
-        )
+        _chat_thread.append(_response.choices[0].message)
 
         # Send the response
         await Utils.send_ai_response(self._discord_ctx, prompt, _answer, self._discord_method_send)

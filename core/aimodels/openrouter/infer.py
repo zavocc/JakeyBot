@@ -34,13 +34,6 @@ class Completions:
 
         self._guild_id = guild_id
 
-        # Claude 3 cachables
-        self._CLAUDE_3_CACHABLES = (
-            "claude-3-opus",
-            "claude-3.5",
-            "claude-3-5"
-            "claude-3-haiku"
-        )
         # Multi-modal models
         self._MULTIMODAL_MODELS = (
             "gpt-4",
@@ -60,14 +53,12 @@ class Completions:
             raise CustomErrorMessage("⚠️ This model only supports image attachments")
 
         # Strip the ? and everything after it
-        _attachment_prompt = {
+        self._file_data = {
             "type":"image_url",
             "image_url": {
                     "url": attachment.url
                 }
             }
-
-        self._file_data = _attachment_prompt
 
     async def chat_completion(self, prompt, db_conn: typehint_History, system_instruction: str = None):
         # Before we begin, get the OpenRouter model name and override self._model_name
@@ -84,13 +75,6 @@ class Completions:
 
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
-        
-        # Count prompt tokens
-        _tok_prompt = litellm.token_counter(text=prompt)
-        if any(_claude_models in self._model_name for _claude_models in self._CLAUDE_3_CACHABLES):
-            _cacheClaudePrompt = True
-        else:
-            _cacheClaudePrompt = False
 
         # PaLM models don't have system prompt
         if _chat_thread is None:
@@ -104,8 +88,8 @@ class Completions:
                     }]
                 }]
 
-                # If it's from Anthropic, also append "cache_control" block
-                if _cacheClaudePrompt:
+                # If it's from Anthropic, also append "cache_control" block to system prompt
+                if "claude-3" in self._model_name:
                     _chat_thread[-1]["content"][0]["cache_control"] = {
                         "type": "ephemeral"
                     }
@@ -126,13 +110,6 @@ class Completions:
             }
         )
 
-        # If it's from Anthropic, also append "cache_control" block
-        if _cacheClaudePrompt and _tok_prompt >= 1024:
-            await self._discord_method_send(f"-# This prompt has been cached to save costs")
-            _chat_thread[-1]["content"][0]["cache_control"] = {
-                "type": "ephemeral"
-            }
-
         # Check if we have an attachment
         if hasattr(self, "_file_data"):
             if any(model in self._model_name for model in self._MULTIMODAL_MODELS):
@@ -142,36 +119,23 @@ class Completions:
 
         # Params
         litellm.api_key = environ.get("OPENROUTER_API_KEY")
+        litellm._turn_on_debug() # Enable debugging
+
+        _params = {
+            "messages": _chat_thread,
+            "model": self._model_name,
+            "max_tokens": 4096,
+            "temperature": 0.7
+        }
+
         # Generate completion
-        _response = await litellm.acompletion(
-            messages=_chat_thread,
-            model=self._model_name,
-            max_tokens=4096,
-            temperature=0.7
-        )
+        _response = await litellm.acompletion(**_params)
 
         # AI response
         _answer = _response.choices[0].message.content
 
         # Append to chat thread
-        _chat_thread.append(
-            {
-                "role": "assistant",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": _answer
-                    }
-                ]
-            }
-        )
-
-        # Also add cache control for Claude model
-        if _cacheClaudePrompt and litellm.token_counter(text=_answer) >= 1024:
-            await self._discord_method_send(f"-# The response has been cached to save costs")
-            _chat_thread[-1]["content"][0]["cache_control"] = {
-                "type": "ephemeral"
-            }
+        _chat_thread.append(_response.choices[0].message.model_dump())
 
         # Send message what model used
         await self._discord_method_send(f"-# Using OpenRouter model: **{self._model_name}**")

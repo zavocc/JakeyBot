@@ -75,21 +75,16 @@ class Completions:
         # Craft prompt
         _chat_thread.append(
             {
-            "role": "user",
-            "content": [
-                    {
-                        "type": "text",
-                        "text": prompt,
-                    }
-                ]
+                "role": "user",
+                "content": [
+                        {
+                            "type": "text",
+                            "text": prompt,
+                        }
+                    ]
             }
         )
 
-        if _tok_prompt >= 1024:
-            await self._discord_method_send(f"-# This prompt has been cached to save costs")
-            _chat_thread[-1]["content"][0]["cache_control"] = {
-                "type": "ephemeral"
-            }
 
         # Check if we have an attachment
         if hasattr(self, "_file_data"):
@@ -97,35 +92,20 @@ class Completions:
 
         # Generate completion
         litellm.api_key = environ.get("ANTHROPIC_API_KEY")
-        _response = await litellm.acompletion(
-            messages=_chat_thread,
-            model=self._model_name,
-            max_tokens=4096,
-            temperature=0.7
-        )
-
-        # AI response
-        _answer = _response.choices[0].message.content
+        litellm._turn_on_debug() # Enable debugging
+        _params = {
+            "messages": _chat_thread,
+            "model": self._model_name,
+            "max_tokens": 4096,
+            "temperature": 0.7
+        }
+        _response = await litellm.acompletion(**_params)
 
         # Append to chat thread
-        _chat_thread.append(
-            {
-                "role": "assistant",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": _answer
-                    }
-                ]
-            }
-        )
-
-        # Cache the assistant response if it exceeds 1024 tokens
-        if litellm.token_counter(text=_answer) >= 1024:
-            await self._discord_method_send(f"-# The response has been cached to save costs")
-            _chat_thread[-1]["content"][0]["cache_control"] = {
-                "type": "ephemeral"
-            }
+        _chat_thread.append(_response.choices[0].message.model_dump())
+        
+        # Answer
+        _answer = _response.choices[0].message.content
 
         # Send the response
         await Utils.send_ai_response(self._discord_ctx, prompt, _answer, self._discord_method_send)

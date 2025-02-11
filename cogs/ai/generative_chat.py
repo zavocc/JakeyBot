@@ -3,13 +3,11 @@ from core.ai.core import ModelsList
 from core.exceptions import *
 from core.ai.history import History as typehint_History
 from discord import Message
-from google.genai import errors as genai_errors
 from os import environ
 import core.aimodels._template_ as typehint_AIModelTemplate
 import discord
 import importlib
 import inspect
-import io
 import logging
 import re
 
@@ -154,9 +152,9 @@ class BaseChat():
                 await pmessage.add_reaction("⌛")
                 await self._ask(pmessage)
             except Exception as _error:
-                if isinstance(_error, genai_errors.ClientError) or isinstance(_error, genai_errors.ServerError):
-                    await pmessage.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: **{_error.message}**")
-                elif isinstance(_error, HistoryDatabaseError):
+                #if isinstance(_error, genai_errors.ClientError) or isinstance(_error, genai_errors.ServerError):
+                #    await pmessage.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: **{_error.message}**")
+                if isinstance(_error, HistoryDatabaseError):
                     await pmessage.reply(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
                 elif isinstance(_error, CustomErrorMessage):
                     await pmessage.reply(f"{_error.message}")
@@ -165,10 +163,10 @@ class BaseChat():
                     await pmessage.reply("⚠️ I recieved an empty response, please rephrase your question or change another model")
                 else:
                     # Check if the error has message attribute
-                    if hasattr(_error, "message"):
-                        await pmessage.reply(f"❌ Sorry, I couldn't answer your question at the moment, please try again later or change another model. What exactly happened: **{_error.message}**")
-                    else:
-                        await pmessage.reply(f"❌ Sorry, I couldn't answer your question at the moment, please try again later or change another model. What exactly happened: **`{type(_error).__name__}`**")
+                    #if hasattr(_error, "message"):
+                    #    await pmessage.reply(f"❌ Sorry, I couldn't answer your question at the moment, please try again later or change another model. What exactly happened: **{_error.message}**")
+                    #else:
+                    await pmessage.reply(f"🚫 Sorry, I couldn't answer your question at the moment, please try again later or change another model. What exactly happened: **{type(_error).__name__}**")
 
                 # Log the error
                 logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)

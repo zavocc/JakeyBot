@@ -47,14 +47,12 @@ class Completions:
         if not attachment.content_type.startswith("image"):
             raise CustomErrorMessage("⚠️ This model only supports image attachments")
 
-        _attachment_prompt = {
+        self._file_data = {
             "type":"image_url",
             "image_url": {
                     "url": attachment.url
                 }
             }
-
-        self._file_data = _attachment_prompt
 
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
@@ -89,44 +87,32 @@ class Completions:
 
             _chat_thread[-1]["content"].append(self._file_data)
 
-        # Generate completions
+        # Generate completion
         litellm.api_key = environ.get("OPENAI_API_KEY")
         if self._oai_endpoint:
             litellm.api_base = self._oai_endpoint
-
+        litellm._turn_on_debug() # Enable debugging
         # When O1 model is used, set reasoning effort to medium
         # Since higher can be costly and lower performs similarly to GPT-4o 
+        _params = {
+            "messages": _chat_thread,
+            "model": self._model_name,
+            "max_tokens": 8192,
+            "temperature": 0.7
+        }
+
         _interstitial = None
         if "o1" in self._model_name or "o3-mini" in self._model_name:
             _interstitial = await self._discord_method_send(f"🔍 Used {self._model_name} model, please wait while I'm thinking...")
-            _reasoning_effort = "medium"
-        else:
-            _reasoning_effort = None
+            _params["reasoning_effort"] = "medium"
 
-        # Generate completion
-        _response = await litellm.acompletion(
-            messages=_chat_thread,
-            model=self._model_name,
-            max_tokens=8192,
-            temperature=0.7,
-            reasoning_effort=_reasoning_effort
-        )
+        _response = await litellm.acompletion(**_params)
 
         # AI response
         _answer = _response.choices[0].message.content
 
         # Append to chat thread
-        _chat_thread.append(
-            {
-                "role": "assistant",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": _answer
-                    }
-                ]
-            }
-        )
+        _chat_thread.append(_response.choices[0].message.model_dump())
 
         if _interstitial:
             await _interstitial.delete()
