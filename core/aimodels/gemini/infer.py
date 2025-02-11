@@ -270,7 +270,7 @@ class Completions(APIParams):
                     elif hasattr(_Tool["tool_object"], f"_tool_function_{_part.function_call.name}"):
                         _toExec = getattr(_Tool["tool_object"], f"_tool_function_{_part.function_call.name}")
                     else:
-                        logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s", e)
+                        logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s")
                         raise CustomErrorMessage("⚠️ An error has occurred while calling tools, please try again later or choose another tool")
 
                     # Check if _toHalts is True, if it is, we just need to tell the model to try again later
