@@ -1,4 +1,5 @@
-from core.exceptions import CustomErrorMessage
+from core.ai.core import Utils
+from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
 import discord
 import litellm
@@ -27,8 +28,6 @@ class Completions:
         # Discord bot object lifecycle instance
         self._discord_bot: discord.Bot = discord_bot
 
-        self._file_data = None
-
         if environ.get("OPENAI_API_KEY"):
             # Set endpoint if OPENAI_API_ENDPOINT is set
             if environ.get("OPENAI_API_ENDPOINT"):
@@ -39,23 +38,30 @@ class Completions:
                 logging.info("Using default OpenAI API endpoint")
             self._model_name = "openai/" + model_name
         else:
-            raise ValueError("No OpenAI API key was set, this model isn't available")
+            raise ModelAPIKeyUnset("No OpenAI API key was set, this model isn't available")
 
         self._guild_id = guild_id
 
-    async def input_files(self, attachment: discord.Attachment):
+    async def input_files(self, attachment: discord.Attachment, extra_metadata: str = None):
         # Check if the attachment is an image
         if not attachment.content_type.startswith("image"):
             raise CustomErrorMessage("⚠️ This model only supports image attachments")
 
-        _attachment_prompt = {
-            "type":"image_url",
-            "image_url": {
-                    "url": attachment.url
+        self._file_data = {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": attachment.url
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": extra_metadata if extra_metadata else ""
                 }
-            }
-
-        self._file_data = _attachment_prompt
+            ]
+        }
 
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
@@ -83,56 +89,47 @@ class Completions:
         )
 
         # Check if we have an attachment
-        if self._file_data is not None:
+        if hasattr(self, "_file_data"):
             # Raise an error if OpenAI o3-mini model is used
-            if "o3-mini" in self._model_name:
-                raise CustomErrorMessage("⚠️ O3-mini doesn't support image attachments")
+            if "-mini" in self._model_name or "o1-preview" in self._model_name:
+                raise CustomErrorMessage("⚠️ O1 Preview, O1/O3 mini models doesn't support image attachments")
 
-            _chat_thread[-1]["content"].append(self._file_data)
+            _chat_thread.append(self._file_data)
 
-        # Generate completions
+        # Generate completion
         litellm.api_key = environ.get("OPENAI_API_KEY")
         if self._oai_endpoint:
             litellm.api_base = self._oai_endpoint
-
+        litellm._turn_on_debug() # Enable debugging
         # When O1 model is used, set reasoning effort to medium
         # Since higher can be costly and lower performs similarly to GPT-4o 
+        _params = {
+            "messages": _chat_thread,
+            "model": self._model_name,
+            "max_tokens": 8192,
+            "temperature": 0.7
+        }
+
         _interstitial = None
         if "o1" in self._model_name or "o3-mini" in self._model_name:
             _interstitial = await self._discord_method_send(f"🔍 Used {self._model_name} model, please wait while I'm thinking...")
-            _reasoning_effort = "medium"
-        else:
-            _reasoning_effort = None
+            _params["reasoning_effort"] = "medium"
 
-        # Generate completion
-        _response = await litellm.acompletion(
-            messages=_chat_thread,
-            model=self._model_name,
-            max_tokens=8192,
-            temperature=0.7,
-            reasoning_effort=_reasoning_effort
-        )
+        _response = await litellm.acompletion(**_params)
 
         # AI response
         _answer = _response.choices[0].message.content
 
         # Append to chat thread
-        _chat_thread.append(
-            {
-                "role": "assistant",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": _answer
-                    }
-                ]
-            }
-        )
+        _chat_thread.append(_response.choices[0].message.model_dump())
 
         if _interstitial:
             await _interstitial.delete()
 
-        return {"answer":_answer, "chat_thread": _chat_thread}
+        # Send the response
+        await Utils.send_ai_response(self._discord_ctx, prompt, _answer, self._discord_method_send)
+
+        return {"response":"OK", "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
         await db_conn.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)

@@ -1,4 +1,5 @@
-from core.exceptions import CustomErrorMessage
+from core.ai.core import Utils
+from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
 import discord
 import litellm
@@ -26,28 +27,33 @@ class Completions:
         # Discord bot object lifecycle instance
         self._discord_bot: discord.Bot = discord_bot
 
-        self._file_data = None
-
         if environ.get("XAI_API_KEY"):
             self._model_name = "xai/" + model_name
         else:
-            raise ValueError("No XAI API key was set, this model isn't available")
+            raise ModelAPIKeyUnset("No XAI API key was set, this model isn't available")
 
         self._guild_id = guild_id
 
-    async def input_files(self, attachment: discord.Attachment):
+    async def input_files(self, attachment: discord.Attachment, extra_metadata: str = None):
         # Check if the attachment is an image
         if not attachment.content_type.startswith("image"):
             raise CustomErrorMessage("⚠️ This model only supports image attachments")
 
-        _attachment_prompt = {
-            "type":"image_url",
-            "image_url": {
-                    "url": attachment.url
+        self._file_data = {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": attachment.url
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": extra_metadata if extra_metadata else ""
                 }
-            }
-
-        self._file_data = _attachment_prompt
+            ]
+        }
 
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
@@ -74,36 +80,31 @@ class Completions:
         )
 
         # Check for file attachments
-        if self._file_data is not None:
-            _chat_thread[-1]["content"].append(self._file_data)
+        if hasattr(self, "_file_data"):
+            _chat_thread.append(self._file_data)
         
-
         # Generate completion
         litellm.api_key = environ.get("XAI_API_KEY")
-        _response = await litellm.acompletion(
-            messages=_chat_thread,
-            model=self._model_name,
-            max_tokens=4096,
-            temperature=0.7
-        )
+        litellm._turn_on_debug() # Enable debugging
+
+        # Params and response
+        _params = {
+            "messages": _chat_thread,
+            "model": self._model_name,
+            "max_tokens": 4096,
+            "temperature": 0.7
+        }
+        _response = await litellm.acompletion(**_params)
 
         # AI response
         _answer = _response.choices[0].message.content
 
         # Append to chat thread
-        _chat_thread.append(
-            {
-                "role": "assistant",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": _answer
-                    }
-                ]
-            }
-        )
+        _chat_thread.append(_response.choices[0].message)
 
-        return {"answer":_answer, "chat_thread": _chat_thread}
+        # Send the response
+        await Utils.send_ai_response(self._discord_ctx, prompt, _answer, self._discord_method_send)
+        return {"response":"OK", "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
         await db_conn.save_history(guild_id=self._guild_id, chat_thread=chat_thread, model_provider=self._model_provider_thread)

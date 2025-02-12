@@ -72,6 +72,16 @@
   description: XAI's Grok 2 model
 
 ############################################
+# Models from Groq
+############################################
+- model: groq.deepseek_llama::deepseek-r1-distill-llama-70b
+  name: DeepSeek R1 Distilled LLaMA (Groq)
+  description: Distilled LLaMA 70B model from DeepSeek R1
+- model: groq.deepseek_qwen::deepseek-r1-distill-qwen-32b
+  name: DeepSeek R1 Distilled Qwen (Groq)
+  description: Distilled LLaMA 32B model from DeepSeek R1
+
+############################################
 # More models on OpenRouter
 ############################################
 - model: openrouter::openrouter

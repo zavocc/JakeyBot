@@ -1,4 +1,5 @@
 # type: ignore
+from core.ai.core import Utils
 import discord
 
 # A base template for other models
@@ -34,7 +35,7 @@ class Completions():
         self._history_management = db_conn
         
     # A data must be assigned to the file_data attribute at the end
-    async def input_files(self, attachment: discord.Attachment):
+    async def input_files(self, attachment: discord.Attachment, extra_metadata: str = None):
         pass
 
     # For non-chat completions
@@ -44,7 +45,9 @@ class Completions():
     # For chat completions (required)
     # If the AI model doesn't properly support system_instruction, keep it as None or add handler
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None) -> dict:
-        return {"answer":"A quick brown fox jumps over a lazy dog", "chat_thread": []}
+        # Send the response
+        await Utils.send_ai_response(self_discord.ctx, prompt, response, self._discord_method_send)
+        return {"response":"OK", "chat_thread": []}
 
     async def save_to_history(self, db_conn, chat_thread = None):
         await db_conn.save_history(guild_id=self._guild_id, chat_thread=_encoded, model_provider=self._model_provider_thread)

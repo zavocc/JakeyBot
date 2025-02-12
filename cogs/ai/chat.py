@@ -1,5 +1,5 @@
 from core.ai.core import ModelsList
-from cogs.ai.generative_event import BaseChat
+from cogs.ai.generative_chat import BaseChat
 from core.ai.history import History
 from core.exceptions import *
 from discord.commands import SlashCommandGroup
@@ -75,7 +75,7 @@ class Chat(commands.Cog):
 
         if _model_provider != "gemini":
             await ctx.respond(
-                f"> This model lacks real time information and tools\n\n✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**"
+                f"> This model lacks real time information and tools\n✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**"
             )
         else:
             await ctx.respond(
