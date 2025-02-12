@@ -328,12 +328,11 @@ class Completions(APIParams):
             else:
                 await _interstitial.edit(f"✅ Used: **{_Tool['tool_human_name']}**")
 
-        # Add function call parts to the response
-        if _toolParts:
+            # Add function call parts to the response
             _response = await _chat_session.send_message(_toolParts)
             # Check if it has text part
             if _response.candidates[0].content.parts[0].text:
-                await self._discord_method_send(_response.candidates[0].content.parts[0].text)
+                await Utils.send_ai_response(self._discord_ctx, prompt, _response.candidates[0].content.parts[0].text, self._discord_method_send)
 
         # Save the latest messages to chat thread, if it's not a dict, it's a pydantic model object which we need to convert to dict
         _chat_thread = [_item if isinstance(_item, dict) else _item.model_dump(exclude_unset=True) for _item in _chat_session._curated_history]
