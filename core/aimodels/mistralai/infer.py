@@ -3,7 +3,6 @@ from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
 import discord
 import litellm
-import logging
 
 class Completions:
     def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "mistral-large-2407"):
@@ -35,17 +34,26 @@ class Completions:
 
         self._guild_id = guild_id
 
-    async def input_files(self, attachment: discord.Attachment):
+    async def input_files(self, attachment: discord.Attachment, extra_metadata: str = None):
         # Check if the attachment is an image
         if not attachment.content_type.startswith("image"):
             raise CustomErrorMessage("⚠️ This model only supports image attachments")
 
         self._file_data = {
-            "type":"image_url",
-            "image_url": {
-                    "url": attachment.url
+            "role": "user",
+            "content": [
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": attachment.url
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": extra_metadata if extra_metadata else ""
                 }
-            }
+            ]
+        }
 
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
@@ -73,7 +81,7 @@ class Completions:
 
         # Check for file attachments
         if hasattr(self, "_file_data"):
-            _chat_thread[-1]["content"].append(self._file_data)
+            _chat_thread.append(self._file_data)
 
         # Generate completion
         litellm.api_key = environ.get("MISTRAL_API_KEY")

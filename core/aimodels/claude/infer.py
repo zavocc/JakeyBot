@@ -34,26 +34,30 @@ class Completions:
     
         self._guild_id = guild_id
 
-    async def input_files(self, attachment: discord.Attachment):
+    async def input_files(self, attachment: discord.Attachment, extra_metadata: str = None):
         # Check if the attachment is an image
         if not attachment.content_type.startswith("image"):
             raise CustomErrorMessage("⚠️ This model only supports image attachments")
 
-        _attachment_prompt = {
-            "type":"image_url",
-            "image_url": {
-                    "url": attachment.url
+        self._file_data = {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": attachment.url
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": extra_metadata if extra_metadata else ""
                 }
-            }
-
-        self._file_data = _attachment_prompt
+            ]
+        }
 
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
-
-        # Count prompt tokens
-        _tok_prompt = litellm.token_counter(text=prompt)
 
         if _chat_thread is None:
             # Begin with system prompt
@@ -86,7 +90,7 @@ class Completions:
 
         # Check if we have an attachment
         if hasattr(self, "_file_data"):
-            _chat_thread[-1]["content"].append(self._file_data)
+            _chat_thread.append(self._file_data)
 
         # Generate completion
         litellm.api_key = environ.get("ANTHROPIC_API_KEY")

@@ -47,18 +47,26 @@ class Completions:
             "pixtral"
         )
 
-    async def input_files(self, attachment: discord.Attachment):
+    async def input_files(self, attachment: discord.Attachment, extra_metadata: str = None):
         # Check if the attachment is an image
         if not attachment.content_type.startswith("image"):
             raise CustomErrorMessage("⚠️ This model only supports image attachments")
 
-        # Strip the ? and everything after it
         self._file_data = {
-            "type":"image_url",
-            "image_url": {
-                    "url": attachment.url
+            "role": "user",
+            "content": [
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": attachment.url
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": extra_metadata if extra_metadata else ""
                 }
-            }
+            ]
+        }
 
     async def chat_completion(self, prompt, db_conn: typehint_History, system_instruction: str = None):
         # Before we begin, get the OpenRouter model name and override self._model_name
@@ -113,7 +121,7 @@ class Completions:
         # Check if we have an attachment
         if hasattr(self, "_file_data"):
             if any(model in self._model_name for model in self._MULTIMODAL_MODELS):
-                _chat_thread[-1]["content"].append(self._file_data)
+                _chat_thread.append(self._file_data)
             else:
                 raise CustomErrorMessage(f"🚫 The model **{self._model_name}** doesn't support file attachments, choose another model")
 

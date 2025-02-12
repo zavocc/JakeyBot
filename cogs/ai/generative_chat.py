@@ -79,7 +79,10 @@ class BaseChat():
                 raise CustomErrorMessage(f"🚫 The model **{_model_name}** cannot process file attachments, please try another model")
 
             _processFileInterstitial = await prompt.channel.send(f"📄 Processing the file: **{prompt.attachments[0].filename}**")
-            await _infer.input_files(attachment=prompt.attachments[0])
+            await _infer.input_files(
+                attachment=prompt.attachments[0], 
+                extra_metadata=f"This additional an metadata is autoinserted by system:\nAttachment URL of the data provided for later reference: {prompt.attachments[0].url}"
+            )
             await _processFileInterstitial.edit(f"✅ Used: **{prompt.attachments[0].filename}**")
 
         ###############################################
@@ -87,10 +90,6 @@ class BaseChat():
         ###############################################
         # Through capturing group, we can remove the mention and the model selection from the prompt at both in the middle and at the end
         _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/model:{_model_name}(\s|$)|\/chat:ephemeral(\s|$))", "", prompt.content).strip()
-        # If we have attachments, also add the URL to the prompt so that it can be used for tools
-        if prompt.attachments:
-            _final_prompt += f"\n\nThis additional an metadata is autoinserted by system:\nAttachment URL of the data provided for later reference: {prompt.attachments[0].url}"
-        
         _system_prompt = await Assistants.set_assistant_type("jakey_system_prompt", type=0)
 
         # Generate the response and simulate the typing

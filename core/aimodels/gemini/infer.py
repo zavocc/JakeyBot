@@ -84,7 +84,7 @@ class Completions(APIParams):
         self._model_name = model_name
         self._guild_id = guild_id
 
-    async def input_files(self, attachment: discord.Attachment):
+    async def input_files(self, attachment: discord.Attachment, extra_metadata: str = None):
         # Download the attachment
         _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(518301839, 6582482111)}.{attachment.filename}"
 
@@ -120,7 +120,16 @@ class Completions(APIParams):
             if _msgstatus: await _msgstatus.delete()
             await aiofiles.os.remove(_xfilename)
 
-        self._file_data = {"file_uri": _filedata.uri, "mime_type": _filedata.mime_type}
+        self._file_data = types.Content(
+            parts=[
+                types.Part.from_uri(
+                    file_uri=_filedata.uri, 
+                    mime_type=_filedata.mime_type
+                ),
+                types.Part.from_text(text=extra_metadata if extra_metadata else "File attachment")
+            ],
+            role="user"
+        ).model_dump(exclude_unset=True)
 
     ############################
     # Inferencing
@@ -148,7 +157,7 @@ class Completions(APIParams):
             else:
                 # Disable tools entirely if the model uses flash thinking
                 if "gemini-2.0-flash-thinking" in self._model_name:
-                    raise CustomErrorMessage("⚠️ The Gemini 2.0 Flash Thinking only supports code execution as a tool, switch to Gemini 2.0 or 1.5 to use real-time information, set code execution or disable tools.")
+                    raise CustomErrorMessage("⚠️ The Gemini 2.0 Flash Thinking only supports code execution as a tool, switch to Gemini 2.0 or 1.5 to continue chatting with real-time information. You can also set code execution or disable tools.")
                 else:
                     # Check if the tool schema is a list or not
                     # Since a list of tools could be a collection of tools, sometimes it's just a single tool
@@ -193,18 +202,10 @@ class Completions(APIParams):
             _chat_thread = []
 
         # Attach file attachment if it exists
-        if hasattr(self, "_file_data"):
-            _chat_thread.append(types.Content(
-                    parts=[
-                        types.Part.from_uri(**self._file_data)
-                    ],
-                    role="user"
-                ).model_dump(exclude_unset=True)
-            )
+        if hasattr(self, "_file_data"): _chat_thread.append(self._file_data)
 
         # Parse prompts
         _prompt = types.Part.from_text(text=prompt)
-
 
         # Create chat session
         _chat_session = self._gemini_api_client.aio.chats.create(
