@@ -16,7 +16,7 @@
 
 
 # Jakey Bot
-Jakey Bot is a multi-model AI and music bot with personality, designed to give you access to popular AI chatbots from Google, OpenAI, Anthropic, Mistral right within Discord! 
+Jakey Bot is a multi-model AI and music bot with personality, designed to give you access to popular AI chatbots from Google Gemini, OpenAI, Anthropic, Mistral, LLaMA right within Discord! 
 
 ![Jakey Bot Banner](./assets/banner.png)
 
@@ -41,13 +41,21 @@ Other non-AI extras include:
 
 # Installation and setup
 ## Required permissions for Discord bot
-- Read message history (see [#faq](#faq) for privacy implications)
+- Read message history for channel summaries
 - Embed messages (required for rendering text more than 2000 and for most commands)
-- Send messages (obviously)
+- Send messages
 - Attach files
-- Create webhooks
-- Create slash commands
-- Voice related features such as connect, disconnect
+- Create webhooks (for mimic commands)
+- Create/Use slash commands
+- Create and send messages in threads
+- View Channels
+- Add Reactions
+
+OPTIONAL:
+- Create events (for creating events using events tool)
+- Connect, Speak, use Voice Activity for music features, you do not need to enable this if you don't plan to add wavelink as a dependency
+
+For demo version, you can add this bot and see the required permissions and capabilities: https://discord.com/oauth2/authorize?client_id=1051409808877699072&permissions=563330095107136&integration_type=0&scope=bot
 
 ## Installation
 The best way to get started is through Docker method... You can directly pull the image from my Docker 🐳 Hub repository and simply run the bot below:
@@ -112,14 +120,16 @@ When you enter a prompt to Jakey... you can use chat variables which are substri
 - `prompt /model:model-name` - Set model for the response on demand. (See `/model list` to choose available model names)
 
 ## Model used
-By default, it uses **Gemini 1.5 Flash (002)** due to versatility with long context and multimodality, matching the performance of Gemini 1.5 Pro (0514), but other models can be used as well.
+By default, it uses **Gemini 2.0 Flash** a workhorse model, comparable with frontier models such as GPT-4o and surpasses Gemini 1.5 Pro in most key benchmarks at a fraction of a cost. Read more [here](https://developers.googleblog.com/en/gemini-2-family-expands/)
 
-You can sticky set the model using `/model set` command, or list models using `/model list` command. \
+Other AI features uses Gemini, the reason for this is the AI features of this bot started with Gemini model.
+
+You can also sticky set the model using `/model set` command, or list models using `/model list` command. \
 If you decide to use OpenRouter model, you will need to configure `/openrouter` command first by setting the model names through https://openrouter.ai/models
 
 When you set a model, you are switching chat threads to that model associated for that provider... So switching to GPT-4o model would have its own chat thread and files, but you can always switch back to previous provider with it's memory. Note that switching models for OpenRouter would result in chat thread being cleared to ensure consistency 
 
-If you decide to use other models please see [Models comparison](https://github.com/zavocc/JakeyBot/wiki/Supported-Models) and [the LLM arena by livebench](https://livebench.ai/) to understand your models use cases
+If you decide to use other models please see [Models comparison](https://github.com/zavocc/JakeyBot/wiki/Supported-Models) and [the LLM arena by livebench](https://livebench.ai/) to understand your models use cases.
 
 # Commands
 Jakey provides slash commands such as:
@@ -128,11 +138,11 @@ Jakey provides slash commands such as:
 - `/feature` - Extend Jakey skills by activating chat tools! (Clears conversation when feature are set, only supports Gemini models)
 - `/model set` and `/model list` to list available models.
 - `/openrouter` - Access additional models from OpenRouter (`/model set:openrouter` must be set)
-- `/summarize` - Summarize the current text channel or thread and gather insights into a single summary thanks to Gemini 1.5 Flash's long context it can understand conversations even from the past decade!
+- `/summarize` - Summarize the current text channel or thread and gather insights into a single summary thanks to Gemini 2.0 Flash's long context it can understand conversations even from the past decade!
 - `/mimic` - Mimics other users using webhook
 - `/voice` - Basic streaming audio functionality from YouTube, soundcloud and more!
 
-Jakey also has message actions or apps which is used to take action on a selected message. Such as explain, rephrase, or suggest messages using Gemini 1.5 Flash.
+Jakey also has message actions or apps which is used to take action on a selected message. Such as explain, rephrase, or suggest messages using Gemini 2.0 Flash.
 
 ![apps](./assets/apps.png)
 
