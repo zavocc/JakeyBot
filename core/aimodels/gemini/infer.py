@@ -251,6 +251,7 @@ class Completions(APIParams):
             raise CustomErrorMessage("⚠️ Response reached max tokens limit, please make your message concise.")
         
         _toolUseLoopTilTheEnd = True
+        _interstitial = None
         while _toolUseLoopTilTheEnd:
             # Reset the loop
             _toolUseLoopTilTheEnd = False
@@ -258,7 +259,6 @@ class Completions(APIParams):
             # Iterate through the parts and perform tasks
             _toolParts = []
             _toHalt = False
-            _interstitial = None
             for _part in _response.candidates[0].content.parts:
                 if _part.text and _part.text.strip():
                     await Utils.send_ai_response(self._discord_ctx, prompt, _part.text, self._discord_method_send)
