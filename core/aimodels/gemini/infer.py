@@ -250,90 +250,105 @@ class Completions(APIParams):
         elif _response.candidates[0].finish_reason == "MAX_TOKENS":
             raise CustomErrorMessage("⚠️ Response reached max tokens limit, please make your message concise.")
         
-        # Iterate through the parts and perform tasks
-        _toolParts = []
-        _toHalt = False
-        _interstitial = None
-        for _part in _response.candidates[0].content.parts:
-            if _part.text and _part.text.strip():
-                await Utils.send_ai_response(self._discord_ctx, prompt, _part.text, self._discord_method_send)
+        _toolUseLoopTilTheEnd = True
+        while _toolUseLoopTilTheEnd:
+            # Reset the loop
+            _toolUseLoopTilTheEnd = False
 
-            if _part.function_call:
-                # Indicate the tool is called
-                if not _interstitial:
-                    _interstitial = await self._discord_method_send(f"✅ Tool started: **{_Tool['tool_human_name']}**")
-                
-                try:
-                    # Edit the interstitial message
-                    await _interstitial.edit(f"⚙️ Executing tool: **{_part.function_call.name}**")
+            # Iterate through the parts and perform tasks
+            _toolParts = []
+            _toHalt = False
+            _interstitial = None
+            for _part in _response.candidates[0].content.parts:
+                if _part.text and _part.text.strip():
+                    await Utils.send_ai_response(self._discord_ctx, prompt, _part.text, self._discord_method_send)
 
-                    if hasattr(_Tool["tool_object"], "_tool_function"):
-                        _toExec = getattr(_Tool["tool_object"], "_tool_function")
-                    elif hasattr(_Tool["tool_object"], f"_tool_function_{_part.function_call.name}"):
-                        _toExec = getattr(_Tool["tool_object"], f"_tool_function_{_part.function_call.name}")
-                    else:
-                        logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s")
-                        raise CustomErrorMessage("⚠️ An error has occurred while calling tools, please try again later or choose another tool")
+                if _part.function_call:
+                    # Indicate the tool is called
+                    if not _interstitial:
+                        _interstitial = await self._discord_method_send(f"✅ Tool started: **{_Tool['tool_human_name']}**")
+                    
+                    try:
+                        # Edit the interstitial message
+                        await _interstitial.edit(f"⚙️ Executing tool: **{_part.function_call.name}**")
 
-                    # Check if _toHalts is True, if it is, we just need to tell the model to try again later
-                    # Since its not possible to just break the loop, it has to match the number of parts of toolInvoke
-                    if _toHalt:
+                        if hasattr(_Tool["tool_object"], "_tool_function"):
+                            _toExec = getattr(_Tool["tool_object"], "_tool_function")
+                        elif hasattr(_Tool["tool_object"], f"_tool_function_{_part.function_call.name}"):
+                            _toExec = getattr(_Tool["tool_object"], f"_tool_function_{_part.function_call.name}")
+                        else:
+                            logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s")
+                            raise CustomErrorMessage("⚠️ An error has occurred while calling tools, please try again later or choose another tool")
+
+                        # Check if _toHalts is True, if it is, we just need to tell the model to try again later
+                        # Since its not possible to just break the loop, it has to match the number of parts of toolInvoke
+                        if _toHalt:
+                            _toolResult = {
+                                "error": f"⚠️ Error occurred previously which in order to prevent further issues, the operation was halted",
+                                "tool_args": _part.function_call.args
+                            }
+                        else:
+                            _toolResult = {
+                                "toolResult": (await _toExec(**_part.function_call.args)),
+                                "tool_args": _part.function_call.args
+                            }
+                    # For other exceptions, log the error and add it as part of the chat thread
+                    except Exception as e:
+                        _toHalt = True
+
+                        # Also print the error to the console
+                        logging.error("Something when calling specific tool lately, reason: %s", e)
                         _toolResult = {
-                            "error": f"⚠️ Error occurred previously which in order to prevent further issues, the operation was halted",
+                            "error": f"⚠️ Something went wrong while executing the tool: {e}\nTell the user about this error",
                             "tool_args": _part.function_call.args
                         }
+
+                    _toolParts.append(types.Part.from_function_response(
+                        name=_part.function_call.name,
+                        response=_toolResult
+                    ))
+
+                # Function calling and code execution doesn't mix
+                if _part.executable_code:
+                    await self._discord_method_send(f"✅ Code analysis complete")
+                    await self._discord_method_send(f"```py\n{_part.executable_code.code[:1975]}\n```")
+
+                if _part.code_execution_result:
+                    # Send the code execution result
+                    await self._discord_method_send(f"```{_part.code_execution_result.output[:1975]}```")
+
+                # Render the code execution inline data when needed
+                if _part.inline_data:
+                    if _part.inline_data.mime_type == "image/png":
+                        await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="image.png"))
+                    elif _part.inline_data.mime_type == "image/jpeg":
+                        await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="image.jpeg"))
                     else:
-                        _toolResult = {
-                            "toolResult": (await _toExec(**_part.function_call.args)),
-                            "tool_args": _part.function_call.args
-                        }
-                # For other exceptions, log the error and add it as part of the chat thread
-                except Exception as e:
-                    _toHalt = True
+                        await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="code_exec_artifact.bin"))
 
-                    # Also print the error to the console
-                    logging.error("Something when calling specific tool lately, reason: %s", e)
-                    _toolResult = {
-                        "error": f"⚠️ Something went wrong while executing the tool: {e}\nTell the user about this error",
-                        "tool_args": _part.function_call.args
-                    }
-
-                _toolParts.append(types.Part.from_function_response(
-                    name=_part.function_call.name,
-                    response=_toolResult
-                ))
-
-            # Function calling and code execution doesn't mix
-            if _part.executable_code:
-                await self._discord_method_send(f"✅ Code analysis complete")
-                await self._discord_method_send(f"```py\n{_part.executable_code.code[:1975]}\n```")
-
-            if _part.code_execution_result:
-                # Send the code execution result
-                await self._discord_method_send(f"```{_part.code_execution_result.output[:1975]}```")
-
-            # Render the code execution inline data when needed
-            if _part.inline_data:
-                if _part.inline_data.mime_type == "image/png":
-                    await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="image.png"))
-                elif _part.inline_data.mime_type == "image/jpeg":
-                    await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="image.jpeg"))
+            # Edit interstitial message
+            if _toolParts and _interstitial:
+                if _toHalt:
+                    await _interstitial.edit(f"⚠️ Error executing tool: **{_Tool['tool_human_name']}**")
                 else:
-                    await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="code_exec_artifact.bin"))
+                    await _interstitial.edit(f"✅ Used: **{_Tool['tool_human_name']}**")
+        
+                _response = await _chat_session.send_message(_toolParts)
 
-        # Edit interstitial message
-        if _toolParts and _interstitial:
-            if _toHalt:
-                await _interstitial.edit(f"⚠️ Error executing tool: **{_Tool['tool_human_name']}**")
-            else:
-                await _interstitial.edit(f"✅ Used: **{_Tool['tool_human_name']}**")
+                # Check if response has tools again to be executed
+                for _part in _response.candidates[0].content.parts:
+                    if _part.function_call:
+                        _toolUseLoopTilTheEnd = True
+                        break
 
-        # Add function call parts to the response
-        if _toolParts:
-            _response = await _chat_session.send_message(_toolParts)
-            # Check if it has text part
-            if _response.candidates[0].content.parts[0].text:
-                await self._discord_method_send(_response.candidates[0].content.parts[0].text)
+                # To avoid rate limits, sleep for atleast 6 seconds
+                await asyncio.sleep(10)
+
+                # Check if we don't need to send anymore tools and send the final text
+                if not _toolUseLoopTilTheEnd:
+                    # Check if it has text part
+                    if _response.candidates[0].content.parts[0].text:
+                        await self._discord_method_send(_response.candidates[0].content.parts[0].text)
 
         # Save the latest messages to chat thread, if it's not a dict, it's a pydantic model object which we need to convert to dict
         _chat_thread = [_item if isinstance(_item, dict) else _item.model_dump(exclude_unset=True) for _item in _chat_session._curated_history]
