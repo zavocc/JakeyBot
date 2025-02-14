@@ -195,7 +195,7 @@ class GeminiUtils(commands.Cog):
             if _answer_count_limit >= 10:
                 break
 
-            _poll.add_answer(text=_answer["text"], emoji=_answer["emoji"])
+            _poll.add_answer(text=_answer["text"][:55], emoji=_answer["emoji"])
             _answer_count_limit += 1
 
         # Send poll

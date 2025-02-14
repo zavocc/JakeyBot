@@ -19,10 +19,12 @@ class Utils:
         # Check to see if this message is more than 2000 characters which embeds will be used for displaying the message
         if len(response) >= 4000:
             # Send the response as file
-            if ctx.channel.permissions_for(ctx.guild.me).attach_files:
-                await method_send("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(io.StringIO(response), "response.md"))
-            else:
-                await method_send("⚠️ Your message was too long to be sent please ask a follow-up question of this answer in concise format.")
+            if ctx.guild:
+                if not ctx.channel.permissions_for(ctx.guild.me).attach_files:
+                    await method_send("⚠️ Your message was too long to be sent please ask a follow-up question of this answer in concise format.")
+                    return
+                
+            await method_send("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(io.StringIO(response), "response.md"))
         elif len(response) >= 2000:
             await method_send(
                 embed=discord.Embed(
