@@ -63,7 +63,7 @@ class GeminiQuickChat(commands.Cog):
         if isinstance(_error, commands.CommandOnCooldown):
             await ctx.respond(f"🕒 Woah slow down!!! Please wait for few seconds before using this command again!")
         else:
-            await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, check console logs or change another model. What exactly happened: **`{type(_error).__name__}`**")
+            await ctx.respond(f"❌ Sorry, I couldn't answer your question at the moment, please try again later or change another model. What exactly happened: **`{type(_error).__name__}`**")
 
         # Log the error
         logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)

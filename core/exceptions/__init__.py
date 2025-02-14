@@ -1,3 +1,6 @@
+class PollOffTopicRefusal(Exception):
+    pass
+
 class HistoryDatabaseError(Exception):
     def __init__(self, message: str):
         self.message = message
@@ -13,5 +16,6 @@ class ModelAPIKeyUnset(Exception):
 __all__ = [
     "HistoryDatabaseError",
     "CustomErrorMessage",
-    "ModelAPIKeyUnset"
+    "ModelAPIKeyUnset",
+    "PollOffTopicRefusal"
 ]

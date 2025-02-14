@@ -215,7 +215,7 @@ class GeminiAITools(commands.Cog):
         if "time data" in str(_error):
             await ctx.respond("⚠️ Sorry, I couldn't summarize messages with that date format! Please use **mm/dd/yyyy** format.")
         else:
-            await ctx.respond("❌ Sorry, I can't summarize messages at the moment, I'm still learning! Please try again, and please check console logs.")
+            await ctx.respond("❌ Sorry, I can't summarize messages at the moment, I'm still learning! Please try again, and please try again later.")
         
         logging.error("An error has occurred while generating an summaries, reason: %s", _error, exc_info=True)
 

@@ -119,7 +119,7 @@ class Chat(commands.Cog):
 
     @model.error
     async def model_on_error(self, ctx: discord.ApplicationContext, error):
-        await ctx.respond("❌ Something went wrong, please check the console logs for details.")
+        await ctx.respond("❌ Something went wrong, please try again later.")
         logging.error("An error has occurred while executing models command, reason: ", exc_info=True)
 
     @commands.slash_command(
@@ -153,7 +153,7 @@ class Chat(commands.Cog):
 
     @openrouter.error
     async def openrouter_on_error(self, ctx: discord.ApplicationContext, error):
-        await ctx.respond("❌ Something went wrong, please check the console logs for details.")
+        await ctx.respond("❌ Something went wrong, please try again later.")
         logging.error("An error has occurred while setting openrouter models, reason: ", exc_info=True)
 
     @commands.slash_command(
@@ -205,7 +205,7 @@ class Chat(commands.Cog):
         elif isinstance(_error, FileNotFoundError):
             await ctx.respond("ℹ️ Chat history is already cleared!")
         else:
-            await ctx.respond("❌ Something went wrong, please check the console logs for details.")
+            await ctx.respond("❌ Something went wrong, please try again later.")
             logging.error("An error has occurred while executing sweep command, reason: ", exc_info=True)
 
     @commands.slash_command(
@@ -255,7 +255,7 @@ class Chat(commands.Cog):
 
     @feature.error
     async def feature_on_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
-        await ctx.respond("❌ Something went wrong, please check the console logs for details.")
+        await ctx.respond("❌ Something went wrong, please try again later.")
         logging.error("An error has occurred while executing feature command, reason: ", exc_info=True)
 
 
