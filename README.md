@@ -118,6 +118,7 @@ When you enter a prompt to Jakey... you can use chat variables which are substri
 
 - `prompt /chat:ephemeral` - Do not append the last message turn to chat history while having its previous memory
 - `prompt /model:model-name` - Set model for the response on demand. (See `/model list` to choose available model names)
+- `prompt /chat:info` - Show model used in the conversation.
 
 ## Model used
 By default, it uses **Gemini 2.0 Flash** a workhorse model, comparable with frontier models such as GPT-4o and surpasses Gemini 1.5 Pro in most key benchmarks at a fraction of a cost. Read more [here](https://developers.googleblog.com/en/gemini-2-family-expands/)

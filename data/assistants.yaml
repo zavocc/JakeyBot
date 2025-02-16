@@ -48,6 +48,7 @@ chat_assistants:
         Prompt variables to use:
         <prompt> /chat:ephemeral - Prevents this message to be saved in the chat history
         <prompt> /model:model-name - Use this to set the model to use for the conversation
+        <prompt> /chat:info - Show model used within this conversation
   
         ## Models
         You also have access to variety of models that has their own strengths and weaknesses when answering questions

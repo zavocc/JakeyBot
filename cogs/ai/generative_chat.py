@@ -56,6 +56,11 @@ class BaseChat():
         if "/chat:ephemeral" in prompt.content:
             await prompt.channel.send("🔒 This conversation is not saved and Jakey won't remember this")
             _append_history = False
+
+        if "/chat:info" in prompt.content:
+            _show_info = True
+        else:
+            _show_info = False
       
         try:
             _infer: typehint_AIModelTemplate.Completions = importlib.import_module(f"core.aimodels.{_model_provider}").Completions(
@@ -89,7 +94,7 @@ class BaseChat():
         # Answer generation
         ###############################################
         # Through capturing group, we can remove the mention and the model selection from the prompt at both in the middle and at the end
-        _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/model:{_model_name}(\s|$)|\/chat:ephemeral(\s|$))", "", prompt.content).strip()
+        _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/model:{_model_name}(\s|$)|\/chat:ephemeral(\s|$)|\/chat:info(\s|$))", "", prompt.content).strip()
         _system_prompt = await Assistants.set_assistant_type("jakey_system_prompt", type=0)
 
         # Generate the response and simulate the typing
@@ -97,7 +102,7 @@ class BaseChat():
             _result = await _infer.chat_completion(prompt=_final_prompt, db_conn=self.DBConn, system_instruction=_system_prompt)
 
         # Check if result says "OK"
-        if _result["response"] == "OK":
+        if _result["response"] == "OK" and _show_info:
             await prompt.channel.send(
                 embed=discord.Embed(
                     description=f"Answered by **{_model_name}** by **{_model_provider}** {"(this response isn't saved)" if not _append_history else ''}",
