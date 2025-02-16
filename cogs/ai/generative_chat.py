@@ -106,9 +106,10 @@ class BaseChat():
 
         # Save to chat history
         if _append_history:
-            await _infer.save_to_history(db_conn=self.DBConn, chat_thread=_result["chat_thread"])
-        else:
-            await prompt.channel.send("⚠️ This model doesn't allow saving the conversation")
+            if not hasattr(_infer, "save_to_history"):
+                await prompt.channel.send("⚠️ This model doesn't allow saving the conversation")
+            else:
+                await _infer.save_to_history(db_conn=self.DBConn, chat_thread=_result["chat_thread"])
 
     async def on_message(self, pmessage: Message):
         # Ignore messages from the bot itself
