@@ -14,6 +14,9 @@
 - model: gemini::gemini-2.0-flash-thinking-exp-01-21
   name: Gemini 2.0 Flash Thinking Experimental
   description: Google's latest model that thinks before it responds
+- model: gemini::gemini-2.0-flash-exp
+  name: Gemini 2.0 Flash Experimental
+  description: Early version of Gemini 2.0 Flash
 - model: gemini::gemini-1.5-pro-002
   name: Gemini 1.5 Pro
   description: Advanced chat tasks

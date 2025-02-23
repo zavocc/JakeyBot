@@ -49,7 +49,7 @@ class GeminiAITools(commands.Cog):
         "limit",
         description="Limit the number of messages to read - higher the limits can lead to irrelevant summary",
         min_value=5,
-        max_value=50,
+        max_value=100,
         default=25
     )
     async def summarize(self, ctx, before_date: str, after_date: str, around_date: str, max_references: int, limit: int):
