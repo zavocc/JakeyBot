@@ -106,9 +106,9 @@ class Completions(APIParams):
             if _tool_selection_name == "code_execution":
                 _tool_schema = [types.Tool(code_execution=types.ToolCodeExecution())]
             else:
-                # Disable tools entirely if the model uses flash thinking
                 if "gemini-2.0-flash-thinking" in self._model_name:
-                    raise CustomErrorMessage("⚠️ The Gemini 2.0 Flash Thinking only supports code execution as a tool, switch to Gemini 2.0 or 1.5 to continue chatting with real-time information. You can also set code execution or disable tools.")
+                    await self._discord_method_send("> ⚠️ The Gemini 2.0 Flash Thinking only supports code execution as a tool, tools won't be used with this model.")
+                    _tool_schema = None
                 else:
                     # Check if the tool schema is a list or not
                     # Since a list of tools could be a collection of tools, sometimes it's just a single tool
