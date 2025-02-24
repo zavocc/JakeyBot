@@ -21,5 +21,7 @@
   ui_name: Image to Line drawing
 - tool_module_name: voice_cloner
   ui_name: Voice Cloner
+- tool_module_name: veo_video_generator
+  ui_name: Video Generator with Veo 2
 - tool_module_name: youtube
   ui_name: YouTube Search
