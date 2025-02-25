@@ -16,6 +16,8 @@ class BaseChat():
         self.bot: discord.Bot = bot
         self.author = author
         self.DBConn = history
+
+        # This is to ensure they don't perform inference concurrently
         self.pending_ids = []
 
     ###############################################
@@ -117,32 +119,37 @@ class BaseChat():
             else:
                 await _infer.save_to_history(db_conn=self.DBConn, chat_thread=_result["chat_thread"])
 
-    async def on_message(self, pmessage: Message):
+    async def on_message(self, message: Message):
         # Ignore messages from the bot itself
-        if pmessage.author.id == self.bot.user.id:
+        if message.author.id == self.bot.user.id:
             return
 
         # Must be mentioned and check if it's not starts with prefix or slash command
-        if pmessage.guild is None or self.bot.user.mentioned_in(pmessage):
+        if message.guild is None or self.bot.user.mentioned_in(message):
             # Ensure it must not be triggered by command prefix or slash command
-            if pmessage.content.startswith(self.bot.command_prefix) or pmessage.content.startswith("/"):
+            if message.content.startswith(self.bot.command_prefix) or message.content.startswith("/"):
                 # First we extract first word from the message see if this is a prefix command
-                if pmessage.content.startswith(self.bot.command_prefix):
-                    _command = pmessage.content.split(" ")[0].replace(self.bot.command_prefix, "")
+                if message.content.startswith(self.bot.command_prefix):
+                    _command = message.content.split(" ")[0].replace(self.bot.command_prefix, "")
                     if self.bot.get_command(_command):
                         return
+                    
+            # Check if the user is in the pending list
+            if message.author.id in self.pending_ids:
+                await message.reply("⚠️ I'm still processing your previous request, please wait for a moment...")
+                return
             
             # Check if the bot was only mentioned without any content or image attachments
             # If none, then on main.py event, proceed sending the introductory message
-            if not pmessage.attachments \
-                and not re.sub(f"<@{self.bot.user.id}>", '', pmessage.content).strip():
+            if not message.attachments \
+                and not re.sub(f"<@{self.bot.user.id}>", '', message.content).strip():
                 return
             
             # If the bot is mentioned through reply with mentions, also add its previous message as context
             # So that the bot will reply to that query without quoting the message providing relevant response
-            if pmessage.reference:
-                _context_message = await pmessage.channel.fetch_message(pmessage.reference.message_id)
-                pmessage.content = inspect.cleandoc(
+            if message.reference:
+                _context_message = await message.channel.fetch_message(message.reference.message_id)
+                message.content = inspect.cleandoc(
                     f"""<system_msg>
                     
                     # Replying to referenced message excerpt from {_context_message.author.display_name} (username: @{_context_message.author.name}):
@@ -151,39 +158,46 @@ class BaseChat():
                     <|end_msg_contexts|>
 
                     </system_msg>
-                    {pmessage.content}"""
+                    {message.content}"""
                 )
-                await pmessage.channel.send(f"✅ Referenced message: {_context_message.jump_url}")
+                await message.channel.send(f"✅ Referenced message: {_context_message.jump_url}")
+
 
             # For now the entire function is under try 
             # Maybe this can be separated into another function
             try:
+                # Add the user to the pending list
+                self.pending_ids.append(message.author.id)
+
                 # Add reaction to the message to acknowledge the message
-                await pmessage.add_reaction("⌛")
-                await self._ask(pmessage)
+                await message.add_reaction("⌛")
+                await self._ask(message)
             except Exception as _error:
                 #if isinstance(_error, genai_errors.ClientError) or isinstance(_error, genai_errors.ServerError):
-                #    await pmessage.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: **{_error.message}**")
+                #    await message.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: **{_error.message}**")
                 if isinstance(_error, HistoryDatabaseError):
-                    await pmessage.reply(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
+                    await message.reply(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
                 elif isinstance(_error, ModelAPIKeyUnset):
-                    await pmessage.reply(f"⛔ The model you've chosen is not available at the moment, please choose another model, reason: **{_error.message}**")
+                    await message.reply(f"⛔ The model you've chosen is not available at the moment, please choose another model, reason: **{_error.message}**")
                 # Check if the error is about empty message
                 elif isinstance(_error, discord.errors.HTTPException) and "Cannot send an empty message" in str(_error):
-                    await pmessage.reply("⚠️ I recieved an empty response, please rephrase your question or change another model")
+                    await message.reply("⚠️ I recieved an empty response, please rephrase your question or change another model")
                 elif isinstance(_error, CustomErrorMessage):
-                    await pmessage.reply(f"{_error.message}")
+                    await message.reply(f"{_error.message}")
                 else:
                     # Check if the error has message attribute
                     #if hasattr(_error, "message"):
-                    #    await pmessage.reply(f"❌ Sorry, I couldn't answer your question at the moment, please try again later or change another model. What exactly happened: **{_error.message}**")
+                    #    await message.reply(f"❌ Sorry, I couldn't answer your question at the moment, please try again later or change another model. What exactly happened: **{_error.message}**")
                     #else:
-                    await pmessage.reply(f"🚫 Sorry, I couldn't answer your question at the moment, please try again later or change another model. What exactly happened: **{type(_error).__name__}**")
+                    await message.reply(f"🚫 Sorry, I couldn't answer your question at the moment, please try again later or change another model. What exactly happened: **{type(_error).__name__}**")
 
                 # Log the error
                 logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)
             finally:
                 # Remove the reaction
-                await pmessage.remove_reaction("⌛", self.bot.user)
+                await message.remove_reaction("⌛", self.bot.user)
+
+                # Remove the user from the pending list
+                self.pending_ids.remove(message.author.id)
 
     

@@ -28,6 +28,13 @@ class Chat(commands.Cog):
         self._ask_event = BaseChat(bot, self.author, self.DBConn)
 
     #######################################################
+    # Pending inference checker, prevents running multiple inferences concurrently
+    #######################################################
+    async def _check_awaiting_response_in_progress(self, guild_id: int):
+        if guild_id in self._ask_event.pending_ids:
+            raise ConcurrentRequestError
+
+    #######################################################
     # Event Listeners
     #######################################################
     @commands.Cog.listener()
@@ -60,6 +67,9 @@ class Chat(commands.Cog):
         else:
             guild_id = ctx.author.id
 
+        # Check if inference is in progress
+        await self._check_awaiting_response_in_progress(guild_id)
+
         # Save the default model in the database
         await self.DBConn.set_default_model(guild_id=guild_id, model=model)
 
@@ -81,6 +91,17 @@ class Chat(commands.Cog):
             await ctx.respond(
                 f"✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**"
             )
+
+    @set.error
+    async def set_on_error(self, ctx: discord.ApplicationContext, error):
+        _error = getattr(error, "original", error)
+
+        if isinstance(_error, ConcurrentRequestError):
+            await ctx.respond("⚠️ Please wait until processing your previous request is completed before changing the model...")
+        else:
+            await ctx.respond("❌ Something went wrong, please try again later.")
+        
+        logging.error("An error has occurred while executing models command, reason: ", exc_info=True)
 
     @model.command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
@@ -117,8 +138,8 @@ class Chat(commands.Cog):
 
         await ctx.respond(embed=_embed)
 
-    @model.error
-    async def model_on_error(self, ctx: discord.ApplicationContext, error):
+    @list.error
+    async def list_on_error(self, ctx: discord.ApplicationContext, error):
         await ctx.respond("❌ Something went wrong, please try again later.")
         logging.error("An error has occurred while executing models command, reason: ", exc_info=True)
 
@@ -141,6 +162,9 @@ class Chat(commands.Cog):
         else:
             guild_id = ctx.author.id
 
+        # Check if inference is in progress
+        await self._check_awaiting_response_in_progress(guild_id)
+
         # Set the default OpenRouter model and clear the OpenRouter chat thread
         await self.DBConn.set_key(guild_id=guild_id, key="default_openrouter_model", value=model)
         _setkeymodel = await self.DBConn.get_key(guild_id=guild_id, key="default_openrouter_model")
@@ -153,7 +177,12 @@ class Chat(commands.Cog):
 
     @openrouter.error
     async def openrouter_on_error(self, ctx: discord.ApplicationContext, error):
-        await ctx.respond("❌ Something went wrong, please try again later.")
+        _error = getattr(error, "original", error)
+
+        if isinstance(_error, ConcurrentRequestError):
+            await ctx.respond("⚠️ Please wait until processing your previous request is completed before changing the OpenRouter model...")
+        else:
+            await ctx.respond("❌ Something went wrong, please try again later.")
         logging.error("An error has occurred while setting openrouter models, reason: ", exc_info=True)
 
     @commands.slash_command(
@@ -173,6 +202,9 @@ class Chat(commands.Cog):
             guild_id = ctx.guild.id if ctx.guild else ctx.author.id
         else:
             guild_id = ctx.author.id
+
+        # Check if inference is in progress
+        await self._check_awaiting_response_in_progress(guild_id)
 
         # Command allowed only in DMs or in authorized guilds
         if ctx.guild is not None:
@@ -204,6 +236,8 @@ class Chat(commands.Cog):
             await ctx.respond("⚠️ An error has occurred while clearing chat history, logged the error to the owner")
         elif isinstance(_error, FileNotFoundError):
             await ctx.respond("ℹ️ Chat history is already cleared!")
+        elif isinstance(_error, ConcurrentRequestError):
+            await ctx.respond("⚠️ Please wait until processing your previous request is completed before clearing the chat history...")
         else:
             await ctx.respond("❌ Something went wrong, please try again later.")
             logging.error("An error has occurred while executing sweep command, reason: ", exc_info=True)
@@ -226,6 +260,9 @@ class Chat(commands.Cog):
             guild_id = ctx.guild.id if ctx.guild else ctx.author.id
         else:
             guild_id = ctx.author.id
+
+        # Check if inference is in progress
+        await self._check_awaiting_response_in_progress(guild_id)
 
         # Command allowed only in DMs or in authorized guilds
         if ctx.guild is not None:
@@ -255,7 +292,12 @@ class Chat(commands.Cog):
 
     @feature.error
     async def feature_on_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
-        await ctx.respond("❌ Something went wrong, please try again later.")
+        _error = getattr(error, "original", error)
+
+        if isinstance(_error, ConcurrentRequestError):
+            await ctx.respond("⚠️ Please wait until processing your previous request is completed before changing agents...")
+        else:
+            await ctx.respond("❌ Something went wrong, please try again later.")
         logging.error("An error has occurred while executing feature command, reason: ", exc_info=True)
 
 
