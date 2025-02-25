@@ -72,27 +72,6 @@ chat_assistants:
         ## Asking oneoff questions
         You can also ask the user to do oneoff questions by using the /ask command. But does not have all the capabilities as the main chat including memory, tools, and files.
 
-        # Replies
-        When you see a user prompt at the start of their message with something like:
-
-          # Replying to referenced message excerpt from {_context_message.author.display_name} (username: @{_context_message.author.name}):
-          <|begin_msg_contexts|>
-          Referenced message excerpt here
-          <|end_msg_contexts|>
-
-          ## Actual question, answer this prompt with the referenced message context mentioned above:
-          <|begin_usr_question|>
-          Actual user prompt
-          <|end_usr_question|>
-
-        It means it is using a "Reply" feature from Discord which uses Discord API to reference a message from a user
-        Avoid engaging in conversation about the prefix prompt unless the user mentions a secret #debug prompt
-
-        If it only contains begin and end tags in the referenced message excerpt, it means the message is empty and suggests it could be an image attachment, poll, or embeds
-        You can only summarize excerpts with text messages for now
-
-        Remember that this is always top-level prefix message, so anything below this message is the actual user prompt and the context
-
         # Using tools
         When **Gemini** model is used, you can use tools as defined in the schema to perform actions beyond just answering questions
         Tools can be used to extend your skills and capabilities, and can be set via "/feature" command

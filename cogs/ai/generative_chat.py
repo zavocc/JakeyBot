@@ -16,6 +16,7 @@ class BaseChat():
         self.bot: discord.Bot = bot
         self.author = author
         self.DBConn = history
+        self.pending_ids = []
 
     ###############################################
     # Events-based chat
@@ -142,15 +143,15 @@ class BaseChat():
             if pmessage.reference:
                 _context_message = await pmessage.channel.fetch_message(pmessage.reference.message_id)
                 pmessage.content = inspect.cleandoc(
-                    f"""# Replying to referenced message excerpt from {_context_message.author.display_name} (username: @{_context_message.author.name}):
+                    f"""<system_msg>
+                    
+                    # Replying to referenced message excerpt from {_context_message.author.display_name} (username: @{_context_message.author.name}):
                     <|begin_msg_contexts|>
                     {_context_message.content}
                     <|end_msg_contexts|>
 
-                    ## Actual question, answer this prompt with the referenced message context mentioned above:
-                    <|begin_usr_question|>
-                    {pmessage.content}
-                    <|end_usr_question|>"""
+                    </system_msg>
+                    {pmessage.content}"""
                 )
                 await pmessage.channel.send(f"✅ Referenced message: {_context_message.jump_url}")
 
