@@ -1,5 +1,6 @@
 from os import environ
 import aiohttp
+import aiofiles
 import asyncio
 import discord
 import io
@@ -22,17 +23,26 @@ class Tool:
                         "video_prompt": {
                             "type": "STRING",
                             "description": "Prompt for video to be generated"
-                        }
+                        },
+                        "duration": {
+                            "type": "STRING",
+                            "description": "Duration of the video to be generated, it's recommended to default it to 5.",
+                            "enum": ["5s", "6s", "7s", "8s"]
+                        },
                     },
                     "required": ["video_prompt"]
                 }
             }
         ]
 
-    async def _tool_function(self, video_prompt: str):
-        # Early access, only the user 1039885147761283113 can use this tool
-        # Check if the user is the owner
-        if self.discord_ctx.author.id != 1039885147761283113:
+    async def _tool_function(self, video_prompt: str, duration: str = "5s"):
+        # Load the "allowlist.yaml" file
+        # Returns as list of user IDs
+        async with aiofiles.open("allowlist.yaml", mode="r") as _file:
+            _allowlist = await _file.read()
+
+        # Early access, only the users from allowlist can use this tool
+        if not any([str(self.discord_ctx.author.id) in _allowlist]):
             raise ValueError("You have access to the video generation model but the user you're interacting does not, this is a private preview access model with only certain Discord users under allowlist can use it")
 
         # Check if FAL_KEY is set
@@ -52,7 +62,7 @@ class Tool:
         _payload = {
             "prompt": video_prompt,
             "aspect_ratio": "16:9",
-            "duration": "5s",
+            "duration": duration,
         }
 
 
