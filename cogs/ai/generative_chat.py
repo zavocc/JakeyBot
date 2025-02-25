@@ -125,7 +125,11 @@ class BaseChat():
         if pmessage.guild is None or self.bot.user.mentioned_in(pmessage):
             # Ensure it must not be triggered by command prefix or slash command
             if pmessage.content.startswith(self.bot.command_prefix) or pmessage.content.startswith("/"):
-                return
+                # First we extract first word from the message see if this is a prefix command
+                if pmessage.content.startswith(self.bot.command_prefix):
+                    _command = pmessage.content.split(" ")[0].replace(self.bot.command_prefix, "")
+                    if self.bot.get_command(_command):
+                        return
             
             # Check if the bot was only mentioned without any content or image attachments
             # If none, then on main.py event, proceed sending the introductory message
