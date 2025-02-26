@@ -8,9 +8,9 @@
 - model: gemini::gemini-2.0-flash-001
   name: Gemini 2.0 Flash
   description: Best for everyday and advanced tasks
-- model: gemini::gemini-2.0-flash-lite-preview-02-05
-  name: Gemini 2.0 Flash Lite (Preview)
-  description: Preview lighter and faster version of Gemini 2.0 Flash
+- model: gemini::gemini-2.0-flash-lite-001
+  name: Gemini 2.0 Flash Lite
+  description: Best for quick answers
 - model: gemini::gemini-2.0-flash-thinking-exp-01-21
   name: Gemini 2.0 Flash Thinking Experimental
   description: Google's latest model that thinks before it responds
@@ -35,13 +35,13 @@
 ############################################
 - model: openai::gpt-4o
   name: GPT-4o
-  description: OpenAI's flagship multimodal model for advanced tasks
+  description: OpenAI's flagship model
 - model: openai::gpt-4o-mini
   name: GPT-4o Mini
-  description: A smaller version of GPT-4o for speed and cost with multimodal capabilities
+  description: A smaller version of GPT-4o
 - model: openai::o1
   name: OpenAI O1
-  description: OpenAI's latest model that spends time thinking before responding
+  description: OpenAI's model that spends time thinking before responding
 - model: openai::o3-mini
   name: OpenAI O3 Mini
   description: OpenAI's latest and fast reasoning model
@@ -50,15 +50,12 @@
 # Claude models
 ############################################
 # Claude models
-- model: claude::claude-3-5-haiku-20241022
-  name: Claude 3.5 Haiku
-  description: A Claude 3 Haiku predecessor with intelligence improvements
+- model: claude::claude-3-7-sonnet-20250219
+  name: Claude 3.7 Sonnet
+  description: Anthropic's most intelligent hybrid reasoning model
 - model: claude::claude-3-5-sonnet-20241022
   name: Claude 3.5 Sonnet v2
   description: Top notch intelligence with greater accuracy for coding and other tasks
-- model: claude::claude-3-opus-20240229
-  name: Claude 3 Opus
-  description: Anthropic's largest model
 
 ############################################
 # Mistral models
