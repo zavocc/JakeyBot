@@ -29,13 +29,13 @@ class Tool:
             },
             {
                 "name": "image_generator_imagen",
-                "description": "Generate or restyle images using natural language or from description using Google's Imagen 3 model",
+                "description": "Create high quality images using Google's latest state-of-the-art Imagen 3 model",
                 "parameters": {
                     "type": "OBJECT",
                     "properties": {
                         "image_description": {
                             "type": "STRING",
-                            "description": "The prompt of the image to generate"
+                            "description": "The prompt of the image to generate. It's recommended to enhance the prompt as the model is prompt-sensitive."
                         },
                         "aspect_ratio": {
                             "type": "STRING",
@@ -44,7 +44,7 @@ class Tool:
                         },
                         "negative_prompt": {
                             "type": "STRING",
-                            "description": "Which elements shall not include, when the user asks not to add something, specify the prompts here. It's recommended to separate each elements as comma-separated values"
+                            "description": "Which elements shall not include, when the user asks not to add something, specify the prompts here. It's recommended to separate each elements as comma-separated values, it's also recommended to add common bad attributes of the image here."
                         }
                     },
                     "required": ["image_description"]
@@ -102,7 +102,13 @@ class Tool:
             raise ValueError("FAL.AI API token is not set, please set it in the environment variables")
 
         # Create image
-        message_curent = await self.method_send(f"⌛ Generating **{image_description}**... this may take few minutes")
+        _embed = discord.Embed(
+            description="**Please wait while creating an image**\nTip: create an image of a Ben 10 alien that resembles a fox but has a flames on his back with omnitrix symbol in his chest",
+        )
+        _embed.set_footer(text=image_description)
+        _embed.set_image(url="https://cdn.discordapp.com/attachments/1264228477272457327/1343477258492448830/generated_image.png")
+
+        _message_curent = await self.method_send(embed=_embed)
         
         # Check if global aiohttp client session is initialized
         if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
@@ -133,12 +139,6 @@ class Tool:
             # Get the request ID
             _status = await _response.json()
 
-        # TODO: Get the result and loop through status endpoint
-        #curl --request GET \
-        #--url https://queue.fal.run/fal-ai/imagen3/requests/$REQUEST_ID/status \
-        #--header "Authorization: Key $FAL_KEY"
-        #{"status": "COMPLETED", "request_id": "2f18c428-88c7-4ad4-99b8-77483651dff6", "response_url": "https://queue.fal.run/fal-ai/imagen3/requests/2f18c428-88c7-4ad4-99b8-77483651dff6", "status_url": "https://queue.fal.run/fal-ai/imagen3/requests/2f18c428-88c7-4ad4-99b8-77483651dff6/status", "cancel_url": "https://queue.fal.run/fal-ai/imagen3/requests/2f18c428-88c7-4ad4-99b8-77483651dff6/cancel", "logs": null, "metrics": {"inference_time": 9.276242017745972}
-
         # We need to loop through the status endpoint until it is completed
         while True:
             async with _client_session.get(f"https://queue.fal.run/fal-ai/imagen3/requests/{_status['request_id']}/status", headers=_headers) as _response:
@@ -167,23 +167,11 @@ class Tool:
             # Check if we can deserialize it
             if len(_status["images"]) == 0:
                 raise Exception("Failed to generate image, no images had been generated")
-
-        # Ensure it is sent as image
-        _headers.pop("Content-Type")
-
-        # Download the image
-        async with _client_session.get(_status["images"][0]["url"], headers=_headers) as _response:
-            if _response.status > 202:
-                raise Exception(f"Failed to generate image with code {_response.status}, reason: {_response.reason}")
-            
-            # Send the image
-            _imagedata = await _response.content.read()
         
-        # Delete status
-        await message_curent.delete()
-
-        # Send the image
-        await self.method_send(file=discord.File(fp=io.BytesIO(_imagedata), filename="generated_image.png"))
+        # Set thumbnail again
+        _embed.set_image(url=_status["images"][0]["url"])
+        _embed.description = None
+        await _message_curent.edit("Your image is ready", embed=_embed)
 
         # Cleanup
         return "Image generation success and the file should be sent automatically"
