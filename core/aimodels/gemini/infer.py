@@ -206,7 +206,7 @@ class Completions(APIParams):
         if hasattr(self, "_file_data"): _chat_thread.append(self._file_data)
 
         # Parse prompts
-        _prompt = types.Part.from_text(text=prompt)
+        _prompt = types.Part.from_text(text=prompt if prompt else "Chat about this based on the attachment")
 
         # Create chat session
         _chat_session = self._gemini_api_client.aio.chats.create(
