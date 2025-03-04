@@ -135,7 +135,7 @@ class Tool:
         _desclinks = []
         for _results in _output[0]["results"]:
             if len(_desclinks) <= 10:
-                _desclinks.append(f"- [{_results['title']}]({_results['link']})")
+                _desclinks.append(f"- [{_results['title'].replace("/", " ")}]({_results['link']})")
             else:
                 break
         _sembed.description = "\n".join(_desclinks)
