@@ -78,7 +78,7 @@ class Tool:
                 _response.raise_for_status()
                 # Hide sensitive data by abstracting it
             except aiohttp.ClientConnectionError:
-                raise Exception("Failed to fetch Bing search results with code {_response.status}, reason: {_response.reason}")
+                raise Exception(f"Failed to fetch Bing search results with code {_response.status}, reason: {_response.reason}")
     
             _data = (await _response.json())["webPages"]["value"]
 
