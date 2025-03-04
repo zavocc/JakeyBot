@@ -8,11 +8,11 @@
 - tool_module_name: audio_generator
   ui_name: Text to Speech
 - tool_module_name: bing_search
-  ui_name: Browse with Bing
+  ui_name: Bing Search
 - tool_module_name: github
   ui_name: GitHub
 - tool_module_name: google_search
-  ui_name: Grounding with Google Search
+  ui_name: Google Search
 - tool_module_name: ideation_tools
   ui_name: Ideation Tools
 - tool_module_name: image_generator
