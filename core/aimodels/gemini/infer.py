@@ -250,11 +250,17 @@ class Completions(APIParams):
             raise CustomErrorMessage("🤬 I detected unsafe content in your prompt, Please rephrase your question.")
         elif _response.candidates[0].finish_reason == "MAX_TOKENS":
             raise CustomErrorMessage("⚠️ Response reached max tokens limit, please make your message concise.")
+        elif _response.candidates[0].finish_reason != "STOP":
+            raise CustomErrorMessage("⚠️ An error has occurred while giving you an answer, please try again later.")
         
         # Iterate through the parts and perform tasks
         _toolParts = []
         _toHalt = False
         _interstitial = None
+
+        if _response.function_calls:
+            _interstitial = await self._discord_method_send("▶️ Coming up with the plan...")
+
         for _part in _response.candidates[0].content.parts:
             if _part.text and _part.text.strip():
                 await Utils.send_ai_response(self._discord_ctx, prompt, _part.text, self._discord_method_send)
@@ -266,7 +272,7 @@ class Completions(APIParams):
                 
                 try:
                     # Edit the interstitial message
-                    await _interstitial.edit(f"⚙️ Executing tool: **{_part.function_call.name}**")
+                    await _interstitial.edit(f"▶️ Executing tool: **{_part.function_call.name}**")
 
                     if hasattr(_Tool["tool_object"], "_tool_function"):
                         _toExec = getattr(_Tool["tool_object"], "_tool_function")
