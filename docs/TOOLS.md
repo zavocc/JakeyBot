@@ -31,12 +31,6 @@ Jakey already has few tools since its initial implementation, first-party built-
 
     You must configure GitHub PAT via `GITHUB_TOKEN` from [dev.env](/dev.env.template)
 
-- Google Search - Grounds responses with search results fetched by Google, refer to https://developers.google.com/custom-search/v1/introduction to get your own CXID and API Key from Google Cloud
-
-    Keep in mind that the latter can quickly hit daily rate limits on free tier.
-
-    You must configure the `CSE_SEARCH_ENGINE_CXID` `CSC_GCP_API_KEY` key as shown via [dev.env](/dev.env.template)
-
 - EzAudio - Edit specific segment of the audio using natural language prompt, provide the audio file to Gemini, specifiy what segment of the sound to be edited (e.g. a honk in the background), and how long that sound should last
 
     - Dependencies required: `gradio_client`

@@ -70,18 +70,6 @@ class GeminiAITools(commands.Cog):
             around_date = datetime.datetime.strptime(around_date, '%m/%d/%Y')
 
         # Prompt feed which contains the messages
-        _prompt_feed = [{
-            "role": "user",
-            "parts":[
-                {
-                    "text": inspect.cleandoc(
-                        f"""Date today is {datetime.datetime.now().strftime('%m/%d/%Y')}
-                        OK, now generate summaries for me:"""
-                    )
-                }
-            ]
-        }]
-
         _prompt_feed = [
             types.Part.from_text(
                 text = inspect.cleandoc(
