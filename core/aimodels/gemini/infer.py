@@ -103,12 +103,12 @@ class Completions(APIParams):
 
         # Check if tool is code execution
         if _Tool:
-            if _tool_selection_name == "code_execution":
-                _tool_schema = [types.Tool(code_execution=types.ToolCodeExecution())]
+            if "gemini-2.0-flash-thinking" in self._model_name:
+                await self._discord_method_send("> ⚠️ The Gemini 2.0 Flash Thinking only supports code execution as a tool, tools won't be used with this model.")
+                _tool_schema = None
             else:
-                if "gemini-2.0-flash-thinking" in self._model_name:
-                    await self._discord_method_send("> ⚠️ The Gemini 2.0 Flash Thinking only supports code execution as a tool, tools won't be used with this model.")
-                    _tool_schema = None
+                if _tool_selection_name == "code_execution":
+                    _tool_schema = [types.Tool(code_execution=types.ToolCodeExecution())]
                 else:
                     # Check if the tool schema is a list or not
                     # Since a list of tools could be a collection of tools, sometimes it's just a single tool
@@ -177,7 +177,7 @@ class Completions(APIParams):
     # Inferencing
     ############################
     # Completion
-    async def completion(self, prompt: typing.Union[str, list], system_instruction: str = None):
+    async def completion(self, prompt: typing.Union[str, list, types.Content], tool: dict = None, system_instruction: str = None, return_text: bool = True):
         # Create response
         _response = await self._gemini_api_client.aio.models.generate_content(
             model=self._model_name,
@@ -185,10 +185,14 @@ class Completions(APIParams):
             config=types.GenerateContentConfig(
                 **self._genai_params,
                 system_instruction=system_instruction or "You are a helpful assistant",
+                tools=tool
             )
         )
 
-        return _response.text
+        if return_text:
+            return _response.text
+        else:
+            return _response
 
 
     # Chat Completion
@@ -206,29 +210,24 @@ class Completions(APIParams):
         if hasattr(self, "_file_data"): _chat_thread.append(self._file_data)
 
         # Parse prompts
-        _prompt = types.Part.from_text(text=prompt if prompt else "Chat about this based on the attachment")
-
-        # Create chat session
-        _chat_session = self._gemini_api_client.aio.chats.create(
-            model=self._model_name,
-            history=_chat_thread,
-            config=types.GenerateContentConfig(
-                **self._genai_params,
-                system_instruction=system_instruction or "You are a helpful assistant named Jakey",
-                tools=_Tool["tool_schema"]
-            )
+        _chat_thread.append(
+            types.Content(
+                parts=[types.Part.from_text(text=prompt)],
+                role="user"
+            ).model_dump(exclude_unset=True)
         )
-
+    
         try:
             # First try
-            _response = await _chat_session.send_message(_prompt)
+            await self._discord_method_send("▶️ Processing the request...")
+            _response = await self.completion(prompt=_chat_thread, tool=_Tool["tool_schema"], system_instruction=system_instruction, return_text=False)
         # Check if we get ClientError and has PERMISSION_DENIED
         except errors.ClientError as e:
             logging.error("1st try: I think I found a problem related to the request... doing first fixes: %s", e.message)
             if "do not have permission" in e.message:
                 # Curated history attribute are list of multipart chat turns under Content structured datatype
                 # Inside, it has "part" -> List and "role" -> str fields, so we iterate on the parts
-                for _chat_turns in _chat_session._curated_history:
+                for _chat_turns in _chat_thread:
                     for _part in _chat_turns["parts"]:
                         # Check if we have file_data key then we just set it as None and set the text to "Expired"
                         if _part.get("file_data"):
@@ -239,7 +238,7 @@ class Completions(APIParams):
                 await self._discord_method_send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
 
                 # Retry the request
-                _response = await _chat_session.send_message(_prompt)
+                _response = await self.completion(prompt=_chat_thread, tool=_Tool["tool_schema"], system_instruction=system_instruction, return_text=False)
             else:
                 logging.error("2nd try: I think I found a problem related to the request: %s", e.message)
                 raise e
@@ -252,7 +251,8 @@ class Completions(APIParams):
             raise CustomErrorMessage("⚠️ Response reached max tokens limit, please make your message concise.")
         elif _response.candidates[0].finish_reason != "STOP":
             raise CustomErrorMessage("⚠️ An error has occurred while giving you an answer, please try again later.")
-        
+    
+
         # Iterate through the parts and perform tasks
         _toolParts = []
         _toHalt = False
@@ -266,6 +266,9 @@ class Completions(APIParams):
                 await Utils.send_ai_response(self._discord_ctx, prompt, _part.text, self._discord_method_send)
 
             if _part.function_call:
+                # Append the previous interaction to chat thread
+                _chat_thread.append(_response.candidates[0].content.model_dump(exclude_unset=True))
+
                 # Indicate the tool is called
                 if not _interstitial:
                     _interstitial = await self._discord_method_send(f"✅ Tool started: **{_Tool['tool_human_name']}**")
@@ -306,9 +309,10 @@ class Completions(APIParams):
                     }
 
                 _toolParts.append(types.Part.from_function_response(
-                    name=_part.function_call.name,
-                    response=_toolResult
-                ))
+                        name=_part.function_call.name,
+                        response=_toolResult
+                    ).model_dump(exclude_unset=True)
+                )
 
             # Function calling and code execution doesn't mix
             if _part.executable_code:
@@ -316,8 +320,9 @@ class Completions(APIParams):
                 await self._discord_method_send(f"```py\n{_part.executable_code.code[:1975]}\n```")
 
             if _part.code_execution_result:
-                # Send the code execution result
-                await self._discord_method_send(f"```{_part.code_execution_result.output[:1975]}```")
+                if _part.code_execution_result.output:
+                    # Send the code execution result
+                    await self._discord_method_send(f"```{_part.code_execution_result.output[:1975]}```")
 
             # Render the code execution inline data when needed
             if _part.inline_data:
@@ -335,14 +340,17 @@ class Completions(APIParams):
             else:
                 await _interstitial.edit(f"✅ Used: **{_Tool['tool_human_name']}**")
 
+            # Append the tool parts to the chat thread
+            _chat_thread.append(types.Content(parts=_toolParts))
+
             # Add function call parts to the response
-            _response = await _chat_session.send_message(_toolParts)
+            _response = await self.completion(prompt=_chat_thread, system_instruction=system_instruction, return_text=False)
             # Check if it has text part
             if _response.candidates[0].content.parts[0].text:
                 await Utils.send_ai_response(self._discord_ctx, prompt, _response.candidates[0].content.parts[0].text, self._discord_method_send)
 
-        # Save the latest messages to chat thread, if it's not a dict, it's a pydantic model object which we need to convert to dict
-        _chat_thread = [_item if isinstance(_item, dict) else _item.model_dump(exclude_unset=True) for _item in _chat_session._curated_history]
+        # Append the final response to the chat thread
+        _chat_thread.append(_response.candidates[0].content.model_dump(exclude_unset=True))
 
         # Return the status
         return {"response": "OK", "chat_thread": _chat_thread}
