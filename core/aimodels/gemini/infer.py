@@ -218,8 +218,6 @@ class Completions(APIParams):
         )
     
         try:
-            # First try
-            await self._discord_method_send("▶️ Processing the request...")
             _response = await self.completion(prompt=_chat_thread, tool=_Tool["tool_schema"], system_instruction=system_instruction, return_text=False)
         # Check if we get ClientError and has PERMISSION_DENIED
         except errors.ClientError as e:
