@@ -14,6 +14,7 @@ import io
 import logging
 import typing
 import random
+import re
 
 class APIParams:
     def __init__(self):
@@ -104,8 +105,7 @@ class Completions(APIParams):
         # Check if tool is code execution
         if _Tool:
             if "gemini-2.0-flash-thinking" in self._model_name:
-                await self._discord_method_send("> ⚠️ The Gemini 2.0 Flash Thinking only supports code execution as a tool, tools won't be used with this model.")
-                _tool_schema = None
+                raise CustomErrorMessage("⚠️ The Gemini 2.0 Flash Thinking doesn't support tools, please switch to another Gemini model.")
             else:
                 if _tool_selection_name == "code_execution":
                     _tool_schema = [types.Tool(code_execution=types.ToolCodeExecution())]
@@ -206,6 +206,35 @@ class Completions(APIParams):
         if _chat_thread is None:
             _chat_thread = []
 
+        # Check if YouTube link is in the prompt
+        if "/youtube:" in prompt:
+            _REGEX_YOUTUDOTBE = r"https:\/\/youtu.be\/[\w|-]+"
+            _REGEX_YOUTUBEDOTCOM = r"https:\/\/(www.youtube.com|youtube.com)\/watch\?v=[\w|-]+"
+
+            # Extract the URL and remove parameters if exists
+            if "youtu.be" in prompt:
+                _youtube_url =  re.search(_REGEX_YOUTUDOTBE, prompt)[0]
+                # Remove the URL from the prompt
+                prompt = re.sub(fr"\/youtube:{_REGEX_YOUTUDOTBE}", "", prompt)
+            else:
+                _youtube_url = re.search(_REGEX_YOUTUBEDOTCOM, prompt)[0]
+                # Remove the URL from the prompt
+                prompt = re.sub(fr"\/youtube:{_REGEX_YOUTUBEDOTCOM}", "", prompt)
+
+            if _youtube_url:
+                # Add it to part
+                logging.info("YouTube URL detected: %s", _youtube_url)
+                await self._discord_method_send(f"✅ Watching YouTube Video: **<{_youtube_url}>\nNote: You can only include one YouTube video per conversation. To add more videos, clear the chat history**")
+                _chat_thread.append(
+                    types.Content(
+                        parts=[types.Part.from_uri(
+                            file_uri=_youtube_url,
+                            mime_type="video/*"
+                        )],
+                        role="user"
+                    ).model_dump(exclude_unset=True)
+                )
+
         # Attach file attachment if it exists
         if hasattr(self, "_file_data"): _chat_thread.append(self._file_data)
 
@@ -250,7 +279,6 @@ class Completions(APIParams):
         elif _response.candidates[0].finish_reason != "STOP":
             raise CustomErrorMessage("⚠️ An error has occurred while giving you an answer, please try again later.")
     
-
         # Iterate through the parts and perform tasks
         _toolParts = []
         _toHalt = False
@@ -309,7 +337,7 @@ class Completions(APIParams):
                 _toolParts.append(types.Part.from_function_response(
                         name=_part.function_call.name,
                         response=_toolResult
-                    ).model_dump(exclude_unset=True)
+                    )
                 )
 
             # Function calling and code execution doesn't mix
@@ -339,7 +367,7 @@ class Completions(APIParams):
                 await _interstitial.edit(f"✅ Used: **{_Tool['tool_human_name']}**")
 
             # Append the tool parts to the chat thread
-            _chat_thread.append(types.Content(parts=_toolParts))
+            _chat_thread.append(types.Content(parts=_toolParts).model_dump(exclude_unset=True))
 
             # Add function call parts to the response
             _response = await self.completion(prompt=_chat_thread, system_instruction=system_instruction, return_text=False)
