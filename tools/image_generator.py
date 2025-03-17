@@ -117,7 +117,7 @@ class Tool:
         # Send the image
         for _index, _parts in enumerate(_response.candidates[0].content.parts):
             if _parts.text:
-                _gemini_responses["responsesDebug"].append(_parts.text)
+                _gemini_responses["responsesLogs"].append(_parts.text)
                 await self.method_send(f"{_parts.text[:2000]}")
 
             if _parts.inline_data:
