@@ -34,14 +34,8 @@ Jakey already has few tools since its initial implementation, first-party built-
 - EzAudio - Edit specific segment of the audio using natural language prompt, provide the audio file to Gemini, specifiy what segment of the sound to be edited (e.g. a honk in the background), and how long that sound should last
 
     - Dependencies required: `gradio_client`
-
-- Image 2 Line drawing - Convert images to sketches, provide the image, and whether if it's a simple or complex (default) lines. 
   
-    - Dependencies required: `gradio_client`
-  
-- Image generation with Stable Diffusion 3.5 - Calls Huggingface spaces endpoints to generate an image within using the space from [stabilityai/stable-diffusion-3.5-large-turbo](https://huggingface.co/stabilityai/stable-diffusion-3.5-large-turbo).
-
-    You must acquire the Serverless API access token via `HF_TOKEN` with public access from [dev.env](/dev.env.template)
+- Image generation and Editing - Uses Gemini 2.0 Flash to generate or edit images. No additional configuration required, only Gemini API key.
 
 - YouTube Search - When enabled, the model can search for videos based on your request and extract video metadata from YouTube if you provided a YouTube URL.
 
