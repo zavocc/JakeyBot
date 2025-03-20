@@ -185,7 +185,7 @@ class Completions(APIParams):
             contents=prompt,
             config=types.GenerateContentConfig(
                 **self._genai_params,
-                system_instruction=system_instruction or "You are a helpful assistant",
+                system_instruction=system_instruction or None,
                 tools=tool
             )
         )

@@ -1,6 +1,7 @@
 from core.aimodels.gemini import Completions
 from core.ai.assistants import Assistants
 from discord.ext import commands
+from google.genai import types
 from os import environ
 import discord
 import logging
@@ -21,11 +22,17 @@ class GeminiAIApps(commands.Cog):
     async def rephrase(self, ctx, message: discord.Message):
         """Rephrase this message"""
         await ctx.response.defer(ephemeral=True)
+
+        # Craft prompt
+        _prompt_feed = f"Rephrase this message with variety to choose from:\n{str(message.content)}"
+        # Replace mentions with the user's name
+        for _mention in message.mentions:
+            _prompt_feed = _prompt_feed.replace(f"<@{_mention.id}>", _mention.display_name)
         
         # Generative model settings
         _completion = Completions(discord_ctx=ctx, discord_bot=self.bot)
         _system_prompt = await Assistants.set_assistant_type("message_rephraser_prompt", type=1)
-        _answer = await _completion.completion(f"Rephrase this message with variety to choose from:\n{str(message.content)}", system_instruction=_system_prompt)
+        _answer = await _completion.completion(_prompt_feed, system_instruction=_system_prompt)
 
         # Send message in an embed format
         _embed = discord.Embed(
@@ -67,8 +74,37 @@ class GeminiAIApps(commands.Cog):
         # Generative model settings
         _completion = Completions(discord_ctx=ctx, discord_bot=self.bot)
         _system_prompt = await Assistants.set_assistant_type("message_summarizer_prompt", type=1)
-        _answer = await _completion.completion(f"Explain and summarize based on this message:\n{str(message.content)}", system_instruction=_system_prompt)
 
+        # Craft prompt
+        _prompt_feed = [
+            f"Explain this Discord message and attached files if exists:\n{str(message.content)}"
+        ]
+
+        # Replace mentions with the user's name
+        for _mention in message.mentions:
+            _prompt_feed[0] = _prompt_feed[0].replace(f"<@{_mention.id}>", _mention.display_name)
+
+        # Check if we have attachments AND it's less than 5MB 
+        # And if it's an image, video, audio, or PDF
+        # First 4 attachments only
+        if message.attachments:
+            for _index, _attachment in enumerate(message.attachments):
+                if _index > 4:
+                    break
+
+                if _attachment.size > 5500000:
+                    continue
+
+                if any(_iter in _attachment.content_type for _iter in ["image", "video", "audio", "pdf"]):
+                    _prompt_feed.append(
+                        types.Part.from_bytes(
+                            data=(await _attachment.read()),
+                            mime_type=_attachment.content_type.split(";")[0]
+                        )
+                    )
+
+        _answer = await _completion.completion(_prompt_feed, system_instruction=_system_prompt)
+       
         # Send message in an embed format
         _embed = discord.Embed(
                 title="Explain this message",
@@ -106,10 +142,16 @@ class GeminiAIApps(commands.Cog):
         """Suggest a response based on this message"""
         await ctx.response.defer(ephemeral=True)
 
+        # Craft prompt
+        _prompt_feed = f"Suggest a response based on this message:\n{str(message.content)}"
+        # Replace mentions with the user's name
+        for _mention in message.mentions:
+            _prompt_feed = _prompt_feed.replace(f"<@{_mention.id}>", _mention.display_name)
+
         # Generative model settings
         _completion = Completions(discord_ctx=ctx, discord_bot=self.bot)
         _system_prompt = await Assistants.set_assistant_type("message_suggestions_prompt", type=1)
-        _answer = await _completion.completion(f"Suggest a response based on this message:\n{str(message.content)}", system_instruction=_system_prompt)
+        _answer = await _completion.completion(_prompt_feed, system_instruction=_system_prompt)
 
         # To protect privacy, send the message to the user
         # Send message in an embed format
