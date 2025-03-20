@@ -105,7 +105,8 @@ class Completions(APIParams):
         # Check if tool is code execution
         if _Tool:
             if "gemini-2.0-flash-thinking" in self._model_name:
-                raise CustomErrorMessage("⚠️ The Gemini 2.0 Flash Thinking doesn't support tools, please switch to another Gemini model.")
+                await self._discord_ctx_send("> ⚠️ The Gemini 2.0 Flash Thinking doesn't support tools, please switch to another Gemini model to use it.")
+                _tool_schema = None
             else:
                 if _tool_selection_name == "code_execution":
                     _tool_schema = [types.Tool(code_execution=types.ToolCodeExecution())]
