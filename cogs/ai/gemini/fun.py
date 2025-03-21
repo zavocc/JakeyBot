@@ -17,11 +17,17 @@ class GeminiUtils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
-        
-    @commands.slash_command(
+
+    ###############################################
+    # Avatar tools
+    ###############################################
+    avatar = discord.commands.SlashCommandGroup(
+        name="avatar", description="Avatar tools",
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
     )
+        
+    @avatar.command()
     @discord.option(
         "user",
         description="A user to get avatar from",
@@ -32,7 +38,7 @@ class GeminiUtils(commands.Cog):
         description="Describe the avatar",
         required=False
     )
-    async def avatar(self, ctx, user: Member = None, describe: bool = False):
+    async def show(self, ctx, user: Member = None, describe: bool = False):
         """Get user avatar"""
         await ctx.response.defer(ephemeral=True)
 
@@ -84,22 +90,17 @@ class GeminiUtils(commands.Cog):
         if _description: embed.set_footer(text="Using Gemini 2.0 Flash to generate descriptions, result may not be accurate")
         await ctx.respond(embed=embed, ephemeral=True)
 
-    @avatar.error
+    @show.error
     async def on_application_command_error(self, ctx: commands.Context, error: DiscordException):
         await ctx.respond("❌ Something went wrong, please try again later.")
         logging.error("An error has occurred while executing avatar command, reason: ", exc_info=True)
 
 
-    ###############################################
     # Remix avatar command
-    ###############################################
-    @commands.slash_command(
-        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
-        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
-    )
+    @avatar.command()
     @discord.option(
         "style",
-        description="Style the avatar",
+        description="Style of avatar",
         choices=ModelsList.get_remix_styles(),
         required=True
     )
@@ -116,7 +117,7 @@ class GeminiUtils(commands.Cog):
         max_value=2.0
     )
     async def remix(self, ctx: discord.ApplicationContext, style: str, user: Member = None, temperature: float = 0.7):
-        """Remix user avatar"""
+        """Remix user avatar using Gemini 2.0 Flash native image generation (EXPERIMENTAL)"""
         await ctx.response.defer(ephemeral=True)
 
         _user = await self.bot.fetch_user(user.id if user else ctx.author.id)
@@ -143,8 +144,11 @@ class GeminiUtils(commands.Cog):
         if not _filedata:
             raise Exception("No file data")
         
+        # Get the style
+        _style_preprompt = await ModelsList.get_remix_styles_async(style=style)
+        
         # Craft prompt
-        _crafted_prompt = f"Transform this image provided with the style of {style}."
+        _crafted_prompt = f"Transform this image provided with the style of {_style_preprompt}."
 
         _infer = Completions(discord_ctx=ctx, discord_bot=self.bot, model_name="gemini-2.0-flash-exp-image-generation")
 
@@ -188,12 +192,9 @@ class GeminiUtils(commands.Cog):
     ###############################################
     # Polls
     ###############################################
-    polls = discord.commands.SlashCommandGroup(name="polls", description="Create polls using AI")
+    polls = discord.commands.SlashCommandGroup(name="polls", description="Create polls using AI", contexts={discord.InteractionContextType.guild})
 
-    @polls.command(
-        contexts={discord.InteractionContextType.guild},
-        integration_types={discord.IntegrationType.guild_install}
-    )
+    @polls.command()
     @discord.option(
         "prompt",
         description="What prompt should be like, use natural language to steer number of answers or type of poll",

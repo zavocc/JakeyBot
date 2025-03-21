@@ -73,6 +73,20 @@ class ModelsList:
             yield discord.OptionChoice(tool["ui_name"], tool['tool_module_name'])
 
     @staticmethod
+    async def get_remix_styles_async(style: str = "I'm feeling lucky"):
+        # Load the tools list from YAML file
+        async with aiofiles.open("data/prompts/remix.yaml", "r") as remix_styles:
+            _remix_prompts = yaml.safe_load(await remix_styles.read())
+
+        # Return when matching style is found
+        # - image_style:
+        #   preprompt:
+        # This is the syntax of yaml so we need to iterate through the list until we find the matching style
+        for styles in _remix_prompts:
+            if styles["image_style"] == style:
+                return styles["preprompt"]
+
+    @staticmethod
     def get_remix_styles():
         # Load the tools list from YAML file
         with open("data/prompts/remix.yaml", "r") as remix_styles:
@@ -80,5 +94,5 @@ class ModelsList:
 
         # Iterate through the tools and yield each as a discord.OptionChoice
         for uioptions in _remix_prompts:
-            yield discord.OptionChoice(uioptions["image_style"], uioptions['preprompt'])
+            yield discord.OptionChoice(uioptions["image_style"])
         
