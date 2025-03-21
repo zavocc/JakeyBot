@@ -1,6 +1,6 @@
 from core.ai.assistants import Assistants
 from core.ai.core import ModelsList
-from core.aimodels.gemini import Completions
+from aimodels.gemini import Completions
 from core.exceptions import CustomErrorMessage, PollOffTopicRefusal
 from discord.ext import commands
 from discord import Member, DiscordException

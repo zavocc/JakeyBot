@@ -1,5 +1,5 @@
 from core.ai.assistants import Assistants
-from core.aimodels.gemini import Completions
+from aimodels.gemini import Completions
 from discord.ext import commands
 from google.genai import types
 from os import environ

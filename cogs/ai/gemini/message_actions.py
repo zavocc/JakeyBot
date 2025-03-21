@@ -1,4 +1,4 @@
-from core.aimodels.gemini import Completions
+from aimodels.gemini import Completions
 from core.ai.assistants import Assistants
 from discord.ext import commands
 from google.genai import types
