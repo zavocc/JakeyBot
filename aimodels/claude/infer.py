@@ -1,13 +1,13 @@
+from .config import ModelParams
 from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
 import discord
 import litellm
 
-class Completions:
+class Completions(ModelParams):
     def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "claude-3-5-haiku-20241022"):
-        # Model provider thread
-        self._model_provider_thread = "claude"
+        super().__init__()
 
         # Discord context
         self._discord_ctx = discord_ctx
@@ -95,13 +95,12 @@ class Completions:
         # Generate completion
         litellm.api_key = environ.get("ANTHROPIC_API_KEY")
         litellm._turn_on_debug() # Enable debugging
-        _params = {
-            "messages": _chat_thread,
-            "model": self._model_name,
-            "max_tokens": 4096,
-            "temperature": 0.7
-        }
-        _response = await litellm.acompletion(**_params)
+        
+        _response = await litellm.acompletion(
+            model=self._model_name,
+            messages=_chat_thread,
+            **self._genai_params
+        )
 
         # Append to chat thread
         _chat_thread.append(_response.choices[0].message.model_dump())

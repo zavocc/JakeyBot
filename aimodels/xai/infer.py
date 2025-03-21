@@ -1,13 +1,13 @@
+from .config import ModelParams
 from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
 import discord
 import litellm
 
-class Completions:
+class Completions(ModelParams):
     def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "grok-beta"):
-        # Model provider thread
-        self._model_provider_thread = "xai"
+        super().__init__()
 
         # Discord context
         self._discord_ctx = discord_ctx

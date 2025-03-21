@@ -213,7 +213,7 @@ class Chat(commands.Cog):
                 return
 
         # Save current settings before clearing history
-        _feature = await self.DBConn.get_config(guild_id=guild_id)
+        _feature = await self.DBConn.get_tool_config(guild_id=guild_id)
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
         _openrouter_model = await self.DBConn.get_key(guild_id=guild_id, key="default_openrouter_model")
 
@@ -222,7 +222,7 @@ class Chat(commands.Cog):
 
         if not reset_prefs:
             # Restore settings if not resetting preferences
-            await self.DBConn.set_config(guild_id=guild_id, tool=_feature)
+            await self.DBConn.set_tool_config(guild_id=guild_id, tool=_feature)
             await self.DBConn.set_default_model(guild_id=guild_id, model=_model)
             await self.DBConn.set_key(guild_id=guild_id, key="default_openrouter_model", value=_openrouter_model)
             await ctx.respond("✅ Chat history reset!")
@@ -271,24 +271,31 @@ class Chat(commands.Cog):
                 return
 
         # Retrieve current settings
-        _feature = await self.DBConn.get_config(guild_id=guild_id)
+        _cur_feature = await self.DBConn.get_tool_config(guild_id=guild_id)
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
 
         # Convert "disabled" to None
         if capability == "disabled":
             capability = None
 
-        if _feature == capability:
+        if _cur_feature == capability:
             await ctx.respond("✅ Feature already set!")
         else:
+            # Clear chat history IF the feature is not set to None
+            if _cur_feature:
+                await self.DBConn.clear_history(guild_id=guild_id)
+
             # Set new capability and restore default model
-            await self.DBConn.set_config(guild_id=guild_id, tool=capability)
+            await self.DBConn.set_tool_config(guild_id=guild_id, tool=capability)
             await self.DBConn.set_default_model(guild_id=guild_id, model=_model)
 
             if capability is None:
                 await ctx.respond("✅ Features disabled and chat is reset to reflect the changes")
             else:
-                await ctx.respond(f"✅ Feature **{capability}** enabled successfully and chat is reset to reflect the changes")
+                if not _cur_feature:
+                    await ctx.respond(f"✅ Feature **{capability}** enabled successfully")
+                else:
+                    await ctx.respond(f"✅ Feature **{capability}** enabled successfully and chat is reset to reflect the changes")
 
     @feature.error
     async def feature_on_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):

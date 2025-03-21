@@ -1,3 +1,4 @@
+from .config import ModelParams
 from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from core.ai.history import History as typehint_History
@@ -6,10 +7,9 @@ import discord
 import litellm
 import logging
 
-class Completions:
+class Completions(ModelParams):
     def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = None):
-        # Model provider thread
-        self._model_provider_thread = "openrouter"
+        super().__init__()
 
         # Discord context
         self._discord_ctx = discord_ctx
@@ -34,18 +34,6 @@ class Completions:
 
         self._guild_id = guild_id
 
-        # Multi-modal models
-        self._MULTIMODAL_MODELS = (
-            "gpt-4",
-            "claude-3", 
-            "gemini-pro-1.5",
-            "gemini-flash-1.5",
-            "gemini-1.5",
-            "gemini-exp",
-            "gemini-2.0",
-            "grok-2-vision",
-            "pixtral"
-        )
 
     async def input_files(self, attachment: discord.Attachment, extra_metadata: str = None):
         # Check if the attachment is an image
@@ -132,8 +120,7 @@ class Completions:
         _params = {
             "messages": _chat_thread,
             "model": self._model_name,
-            "max_tokens": 4096,
-            "temperature": 0.7
+            **self._genai_params
         }
 
         # Generate completion

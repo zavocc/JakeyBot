@@ -1,3 +1,4 @@
+from .config import ModelParams
 from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
@@ -5,10 +6,9 @@ import discord
 import litellm
 import logging
 
-class Completions:
+class Completions(ModelParams):
     def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "gpt-4o-mini"):
-        # Model provider thread
-        self._model_provider_thread = "openai"
+        super().__init__()
 
         # Discord context
         self._discord_ctx = discord_ctx
@@ -103,19 +103,16 @@ class Completions:
         litellm._turn_on_debug() # Enable debugging
         # When O1 model is used, set reasoning effort to medium
         # Since higher can be costly and lower performs similarly to GPT-4o 
-        _params = {
-            "messages": _chat_thread,
-            "model": self._model_name,
-            "max_tokens": 8192,
-            "temperature": 0.7
-        }
-
         _interstitial = None
         if "o1" in self._model_name or "o3-mini" in self._model_name:
             _interstitial = await self._discord_method_send(f"🔍 Used {self._model_name} model, please wait while I'm thinking...")
-            _params["reasoning_effort"] = "medium"
+            self._genai_params["reasoning_effort"] = "medium"
 
-        _response = await litellm.acompletion(**_params)
+        _response = await litellm.acompletion(
+            model=self._model_name,
+            messages=_chat_thread,
+            **self._genai_params
+        )
 
         # AI response
         _answer = _response.choices[0].message.content
