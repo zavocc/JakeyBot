@@ -1,13 +1,13 @@
+from .config import ModelParams
 from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
 import discord
 import litellm
 
-class Completions:
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "mistral-large-2407"):
-        # Model provider thread
-        self._model_provider_thread = "mistralai"
+class Completions(ModelParams):
+    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "grok-beta"):
+        super().__init__()
 
         # Discord context
         self._discord_ctx = discord_ctx
@@ -26,11 +26,11 @@ class Completions:
         
         # Discord bot object lifecycle instance
         self._discord_bot: discord.Bot = discord_bot
-        
-        if environ.get("MISTRAL_API_KEY"):
-            self._model_name = "mistral/" + model_name
+
+        if environ.get("XAI_API_KEY"):
+            self._model_name = "xai/" + model_name
         else:
-            raise ModelAPIKeyUnset("No Mistral API key was set, this model isn't available")
+            raise ModelAPIKeyUnset("No XAI API key was set, this model isn't available")
 
         self._guild_id = guild_id
 
@@ -58,15 +58,15 @@ class Completions:
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
-
-        # System prompt
+        
         if _chat_thread is None:
+            # Begin with system prompt
             _chat_thread = [{
                 "role": "system",
                 "content": system_instruction   
             }]
-    
-        # User prompt
+
+        # Craft prompt
         _chat_thread.append(
              {
                 "role": "user",
@@ -82,10 +82,12 @@ class Completions:
         # Check for file attachments
         if hasattr(self, "_file_data"):
             _chat_thread.append(self._file_data)
-
+        
         # Generate completion
-        litellm.api_key = environ.get("MISTRAL_API_KEY")
+        litellm.api_key = environ.get("XAI_API_KEY")
         litellm._turn_on_debug() # Enable debugging
+
+        # Params and response
         _params = {
             "messages": _chat_thread,
             "model": self._model_name,
@@ -98,7 +100,7 @@ class Completions:
         _answer = _response.choices[0].message.content
 
         # Append to chat thread
-        _chat_thread.append(_response.choices[0].message.model_dump())
+        _chat_thread.append(_response.choices[0].message)
 
         # Send the response
         await Utils.send_ai_response(self._discord_ctx, prompt, _answer, self._discord_method_send)

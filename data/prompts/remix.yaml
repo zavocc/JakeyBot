@@ -1,0 +1,18 @@
+- image_style: Cyberpunk
+  preprompt: Cyberpunk style
+- image_style: Watercolor
+  preprompt: Watercolor art with wet smudged and soft ligher bright colors all over the image paper-like texture
+- image_style: 3D
+  preprompt: 3D rendered artstyle with lightning, depth, and shadows. Best for 2D images to be converted into 3D
+- image_style: Cartoon
+  preprompt: Cartoon or animation style in 2D based on the vibes and realism, can be modern or classic style depending on the mood. Best if the image is photorealistic or 3D/CGI animation.
+- image_style: Pixel
+  preprompt: Blocky video game 2D pixel art with retro vibes, make sure that it is fully 100% pixelated 2D retro
+- image_style: Fifties
+  preprompt: 50s monochromatic version of the image, remove all colors but retain the image details
+- image_style: Sketch
+  preprompt: Sketched art, recolor the image with sketch-like light colors based on image's color if exists, and natural pencil strokes of the outlines in the image
+- image_style: Outline
+  preprompt: Outline version of the image on a black-on-white format. Ensure the outline is black and background is white, make sure the overall design of the image is intact
+- image_style: I'm feeling lucky
+  preprompt: Random artstyle based on vibes

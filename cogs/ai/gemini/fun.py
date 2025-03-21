@@ -1,12 +1,14 @@
 from core.ai.assistants import Assistants
-from core.aimodels.gemini import Completions
-from core.exceptions import PollOffTopicRefusal
+from core.ai.core import ModelsList
+from aimodels.gemini import Completions
+from core.exceptions import CustomErrorMessage, PollOffTopicRefusal
 from discord.ext import commands
 from discord import Member, DiscordException
 from google.genai import types
 from os import environ
 import discord
 import inspect
+import io
 import json
 import logging
 
@@ -15,11 +17,17 @@ class GeminiUtils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
-        
-    @commands.slash_command(
+
+    ###############################################
+    # Avatar tools
+    ###############################################
+    avatar = discord.commands.SlashCommandGroup(
+        name="avatar", description="Avatar tools",
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install}
     )
+        
+    @avatar.command()
     @discord.option(
         "user",
         description="A user to get avatar from",
@@ -30,7 +38,7 @@ class GeminiUtils(commands.Cog):
         description="Describe the avatar",
         required=False
     )
-    async def avatar(self, ctx, user: Member = None, describe: bool = False):
+    async def show(self, ctx, user: Member = None, describe: bool = False):
         """Get user avatar"""
         await ctx.response.defer(ephemeral=True)
 
@@ -82,20 +90,111 @@ class GeminiUtils(commands.Cog):
         if _description: embed.set_footer(text="Using Gemini 2.0 Flash to generate descriptions, result may not be accurate")
         await ctx.respond(embed=embed, ephemeral=True)
 
-    @avatar.error
+    @show.error
     async def on_application_command_error(self, ctx: commands.Context, error: DiscordException):
         await ctx.respond("❌ Something went wrong, please try again later.")
         logging.error("An error has occurred while executing avatar command, reason: ", exc_info=True)
 
+
+    # Remix avatar command
+    @avatar.command()
+    @discord.option(
+        "style",
+        description="Style of avatar",
+        choices=ModelsList.get_remix_styles(),
+        required=True
+    )
+    @discord.option(
+        "user",
+        description="A user to get avatar from",
+        required=False
+    )
+    @discord.option(
+        "temperature",
+        description="Controls the temperature of the model, higher the temperature, more creative the output",
+        required=False,
+        default=0.7,
+        max_value=2.0
+    )
+    async def remix(self, ctx: discord.ApplicationContext, style: str, user: Member = None, temperature: float = 0.7):
+        """Remix user avatar using Gemini 2.0 Flash native image generation (EXPERIMENTAL)"""
+        await ctx.response.defer(ephemeral=True)
+
+        _user = await self.bot.fetch_user(user.id if user else ctx.author.id)
+        if not _user.avatar:
+            raise CustomErrorMessage("You don't have an avatar to be remix")
+        else:
+            _avatar_url = _user.avatar.url
+
+        _filedata = None
+        _mime_type = None
+        # Download the image as files like
+        # Maximum file size is 3MB so check it
+        async with self.bot._aiohttp_main_client_session.head(_avatar_url) as _response:
+            if int(_response.headers.get("Content-Length")) > 1500000:
+                raise CustomErrorMessage("Reduce the file size of the image to less than 1.5MB")
+        
+        # Save it as bytes so base64 can read it
+        async with self.bot._aiohttp_main_client_session.get(_avatar_url) as response:
+            # Get mime type
+            _mime_type = response.headers.get("Content-Type")
+            _filedata = await response.content.read()
+        
+        # Check filedata
+        if not _filedata:
+            raise Exception("No file data")
+        
+        # Get the style
+        _style_preprompt = await ModelsList.get_remix_styles_async(style=style)
+        
+        # Craft prompt
+        _crafted_prompt = f"Transform this image provided with the style of {_style_preprompt}."
+
+        _infer = Completions(discord_ctx=ctx, discord_bot=self.bot, model_name="gemini-2.0-flash-exp-image-generation")
+
+        # Update params with image response modalities
+        _infer._genai_params["response_modalities"] = ["Image", "Text"]
+        _infer._genai_params["temperature"] = temperature
+        _completion_data = await _infer.completion([
+            "Only transform if the style requested here is different from the original image."
+            "If the style is the same, DO NOT create an image, instead you must send message as 'I cannot restyle an image with already similar style'. Anyway, let's proceed",
+            _crafted_prompt,
+            types.Part.from_bytes(
+                data=_filedata,
+                mime_type=_mime_type
+            )
+        ], return_text=False)
+
+        
+        _imagedata = None
+        for _parts in _completion_data.candidates[0].content.parts:
+            if _parts.inline_data:
+                if _parts.inline_data.mime_type.startswith("image"):
+                    _imagedata = _parts.inline_data.data
+                    break
+
+        if not _imagedata:
+            raise CustomErrorMessage("Failed to generate image, try using different styles or safe avatar images.")
+
+        await ctx.respond("Ok, here's a remixed version of your avatar:", file=discord.File(fp=io.BytesIO(_imagedata), filename="generated_avatar.png"), ephemeral=True)
+
+    @remix.error
+    async def on_application_command_error(self, ctx: commands.Context, error: DiscordException):
+        _error = getattr(error, "original", error)
+
+        if isinstance(_error, CustomErrorMessage):
+            await ctx.respond(f"❌ {_error}")
+        else:
+            await ctx.respond("❌ Something went wrong, please try again later.")
+        
+        logging.error("An error has occurred while executing remix command, reason: ", exc_info=True)
+
     ###############################################
     # Polls
     ###############################################
-    polls = discord.commands.SlashCommandGroup(name="polls", description="Create polls using AI")
+    polls = discord.commands.SlashCommandGroup(name="polls", description="Create polls using AI", contexts={discord.InteractionContextType.guild})
 
-    @polls.command(
-        contexts={discord.InteractionContextType.guild},
-        integration_types={discord.IntegrationType.guild_install}
-    )
+    @polls.command()
     @discord.option(
         "prompt",
         description="What prompt should be like, use natural language to steer number of answers or type of poll",

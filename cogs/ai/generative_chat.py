@@ -4,7 +4,7 @@ from core.exceptions import *
 from core.ai.history import History as typehint_History
 from discord import Message
 from os import environ
-import core.aimodels._template_ as typehint_AIModelTemplate
+import aimodels._template_ as typehint_AIModelTemplate
 import discord
 import importlib
 import inspect
@@ -66,7 +66,7 @@ class BaseChat():
             _show_info = False
       
         try:
-            _infer: typehint_AIModelTemplate.Completions = importlib.import_module(f"core.aimodels.{_model_provider}").Completions(
+            _infer: typehint_AIModelTemplate.Completions = importlib.import_module(f"aimodels.{_model_provider}").Completions(
                 discord_ctx=prompt,
                 discord_bot=self.bot,
                 guild_id=guild_id,

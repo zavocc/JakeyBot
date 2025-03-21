@@ -1,7 +1,9 @@
 # Syntax
 # provider::model_name
 
-# Hosted through Gemini API
+############################################
+# Google Models
+############################################
 - model: gemini::gemini-2.0-pro-exp-02-05
   name: Gemini 2.0 Pro Experimental
   description: Best for complex tasks
@@ -26,6 +28,11 @@
 - model: gemini::learnlm-1.5-pro-experimental
   name: LearnLM 1.5 Pro
   description: Gemini latest experimental model optimized for learning tasks
+
+
+- model: google::gemma-3-27b-it
+  name: Gemma 3 (27B)
+  description: Google's latest state of the art open model
 
 ############################################
 # OpenAI models

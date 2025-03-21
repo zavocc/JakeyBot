@@ -1,13 +1,14 @@
+from .config import ModelParams
 from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
 import discord
 import litellm
+import logging
 
-class Completions:
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "grok-beta"):
-        # Model provider thread
-        self._model_provider_thread = "xai"
+class Completions(ModelParams):
+    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "gpt-4o-mini"):
+        super().__init__()
 
         # Discord context
         self._discord_ctx = discord_ctx
@@ -27,10 +28,17 @@ class Completions:
         # Discord bot object lifecycle instance
         self._discord_bot: discord.Bot = discord_bot
 
-        if environ.get("XAI_API_KEY"):
-            self._model_name = "xai/" + model_name
+        if environ.get("OPENAI_API_KEY"):
+            # Set endpoint if OPENAI_API_ENDPOINT is set
+            if environ.get("OPENAI_API_ENDPOINT"):
+                self._oai_endpoint = environ.get("OPENAI_API_ENDPOINT")
+                logging.info("Using OpenAI API endpoint: %s", self._oai_endpoint)
+            else:
+                self._oai_endpoint = None
+                logging.info("Using default OpenAI API endpoint")
+            self._model_name = "openai/" + model_name
         else:
-            raise ModelAPIKeyUnset("No XAI API key was set, this model isn't available")
+            raise ModelAPIKeyUnset("No OpenAI API key was set, this model isn't available")
 
         self._guild_id = guild_id
 
@@ -66,6 +74,7 @@ class Completions:
                 "content": system_instruction   
             }]
 
+        
         # Craft prompt
         _chat_thread.append(
              {
@@ -79,31 +88,44 @@ class Completions:
             }
         )
 
-        # Check for file attachments
+        # Check if we have an attachment
         if hasattr(self, "_file_data"):
-            _chat_thread.append(self._file_data)
-        
-        # Generate completion
-        litellm.api_key = environ.get("XAI_API_KEY")
-        litellm._turn_on_debug() # Enable debugging
+            # Raise an error if OpenAI o3-mini model is used
+            if "-mini" in self._model_name or "o1-preview" in self._model_name:
+                raise CustomErrorMessage("⚠️ O1 Preview, O1/O3 mini models doesn't support image attachments")
 
-        # Params and response
-        _params = {
-            "messages": _chat_thread,
-            "model": self._model_name,
-            "max_tokens": 4096,
-            "temperature": 0.7
-        }
-        _response = await litellm.acompletion(**_params)
+            _chat_thread.append(self._file_data)
+
+        # Generate completion
+        litellm.api_key = environ.get("OPENAI_API_KEY")
+        if self._oai_endpoint:
+            litellm.api_base = self._oai_endpoint
+        litellm._turn_on_debug() # Enable debugging
+        # When O1 model is used, set reasoning effort to medium
+        # Since higher can be costly and lower performs similarly to GPT-4o 
+        _interstitial = None
+        if "o1" in self._model_name or "o3-mini" in self._model_name:
+            _interstitial = await self._discord_method_send(f"🔍 Used {self._model_name} model, please wait while I'm thinking...")
+            self._genai_params["reasoning_effort"] = "medium"
+
+        _response = await litellm.acompletion(
+            model=self._model_name,
+            messages=_chat_thread,
+            **self._genai_params
+        )
 
         # AI response
         _answer = _response.choices[0].message.content
 
         # Append to chat thread
-        _chat_thread.append(_response.choices[0].message)
+        _chat_thread.append(_response.choices[0].message.model_dump())
+
+        if _interstitial:
+            await _interstitial.delete()
 
         # Send the response
         await Utils.send_ai_response(self._discord_ctx, prompt, _answer, self._discord_method_send)
+
         return {"response":"OK", "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
