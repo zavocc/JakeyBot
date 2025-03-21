@@ -1,0 +1,18 @@
+- image_style: Cyberpunk
+  preprompt: Cyberpunk style
+- image_style: Watercolor
+  preprompt: Watercolor art
+- image_style: 3D
+  preprompt: 3D rendered artstyle
+- image_style: Cartoon
+  preprompt: Cartoonish style based on the vibes
+- image_style: Pixel
+  preprompt: Blocky video game 2D pixel art with retro vibes, make sure that it is fully 100% pixelated 2D retro
+- image_style: Fifties
+  preprompt: 50s monochromatic version of the image, remove all colors but retain the image details
+- image_style: Sketch
+  preprompt: Sketched art, recolor the image with sketch-like light colors based on image's color if exists, and natural pencil strokes of the outlines in the image
+- image_style: Outline
+  preprompt: Outline version of the image on a black-on-white format. Ensure the outline is black and background is white, make sure the overall design of the image is intact
+- image_style: I'm feeling lucky
+  preprompt: Random artstyle based on vibes

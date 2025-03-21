@@ -71,4 +71,14 @@ class ModelsList:
         # Iterate through the tools and yield each as a discord.OptionChoice
         for tool in _tools_list:
             yield discord.OptionChoice(tool["ui_name"], tool['tool_module_name'])
+
+    @staticmethod
+    def get_remix_styles():
+        # Load the tools list from YAML file
+        with open("data/prompts/remix.yaml", "r") as remix_styles:
+            _remix_prompts = yaml.safe_load(remix_styles)
+
+        # Iterate through the tools and yield each as a discord.OptionChoice
+        for uioptions in _remix_prompts:
+            yield discord.OptionChoice(uioptions["image_style"], uioptions['preprompt'])
         
