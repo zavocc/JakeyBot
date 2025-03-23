@@ -55,7 +55,7 @@ class ModelParams:
         # Check if tool is code execution
         if _Tool:
             if "gemini-2.0-flash-thinking" in self._model_name:
-                await self._discord_ctx_send("> ⚠️ The Gemini 2.0 Flash Thinking doesn't support tools, please switch to another Gemini model to use it.")
+                await self._discord_method_send("> ⚠️ The Gemini 2.0 Flash Thinking doesn't support tools, please switch to another Gemini model to use it.")
                 _tool_schema = None
             else:
                 if _tool_selection_name == "code_execution":
