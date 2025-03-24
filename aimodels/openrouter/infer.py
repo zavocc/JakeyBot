@@ -66,6 +66,10 @@ class Completions(ModelParams):
         else:
             self._model_name = "openrouter/" + _model_name
 
+        # Check if the model name is under self._BLOCKED_MODELS tuple
+        if any(model in self._model_name for model in self._BLOCKED_MODELS):
+            raise CustomErrorMessage(f"🚫 The model **{self._model_name}** is disabled, choose another model")
+
         # Indicate the model name
         logging.info("Using OpenRouter model: %s", self._model_name)
 

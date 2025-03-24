@@ -20,3 +20,10 @@ class ModelParams:
             "grok-2-vision",
             "pixtral"
         )
+
+        # Block expensive models
+        self._BLOCKED_MODELS = (
+            "o1-pro",
+            "gpt-4.5-preview",
+            "owo"
+        )
