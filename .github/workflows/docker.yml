@@ -5,6 +5,13 @@ on:
     branches:
       - master
       - main
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag'
+        required: true
+        default: 'sugilite'
+        type: string
 
 jobs:
   docker:
@@ -31,4 +38,4 @@ jobs:
       with:
         context: .
         push: true
-        tags: zavocc/jakey:sugilite
+        tags: ${{ github.event_name == 'workflow_dispatch' && format('zavocc/jakey:{0}', inputs.tag) || 'zavocc/jakey:autobot' }}
