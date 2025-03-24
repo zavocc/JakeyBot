@@ -38,4 +38,4 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{ github.event_name == 'workflow_dispatch' && format('zavocc/jakey:{0}', inputs.tag) || 'zavocc/jakey:autobot' }}
+        tags: ${{ github.event_name == 'workflow_dispatch' && format('zavocc/jakey:{0}', inputs.image_tag) || 'zavocc/jakey:autobot' }}
