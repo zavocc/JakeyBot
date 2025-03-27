@@ -93,7 +93,7 @@ class Tool:
         # Generate response
         _response = await _api_client.aio.models.generate_content(
             model="gemini-2.0-flash-exp-image-generation",
-            contents=[_prompt],
+            contents=_prompt,
             config={
                 "response_modalities": ["Text", "Image"],
                 "candidate_count": 1,

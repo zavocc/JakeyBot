@@ -178,9 +178,7 @@ class Tool:
 
         # Download the URLs
         _output = []
-        _imsg = await self.method_send("🔍 Extracting URLs")
         for _url in urls:
-            _imsg = await _imsg.edit(f"🔍 Extracting URL: **{_url}**")
             async with _session.get(_url) as _response:
                 # Check if the response is successful
                 if _response.status != 200:
@@ -193,12 +191,6 @@ class Tool:
                 # Check content length
                 _content_length = _response.headers.get('Content-Length')
                 if _content_length and int(_content_length) > 3145728:
-                    #_output.append({
-                    #    "url": _url,
-                    #    "content": "File too large (>3MB)"
-                    #})
-                    #continue
-                    await _imsg.delete()
                     raise ValueError("File too large, must not exceed 3MB")
 
                 # Read first chunk to detect binary content
@@ -219,16 +211,6 @@ class Tool:
                         "content": _data
                     })
                 except UnicodeDecodeError:
-                    #_output.append({
-                    #    "url": _url,
-                    #    "content": "Binary content detected"
-                    #})
-                    if _imsg:
-                        await _imsg.delete()
                     raise Exception("Binary content detected, I refuse to summarize this page for you.")
-
-        # Delete the message
-        if _imsg:
-            await _imsg.delete()
 
         return _output

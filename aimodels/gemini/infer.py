@@ -134,35 +134,6 @@ class Completions(ModelParams):
         if _chat_thread is None:
             _chat_thread = []
 
-        # Check if YouTube link is in the prompt
-        if "/youtube:" in prompt:
-            _REGEX_YOUTUDOTBE = r"https:\/\/youtu.be\/[\w|-]+"
-            _REGEX_YOUTUBEDOTCOM = r"https:\/\/(www.youtube.com|youtube.com)\/watch\?v=[\w|-]+"
-
-            # Extract the URL and remove parameters if exists
-            if "youtu.be" in prompt:
-                _youtube_url =  re.search(_REGEX_YOUTUDOTBE, prompt)[0]
-                # Remove the URL from the prompt
-                prompt = re.sub(fr"\/youtube:{_REGEX_YOUTUDOTBE}", "", prompt)
-            else:
-                _youtube_url = re.search(_REGEX_YOUTUBEDOTCOM, prompt)[0]
-                # Remove the URL from the prompt
-                prompt = re.sub(fr"\/youtube:{_REGEX_YOUTUBEDOTCOM}", "", prompt)
-
-            if _youtube_url:
-                # Add it to part
-                logging.info("YouTube URL detected: %s", _youtube_url)
-                await self._discord_method_send(f"✅ Watching YouTube Video: **<{_youtube_url}>\nNote: You can only include one YouTube video per conversation. To add more videos, clear the chat history**")
-                _chat_thread.append(
-                    types.Content(
-                        parts=[types.Part.from_uri(
-                            file_uri=_youtube_url,
-                            mime_type="video/*"
-                        )],
-                        role="user"
-                    ).model_dump(exclude_unset=True)
-                )
-
         # Attach file attachment if it exists
         if hasattr(self, "_file_data"): _chat_thread.append(self._file_data)
 
