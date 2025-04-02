@@ -15,7 +15,7 @@ class Tool:
         self.tool_schema = [ 
             {
                 "name": "bing_search",
-                "description": "Search and fetch latest information and pull videos with Bing.",
+                "description": "Search and fetch latest information and pull videos with Bing, perform calculations, or fetch real-time data.",
                 "parameters": {
                     "type": "OBJECT",
                     "properties": {
@@ -80,7 +80,7 @@ class Tool:
             except aiohttp.ClientConnectionError:
                 raise Exception(f"Failed to fetch Bing search results with code {_response.status}, reason: {_response.reason}")
     
-            _data = (await _response.json())["webPages"]["value"]
+            _data = await _response.json()
 
             # Check if the data is empty
             if not _data:
@@ -93,7 +93,7 @@ class Tool:
             "formatting_reason": "Now the reason for this is Discord doesn't nicely format the links if you don't provide a title",
             "results": []
         }]
-        for _results in _data:
+        for _results in _data["webPages"]["value"]:
             # Append the data
             _output[0]["results"].append({
                 "title": _results["name"],
@@ -102,6 +102,16 @@ class Tool:
                 "dateLastCrawled": _results.get("dateLastCrawled") or "Date last crawled data not available",
                 "datePublished": _results.get("datePublished") or "Date published data not available"
             })
+
+        # Check for computation result
+        if _data.get("computation"):
+            await self.method_send(f"🔍 Calculated the result for **{query}**")
+            _output.append(
+                {
+                    "related_expression": _data["computation"]["expression"],
+                    "expression_result": _data["computation"]["value"],
+                }
+            )
 
         # If the user wants to show relevant videos
         if show_youtube_videos:
@@ -112,25 +122,27 @@ class Tool:
                 try:
                     _response.raise_for_status()
                 except aiohttp.ClientConnectionError:
-                    _output[0]["video_results"] = "No video results found"
+                    _output.append({"video_results": "No video results found"})
                     return _output
                 
                 _data = (await _response.json())["value"]
                 if not _data:
-                    _output[0]["video_results"] = "No video results found"
+                    _output.append({"video_results": "No video results found"})
                     return _output
                         
-                # Add additional guidelines
-                _output[0]["video_result_guidelines"] = "Same as the former guidelines but only rank relevant YouTube videos to the user!"
-                _output[0]["video_result_rules"] = "You can only choose one YouTube video and put it at the end of your responses so it will be displayed to the user better."
-                _output[0]["video_results"] = []
-                
+                _videoResults = []
                 for _results in _data:
-                    _output[0]["video_results"].append({
+                    _videoResults.append({
                         "video_title": _results["name"],
                         "video_url": _results["contentUrl"],
                         "video_description": _results["description"]
                     })
+
+                _output.append({
+                    "video_result_guidelines": "You must always provide references and format links with [Page Title](Page URL). As possible, rank the most relevant and fresh sources based on dates.",
+                    "video_result_rules": "You can only choose one YouTube video and put it at the end of your responses so it will be displayed to the user better.",
+                    "video_results": _videoResults
+                })
         
         # Embed that contains first 10 sources
         _sembed = discord.Embed(
@@ -151,7 +163,6 @@ class Tool:
         _sembed.set_footer(text="Used Bing search tool to fetch results, https://www.microsoft.com/en-us/privacy/privacystatement")
         await self.method_send(f"🔍 Searched for **{query}**", embed=_sembed)
         return _output
-
 
     # URL Extractor
     async def _tool_function_url_extractor(self, urls: list):

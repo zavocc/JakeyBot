@@ -81,8 +81,8 @@ class Tool:
                 if not _mime_type or not _mime_type.startswith("image"):
                     raise ValueError("The file is not an image, please provide an image file")
 
-                if _content_length > 3 * 1024 * 1024:
-                    raise ValueError("The image size is too large, please provide an image that is less than 3MB")
+                if _content_length > 10 * 1024 * 1024:
+                    raise ValueError("The image size is too large, please provide an image that is less than 10MB")
                 
             # Download the image
             async with _client_session.get(discord_attachment_url) as _response:

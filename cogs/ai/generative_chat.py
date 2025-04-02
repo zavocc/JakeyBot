@@ -145,6 +145,9 @@ class BaseChat():
                 and not re.sub(f"<@{self.bot.user.id}>", '', message.content).strip():
                 return
             
+            # Remove the mention from the prompt
+            message.content = re.sub(f"<@{self.bot.user.id}>", '', message.content).strip()
+
             # If the bot is mentioned through reply with mentions, also add its previous message as context
             # So that the bot will reply to that query without quoting the message providing relevant response
             if message.reference:
