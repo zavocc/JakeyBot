@@ -35,7 +35,7 @@ class Completions():
         self._history_management = db_conn
         
     # A data must be assigned to the file_data attribute at the end
-    async def input_files(self, attachment: discord.Attachment, extra_metadata: str = None):
+    async def input_files(self, attachment: discord.Attachment):
         pass
 
     # For non-chat completions

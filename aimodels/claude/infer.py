@@ -34,7 +34,7 @@ class Completions(ModelParams):
     
         self._guild_id = guild_id
 
-    async def input_files(self, attachment: discord.Attachment, extra_metadata: str = None):
+    async def input_files(self, attachment: discord.Attachment):
         # Check if the attachment is an image
         if not attachment.content_type.startswith("image"):
             raise CustomErrorMessage("⚠️ This model only supports image attachments")
@@ -47,10 +47,6 @@ class Completions(ModelParams):
                     "image_url": {
                         "url": attachment.url
                     }
-                },
-                {
-                    "type": "text",
-                    "text": extra_metadata if extra_metadata else ""
                 }
             ]
         }

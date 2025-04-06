@@ -87,10 +87,7 @@ class BaseChat():
                 raise CustomErrorMessage(f"🚫 The model **{_model_name}** cannot process file attachments, please try another model")
 
             _processFileInterstitial = await prompt.channel.send(f"📄 Processing the file: **{prompt.attachments[0].filename}**")
-            await _infer.input_files(
-                attachment=prompt.attachments[0], 
-                extra_metadata=f"This additional an metadata is autoinserted by system:\nAttachment URL of the data provided for later reference: {prompt.attachments[0].url}"
-            )
+            await _infer.input_files(attachment=prompt.attachments[0])
             await _processFileInterstitial.edit(f"✅ Used: **{prompt.attachments[0].filename}**")
 
         ###############################################
@@ -148,19 +145,30 @@ class BaseChat():
             # Remove the mention from the prompt
             message.content = re.sub(f"<@{self.bot.user.id}>", '', message.content).strip()
 
+            # Check for image attachments, if exists, put the URL in the prompt
+            # TODO: put it on a constant and make have _ask() function to have attachments= named param
+            if message.attachments:
+                message.content = inspect.cleandoc(
+                    f"""<extra_metadata>
+                    Related Attachment URL: {message.attachments[0].url}
+                    </extra_metadata>
+
+                    {message.content}"""
+                )
+
             # If the bot is mentioned through reply with mentions, also add its previous message as context
             # So that the bot will reply to that query without quoting the message providing relevant response
             if message.reference:
                 _context_message = await message.channel.fetch_message(message.reference.message_id)
                 message.content = inspect.cleandoc(
-                    f"""<system_msg>
+                    f"""<reply_metadata>
                     
                     # Replying to referenced message excerpt from {_context_message.author.display_name} (username: @{_context_message.author.name}):
                     <|begin_msg_contexts|>
                     {_context_message.content}
                     <|end_msg_contexts|>
 
-                    </system_msg>
+                    </reply_metadata>
                     {message.content}"""
                 )
                 await message.channel.send(f"✅ Referenced message: {_context_message.jump_url}")

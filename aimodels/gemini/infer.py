@@ -54,7 +54,7 @@ class Completions(ModelParams):
         self._model_name = model_name
         self._guild_id = guild_id
 
-    async def input_files(self, attachment: discord.Attachment, extra_metadata: str = None):
+    async def input_files(self, attachment: discord.Attachment):
         # Download the attachment
         _xfilename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(518301839, 6582482111)}.{attachment.filename}"
 
@@ -95,8 +95,7 @@ class Completions(ModelParams):
                 types.Part.from_uri(
                     file_uri=_filedata.uri, 
                     mime_type=_filedata.mime_type
-                ),
-                types.Part.from_text(text=extra_metadata if extra_metadata else "File attachment")
+                )
             ],
             role="user"
         ).model_dump(exclude_unset=True)
