@@ -4,6 +4,7 @@ from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
 import discord
 import litellm
+import re
 
 class Completions(ModelParams):
     def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "claude-3-5-haiku-20241022"):
@@ -35,13 +36,22 @@ class Completions(ModelParams):
         self._guild_id = guild_id
 
     async def input_files(self, attachment: discord.Attachment):
-        # Check if the attachment is an image
-        if not attachment.content_type.startswith("image"):
-            raise CustomErrorMessage("⚠️ This model only supports image attachments")
+        # Check if the attachment is an image or PDF
+        if not "image" in attachment.content_type and not "pdf" in attachment.content_type:
+            raise CustomErrorMessage("⚠️ This model only supports image or PDF attachments")
 
-        self._file_data = {
-            "role": "user",
-            "content": [
+        if attachment.content_type.startswith("application/pdf"):
+            self._file_data = [
+                {
+                    "type": "document",
+                    "source": {
+                        "type": "url",
+                        "url": attachment.url
+                    }
+                }
+            ]
+        else:
+            self._file_data = [
                 {
                     "type": "image_url",
                     "image_url": {
@@ -49,7 +59,6 @@ class Completions(ModelParams):
                     }
                 }
             ]
-        }
 
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
@@ -70,23 +79,41 @@ class Completions(ModelParams):
                 ] 
             }]
 
-        # Craft prompt
-        _chat_thread.append(
-            {
-                "role": "user",
-                "content": [
-                        {
-                            "type": "text",
-                            "text": prompt,
-                        }
-                    ]
-            }
-        )
+        # If '/cache:true' is in the prompt, we need to cache the prompt
+        # Search must be either have whitespace or start/end of the string
+        if re.search(r"(^|\s)/cache:true(\s|$)", prompt):
+            await self._discord_method_send("ℹ️ Caching the prompt to improve performance later.")
+            # Remove the '/cache:true' from the prompt
+            prompt = re.sub(r"(^|\s)/cache:true(\s|$)", "", prompt)
 
+            _cachePrompt = True
+        else:
+            _cachePrompt = False
+
+        # Craft prompt
+        _prompt = {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": prompt,
+                }
+            ]
+        }
 
         # Check if we have an attachment
         if hasattr(self, "_file_data"):
-            _chat_thread.append(self._file_data)
+            # Add the attachment part to the prompt
+            _prompt["content"].extend(self._file_data)
+
+        
+        if _cachePrompt:
+            # Add cache control to the message
+            _prompt["content"][-1]["cache_control"] = {
+                "type": "ephemeral"
+            }
+
+        _chat_thread.append(_prompt)
 
         # Generate completion
         litellm.api_key = environ.get("ANTHROPIC_API_KEY")
