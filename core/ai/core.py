@@ -1,7 +1,10 @@
 from typing import Union
 import aiofiles
 import discord
+import importlib
 import io
+import logging
+import os
 import yaml
 
 class Utils:
@@ -64,13 +67,34 @@ class ModelsList:
         
     @staticmethod
     def get_tools_list():
-        # Load the tools list from YAML file
-        with open("data/tools.yaml", "r") as tools:
-            _tools_list = yaml.safe_load(tools)
+        _hasYieldDisableValue = False
+        if not _hasYieldDisableValue:
+            yield discord.OptionChoice("Disabled", "disabled")
 
-        # Iterate through the tools and yield each as a discord.OptionChoice
-        for tool in _tools_list:
-            yield discord.OptionChoice(tool["ui_name"], tool['tool_module_name'])
+        # Get directory names in projectroot/tools except ones starting with "."
+        # Then we yield each as a discord.OptionChoice
+        for _tool_names in os.listdir("tools"):
+            # Folders starting with __pycache__ or . are not tools
+            if _tool_names.startswith("__") or _tool_names.startswith("."):
+                continue
+
+            # If there's no manifest, handle exception to just continue
+            try:
+                _tool_manifest = importlib.import_module(f"tools.{_tool_names}.manifest")
+            except Exception as e:
+                # Log the error for syntax and import errors
+                logging.error("An error has occurred while importing the tool manifest: %s, reason: %s", _tool_names, e)
+                continue
+
+            # Check if there's a _tool_manifest.ToolManifest class and has tool_human_name attribute
+            if hasattr(_tool_manifest, "ToolManifest") and hasattr(_tool_manifest.ToolManifest, "tool_human_name"):
+                # Get the tool human name
+                _tool_human_name = getattr(_tool_manifest.ToolManifest, "tool_human_name")
+            else:
+                continue
+
+            # Yield as discord.OptionChoice
+            yield discord.OptionChoice(_tool_human_name, _tool_names)
 
     @staticmethod
     async def get_remix_styles_async(style: str = "I'm feeling lucky"):

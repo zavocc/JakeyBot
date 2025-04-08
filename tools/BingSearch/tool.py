@@ -1,104 +1,18 @@
 # Built in Tools
+from .manifest import ToolManifest
 from os import environ
 from urllib.parse import urlparse
 import aiohttp
 import discord
 
 # Function implementations
-class Tool:
-    tool_human_name = "Bing Search"
+class Tool(ToolManifest):
     def __init__(self, method_send, discord_ctx, discord_bot):
+        super().__init__()
+
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
-
-        self.tool_schema = [ 
-            {
-                "name": "bing_search",
-                "description": "Search and fetch latest information and pull videos with Bing, perform calculations, or fetch real-time data.",
-                "parameters": {
-                    "type": "OBJECT",
-                    "properties": {
-                        "query": {
-                            "type": "STRING",
-                            "description": "The query to search for, you can use search operators for more sophisticated searches"
-                        },
-                        "n_results": {
-                            "type": "INTEGER",
-                            "description": "The number of results to fetch, it's recommended to set from 1-3 for simple queries, 4-6 for queries require more corroborating sources, and 7-10 for complex queries"
-                        },
-                        "show_youtube_videos": {
-                            "type": "BOOLEAN",
-                            "description": "Show relevant YouTube videos"
-                        }
-                    },
-                    "required": ["query"]
-                }
-            },
-            {
-                "name": "url_extractor",
-                "description": "Extract URLs to summarize",
-                "parameters": {
-                    "type": "OBJECT",
-                    "properties": {
-                        "urls": {
-                            "type": "ARRAY",
-                            "items": {
-                                "type": "STRING"
-                            }
-                        }
-                    },
-                    "required": ["urls"]
-                }
-            }
-        ]
-
-        self.tool_schema_openai = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "bing_search",
-                    "description": "Search and fetch latest information and pull videos with Bing, perform calculations, or fetch real-time data.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "The query to search for, you can use search operators for more sophisticated searches"
-                            },
-                            "n_results": {
-                                "type": "integer",
-                                "description": "The number of results to fetch, it's recommended to set from 1-3 for simple queries, 4-6 for queries require more corroborating sources, and 7-10 for complex queries"
-                            },
-                            "show_youtube_videos": {
-                                "type": "boolean",
-                                "description": "Show relevant YouTube videos"
-                            }
-                        },
-                        "required": ["query"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "url_extractor",
-                    "description": "Extract URLs to summarize",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "urls": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            }
-                        },
-                        "required": ["urls"]
-                    }
-                }
-            }
-        ]
 
     async def _tool_function_bing_search(self, query: str, n_results: int = 10, show_youtube_videos: bool = False):
         # Must not be 50
