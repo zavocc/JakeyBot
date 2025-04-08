@@ -76,6 +76,7 @@ class ModelsList:
         for _tool_names in os.listdir("tools"):
             # Folders starting with __pycache__ or . are not tools
             if _tool_names.startswith("__") or _tool_names.startswith("."):
+                logging.info("Skipping %s because it starts with __ or .", _tool_names)
                 continue
 
             # If there's no manifest, handle exception to just continue
@@ -84,6 +85,11 @@ class ModelsList:
             except Exception as e:
                 # Log the error for syntax and import errors
                 logging.error("An error has occurred while importing the tool manifest: %s, reason: %s", _tool_names, e)
+                continue
+
+            # Check if it has __init__.py file
+            if not os.path.isfile(f"tools/{_tool_names}/__init__.py"):
+                logging.error("The tool %s does not have __init__.py file", _tool_names)
                 continue
 
             # Check if there's a _tool_manifest.ToolManifest class and has tool_human_name attribute

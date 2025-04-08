@@ -211,16 +211,17 @@ class Completions(ModelParams):
 
                     # Check if _toHalts is True, if it is, we just need to tell the model to try again later
                     # Since its not possible to just break the loop, it has to match the number of parts of toolInvoke
-                    if _toHalt:
-                        _toolResult = {
-                            "error": "⚠️ Error occurred previously which in order to prevent further issues, the operation was halted",
-                            "tool_args": _part.function_call.args
-                        }
-                    else:
+                    if not _toHalt:
                         _toolResult = {
                             "toolResult": (await _toExec(**_part.function_call.args)),
                             "tool_args": _part.function_call.args
                         }
+                    else:
+                        _toolResult = {
+                            "error": "⚠️ Error occurred previously which in order to prevent further issues, the operation was halted",
+                            "tool_args": _part.function_call.args
+                        }
+                        
                 # For other exceptions, log the error and add it as part of the chat thread
                 except Exception as e:
                     _toHalt = True
