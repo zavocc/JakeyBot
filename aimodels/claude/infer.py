@@ -147,7 +147,7 @@ class Completions(ModelParams):
                 # Append the chat history
                 _chat_thread.append(_response.choices[0].message.model_dump())
 
-                # Send first message
+                # Send text message if needed
                 await Utils.send_ai_response(self._discord_ctx, prompt, _response.choices[0].message.content, self._discord_method_send)
 
                 # Execute tools
@@ -202,15 +202,13 @@ class Completions(ModelParams):
 
 
             # If the response has tool calls, re-run the request
-            if _response.choices[0].message.tool_calls:
-                _agentLooping = True
-            else:
+            if not _response.choices[0].message.tool_calls:
                 # Send final message in this condition since the agent is not looping anymore
                 _agentLooping = False
                 await Utils.send_ai_response(self._discord_ctx, prompt, _response.choices[0].message.content, self._discord_method_send)
 
         # Done
-        # Append to chat thread and send the response
+        # Append the chat thread and send the status response
         _chat_thread.append(_response.choices[0].message.model_dump())
         return {"response":"OK", "chat_thread": _chat_thread}
 
