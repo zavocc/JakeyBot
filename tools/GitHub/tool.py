@@ -1,4 +1,4 @@
-# Built in Tools
+from .manifest import ToolManifest
 from os import environ
 import aiohttp
 import base64
@@ -6,69 +6,12 @@ import html
 import re
 
 # Function implementations
-class Tool:
-    tool_human_name = "GitHub"
+class Tool(ToolManifest):
     def __init__(self, method_send, discord_ctx, discord_bot):
+        super().__init__()
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
-
-        self.tool_schema = [
-            {
-                "name": "github_file_tool",
-                "description": "Retrieve file content from a GitHub repository or set of files, brainstorm and debug code.",
-                "parameters": {
-                    "type": "OBJECT",
-                    "properties": {
-                        "files": {
-                            "type": "ARRAY",
-                            "items": {
-                                "type": "STRING"
-                            },
-                            "description": "The file paths to retrieve from the repository. Must start with /"
-                        },
-                        "repo": {
-                            "type": "STRING",
-                            "description": "The repository in the format owner/repo"
-                        },
-                        "branch": {
-                            "type": "STRING",
-                            "description": "The branch name, default is master"
-                        }
-                    },
-                    "required": ["files", "repo"]
-                }
-            },
-            {
-                "name": "github_search_tool",
-                "description": "Search for code, commits, repositories, issues and PRs on GitHub.",
-                "parameters": {
-                    "type": "OBJECT",
-                    "properties": {
-                        "search_type": {
-                            "type": "STRING",
-                            "enum": [
-                                "CODE",
-                                "COMMITS",
-                                "REPOSITORIES",
-                                "ISSUE",
-                                "PR"
-                            ],
-                            "description": "The type of search to perform"
-                        },
-                        "query": {
-                            "type": "STRING",
-                            "description": "The search query to search for, you can use search qualifiers, the character limit is 256"
-                        },
-                        "page": {
-                            "type": "INTEGER",
-                            "description": "Pagination, default is 1. You can paginate for more results"
-                        }
-                    },
-                    "required": ["search_type", "query"]
-                }
-            }
-        ]
     
     # A method to extract relevant result from GitHub API to only extract the necessary information
     # https://docs.github.com/en/rest/search/search?apiVersion=2022-11-28#about-search

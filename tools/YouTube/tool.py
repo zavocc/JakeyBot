@@ -1,54 +1,16 @@
+from .manifest import ToolManifest
 from google.genai import types
 from os import environ
 import aiohttp
 import google.genai as genai
 import json
 
-class Tool:
-    tool_human_name = "YouTube"
+class Tool(ToolManifest):
     def __init__(self, method_send, discord_ctx, discord_bot):
+        super().__init__()
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
-
-        self.tool_schema = [
-            {
-                "name": "youtube_search",
-                "description": "Summarize and gather insights from a YouTube video.",
-                "parameters": {
-                    "type": "OBJECT",
-                    "properties": {
-                        "query": {
-                            "type": "STRING",
-                            "description": "The query to search for"
-                        },
-                        "n_results": {
-                            "type": "INTEGER",
-                            "description": "The number of results to fetch"
-                        },
-                    },
-                    "required": ["query"]
-                }
-            },
-            {
-                "name": "youtube_corpus",
-                "description": "Call YouTube subagent and get summaries and gather insights from a YouTube video.",
-                "parameters": {
-                    "type": "OBJECT",
-                    "properties": {
-                        "video_id": {
-                            "type": "STRING",
-                            "description": "The YouTube video ID from the URL or relevant context provided"
-                        },
-                        "corpus": {
-                            "type": "STRING",
-                            "description": "Natural language description about the video to gather insights from and get excerpts"
-                        }
-                    },
-                    "required": ["video_id", "corpus"]
-                }
-            }
-        ]
     
     async def _tool_function_youtube_search(self, query: str, n_results: int = 10):
         # Must not be above 50

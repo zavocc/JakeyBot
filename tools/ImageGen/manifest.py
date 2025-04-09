@@ -1,7 +1,7 @@
 class ToolManifest:
     tool_human_name = "Image Generation and Editing"
     def __init__(self):
-        self.tool_schema = self.tool_schema = [
+        self.tool_schema = [
             {
                 "name": "image_generator",
                 "description": "Generate or edit an image with Gemini 2.0 Flash's image generation capabilities",
