@@ -14,7 +14,6 @@ import io
 import logging
 import typing
 import random
-import re
 
 class Completions(ModelParams):
     def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "gemini-2.0-flash-001"):
@@ -179,7 +178,7 @@ class Completions(ModelParams):
     
         # Iterate through the parts and perform tasks
         _toolParts = []
-        _toHalt = False
+        _hasErrorOccuredwithTools = False
         _interstitial = None
 
         if _response.function_calls:
@@ -209,22 +208,14 @@ class Completions(ModelParams):
                         logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s")
                         raise CustomErrorMessage("⚠️ An error has occurred while calling tools, please try again later or choose another tool")
 
-                    # Check if _toHalts is True, if it is, we just need to tell the model to try again later
-                    # Since its not possible to just break the loop, it has to match the number of parts of toolInvoke
-                    if not _toHalt:
-                        _toolResult = {
-                            "toolResult": (await _toExec(**_part.function_call.args)),
-                            "tool_args": _part.function_call.args
-                        }
-                    else:
-                        _toolResult = {
-                            "error": "⚠️ Error occurred previously which in order to prevent further issues, the operation was halted",
-                            "tool_args": _part.function_call.args
-                        }
+                    _toolResult = {
+                        "toolResult": (await _toExec(**_part.function_call.args)),
+                        "tool_args": _part.function_call.args
+                    }
                         
                 # For other exceptions, log the error and add it as part of the chat thread
                 except Exception as e:
-                    _toHalt = True
+                    _hasErrorOccuredwithTools = True
 
                     # Also print the error to the console
                     logging.error("Something when calling specific tool lately, reason: %s", e)
@@ -260,7 +251,7 @@ class Completions(ModelParams):
 
         # Edit interstitial message
         if _toolParts and _interstitial:
-            if _toHalt:
+            if _hasErrorOccuredwithTools:
                 await _interstitial.edit(f"⚠️ Error executing tool: **{_Tool['tool_human_name']}**")
             else:
                 await _interstitial.edit(f"✅ Used: **{_Tool['tool_human_name']}**")
