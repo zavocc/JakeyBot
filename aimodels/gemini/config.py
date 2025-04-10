@@ -58,7 +58,7 @@ class ModelParams:
                 await self._discord_method_send("> ⚠️ The Gemini 2.0 Flash Thinking doesn't support tools, please switch to another Gemini model to use it.")
                 _tool_schema = None
             else:
-                if _tool_selection_name == "code_execution":
+                if _tool_selection_name == "CodeExecution":
                     _tool_schema = [types.Tool(code_execution=types.ToolCodeExecution())]
                 else:
                     # Check if the tool schema is a list or not

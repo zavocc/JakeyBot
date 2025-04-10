@@ -15,8 +15,10 @@ class Utils:
     async def send_ai_response(ctx: Union[discord.ApplicationContext, discord.Message], prompt: str, response: str, method_send, strip: bool = True) -> None:
         """Optimized method to send message based on the length of the message"""
         # Check if we can strip the message
-        if strip:
+        if strip and type(response) == str:
             response = response.strip()
+        else:
+            raise TypeError("The response is not a string")
 
         # Embed the response if the response is more than 2000 characters
         # Check to see if this message is more than 2000 characters which embeds will be used for displaying the message
@@ -81,10 +83,10 @@ class ModelsList:
 
             # If there's no manifest, handle exception to just continue
             try:
-                _tool_manifest = importlib.import_module(f"tools.{_tool_names}.manifest")
+                _tool = importlib.import_module(f"tools.{_tool_names}")
             except Exception as e:
                 # Log the error for syntax and import errors
-                logging.error("An error has occurred while importing the tool manifest: %s, reason: %s", _tool_names, e)
+                logging.error("An error has occurred while importing the tool definition: %s, reason: %s", _tool_names, e)
                 continue
 
             # Check if it has __init__.py file
@@ -93,10 +95,19 @@ class ModelsList:
                 continue
 
             # Check if there's a _tool_manifest.ToolManifest class and has tool_human_name attribute
-            if hasattr(_tool_manifest, "ToolManifest") and hasattr(_tool_manifest.ToolManifest, "tool_human_name"):
+            if hasattr(_tool, "Tool") and hasattr(_tool.Tool, "tool_human_name"):
+                # Check if the class Tool has constructor parameters:
+                # method_send, discord_ctx, discord_bot
+                if hasattr(_tool.Tool, "__init__"):
+                    # Check if the constructor has the parameters
+                    if not all(_params in _tool.Tool.__init__.__code__.co_varnames for _params in ["method_send", "discord_ctx", "discord_bot"]):
+                        logging.error("The tool %s does not have the required constructor parameters: method_send, discord_ctx, and discord_bot", _tool_names)
+                        continue
+
                 # Get the tool human name
-                _tool_human_name = getattr(_tool_manifest.ToolManifest, "tool_human_name")
+                _tool_human_name = getattr(_tool.Tool, "tool_human_name")
             else:
+                logging.error("The tool %s does not have a tool_human_name and other necessary tool definition attributes", _tool_names)
                 continue
 
             # Yield as discord.OptionChoice

@@ -143,10 +143,6 @@ class Completions(ModelParams):
             ).model_dump(exclude_unset=True)
         )
     
-        # Agentic experiences
-        _agentLooping = True
-        _interstitial = None
-
         # First response which is called only once
         try:
             _response = await self.completion(prompt=_chat_thread, tool=_Tool["tool_schema"], system_instruction=system_instruction, return_text=False)
@@ -181,13 +177,11 @@ class Completions(ModelParams):
         elif _response.candidates[0].finish_reason != "STOP":
             raise CustomErrorMessage("⚠️ An error has occurred while giving you an answer, please try again later.")
     
+        # Agentic experiences
         # Begin inference operation
+        _interstitial = None
         _toolUseErrorOccurred = False
-
-        while _agentLooping:
-            # Set _agentLooping to False if the response has no function calls at the end
-            _agentLooping = False
-
+        while True:
             # Check for function calls
             _toolParts = []
             if _response.function_calls:
@@ -262,6 +256,7 @@ class Completions(ModelParams):
                         await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="code_exec_artifact.bin"))
 
             # Edit interstitial message
+            # This is always executed when tools are used
             if _toolParts and _interstitial:
                 if _toolUseErrorOccurred:
                     await _interstitial.edit(f"⚠️ Error executing tool: **{_Tool['tool_human_name']}**")
@@ -269,15 +264,25 @@ class Completions(ModelParams):
                     await _interstitial.edit(f"✅ Used: **{_Tool['tool_human_name']}**")
 
                 # Append the tool parts to the chat thread
-                _chat_thread.append(types.Content(parts=_toolParts).model_dump(exclude_unset=True))
+                _chat_thread.append(
+                    types.Content(
+                        parts=_toolParts, 
+                        role="user"
+                    ).model_dump(exclude_unset=True)
+                )
 
                 # Add function call parts to the response
                 _response = await self.completion(prompt=_chat_thread, tool=_Tool["tool_schema"], system_instruction=system_instruction, return_text=False)
 
-            # If the response has tool calls, re-run the request
-            if _response.function_calls:
-                # Send final message in this condition since the agent is not looping anymore
-                _agentLooping = True
+                # If the response has tool calls, re-run the request
+                if not _response.function_calls:
+                    if _response.text or _response.candidates[0].content.parts[-1].text:
+                        await Utils.send_ai_response(self._discord_ctx, prompt, _response.candidates[0].content.parts[-1].text, self._discord_method_send)
+                else:
+                    continue
+
+            # Assuming we are done with the response and continue statement isn't triggered
+            break
 
         # Done
         # Append the chat thread and send the status response
