@@ -31,7 +31,7 @@ class ModelParams:
 
         # Check if tool is code execution
         if _Tool:
-            if _tool_selection_name == "Code Execution":
+            if _tool_selection_name == "CodeExecution":
                 raise CustomErrorMessage("⚠️ Code execution is not supported in Claude, please use other models that support it.")
             else:
                 # Check if the tool schema is a list or not

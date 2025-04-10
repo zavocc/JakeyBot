@@ -124,9 +124,6 @@ class Completions(ModelParams):
         litellm.api_key = environ.get("ANTHROPIC_API_KEY")
         litellm._turn_on_debug() # Enable debugging
 
-        # Agentic experiences
-        _agentLooping = True
-        _interstitial = None
 
         # First response which is called only once
         _response = await litellm.acompletion(
@@ -136,9 +133,11 @@ class Completions(ModelParams):
             **self._genai_params
         )
 
+        # Agentic experiences
         # Begin inference operation
+        _interstitial = None
         _toolUseErrorOccurred = False
-        while _agentLooping:
+        while True:
             # Check for tools
             if _response.choices[0].message.tool_calls:
                 if not _interstitial:
@@ -148,7 +147,8 @@ class Completions(ModelParams):
                 _chat_thread.append(_response.choices[0].message.model_dump())
 
                 # Send text message if needed
-                await Utils.send_ai_response(self._discord_ctx, prompt, _response.choices[0].message.content, self._discord_method_send)
+                if _response.choices[0].message.content:
+                    await Utils.send_ai_response(self._discord_ctx, prompt, _response.choices[0].message.content, self._discord_method_send)
 
                 # Execute tools
                 _toolCalls = _response.choices[0].message.tool_calls
@@ -204,8 +204,9 @@ class Completions(ModelParams):
             # If the response has tool calls, re-run the request
             if not _response.choices[0].message.tool_calls:
                 # Send final message in this condition since the agent is not looping anymore
-                _agentLooping = False
-                await Utils.send_ai_response(self._discord_ctx, prompt, _response.choices[0].message.content, self._discord_method_send)
+                if _response.choices[0].message.content:
+                    await Utils.send_ai_response(self._discord_ctx, prompt, _response.choices[0].message.content, self._discord_method_send)
+                break
 
         # Done
         # Append the chat thread and send the status response
