@@ -28,6 +28,9 @@
 ############################################
 # OpenAI models
 ############################################
+- model: openai::gpt-4.1
+  name: GPT 4.1 Standard
+  description: Latest OpenAI non-reasoning model
 - model: openai::gpt-4o
   name: GPT-4o
   description: OpenAI's flagship model
