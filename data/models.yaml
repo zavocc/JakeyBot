@@ -13,8 +13,8 @@
 - model: gemini::gemini-2.0-flash-lite-001
   name: Gemini 2.0 Flash Lite
   description: Best for quick answers
-- model: gemini::gemini-2.0-flash-thinking-exp-01-21
-  name: Gemini 2.0 Flash Thinking Experimental
+- model: gemini::gemini-2.5-flash-preview-04-17
+  name: Gemini 2.5 Flash Experimental
   description: Google's latest model that thinks before it responds
 - model: gemini::learnlm-2.0-flash-experimental
   name: LearnLM 2.0 Flash
