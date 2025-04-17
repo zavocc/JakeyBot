@@ -19,8 +19,6 @@
 - model: gemini::learnlm-1.5-pro-experimental
   name: LearnLM 1.5 Pro
   description: Gemini latest experimental model optimized for learning tasks
-
-
 - model: google::gemma-3-27b-it
   name: Gemma 3 (27B)
   description: Google's latest state of the art open model
@@ -28,9 +26,12 @@
 ############################################
 # OpenAI models
 ############################################
+- model: openai::o4-mini
+  name: OpenAI O4 Mini
+  description: OpenAI's latest and fast reasoning model
 - model: openai::gpt-4.1
   name: GPT 4.1 Standard
-  description: Latest OpenAI non-reasoning model
+  description: Latest OpenAI non-reasoning model for general coding tasks
 - model: openai::gpt-4o
   name: GPT-4o
   description: OpenAI's flagship model
@@ -40,9 +41,6 @@
 - model: openai::o1
   name: OpenAI O1
   description: OpenAI's model that spends time thinking before responding
-- model: openai::o3-mini
-  name: OpenAI O3 Mini
-  description: OpenAI's latest and fast reasoning model
 
 ############################################
 # Claude models

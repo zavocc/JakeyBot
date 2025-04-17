@@ -84,14 +84,6 @@ class Completions(ModelParams):
             }
         )
 
-        # Check if we have an attachment
-        if hasattr(self, "_file_data"):
-            # Raise an error if OpenAI o3-mini model is used
-            if "-mini" in self._model_name or "o1-preview" in self._model_name:
-                raise CustomErrorMessage("⚠️ O1 Preview, O1/O3 mini models doesn't support image attachments")
-
-            _chat_thread.append(self._file_data)
-
         # Generate completion
         litellm.api_key = environ.get("OPENAI_API_KEY")
         if self._oai_endpoint:
@@ -100,8 +92,7 @@ class Completions(ModelParams):
         # When O1 model is used, set reasoning effort to medium
         # Since higher can be costly and lower performs similarly to GPT-4o 
         _interstitial = None
-        if "o1" in self._model_name or "o3-mini" in self._model_name:
-            _interstitial = await self._discord_method_send(f"🔍 Used {self._model_name} model, please wait while I'm thinking...")
+        if "o1" in self._model_name or "o4-mini" in self._model_name:
             self._genai_params["reasoning_effort"] = "medium"
 
         _response = await litellm.acompletion(
