@@ -16,8 +16,8 @@
 - model: gemini::gemini-2.0-flash-thinking-exp-01-21
   name: Gemini 2.0 Flash Thinking Experimental
   description: Google's latest model that thinks before it responds
-- model: gemini::learnlm-1.5-pro-experimental
-  name: LearnLM 1.5 Pro
+- model: gemini::learnlm-2.0-flash-experimental
+  name: LearnLM 2.0 Flash
   description: Gemini latest experimental model optimized for learning tasks
 - model: google::gemma-3-27b-it
   name: Gemma 3 (27B)
