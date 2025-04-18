@@ -30,14 +30,15 @@ Jakey AI is available as Discord Bot. Other platforms is coming soon!
 - Summarize text channels and messages
 - Multimodality support and summarize file attachments!\*
 - Browse, run python code, edit images right within chat\**
-- Create images using and Stable Diffusion 3.5!
+- Create and conversationally edit images using Gemini 2.0 Flash Image generation
 
 Other non-AI extras include:
 - Listen to music using wavelink! Play with your tunes from Spotify, SoundCloud, YouTube, and more! Right within Discord!
 - Mimic other users
 
 > \* - Gemini can take images, videos, audio, certain text files, and full PDFs as input while others only accept image inputs \
-> \** - Tools are only supported through Gemini models
+> Claude supports images and PDF attachments \
+> \** - Tools are only supported through Gemini and Anthropic models
 
 # Installation and setup
 ## Required permissions for Discord bot
@@ -119,6 +120,8 @@ When you enter a prompt to Jakey... you can use chat variables which are substri
 - `prompt /chat:ephemeral` - Do not append the last message turn to chat history while having its previous memory
 - `prompt /model:model-name` - Set model for the response on demand. (See `/model list` to choose available model names)
 - `prompt /chat:info` - Show model used in the conversation.
+
+For claude-specific models, you can also use the `/cache:true` prompt variable to cache your inputs and save costs... Good for attaching PDF files.
 
 ## Model used
 By default, it uses **Gemini 2.0 Flash** a workhorse model, comparable with frontier models such as GPT-4o and surpasses Gemini 1.5 Pro in most key benchmarks at a fraction of a cost. Read more [here](https://developers.googleblog.com/en/gemini-2-family-expands/)
