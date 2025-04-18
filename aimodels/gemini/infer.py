@@ -48,8 +48,6 @@ class Completions(ModelParams):
         self._gemini_api_client: genai.Client = discord_bot._gemini_api_client
         self._aiohttp_main_client_session: aiohttp.ClientSession = discord_bot._aiohttp_main_client_session
 
-        #self._file_data = None
-
         self._model_name = model_name
         self._guild_id = guild_id
 
@@ -104,6 +102,18 @@ class Completions(ModelParams):
     ############################
     # Completion
     async def completion(self, prompt: typing.Union[str, list, types.Content], tool: dict = None, system_instruction: str = None, return_text: bool = True):
+        # Normalize model names to "-nonthinking" 
+        if self._model_name.endswith("-nonthinking"):
+            self._model_name = self._model_name.replace("-nonthinking", "")
+
+            # Configure thinking budget to 0
+            _thinkingConfigBudget = types.ThinkingConfig(
+                thinking_budget=0,
+            )
+            await self._discord_method_send("> ℹ️ Thinking is disabled for this model.")
+        else:
+            _thinkingConfigBudget = None
+
         # Create response
         _response = await self._gemini_api_client.aio.models.generate_content(
             model=self._model_name,
@@ -111,7 +121,8 @@ class Completions(ModelParams):
             config=types.GenerateContentConfig(
                 **self._genai_params,
                 system_instruction=system_instruction or None,
-                tools=tool
+                tools=tool,
+                thinking_config=_thinkingConfigBudget
             )
         )
 
@@ -168,6 +179,7 @@ class Completions(ModelParams):
                 logging.error("2nd try: I think I found a problem related to the request: %s", e.message)
                 raise e
 
+
         # Check if the response was blocked due to safety and other reasons than STOP
         # https://ai.google.dev/api/generate-content#FinishReason
         if _response.candidates[0].finish_reason == "SAFETY":
@@ -176,7 +188,7 @@ class Completions(ModelParams):
             raise CustomErrorMessage("⚠️ Response reached max tokens limit, please make your message concise.")
         elif _response.candidates[0].finish_reason != "STOP":
             raise CustomErrorMessage("⚠️ An error has occurred while giving you an answer, please try again later.")
-    
+
         # Agentic experiences
         # Begin inference operation
         _interstitial = None

@@ -6,10 +6,13 @@
 ############################################
 - model: gemini::gemini-2.5-pro-exp-03-25
   name: Gemini 2.5 Pro Experimental
-  description: Advanced reasoning with tool use
+  description: Google's reasoning model for complex tasks
 - model: gemini::gemini-2.5-flash-preview-04-17
+  name: Gemini 2.5 Flash Thinking Experimental
+  description: Workhorse thinking model for everyday and advanced tasks
+- model: gemini::gemini-2.5-flash-preview-04-17-nonthinking
   name: Gemini 2.5 Flash Experimental
-  description: Google's latest model that thinks before it responds
+  description: Best for everyday and advanced tasks without thinking
 - model: gemini::gemini-2.0-flash-001
   name: Gemini 2.0 Flash
   description: Best for everyday and advanced tasks
@@ -63,9 +66,9 @@
 ############################################
 # X.AI
 ############################################
-- model: xai::grok-2-vision-1212
-  name: Grok 2.0
-  description: XAI's Grok 2 model
+- model: xai::grok-3-latest
+  name: Grok 3
+  description: xAI's Grok model for creative tasks
 
 ############################################
 # Models from Groq
