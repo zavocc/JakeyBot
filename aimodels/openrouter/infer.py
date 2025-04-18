@@ -115,7 +115,8 @@ class Completions(ModelParams):
 
         # Params
         litellm.api_key = environ.get("OPENROUTER_API_KEY")
-        litellm._turn_on_debug() # Enable debugging
+        if environ.get("LITELLM_DEBUG"):
+            litellm._turn_on_debug()
 
         _params = {
             "messages": _chat_thread,

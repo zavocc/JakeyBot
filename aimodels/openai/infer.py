@@ -88,7 +88,8 @@ class Completions(ModelParams):
         litellm.api_key = environ.get("OPENAI_API_KEY")
         if self._oai_endpoint:
             litellm.api_base = self._oai_endpoint
-        litellm._turn_on_debug() # Enable debugging
+        if environ.get("LITELLM_DEBUG"):
+            litellm._turn_on_debug() # Enable debugging
         # When O1 model is used, set reasoning effort to medium
         # Since higher can be costly and lower performs similarly to GPT-4o 
         _interstitial = None

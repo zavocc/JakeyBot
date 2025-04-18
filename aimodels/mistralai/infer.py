@@ -81,7 +81,8 @@ class Completions(ModelParams):
 
         # Generate completion
         litellm.api_key = environ.get("MISTRAL_API_KEY")
-        litellm._turn_on_debug() # Enable debugging
+        if environ.get("LITELLM_DEBUG"):
+            litellm._turn_on_debug()
         _response = await litellm.acompletion(
             model=self._model_name,
             messages=_chat_thread,
