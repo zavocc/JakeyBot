@@ -108,10 +108,7 @@ class Completions(ModelParams):
 
         # Check if we have an attachment
         if hasattr(self, "_file_data"):
-            if any(model in self._model_name for model in self._MULTIMODAL_MODELS):
-                _chat_thread.append(self._file_data)
-            else:
-                raise CustomErrorMessage(f"🚫 The model **{self._model_name}** doesn't support file attachments, choose another model")
+            _chat_thread.append(self._file_data)
 
         # Params
         litellm.api_key = environ.get("OPENROUTER_API_KEY")

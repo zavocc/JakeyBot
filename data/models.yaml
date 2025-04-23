@@ -56,6 +56,16 @@
   name: Claude 3.5 Sonnet v2
   description: Top notch intelligence with greater accuracy for coding and other tasks
 
+##############################################
+# DeepSeek models from Azure AI Foundry
+##############################################
+- model: azure_foundry.deepseek::Deepseek-V3-0324
+  name: DeepSeek V3
+  description: DeepSeek latest non-reasoning model
+- model: azure_foundry.deepseek::Deepseek-R1
+  name: DeepSeek R1
+  description: DeepSeek latest reasoning model
+
 ############################################
 # Mistral models
 ############################################
