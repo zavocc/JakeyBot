@@ -1,54 +1,17 @@
+from .manifest import ToolManifest
 from google.genai import types
 from os import environ
 import aiohttp
 import google.genai as genai
+import inspect
 import json
 
-class Tool:
-    tool_human_name = "YouTube"
+class Tool(ToolManifest):
     def __init__(self, method_send, discord_ctx, discord_bot):
+        super().__init__()
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
-
-        self.tool_schema = [
-            {
-                "name": "youtube_search",
-                "description": "Summarize and gather insights from a YouTube video.",
-                "parameters": {
-                    "type": "OBJECT",
-                    "properties": {
-                        "query": {
-                            "type": "STRING",
-                            "description": "The query to search for"
-                        },
-                        "n_results": {
-                            "type": "INTEGER",
-                            "description": "The number of results to fetch"
-                        },
-                    },
-                    "required": ["query"]
-                }
-            },
-            {
-                "name": "youtube_corpus",
-                "description": "Call YouTube subagent and get summaries and gather insights from a YouTube video.",
-                "parameters": {
-                    "type": "OBJECT",
-                    "properties": {
-                        "video_id": {
-                            "type": "STRING",
-                            "description": "The YouTube video ID from the URL or relevant context provided"
-                        },
-                        "corpus": {
-                            "type": "STRING",
-                            "description": "Natural language description about the video to gather insights from and get excerpts"
-                        }
-                    },
-                    "required": ["video_id", "corpus"]
-                }
-            }
-        ]
     
     async def _tool_function_youtube_search(self, query: str, n_results: int = 10):
         # Must not be above 50
@@ -129,9 +92,9 @@ class Tool:
         # JSON schema
         _output_schema = types.Schema(
             type = types.Type.OBJECT,
-            required = ["corpus"],
+            required = ["answer"],
             properties = {
-                "corpus": types.Schema(
+                "answer": types.Schema(
                     type = types.Type.ARRAY,
                     items = types.Schema(
                         type = types.Type.OBJECT,
@@ -150,6 +113,12 @@ class Tool:
         )
         _output_result = None
 
+
+        # SYSTEM PROMPT
+        _system_prompt = inspect.cleandoc("""Your name is YouTube Q&A, you will need to output relevant passages based on query
+        You can either answer questions or provide passages or transcribe the video
+        When answering questions you can provide the answer in a single passage element with relevant timestamp""")
+
         # Craft prompt
         _crafted_prompt = [
             types.Content(
@@ -159,7 +128,7 @@ class Tool:
                         file_uri=f"https://youtu.be/{video_id}",
                         mime_type="video/*",
                     ),
-                    types.Part.from_text(text=f"Get me relevant passage, excerpt, or insights based on the prompt: {corpus}")
+                    types.Part.from_text(text=f"Get me relevant passage, excerpt, insights or answer questions,  based on the prompt: {corpus}")
                 ],
             ),
         ]
@@ -174,7 +143,7 @@ class Tool:
                 "max_output_tokens": 8192,
                 "response_schema": _output_schema,
                 "response_mime_type": "application/json",
-                "system_instruction": "Your name is YouTube summarizer, you will need to output relevant passages based on query\nYou must keep the outputs relevant and optimize by only outputting the required passages and timestamps\nThe passage can either be a relevant excerpt or your own summary of the particular scene, do not make repetitive summary."
+                "system_instruction": _system_prompt,
             }
         )
 

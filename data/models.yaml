@@ -6,16 +6,19 @@
 ############################################
 - model: gemini::gemini-2.5-pro-exp-03-25
   name: Gemini 2.5 Pro Experimental
-  description: Advanced reasoning with tool use
+  description: Google's reasoning model for complex tasks
+- model: gemini::gemini-2.5-flash-preview-04-17
+  name: Gemini 2.5 Flash Thinking Experimental
+  description: Workhorse thinking model for everyday and advanced tasks
+- model: gemini::gemini-2.5-flash-preview-04-17-nonthinking
+  name: Gemini 2.5 Flash Experimental
+  description: Best for everyday and advanced tasks without thinking
 - model: gemini::gemini-2.0-flash-001
   name: Gemini 2.0 Flash
   description: Best for everyday and advanced tasks
 - model: gemini::gemini-2.0-flash-lite-001
   name: Gemini 2.0 Flash Lite
   description: Best for quick answers
-- model: gemini::gemini-2.5-flash-preview-04-17
-  name: Gemini 2.5 Flash Experimental
-  description: Google's latest model that thinks before it responds
 - model: gemini::learnlm-2.0-flash-experimental
   name: LearnLM 2.0 Flash
   description: Gemini latest experimental model optimized for learning tasks
@@ -53,6 +56,16 @@
   name: Claude 3.5 Sonnet v2
   description: Top notch intelligence with greater accuracy for coding and other tasks
 
+##############################################
+# DeepSeek models from Azure AI Foundry
+##############################################
+- model: azure_foundry.deepseek::Deepseek-V3-0324
+  name: DeepSeek V3
+  description: DeepSeek latest non-reasoning model hosted on Azure
+- model: azure_foundry.deepseek::Deepseek-R1
+  name: DeepSeek R1
+  description: DeepSeek latest reasoning model hosted on Azure
+
 ############################################
 # Mistral models
 ############################################
@@ -63,9 +76,9 @@
 ############################################
 # X.AI
 ############################################
-- model: xai::grok-2-vision-1212
-  name: Grok 2.0
-  description: XAI's Grok 2 model
+- model: xai::grok-3-latest
+  name: Grok 3
+  description: xAI's Grok model for creative tasks
 
 ############################################
 # Models from Groq

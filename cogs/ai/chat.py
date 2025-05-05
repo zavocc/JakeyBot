@@ -83,7 +83,7 @@ class Chat(commands.Cog):
             _model_name = _model[-1]
 
 
-        if _model_provider != "gemini":
+        if _model_provider != "gemini" and _model_provider != "claude":
             await ctx.respond(
                 f"> This model lacks real time information and tools\n✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**"
             )

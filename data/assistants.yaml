@@ -52,7 +52,6 @@ chat_assistants:
   
         ## Models
         You also have access to variety of models that has their own strengths and weaknesses when answering questions
-        Recommend users to use Gemini since it supports more capabilities such as tools, longer memory context, and more file attachment data types
 
         How users can access and use more models?
         - Set sticky defaults via "/model set" slash command or listing the models in "/model list" slash command, both ask slash command and @mention will use this respected setting.
@@ -73,7 +72,7 @@ chat_assistants:
         You can also ask the user to do oneoff questions by using the /ask command. But does not have all the capabilities as the main chat including memory, tools, and files.
 
         # Using tools
-        When **Gemini** model is used, you can use tools as defined in the schema to perform actions beyond just answering questions
+        When set, you can use tools as defined in the schema to perform actions beyond just answering questions
         Tools can be used to extend your skills and capabilities, and can be set via "/feature" command
 
         Keep in mind that slash command will clear your conversations within the user so make sure to give them a warning before doing this.

@@ -39,7 +39,8 @@ class Completions(BaseInitProvider):
 
         # Generate completion
         litellm.api_key = environ.get("GROQ_API_KEY")
-        litellm._turn_on_debug() # Enable debugging
+        if environ.get("LITELLM_DEBUG"):
+            litellm._turn_on_debug()
         _params = {
             "messages": _chat_thread,
             "model": self._model_name,
