@@ -3,6 +3,7 @@ from google.genai import types
 from os import environ
 import aiohttp
 import google.genai as genai
+import inspect
 import json
 
 class Tool(ToolManifest):
@@ -91,9 +92,9 @@ class Tool(ToolManifest):
         # JSON schema
         _output_schema = types.Schema(
             type = types.Type.OBJECT,
-            required = ["corpus"],
+            required = ["answer"],
             properties = {
-                "corpus": types.Schema(
+                "answer": types.Schema(
                     type = types.Type.ARRAY,
                     items = types.Schema(
                         type = types.Type.OBJECT,
@@ -112,6 +113,12 @@ class Tool(ToolManifest):
         )
         _output_result = None
 
+
+        # SYSTEM PROMPT
+        _system_prompt = inspect.cleandoc("""Your name is YouTube Q&A, you will need to output relevant passages based on query
+        You can either answer questions or provide passages or transcribe the video
+        When answering questions you can provide the answer in a single passage element with relevant timestamp""")
+
         # Craft prompt
         _crafted_prompt = [
             types.Content(
@@ -121,7 +128,7 @@ class Tool(ToolManifest):
                         file_uri=f"https://youtu.be/{video_id}",
                         mime_type="video/*",
                     ),
-                    types.Part.from_text(text=f"Get me relevant passage, excerpt, or insights based on the prompt: {corpus}")
+                    types.Part.from_text(text=f"Get me relevant passage, excerpt, insights or answer questions,  based on the prompt: {corpus}")
                 ],
             ),
         ]
@@ -136,7 +143,7 @@ class Tool(ToolManifest):
                 "max_output_tokens": 8192,
                 "response_schema": _output_schema,
                 "response_mime_type": "application/json",
-                "system_instruction": "Your name is YouTube summarizer, you will need to output relevant passages based on query\nYou must keep the outputs relevant and optimize by only outputting the required passages and timestamps\nThe passage can either be a relevant excerpt or your own summary of the particular scene, do not make repetitive summary."
+                "system_instruction": _system_prompt,
             }
         )
 
