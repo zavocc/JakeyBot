@@ -16,7 +16,7 @@ class ToolManifest:
                         },
                         "n_results": {
                             "type": "INTEGER",
-                            "description": "The number of results to fetch, it's recommended to set from 1-3 for simple queries, 4-6 for queries require more corroborating sources, and 7-10 for complex queries"
+                            "description": "The number of results to fetch, it's recommended to set from 1-3 for simple queries, 4-6 for queries require more corroborating sources, and 7 or more for complex queries"
                         },
                         "show_youtube_videos": {
                             "type": "BOOLEAN",

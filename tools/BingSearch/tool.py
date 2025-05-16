@@ -52,6 +52,7 @@ class Tool(ToolManifest):
             "guidelines": "You must always provide references and format links with [Page Title](Page URL). As possible, rank the most relevant and fresh sources based on dates.",
             "formatting_rules": "Do not provide links as [Page URL](Page URL), always provide a title as this [Page Title](Page URL), if it doesn't just directly send the URL",
             "formatting_reason": "Now the reason for this is Discord doesn't nicely format the links if you don't provide a title",
+            "showLinks": "No need to list all references, only most relevant ones",
             "results": []
         }]
         for _results in _data["webPages"]["value"]:

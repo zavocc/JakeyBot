@@ -55,7 +55,7 @@ class ModelParams:
         # Check if tool is code execution
         if _Tool:
             if _tool_selection_name == "CodeExecution":
-                _tool_schema = [types.Tool(code_execution=types.ToolCodeExecution())]
+                _tool_schema = _Tool.tool_schema
             else:
                 # Check if the tool schema is a list or not
                 # Since a list of tools could be a collection of tools, sometimes it's just a single tool
