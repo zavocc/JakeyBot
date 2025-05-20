@@ -7,10 +7,10 @@
 - model: gemini::gemini-2.5-pro-exp-03-25
   name: Gemini 2.5 Pro Experimental
   description: Google's reasoning model for complex tasks
-- model: gemini::gemini-2.5-flash-preview-04-17
+- model: gemini::gemini-2.5-flash-preview-05-20
   name: Gemini 2.5 Flash Thinking Experimental
   description: Workhorse thinking model for everyday and advanced tasks
-- model: gemini::gemini-2.5-flash-preview-04-17-nonthinking
+- model: gemini::gemini-2.5-flash-preview-05-20-nonthinking
   name: Gemini 2.5 Flash Experimental
   description: Best for everyday and advanced tasks without thinking
 - model: gemini::gemini-2.0-flash-001
