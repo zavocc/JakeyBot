@@ -1,3 +1,4 @@
+from .config import ModelParams
 from core.exceptions import ModelAPIKeyUnset
 from os import environ
 import discord
@@ -26,11 +27,6 @@ class BaseInitProvider:
         # Check for endpoints and keys
         # https://learn.microsoft.com/en-us/azure/ai-foundry/model-inference/how-to/create-model-deployments?pivots=ai-foundry-portal
         # Azure AI model inference must be used instead of serverless, managed compute, nor azure openai service
-        if environ.get("GROQ_API_KEY"):
-            self._model_name = "groq/" + model_name
-        else:
-            raise ModelAPIKeyUnset("No GROQ API key was set, this model isn't available")
-        
         # Check for keys
         if not environ.get("AZURE_AI_API_KEY"):
             raise ModelAPIKeyUnset("No AZURE_AI_API_KEY key was set, this model isn't available")
@@ -38,3 +34,5 @@ class BaseInitProvider:
         if not environ.get("AZURE_AI_API_BASE"):
             raise ModelAPIKeyUnset("No AZURE_AI_API_BASE was set, this model isn't available. Please refer to https://learn.microsoft.com/en-us/azure/ai-foundry/model-inference/how-to/create-model-deployments?pivots=ai-foundry-portal")
        
+        # Initiate model params
+        self._model_params = ModelParams()

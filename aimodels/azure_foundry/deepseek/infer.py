@@ -42,14 +42,9 @@ class Completions(BaseInitProvider):
 
         # Generate completion
         litellm.api_key = environ.get("AZURE_AI_API_KEY")
-        litellm._turn_on_debug() # Enable debugging
-        _params = {
-            "messages": _chat_thread,
-            "model": self._model_name,
-            "max_tokens": 4096,
-            "temperature": 0.7
-        }
-        _response = await litellm.acompletion(**_params)
+        if environ.get("LITELLM_DEBUG"):
+            litellm._turn_on_debug() # Enable debugging
+        _response = await litellm.acompletion(model=self._model_name, **self._model_params.genai_params)
 
 
         # Show the thought process inside the <think> tag
@@ -71,10 +66,9 @@ class Completions(BaseInitProvider):
 
         # Append to chat thread
         _chat_thread.append(_response.choices[0].message.model_dump())
-        _answer = _response.choices[0].message.content
 
         # Send the response
-        await Utils.send_ai_response(self._discord_ctx, prompt, _answer, self._discord_method_send)
+        await Utils.send_ai_response(self._discord_ctx, prompt, _response.choices[0].message.content, self._discord_method_send)
         return {"response":"OK", "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
