@@ -1,9 +1,23 @@
 class ToolManifest:
     tool_human_name = "Audio Tools"
     audio_editor_tool_description = "Edit audio, simply provide the description for editing, and EzAudio will do the rest"
-    audio_generator_tool_description = "Generate audio from text"
+    audio_generator_tool_description = "Generate audio from text using PlayHT (Legacy)"
+    audio_generator_gemini_tool_description = "Generate audio from text using Gemini models with steerable speech"
     voice_cloner_tool_description = "Clone voices and perform TTS tasks from the given audio files"
-    
+
+    # Voices
+    voices_playht_enum = [
+        "Aaliyah", "Adelaide", "Angelo", "Arista", "Atlas", "Basil", "Briggs", "Calum", "Celeste",
+        "Cheyenne", "Chip", "Cillian", "Deedee", "Eleanor", "Fritz", "Gail", "Indigo", "Jennifer",
+        "Judy", "Mamaw", "Mason", "Mikail", "Mitch", "Nia", "Quinn", "Ruby", "Thunder"
+    ]
+
+    voices_gemini_enum = [
+        "Zephyr", "Kore", "Orus", "Autonoe", "Umbriel", "Erinome", "Laomedeia", "Schedar", "Achird", "Sadachbia",
+        "Puck", "Fenrir", "Aoede", "Enceladus", "Algieba", "Algenib", "Achernar", "Gacrux", "Zubenelgenubi", "Sadalager",
+        "Charon", "Leda", "Callirrhoe", "Iapetus", "Despina", "Rasalgethi", "Alnilam", "Pulcherrima", "Vindemiatrix", "Sulafar"
+    ]
+
     def __init__(self):
         self.tool_schema = [ 
             {
@@ -43,11 +57,28 @@ class ToolManifest:
                         },
                         "voice": {
                             "type": "string",
-                            "enum": [
-                                "Aaliyah", "Adelaide", "Angelo", "Arista", "Atlas", "Basil", "Briggs", "Calum", "Celeste",
-                                "Cheyenne", "Chip", "Cillian", "Deedee", "Eleanor", "Fritz", "Gail", "Indigo", "Jennifer",
-                                "Judy", "Mamaw", "Mason", "Mikail", "Mitch", "Nia", "Quinn", "Ruby", "Thunder"
-                            ]
+                            "enum": self.voices_playht_enum,
+                        }
+                    },
+                    "required": ["text"]
+                }
+            },
+            {
+                "name": "audio_generator_gemini",
+                "description": self.audio_generator_gemini_tool_description,
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "text": {
+                            "type": "string"
+                        },
+                        "style": {
+                            "type": "string",
+                            "description": "Steer the speech style and can accept such as whisper, laughter, singing, sarcasm, accent, pace etc."
+                        },
+                        "voice": {
+                            "type": "string",
+                            "enum": self.voices_gemini_enum,
                         }
                     },
                     "required": ["text"]
@@ -116,11 +147,27 @@ class ToolManifest:
                             },
                             "voice": {
                                 "type": "string",
-                                "enum": [
-                                    "Aaliyah", "Adelaide", "Angelo", "Arista", "Atlas", "Basil", "Briggs", "Calum", "Celeste",
-                                    "Cheyenne", "Chip", "Cillian", "Deedee", "Eleanor", "Fritz", "Gail", "Indigo", "Jennifer",
-                                    "Judy", "Mamaw", "Mason", "Mikail", "Mitch", "Nia", "Quinn", "Ruby", "Thunder"
-                                ]
+                                "enum": self.voices_playht_enum,
+                            }
+                        },
+                        "required": ["text"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "audio_generator_gemini",
+                    "description": self.audio_generator_gemini_tool_description,
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "text": {
+                                "type": "string"
+                            },
+                            "voice": {
+                                "type": "string",
+                                "enum": self.voices_gemini_enum,
                             }
                         },
                         "required": ["text"]

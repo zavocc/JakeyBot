@@ -4,8 +4,10 @@ import aiofiles.os
 import aiohttp
 import asyncio
 import discord
+import google.genai as genai
 import importlib
 import io
+import wave
 
 # Function implementations
 class Tool(ToolManifest):
@@ -93,6 +95,55 @@ class Tool(ToolManifest):
         # Cleanup
         return "Audio success and the file should be sent automatically"
     
+    async def _tool_function_audio_generator_gemini(self, text: str, style: str = None, voice: str = "Puck"):
+        # Check if global aiohttp and google genai client session is initialized
+        if not hasattr(self.discord_bot, "_gemini_api_client"):
+            raise Exception("gemini api client isn't set up, please check the bot configuration")
+        
+        
+        _api_client: genai.Client = self.discord_bot._gemini_api_client
+
+        # prompt
+        _prompt = ["Text to be read:", text]
+        _prompt.append(f"Please generate the audio and read the text given above in {style} style") if style else "Read the text given above"
+
+        # Generate response
+        _response = await _api_client.aio.models.generate_content(
+            model="gemini-2.5-flash-preview-tts",
+            contents="\n".join(_prompt),
+            config={
+                "response_modalities": ["Audio"],
+                "speech_config": {
+                    "voice_config": {
+                        "prebuilt_voice_config": {
+                            "voice_name": voice
+                        }
+                    }
+                }
+            }
+        )
+
+
+        # Send the audio
+        for _index, _parts in enumerate(_response.candidates[0].content.parts):
+            if _parts.inline_data and _parts.inline_data.data:
+                # Use wave to correctly write wave data as bytes
+                _wav_buffer = io.BytesIO()
+                with wave.open(_wav_buffer, "wb") as _audio_file:
+                    _audio_file.setnchannels(1)
+                    _audio_file.setsampwidth(2)
+                    _audio_file.setframerate(24000)
+                    _audio_file.writeframes(_parts.inline_data.data)
+                _wav_buffer.seek(0)
+
+                 # Send the audio
+                _audioSent = await self.method_send(file=discord.File(fp=_wav_buffer, filename=f"generated_audio.wav"))
+
+        if _audioSent:
+            return "Audio success and the file is sent automatically"
+        else:
+            raise Exception("The response from Gemini is not in audio format")
+
     async def _tool_function_voice_cloner(self, discord_attachment_url: str, text: str):
         # Import
         _gradio_client = importlib.import_module("gradio_client")
