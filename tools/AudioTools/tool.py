@@ -3,6 +3,7 @@ from os import environ
 import aiofiles.os
 import aiohttp
 import asyncio
+import datetime
 import discord
 import google.genai as genai
 import importlib
@@ -100,7 +101,6 @@ class Tool(ToolManifest):
         if not hasattr(self.discord_bot, "_gemini_api_client"):
             raise Exception("gemini api client isn't set up, please check the bot configuration")
         
-        
         _api_client: genai.Client = self.discord_bot._gemini_api_client
 
         # prompt
@@ -125,7 +125,7 @@ class Tool(ToolManifest):
 
 
         # Send the audio
-        for _index, _parts in enumerate(_response.candidates[0].content.parts):
+        for _parts in _response.candidates[0].content.parts:
             if _parts.inline_data and _parts.inline_data.data:
                 # Use wave to correctly write wave data as bytes
                 _wav_buffer = io.BytesIO()
@@ -143,6 +143,100 @@ class Tool(ToolManifest):
             return "Audio success and the file is sent automatically"
         else:
             raise Exception("The response from Gemini is not in audio format")
+        
+    async def _tool_function_podcastgen(self, dialogues: dict, intent: str, est_listening_time, brief_premise):
+        # Check if global aiohttp and google genai client session is initialized
+        if not hasattr(self.discord_bot, "_gemini_api_client"):
+            raise Exception("gemini api client isn't set up, please check the bot configuration")
+        
+        # Check for Azure blob storage client
+        if not hasattr(self.discord_bot, "_azure_blob_service_client"):
+            raise Exception("Azure blob storage client isn't set up, please check the bot configuration")
+        
+        _api_client: genai.Client = self.discord_bot._gemini_api_client
+
+        # Get container client
+        _container_client = self.discord_bot._azure_blob_service_client.get_container_client(environ.get("AZURE_STORAGE_CONTAINER_NAME"))
+
+        await self.method_send(f"🎙️Generating podcast with intent: **{intent}**")
+        await self.method_send(f"⏳Estimated listening time: **{est_listening_time}**")
+        await self.method_send(f"📜Premise: **{brief_premise}**")
+
+        # Construct the prompt from dialogues
+        # "dialogues":{
+        #     "speaker_type": str,
+        #     "dialogue": str
+        # }
+        _prompt = [
+            "Generate a podcast script based on the following dialogues:",
+            "Make sure to add emotions, laughs, and pauses to make it sound natural especially when interesting excerpts came like funny quotes.",
+            "The voice must be interesting, curious, engaging, and entertaining."
+        ]
+        for _dialogue in dialogues:
+            if _dialogue["speaker_type"] == "host_one":
+                _prompt.append(f"Host 1: { _dialogue['dialogue'] }")
+            elif _dialogue["speaker_type"] == "host_two":
+                _prompt.append(f"Host 2: { _dialogue['dialogue'] }")
+
+        # Generate response
+        _response = await _api_client.aio.models.generate_content(
+            model="gemini-2.5-flash-preview-tts",
+            contents="\n".join(_prompt),
+            config={
+                "response_modalities": ["Audio"],
+                "speech_config": {
+                    "multi_speaker_voice_config": {
+                        "speaker_voice_configs": [
+                            {
+                                "speaker": "Host 1",
+                                "voice_config": {
+                                    "prebuilt_voice_config": {
+                                        "voice_name": "Iapetus"
+                                    }
+                                }
+                            },
+                            {
+                                "speaker": "Host 2",
+                                "voice_config": {
+                                    "prebuilt_voice_config": {
+                                        "voice_name": "Autonoe"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        )
+
+        # Filename for the podcast
+        _podcast_filename = f"podcast-{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.wav"
+
+        # Send the audio
+        for _parts in _response.candidates[0].content.parts:
+            if _parts.inline_data and _parts.inline_data.data:
+                # Use wave to correctly write wave data as bytes
+                _wav_buffer = io.BytesIO()
+                with wave.open(_wav_buffer, "wb") as _audio_file:
+                    _audio_file.setnchannels(1)
+                    _audio_file.setsampwidth(2)
+                    _audio_file.setframerate(24000)
+                    _audio_file.writeframes(_parts.inline_data.data)
+                _wav_buffer.seek(0)
+
+                 # Send the audio
+                _audioSent = await _container_client.upload_blob(
+                    name=_podcast_filename,
+                    data=_wav_buffer,
+                    overwrite=True
+                )
+
+                if not _audioSent:
+                    raise Exception("Podcast generation failed")
+
+        # Get the URL of the podcast
+        _podcast_url = f"{environ.get('AZURE_STORAGE_ACCOUNT_URL')}/{environ.get('AZURE_STORAGE_CONTAINER_NAME')}/{_podcast_filename}"        
+        return f"Podcast generation success, remind the user to download the file as [Download here]({_podcast_url}) as this hosted audio will expire in two days"
 
     async def _tool_function_voice_cloner(self, discord_attachment_url: str, text: str):
         # Import
