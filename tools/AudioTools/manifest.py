@@ -85,6 +85,47 @@ class ToolManifest:
                 }
             },
             {
+                "name": "podcastgen",
+                "description": "Generate long comprehensive audio podcasts from given prompts of a subject matter.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "dialogues": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "speaker_type": {
+                                        "type": "string",
+                                        "enum": ["host_one", "host_two"],
+                                        "description": "Select which host to use for dialogue, this is used to ensure smooth podcast generation"
+                                    },
+                                    "dialogue": {
+                                        "type": "string",
+                                        "description": "The dialogue for the host to speak"
+                                    }
+                                },
+                                "required": ["speaker_type", "dialogue"]
+                            },
+                            "description": "This parameter is used as a syntax to construct a flow of a podcast. It's recommended to have 15-20 dialogues min"
+                        },
+                        "intent": {
+                            "type": "string",
+                            "description": "The title of the podcast for presentation purposes",
+                        },
+                        "est_listening_time": {
+                            "type": "string",
+                            "description": "Estimated listening time of the podcast, this is used for presentation purposes"
+                        },
+                        "brief_premise": {
+                            "type": "string",
+                            "description": "A brief premise of the podcast, this is used for presentation purposes"
+                        }
+                    },
+                    "required": ["dialogues", "intent", "est_listening_time", "brief_premise"]
+                }
+            },
+            {
                 "name": "voice_cloner",
                 "description": self.voice_cloner_tool_description,
                 "parameters": {

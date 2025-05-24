@@ -1,3 +1,4 @@
+from azure.storage.blob.aio import BlobServiceClient
 from discord.ext import bridge, commands
 from google import genai
 from inspect import cleandoc
@@ -66,6 +67,15 @@ class InitBot(bridge.Bot):
         # Everything else (mostly GET requests)
         self._aiohttp_main_client_session = aiohttp.ClientSession(loop=self.loop)
 
+        # Azure Blob Storage Client
+        try:
+            self._azure_blob_service_client = BlobServiceClient(
+                account_url=environ.get("AZURE_STORAGE_ACCOUNT_URL")
+            ).from_connection_string(environ.get("AZURE_STORAGE_CONNECTION_STRING"))
+        except Exception as e:
+            logging.error("Failed to initialize Azure Blob Storage client: %s, skipping....", e)
+
+
     def _lock_socket_instance(self, port):
         try:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -79,6 +89,13 @@ class InitBot(bridge.Bot):
     async def close(self):
         # Close aiohttp client sessions
         await self._aiohttp_main_client_session.close()
+
+        # Close Azure Blob Storage client
+        if hasattr(self, "_azure_blob_service_client"):
+            try:
+                await self._azure_blob_service_client.close()
+            except Exception as e:
+                logging.error("Failed to close Azure Blob Storage client: %s", e)
 
         # Remove temp files
         if Path(environ.get("TEMP_DIR", "temp")).exists():
