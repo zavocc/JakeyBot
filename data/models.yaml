@@ -49,6 +49,9 @@
 # Claude models
 ############################################
 # Claude models
+- model: claude::claude-sonnet-4-20250514
+  name: Claude Sonnet 4
+  description: Anthropic's latest model for coding tasks
 - model: claude::claude-3-7-sonnet-20250219
   name: Claude 3.7 Sonnet
   description: Anthropic's most intelligent hybrid reasoning model
