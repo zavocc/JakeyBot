@@ -1,10 +1,8 @@
-from azure.storage.blob.aio import BlobServiceClient
+from core.services.initbot import ServicesInitBot
 from discord.ext import bridge, commands
-from google import genai
 from inspect import cleandoc
 from os import chdir, mkdir, environ
 from pathlib import Path
-import aiohttp
 import aiofiles.os
 import discord
 import dotenv
@@ -35,7 +33,7 @@ intents.message_content = True
 intents.members = True
 
 # Subclass this bot
-class InitBot(bridge.Bot):
+class InitBot(ServicesInitBot):
     def __init__(self, *args, **kwargs):
         # Create socket instance and bind socket to 45769
         self._lock_socket_instance(45769)
@@ -61,19 +59,9 @@ class InitBot(bridge.Bot):
             logging.warning("Playback support is disabled: %s", e)
             self._wavelink = None
 
-        # Gemini API Client
-        self._gemini_api_client = genai.Client(api_key=environ.get("GEMINI_API_KEY"))
-
-        # Everything else (mostly GET requests)
-        self._aiohttp_main_client_session = aiohttp.ClientSession(loop=self.loop)
-
-        # Azure Blob Storage Client
-        try:
-            self._azure_blob_service_client = BlobServiceClient(
-                account_url=environ.get("AZURE_STORAGE_ACCOUNT_URL")
-            ).from_connection_string(environ.get("AZURE_STORAGE_CONNECTION_STRING"))
-        except Exception as e:
-            logging.error("Failed to initialize Azure Blob Storage client: %s, skipping....", e)
+        # Initialize services
+        self.loop.create_task(self.start_services())
+        logging.info("Services initialized successfully")
 
 
     def _lock_socket_instance(self, port):
@@ -87,21 +75,15 @@ class InitBot(bridge.Bot):
 
     # Shutdown the bot
     async def close(self):
-        # Close aiohttp client sessions
-        await self._aiohttp_main_client_session.close()
-
-        # Close Azure Blob Storage client
-        if hasattr(self, "_azure_blob_service_client"):
-            try:
-                await self._azure_blob_service_client.close()
-            except Exception as e:
-                logging.error("Failed to close Azure Blob Storage client: %s", e)
+        # Close services
+        await self.stop_services()
+        logging.info("Services stopped successfully")
 
         # Remove temp files
         if Path(environ.get("TEMP_DIR", "temp")).exists():
             for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
                 await aiofiles.os.remove(file)
-
+            
         # Close socket
         self._socket.close()
 
