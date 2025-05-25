@@ -43,46 +43,5 @@ class ToolManifest:
         ]
 
         self.tool_schema_openai = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "youtube_search",
-                    "description": self.youtube_search_description,
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "The query to search for"
-                            },
-                            "n_results": {
-                                "type": "integer",
-                                "description": "The number of results to fetch"
-                            }
-                        },
-                        "required": ["query"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "youtube_corpus",
-                    "description": self.youtube_corpus_description,
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "video_id": {
-                                "type": "string",
-                                "description": "The YouTube video ID from the URL or relevant context provided"
-                            },
-                            "corpus": {
-                                "type": "string",
-                                "description": "Natural language description about the video to gather insights from and get excerpts"
-                            }
-                        },
-                        "required": ["video_id", "corpus"]
-                    }
-                }
-            }
+            {"type": "function", "function": _schema} for _schema in self.tool_schema
         ]
