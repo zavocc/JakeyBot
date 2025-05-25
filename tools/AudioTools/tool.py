@@ -1,4 +1,5 @@
 from .manifest import ToolManifest
+from core.services.helperfunctions import HelperFunctions
 from os import environ
 import aiofiles.os
 import aiohttp
@@ -153,10 +154,8 @@ class Tool(ToolManifest):
         if not hasattr(self.discord_bot, "_azure_blob_service_client"):
             raise Exception("Azure blob storage client isn't set up, please check the bot configuration")
         
+        # Check API client
         _api_client: genai.Client = self.discord_bot._gemini_api_client
-
-        # Get container client
-        _container_client = self.discord_bot._azure_blob_service_client.get_container_client(environ.get("AZURE_STORAGE_CONTAINER_NAME"))
 
         await self.method_send(f"🎙️Generating podcast with intent: **{intent}**")
         await self.method_send(f"⏳Estimated listening time: **{est_listening_time}**")
@@ -211,6 +210,7 @@ class Tool(ToolManifest):
 
         # Filename for the podcast
         _podcast_filename = f"podcast-{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.wav"
+        _podcast_url = None
 
         # Send the audio
         for _parts in _response.candidates[0].content.parts:
@@ -224,18 +224,17 @@ class Tool(ToolManifest):
                     _audio_file.writeframes(_parts.inline_data.data)
                 _wav_buffer.seek(0)
 
-                 # Send the audio
-                _audioSent = await _container_client.upload_blob(
-                    name=_podcast_filename,
-                    data=_wav_buffer,
-                    overwrite=True
-                )
-
-                if not _audioSent:
-                    raise Exception("Podcast generation failed")
+                # Send the audio
+                try:
+                    _podcast_url = await HelperFunctions.upload_file_service(
+                        bot=self.discord_bot,
+                        filename=_podcast_filename,
+                        data=_wav_buffer.getvalue()
+                    )
+                except Exception as e:
+                    raise Exception(f"Failed to upload podcast audio")
 
         # Get the URL of the podcast
-        _podcast_url = f"{environ.get('AZURE_STORAGE_ACCOUNT_URL')}/{environ.get('AZURE_STORAGE_CONTAINER_NAME')}/{_podcast_filename}"        
         return f"Podcast generation success, remind the user to download the file as [Download here]({_podcast_url}) as this hosted audio will expire in two days"
 
     async def _tool_function_voice_cloner(self, discord_attachment_url: str, text: str):
