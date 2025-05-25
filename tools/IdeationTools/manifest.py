@@ -8,28 +8,28 @@ class ToolManifest:
                 "name": "canvas",
                 "description": self.canvas_description,
                 "parameters": {
-                    "type": "OBJECT",
+                    "type": "object",
                     "properties": {
                         "thread_title": {
-                            "type": "STRING",
+                            "type": "string",
                             "description": "The title of the thread"
                         },
                         "plan": {
-                            "type": "STRING",
+                            "type": "string",
                             "description": "The plan for the topic"
                         },
                         "content": {
-                            "type": "STRING",
+                            "type": "string",
                             "description": "The elaborate overview of the topic within the thread"
                         },
                         "code": {
-                            "type": "STRING",
+                            "type": "string",
                             "description": "Optional code snippet for the topic"
                         },
                         "todos": {
-                            "type": "ARRAY",
+                            "type": "array",
                             "items": {
-                                "type": "STRING"
+                                "type": "string"
                             },
                             "description": "Optional potential todos"
                         }
@@ -41,14 +41,14 @@ class ToolManifest:
                 "name": "artifacts",
                 "description": self.artifacts_description,
                 "parameters": {
-                    "type": "OBJECT",
+                    "type": "object",
                     "properties": {
                         "file_contents": {
-                            "type": "STRING",
+                            "type": "string",
                             "description": "The content of the file, it can be a code snippet, markdown content, body of text."
                         },
                         "file_name": {
-                            "type": "STRING",
+                            "type": "string",
                             "description": "The filename of the file, it's recommended to avoid using binary file extensions like .exe, .zip, .png, etc."
                         }
                     },

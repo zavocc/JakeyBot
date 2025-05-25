@@ -8,18 +8,18 @@ class ToolManifest:
                 "name": "bing_search",
                 "description": self.bing_search_tool_description,
                 "parameters": {
-                    "type": "OBJECT",
+                    "type": "object",
                     "properties": {
                         "query": {
-                            "type": "STRING",
+                            "type": "string",
                             "description": "The query to search for, you can use search operators for more sophisticated searches"
                         },
                         "n_results": {
-                            "type": "INTEGER",
+                            "type": "integer",
                             "description": "The number of results to fetch, it's recommended to set from 1-3 for simple queries, 4-6 for queries require more corroborating sources, and 7 or more for complex queries"
                         },
                         "show_youtube_videos": {
-                            "type": "BOOLEAN",
+                            "type": "boolean",
                             "description": "Show relevant YouTube videos"
                         }
                     },
@@ -30,12 +30,12 @@ class ToolManifest:
                 "name": "url_extractor",
                 "description": self.url_extractor_tool_description,
                 "parameters": {
-                    "type": "OBJECT",
+                    "type": "object",
                     "properties": {
                         "urls": {
-                            "type": "ARRAY",
+                            "type": "array",
                             "items": {
-                                "type": "STRING"
+                                "type": "string"
                             }
                         }
                     },

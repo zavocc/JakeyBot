@@ -8,21 +8,21 @@ class ToolManifest:
                 "name": "github_file_tool",
                 "description": self.github_file_tool_description,
                 "parameters": {
-                    "type": "OBJECT",
+                    "type": "object",
                     "properties": {
                         "files": {
-                            "type": "ARRAY",
+                            "type": "array",
                             "items": {
-                                "type": "STRING"
+                                "type": "string"
                             },
                             "description": "The file paths to retrieve from the repository. Must start with /"
                         },
                         "repo": {
-                            "type": "STRING",
+                            "type": "string",
                             "description": "The repository in the format owner/repo"
                         },
                         "branch": {
-                            "type": "STRING",
+                            "type": "string",
                             "description": "The branch name, default is master"
                         }
                     },
@@ -33,10 +33,10 @@ class ToolManifest:
                 "name": "github_search_tool",
                 "description": self.github_search_tool_description,
                 "parameters": {
-                    "type": "OBJECT",
+                    "type": "object",
                     "properties": {
                         "search_type": {
-                            "type": "STRING",
+                            "type": "string",
                             "enum": [
                                 "CODE",
                                 "COMMITS",
@@ -47,11 +47,11 @@ class ToolManifest:
                             "description": "The type of search to perform"
                         },
                         "query": {
-                            "type": "STRING",
+                            "type": "string",
                             "description": "The search query to search for, you can use search qualifiers, the character limit is 256"
                         },
                         "page": {
-                            "type": "INTEGER",
+                            "type": "integer",
                             "description": "Pagination, default is 1. You can paginate for more results"
                         }
                     },
