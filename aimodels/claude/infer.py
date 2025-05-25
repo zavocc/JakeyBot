@@ -2,6 +2,7 @@ from .config import ModelParams
 from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
+from typing import Union
 import discord
 import json
 import litellm
@@ -62,7 +63,18 @@ class Completions(ModelParams):
                 }
             ]
 
-    async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
+    async def load_history(self, db_conn):
+        # Load history from the database
+        _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
+
+        if _chat_thread is None:
+            # If no history is found, return an empty list
+            return []
+
+        # Return the chat thread
+        return _chat_thread
+ 
+    async def chat_completion(self, prompt, db_conn, chat_thread: Union[list, None] = [], system_instruction: str = None):
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
 
