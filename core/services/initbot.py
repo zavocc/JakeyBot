@@ -32,10 +32,12 @@ class ServicesInitBot(bridge.Bot):
     async def stop_services(self):
         # Close aiohttp client sessions
         await self._aiohttp_main_client_session.close()
+        logging.info("aiohttp client session closed successfully")
 
         # Close Azure Blob Storage client
         if hasattr(self, "_azure_blob_service_client"):
             try:
                 await self._azure_blob_service_client.close()
+                logging.info("Azure Blob Storage client closed successfully")
             except Exception as e:
                 logging.error("Failed to close Azure Blob Storage client: %s", e)
