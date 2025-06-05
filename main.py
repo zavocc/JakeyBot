@@ -1,5 +1,5 @@
 from core.services.initbot import ServicesInitBot
-from discord.ext import bridge, commands
+from discord.ext import commands
 from inspect import cleandoc
 from os import chdir, mkdir, environ
 from pathlib import Path
@@ -97,30 +97,6 @@ bot = InitBot(command_prefix=environ.get("BOT_PREFIX", "$"), intents = intents)
 @bot.event
 async def on_ready():
     await bot.change_presence(activity=discord.Game(f"Preparing the bot for it's first use..."))
-    # start wavelink setup if playback support is enabled
-    if bot._wavelink is not None:
-        await bot.change_presence(activity=discord.Game(f"Connecting to wavelink server..."))
-        try:
-            # https://wavelink.dev/en/latest/recipes.html
-            ENV_LAVALINK_URI = environ.get("ENV_LAVALINK_URI") if environ.get("ENV_LAVALINK_URI") is not None else "http://127.0.0.1:2222"
-            ENV_LAVALINK_PASS = environ.get("ENV_LAVALINK_PASS") if environ.get("ENV_LAVALINK_PASS") is not None else "youshallnotpass"
-            ENV_LAVALINK_IDENTIFIER = environ.get("ENV_LAVALINK_IDENTIFIER") if environ.get("ENV_LAVALINK_IDENTIFIER") is not None else "main"
-
-            node = bot._wavelink.Node(
-                identifier=ENV_LAVALINK_IDENTIFIER,
-                uri=ENV_LAVALINK_URI,
-                password=ENV_LAVALINK_PASS,
-                retries=0 # Only connect once to save time
-            )
-
-            await bot._wavelink.Pool.connect(
-                client=bot,
-                nodes=[node]
-            )
-        except Exception as e:
-            logging.error("Failed to setup wavelink: %s... Disabling playback support", e)
-            bot._wavelink = None
-
     #https://stackoverflow.com/a/65780398 - for multiple statuses
     await bot.change_presence(activity=discord.Game(f"/ask me anything or {bot.command_prefix}help"))
     logging.info("%s is ready and online!", bot.user)
@@ -162,11 +138,6 @@ async def on_message(message: discord.Message):
 with open('commands.yaml', 'r') as file:
     cog_commands = yaml.safe_load(file)
     for command in cog_commands:
-        # Disable voice commands if playback support is not enabled
-        if "voice" in command and not bot._wavelink:
-           logging.warning("Skipping %s... Playback support is disabled", command)
-           continue
-
         try:
             bot.load_extension(f'cogs.{command}')
         except Exception as e:

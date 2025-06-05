@@ -6,7 +6,6 @@
   - [Installation](#installation)
   - [Configuring](#configuring)
   - [Music features](#music-features)
-  - [Running](#running)
 - [Get Started](#get-started)
   - [Chat](#chat)
     - [Chat Variables](#chat-variables)
@@ -52,9 +51,6 @@ Other non-AI extras include:
 - View Channels
 - Add Reactions
 
-OPTIONAL:
-- Create events (for creating events using events tool)
-- Connect, Speak, use Voice Activity for music features, you do not need to enable this if you don't plan to add wavelink as a dependency
 
 For demo version, you can add this bot and see the required permissions and capabilities: https://discord.com/oauth2/authorize?client_id=1051409808877699072&permissions=563330095107136&integration_type=0&scope=bot
 
@@ -98,15 +94,7 @@ You will need to provide Discord bot token from the developers portal.
 Please see [CONFIG.md](./docs/CONFIG.md) for more information about configuration.
 
 ## Music features
-You can enable VC-related commands such as `/voice play` (which plays videos from YouTube and other supported sources) by providing appropriate Lavalink sources
-
-Please see [CONFIG.md#voice](./docs/CONFIG.md#voice) to configure wavelink
-
-You can use the list of 3rd party servers from and use servers from https://lavalink.darrennathanael.com/NoSSL/lavalink-without-ssl/ and configure the `dev.env` file pointing the third party Lavalink servers, no installation required... 
-
-Alternatively, you can also host your own... Refer to [lavalink documentation](https://lavalink.dev/getting-started/index.html) to configure your own lavalink setup... make sure to install OpenJDK before you proceed.
-## Running
-After everything is configured, you can run `main.py`
+THIS FEATURE IS ON HOLD!
 
 # Get Started
 Get started by asking Jakey `/ask prompt:Who are you and how can I get started` or **@Jakey what can you do?**
@@ -144,7 +132,6 @@ Jakey provides slash commands such as:
 - `/openrouter` - Access additional models from OpenRouter (`/model set:openrouter` must be set)
 - `/summarize` - Summarize the current text channel or thread and gather insights into a single summary thanks to Gemini 2.0 Flash's long context it can understand conversations even from the past decade!
 - `/mimic` - Mimics other users using webhook
-- `/voice` - Basic streaming audio functionality from YouTube, soundcloud and more!
 
 Jakey also has message actions or apps which is used to take action on a selected message. Such as explain, rephrase, or suggest messages using Gemini 2.0 Flash.
 

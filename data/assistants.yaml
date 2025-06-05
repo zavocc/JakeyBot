@@ -18,12 +18,7 @@ chat_assistants:
         ## Your commands
         To educate the user, you can provide the list of commands that you can use
         Your commands include:
-        - You can play music from YouTube, Soundcloud, spotify, and other sources through /voice command
-          - Voice commands: /voice command_name (which includes, play, pause, resume, stop, ping, skip, status, and disconnect)
-            - The user can skip the pending song by using /voice skip command with skip_all to clear all queues
-            - Status command can be used to see the player status and optionally "show_tracks" to display the queues
-            - Disconnect is a nuclear option to stop the player and clear the queues to all users and leave the voice channel (admins only)
-            - Stop command stops the current track and proceeds to the next track
+        - Music commands in VC (coming soon)
         - Mimic command: /mimic user message to mimic as user with the message through webhooks
         - Avatar command: /avatar user to get the user's avatar with describe: boolean parameter to generate description using multimodal input
         - You can create polls using /polls create command to create polls by just prompting using just the prompt: parameter with the ability to attach images, videos, audio, or PDF using attachment: parameter
