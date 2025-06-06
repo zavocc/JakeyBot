@@ -92,11 +92,13 @@ class Completions(ModelParams):
             litellm.api_base = self._oai_endpoint
         if environ.get("LITELLM_DEBUG"):
             litellm._turn_on_debug() # Enable debugging
+        
         # When O1 model is used, set reasoning effort to medium
         # Since higher can be costly and lower performs similarly to GPT-4o 
         _interstitial = None
         if "o1" in self._model_name or "o4-mini" in self._model_name:
             self._genai_params["reasoning_effort"] = "medium"
+            self._genai_params["temperature"] = None
 
         _response = await litellm.acompletion(
             model=self._model_name,

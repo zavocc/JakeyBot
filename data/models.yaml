@@ -4,18 +4,15 @@
 ############################################
 # Google Models
 ############################################
-- model: gemini::gemini-2.5-pro-exp-03-25
+- model: gemini::gemini-2.5-pro-preview-06-05
   name: Gemini 2.5 Pro Experimental
   description: Google's reasoning model for complex tasks
 - model: gemini::gemini-2.5-flash-preview-05-20
-  name: Gemini 2.5 Flash Thinking Experimental v2
+  name: Gemini 2.5 Flash Thinking Experimental
   description: Workhorse thinking model for everyday and advanced tasks
 - model: gemini::gemini-2.5-flash-preview-05-20-nonthinking
-  name: Gemini 2.5 Flash Experimental v2
+  name: Gemini 2.5 Flash Experimental
   description: Best for everyday and advanced tasks without thinking
-- model: gemini::gemini-2.5-flash-preview-04-17
-  name: Gemini 2.5 Flash Thinking Experimental v1
-  description: Workhorse thinking model for everyday and advanced tasks
 - model: gemini::gemini-2.0-flash-001
   name: Gemini 2.0 Flash
   description: Best for everyday and advanced tasks
@@ -68,13 +65,6 @@
 - model: azure_foundry.deepseek::Deepseek-R1
   name: DeepSeek R1
   description: DeepSeek latest reasoning model hosted on Azure
-
-############################################
-# Mistral models
-############################################
-- model: mistralai::pixtral-large-latest
-  name: Mistral Large 2 with Vision
-  description: Pixtral Large 2
 
 ############################################
 # X.AI
