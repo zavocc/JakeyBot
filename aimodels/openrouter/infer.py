@@ -74,7 +74,7 @@ class Completions(ModelParams):
 
     async def chat_completion(self, prompt, db_conn: typehint_History, system_instruction: str = None):
         # Before we begin, get the OpenRouter model name and override self._model_name
-        _model_name = "openrouter/" + (await db_conn.get_key(guild_id=self._guild_id, key="default_openrouter_model"))
+        self._model_name = "openrouter/" + (await db_conn.get_key(guild_id=self._guild_id, key="default_openrouter_model"))
 
         # Indicate the model name
         logging.info("Using OpenRouter model: %s", self._model_name)
