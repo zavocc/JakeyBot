@@ -47,17 +47,14 @@ class Completions(ModelParams):
         if not attachment.content_type.startswith("image"):
             raise CustomErrorMessage("⚠️ This model only supports image attachments")
 
-        self._file_data = {
-            "role": "user",
-            "content": [
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": attachment.url
-                    }
+        self._file_data = [
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": attachment.url
                 }
-            ]
-        }
+            }
+        ]
 
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
@@ -72,17 +69,22 @@ class Completions(ModelParams):
 
         
         # Craft prompt
-        _chat_thread.append(
-             {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": prompt
-                    }
-                ]
-            }
-        )
+        _prompt = {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": prompt,
+                }
+            ]
+        }
+
+        # Check if we have an attachment
+        if hasattr(self, "_file_data"):
+            # Add the attachment part to the prompt
+            _prompt["content"].extend(self._file_data)
+
+        _chat_thread.append(_prompt)
 
         # Generate completion
         litellm.api_key = environ.get("OPENAI_API_KEY")
