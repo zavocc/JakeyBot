@@ -28,25 +28,26 @@ class Chat(commands.Cog):
         self._ask_event = BaseChat(bot, self.author, self.DBConn)
 
     #######################################################
-    # Pending inference checker, prevents running multiple inferences concurrently
+    # Pending request checker, prevents running multiple requests concurrently
     #######################################################
     async def _check_awaiting_response_in_progress(self, guild_id: int):
         if guild_id in self._ask_event.pending_ids:
             raise ConcurrentRequestError
 
     #######################################################
-    # Event Listeners
+    # Event Listener: on_message
     #######################################################
     @commands.Cog.listener()
     async def on_message(self, message):
         await self._ask_event.on_message(message)
 
     #######################################################
-    # Slash Command Groups & Commands
-    #######################################################
     # Model Slash Command Group
     model = SlashCommandGroup(name="model", description="Configure default models for the conversation")
 
+    #######################################################
+    # Slash Command Group: model.set
+    #######################################################
     @model.command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
@@ -82,7 +83,6 @@ class Chat(commands.Cog):
             _model_provider = _model[0]
             _model_name = _model[-1]
 
-
         if _model_provider != "gemini" and _model_provider != "claude":
             await ctx.respond(
                 f"> This model lacks real time information and tools\n✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**"
@@ -103,6 +103,9 @@ class Chat(commands.Cog):
         
         logging.error("An error has occurred while executing models command, reason: ", exc_info=True)
 
+    #######################################################
+    # Slash Command Group: model.list
+    #######################################################
     @model.command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
@@ -143,6 +146,9 @@ class Chat(commands.Cog):
         await ctx.respond("❌ Something went wrong, please try again later.")
         logging.error("An error has occurred while executing models command, reason: ", exc_info=True)
 
+    #######################################################
+    # Slash Command: openrouter
+    #######################################################
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
@@ -185,6 +191,9 @@ class Chat(commands.Cog):
             await ctx.respond("❌ Something went wrong, please try again later.")
         logging.error("An error has occurred while setting openrouter models, reason: ", exc_info=True)
 
+    #######################################################
+    # Slash Command: sweep
+    #######################################################
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
@@ -242,6 +251,9 @@ class Chat(commands.Cog):
             await ctx.respond("❌ Something went wrong, please try again later.")
             logging.error("An error has occurred while executing sweep command, reason: ", exc_info=True)
 
+    #######################################################
+    # Slash Command: feature
+    #######################################################
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
