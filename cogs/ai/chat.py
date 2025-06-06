@@ -149,7 +149,7 @@ class Chat(commands.Cog):
     )
     @discord.option(
         "model",
-        description="Choose models at https://openrouter.ai/models",
+        description="Choose models at https://openrouter.ai/models. Syntax: provider/model-name",
         required=True,
     )
     async def openrouter(self, ctx, model: str):
