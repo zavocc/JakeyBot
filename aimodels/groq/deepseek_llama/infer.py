@@ -41,14 +41,9 @@ class Completions(BaseInitProvider):
         litellm.api_key = environ.get("GROQ_API_KEY")
         if environ.get("LITELLM_DEBUG"):
             litellm._turn_on_debug()
-        _params = {
-            "messages": _chat_thread,
-            "model": self._model_name,
-            "max_tokens": 4096,
-            "temperature": 0.7
-        }
-        _response = await litellm.acompletion(**_params)
-
+        
+        _response = await litellm.acompletion(model=self._model_name, messages=_chat_thread, **self._model_params.genai_params)
+    
         # Show the thought process inside the <think> tag
         _thoughts = re.findall(r"<think>(.*?)</think>", _response.choices[0].message.content, re.DOTALL)[0]
         # Show the thought process inside the <think> tag and format as quotes

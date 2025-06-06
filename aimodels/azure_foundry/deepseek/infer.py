@@ -44,25 +44,25 @@ class Completions(BaseInitProvider):
         litellm.api_key = environ.get("AZURE_AI_API_KEY")
         if environ.get("LITELLM_DEBUG"):
             litellm._turn_on_debug() # Enable debugging
-        _response = await litellm.acompletion(model=self._model_name, **self._model_params.genai_params)
-
+        _response = await litellm.acompletion(model=self._model_name, messages=_chat_thread, **self._model_params.genai_params)
 
         # Show the thought process inside the <think> tag
-        _thoughts = re.findall(r"<think>(.*?)</think>", _response.choices[0].message.content, re.DOTALL)
+        _custom_fields = _response.choices[0].message.provider_specific_fields
+        if _custom_fields:
+            if _custom_fields.get("reasoning_content"):
+                _thoughts = _custom_fields.get("reasoning_content")
+            else:
+                _thoughts = None
 
-        if _thoughts:
             # Show the thought process inside the <think> tag and format as quotes
             # There's always one <think>content</think> tag from the start of the response
             # so we assume it's the first one and we use [0] index
+            # NOTE: Azure AI changed this behavior
             await Utils.send_ai_response(
-                self._discord_ctx, 
-                prompt, 
-                "\n".join(f"> {line}" for line in _thoughts[0][:1924].strip().split("\n")),
+                self._discord_ctx, prompt, 
+                "\n".join(f"> {line}" for line in _thoughts[:1924].strip().split("\n")),
                 self._discord_method_send
             )
-
-            # AI response (we clean the <think> tag and the response)
-            _response.choices[0].message.content = re.sub(r"<think>(.*?)</think>", "", _response.choices[0].message.content, flags=re.DOTALL).strip()
 
         # Append to chat thread
         _chat_thread.append(_response.choices[0].message.model_dump())
