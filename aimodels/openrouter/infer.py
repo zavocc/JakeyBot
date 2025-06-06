@@ -93,8 +93,8 @@ class Completions(ModelParams):
                 }]
             }]
 
-            # If it's from Anthropic or Gemini, also append "cache_control" block to system prompt
-            if "claude-" in self._model_name or "gemini-" in self._model_name:
+            # If it's from Anthropic, also append "cache_control" block to system prompt
+            if "claude-" in self._model_name:
                 _chat_thread[-1]["content"][0]["cache_control"] = {
                     "type": "ephemeral"
                 }
