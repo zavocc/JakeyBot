@@ -1,8 +1,10 @@
+from .gridfs_ops import GridFSOps
 from core.exceptions import HistoryDatabaseError
 from os import environ
 from pymongo import ReturnDocument
 import discord as typehint_Discord
 import logging
+import json
 import motor.motor_asyncio
 
 # A class that is responsible for managing and manipulating the chat history
@@ -16,6 +18,11 @@ class History:
         # Create a new database if it doesn't exist, access chat_history database
         self._db = self._db_conn[environ.get("MONGO_DB_NAME", "jakey_prod_db")]
         self._collection = self._db[environ.get("MONGO_DB_COLLECTION_NAME", "jakey_prod_db_collection")]
+
+        # GridFS Server
+        self._gridfs_bucket = motor.motor_asyncio.AsyncIOMotorGridFSBucket(self._db, bucket_name="chat_histories")
+        self._gridfs_ops = GridFSOps(self._gridfs_bucket)
+
         logging.info("Connected to the database %s and collection %s", self._db.name, self._collection.name)
 
         # Create task for indexing the collection
@@ -25,9 +32,11 @@ class History:
         await self._collection.create_index([("guild_id", 1)], name="guild_id_index", background=True, unique=True)
         logging.info("Created index for guild_id")
 
+
+    # Returns the document to be manipulated, creates one if it doesn't exist.
     async def _ensure_document(self, guild_id: int, model: str = "gemini::gemini-2.0-flash-001", tool_use: str = None):
-        """Ensures a document exists for the given guild_id, creates one if it doesn't exist.
-        Returns the current document."""
+        # Ensures a document exists for the given guild_id, creates one if it doesn't exist.
+        # Returns the current document.
         if guild_id is None or not isinstance(guild_id, int):
             raise TypeError("guild_id is required and must be an integer")
 
@@ -69,23 +78,66 @@ class History:
             await self._collection.update_one({"guild_id": guild_id}, {
                 "$set": {f"chat_thread_{model_provider}": None}
             })
-            _document[f"chat_thread_{model_provider}"] = None
+        
+        # Otherwise we fetch and deserialize the chat thread from gridfs json
+        _documentThread = _document.get(f"chat_thread_{model_provider}", None)
 
-        return _document[f"chat_thread_{model_provider}"]
+        try:
+            if _documentThread:
+                # Fetch the chat thread from GridFS
+                _rawdata = await self._gridfs_ops.fetch_file(_documentThread)
+                return json.loads(_rawdata.decode('utf-8'))
+            else:
+                return None
+        except Exception as e:
+            logging.error("Error fetching chat thread from GridFS: %s", e)
+            raise HistoryDatabaseError("Error fetching chat thread from GridFS")
 
     async def save_history(self, guild_id: int, chat_thread, model_provider: str) -> None:
         if guild_id is None or not isinstance(guild_id, int):
             raise TypeError("guild_id is required and must be an integer")
 
-        await self._ensure_document(guild_id)
+        _document = await self._ensure_document(guild_id)
+
+        # Serialize the chat thread to JSON
+        _serialized = json.dumps(chat_thread, ensure_ascii=False).encode('utf-8')
+        try:
+            # Upload the serialized chat thread to GridFS
+            _file_id = await self._gridfs_ops.upload_file(guild_id, model_provider, _serialized)
+        except Exception as e:
+            logging.error("Error uploading chat thread to GridFS: %s", e)
+            raise HistoryDatabaseError("Error uploading chat thread to GridFS")
         
+        # Delete the old gridfs file associated with it if it exists
+        if _document.get(f"chat_thread_{model_provider}"):
+            try:
+                await self._gridfs_ops.delete_file(_document[f"chat_thread_{model_provider}"])
+            except Exception as e:
+                logging.error("Error deleting old chat thread from GridFS: %s", e)
+                raise HistoryDatabaseError("Error deleting old chat thread from GridFS")
+        
+        # Update the document with the new chat thread file ID
         await self._collection.update_one({"guild_id": guild_id}, {
-            "$set": {f"chat_thread_{model_provider}": chat_thread}
+            "$set": {f"chat_thread_{model_provider}": _file_id}
         }, upsert=True)
 
     async def clear_history(self, guild_id: int) -> None:
         if guild_id is None or not isinstance(guild_id, int):
             raise TypeError("guild_id is required and must be an integer")
+        
+        _document = await self._ensure_document(guild_id)
+
+        # Iterate each chat_thread_{model_provider} and delete the file from GridFS if it exists
+        # Checks for each keys
+        for _key in _document.keys():
+            # Must start with chat_thread_
+            if _key.startswith("chat_thread_"):
+                try:
+                    if _document[_key]:
+                        await self._gridfs_ops.delete_file(_document[_key])
+                except Exception as e:
+                    logging.error("Error deleting chat thread from GridFS: %s", e)
+                    raise HistoryDatabaseError("Error deleting chat thread from GridFS")
 
         await self._collection.delete_one({"guild_id": guild_id})
 
