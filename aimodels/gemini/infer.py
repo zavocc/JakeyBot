@@ -16,7 +16,7 @@ import typing
 import random
 
 class Completions(ModelParams):
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "gemini-2.0-flash-001"):
+    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = None):
         super().__init__()
 
         # Discord context

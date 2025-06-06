@@ -74,13 +74,7 @@ class Completions(ModelParams):
 
     async def chat_completion(self, prompt, db_conn: typehint_History, system_instruction: str = None):
         # Before we begin, get the OpenRouter model name and override self._model_name
-        _model_name = await db_conn.get_key(guild_id=self._guild_id, key="default_openrouter_model")
-
-        # If the key returns none, use gpt-4o-mini as default
-        if _model_name is None:
-            self._model_name = "openrouter/openai/gpt-4o-mini"
-        else:
-            self._model_name = "openrouter/" + _model_name
+        self._model_name = await db_conn.get_key(guild_id=self._guild_id, key="default_openrouter_model")
 
         # Indicate the model name
         logging.info("Using OpenRouter model: %s", self._model_name)

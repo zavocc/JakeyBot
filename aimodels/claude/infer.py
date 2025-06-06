@@ -9,7 +9,7 @@ import logging
 import re
 
 class Completions(ModelParams):
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "claude-3-5-haiku-20241022"):
+    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = None):
         super().__init__()
 
         # Discord context

@@ -6,7 +6,7 @@ import discord
 import litellm
 
 class Completions(ModelParams):
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "mistral-large-2407"):
+    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = None):
         super().__init__()
 
         # Discord context

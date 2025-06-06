@@ -42,16 +42,13 @@ class History:
 
         _existing = await self._collection.find_one({"guild_id": guild_id})
         if _existing:
-            if "tool_use" in _existing:
-                tool_use = _existing["tool_use"]
-            if "default_model" in _existing:
-                model = _existing["default_model"]
-            if "default_openrouter_model" in _existing:
-                default_openrouter_model = _existing["default_openrouter_model"]
-            else:
-                default_openrouter_model = None
+            tool_use = _existing.get("tool_use", tool_use)
+            default_model = _existing.get("default_model", model)
+            default_openrouter_model = _existing.get("default_openrouter_model", "openai/gpt-4.1-mini")
         else:
-            default_openrouter_model = None
+            tool_use = tool_use
+            default_model = model
+            default_openrouter_model = "openai/gpt-4.1-mini"
 
         # Use find_one_and_update with upsert to return the document after update.
         _document = await self._collection.find_one_and_update(
@@ -59,14 +56,20 @@ class History:
             {"$set": {
                 "guild_id": guild_id,
                 "tool_use": tool_use,
-                "default_model": model,
+                "default_model": default_model,
                 "default_openrouter_model": default_openrouter_model
             }},
             upsert=True,
             return_document=ReturnDocument.AFTER
         )
         return _document
+    
 
+####################################################################################
+# Chat History Management
+####################################################################################
+
+    # Load chat history
     async def load_history(self, guild_id: int, model_provider: str):
         if guild_id is None or not isinstance(guild_id, int):
             raise TypeError("guild_id is required and must be an integer")
@@ -93,6 +96,7 @@ class History:
             logging.error("Error fetching chat thread from GridFS: %s", e)
             raise HistoryDatabaseError("Error fetching chat thread from GridFS")
 
+    # Save chat history
     async def save_history(self, guild_id: int, chat_thread, model_provider: str) -> None:
         if guild_id is None or not isinstance(guild_id, int):
             raise TypeError("guild_id is required and must be an integer")
@@ -121,6 +125,8 @@ class History:
             "$set": {f"chat_thread_{model_provider}": _file_id}
         }, upsert=True)
 
+
+    # Clear chat history
     async def clear_history(self, guild_id: int) -> None:
         if guild_id is None or not isinstance(guild_id, int):
             raise TypeError("guild_id is required and must be an integer")
@@ -141,6 +147,7 @@ class History:
 
         await self._collection.delete_one({"guild_id": guild_id})
 
+    # Tool configuration management
     async def set_tool_config(self, guild_id: int, tool: str = None) -> None:
         await self._ensure_document(guild_id, tool)
         
@@ -155,6 +162,7 @@ class History:
         _document = await self._ensure_document(guild_id)
         return _document["tool_use"]
 
+    # Default model management
     async def set_default_model(self, guild_id: int, model: str) -> None:
         if guild_id is None or not isinstance(guild_id, int):
             raise TypeError("guild_id is required and must be an integer")
@@ -180,10 +188,13 @@ class History:
 
         try:
             _document = await self._ensure_document(guild_id)
-            return _document["default_model"]
         except Exception as e:
             logging.error("Error getting default model: %s", e)
             raise HistoryDatabaseError("Error getting default model")
+
+        print(f"Document for guild {guild_id}: {_document}")
+
+        return _document["default_model"]
         
     # Directly set custom keys and values to the document
     async def set_key(self, guild_id: int, key: str, value) -> None:
