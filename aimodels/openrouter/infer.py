@@ -157,7 +157,10 @@ class Completions(ModelParams):
             })
             # Clean up the file data to free memory
             del self._file_data
-        gc.collect()
+
+        # TODO: remove this
+        _objects_cleaned = gc.collect()
+        logging.info("Cleaned %s objects", _objects_cleaned)
 
         # Append the cleaned prompt to the chat thread
         _chat_thread.append(_prompt)
