@@ -182,12 +182,15 @@ class Completions(ModelParams):
 
         # Check if the response was blocked due to safety and other reasons than STOP
         # https://ai.google.dev/api/generate-content#FinishReason
-        if _response.candidates[0].finish_reason == "SAFETY":
-            raise CustomErrorMessage("🤬 I detected unsafe content in your prompt, Please rephrase your question.")
-        elif _response.candidates[0].finish_reason == "MAX_TOKENS":
-            raise CustomErrorMessage("⚠️ Response reached max tokens limit, please make your message concise.")
-        elif _response.candidates[0].finish_reason != "STOP":
-            raise CustomErrorMessage("⚠️ An error has occurred while giving you an answer, please try again later.")
+        if hasattr(_response, "candidates") and _response.candidates: 
+            if _response.candidates[0].finish_reason == "SAFETY":
+                raise CustomErrorMessage("🤬 I detected unsafe content in your prompt, Please rephrase your question.")
+            elif _response.candidates[0].finish_reason == "MAX_TOKENS":
+                raise CustomErrorMessage("⚠️ Response reached max tokens limit, please make your message concise.")
+            elif _response.candidates[0].finish_reason != "STOP":
+                raise CustomErrorMessage("⚠️ An error has occurred while giving you an answer, please rephrase your prompt or try again later.")
+        else:
+            raise CustomErrorMessage("⚠️ An error has occurred while giving you an answer, please rephrase your prompt or try again later.")
 
         # Agentic experiences
         # Begin inference operation
