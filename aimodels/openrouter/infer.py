@@ -5,6 +5,7 @@ from core.ai.history import History as typehint_History
 from os import environ
 import base64
 import discord
+import gc
 import litellm
 import logging
 
@@ -156,6 +157,7 @@ class Completions(ModelParams):
             })
             # Clean up the file data to free memory
             del self._file_data
+        gc.collect()
 
         # Append the cleaned prompt to the chat thread
         _chat_thread.append(_prompt)
