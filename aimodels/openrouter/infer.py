@@ -82,7 +82,6 @@ class Completions(ModelParams):
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
 
-        # PaLM models don't have system prompt
         if _chat_thread is None:
             # Begin with system prompt
             _chat_thread = [{
@@ -99,17 +98,6 @@ class Completions(ModelParams):
                     "type": "ephemeral"
                 }
 
-        
-        # If '/cache:true' is in the prompt, we need to cache the prompt
-        # Search must be either have whitespace or start/end of the string
-        if re.search(r"(^|\s)/cache:true(\s|$)", prompt):
-            await self._discord_method_send("ℹ️ Caching the prompt to improve performance later.")
-            # Remove the '/cache:true' from the prompt
-            prompt = re.sub(r"(^|\s)/cache:true(\s|$)", "", prompt)
-
-            _cachePrompt = True
-        else:
-            _cachePrompt = False
 
         # Craft prompt
         _prompt = {
@@ -127,14 +115,10 @@ class Completions(ModelParams):
             # Add the attachment part to the prompt
             _prompt["content"].extend(self._file_data)
 
-        
-        if _cachePrompt:
-            # Add cache control to the message
-            _prompt["content"][-1]["cache_control"] = {
-                "type": "ephemeral"
-            }
 
-        _chat_thread.append(_prompt)
+        # Temporary chat thread
+        _tempChatThread = _chat_thread.copy()
+        _tempChatThread.append(_prompt)
 
         # Params
         litellm.api_key = environ.get("OPENROUTER_API_KEY")
@@ -154,9 +138,30 @@ class Completions(ModelParams):
 
 
         # Generate completion
-        _response = await litellm.acompletion(messages=_chat_thread, model=self._model_name, **self._genai_params)
+        _response = await litellm.acompletion(messages=_tempChatThread, model=self._model_name, **self._genai_params)
 
-        # Append to chat thread
+        # Delete the temporary chat thread to prevent memory leaks
+        del _tempChatThread
+
+        # Remove file attachments from prompt before saving to history
+        if hasattr(self, "_file_data"):
+            # Filter out image_url and file content types, keep only text
+            _prompt["content"] = [
+                _content for _content in _prompt["content"] 
+                if _content.get("type") == "text"
+            ]
+            # Add a note that file was processed
+            _prompt["content"].append({
+                "type": "text",
+                "text": " [<system_notice>File attachment processed but removed from history. DO NOT make stuff up about it! Ask the user to reattach for more details</system_notice>]"
+            })
+            # Clean up the file data to free memory
+            del self._file_data
+
+        # Append the cleaned prompt to the chat thread
+        _chat_thread.append(_prompt)
+
+        # Append the response to chat thread
         _chat_thread.append(_response.choices[0].message.model_dump())
 
         # Send message what model used
