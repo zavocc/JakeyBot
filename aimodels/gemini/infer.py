@@ -87,15 +87,12 @@ class Completions(ModelParams):
             if _msgstatus: await _msgstatus.delete()
             await aiofiles.os.remove(_xfilename)
 
-        self._file_data = types.Content(
-            parts=[
-                types.Part.from_uri(
-                    file_uri=_filedata.uri, 
-                    mime_type=_filedata.mime_type
-                )
-            ],
-            role="user"
-        ).model_dump(exclude_unset=True)
+        self._file_data = [
+            types.Part.from_uri(
+                file_uri=_filedata.uri, 
+                mime_type=_filedata.mime_type
+            ).model_dump(exclude_unset=True)
+        ]
 
     ############################
     # Inferencing
@@ -143,16 +140,19 @@ class Completions(ModelParams):
         if _chat_thread is None:
             _chat_thread = []
 
-        # Attach file attachment if it exists
-        if hasattr(self, "_file_data"): _chat_thread.append(self._file_data)
+        # Craft prompt
+        _prompt = {
+            "role": "user",
+            "parts": [
+                types.Part.from_text(text=prompt).model_dump(exclude_unset=True)
+            ]
+        }
 
-        # Parse prompts
-        _chat_thread.append(
-            types.Content(
-                parts=[types.Part.from_text(text=prompt)],
-                role="user"
-            ).model_dump(exclude_unset=True)
-        )
+        # Attach file attachment if it exists
+        if hasattr(self, "_file_data"):
+            _prompt["parts"].extend(self._file_data)
+
+        _chat_thread.append(_prompt)
     
         # First response which is called only once
         try:
@@ -168,7 +168,7 @@ class Completions(ModelParams):
                         # Check if we have file_data key then we just set it as None and set the text to "Expired"
                         if _part.get("file_data"):
                             _part["file_data"] = None
-                            _part["text"] = "⚠️ The file attachment expired and was removed."
+                            _part["text"] = "[<system_notice>File attachment processed but expired from history. DO NOT make stuff up about it! Ask the user to reattach for more details</system_notice>]"
 
                 # Notify the user that the chat session has been re-initialized
                 await self._discord_method_send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")

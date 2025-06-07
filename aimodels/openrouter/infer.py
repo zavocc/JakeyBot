@@ -153,7 +153,7 @@ class Completions(ModelParams):
             # Add a note that file was processed
             _prompt["content"].append({
                 "type": "text",
-                "text": " [<system_notice>File attachment processed but removed from history. DO NOT make stuff up about it! Ask the user to reattach for more details</system_notice>]"
+                "text": "[<system_notice>File attachment processed but removed from history. DO NOT make stuff up about it! Ask the user to reattach for more details</system_notice>]"
             })
             # Clean up the file data to free memory
             del self._file_data
