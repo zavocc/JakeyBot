@@ -7,7 +7,6 @@ import base64
 import discord
 import litellm
 import logging
-import re
 
 class Completions(ModelParams):
     def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = None):
