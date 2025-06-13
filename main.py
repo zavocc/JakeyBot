@@ -1,11 +1,12 @@
 from core.services.initbot import ServicesInitBot
 from discord.ext import commands
 from inspect import cleandoc
-from os import chdir, mkdir, environ
+from os import chdir, mkdir # environ removed
 from pathlib import Path
 import aiofiles.os
 import discord
-import dotenv
+# import dotenv # Removed
+from core.config_loader import Config # Added
 import importlib
 import logging
 import re
@@ -15,8 +16,8 @@ import yaml
 # Go to project root directory
 chdir(Path(__file__).parent.resolve())
 
-# Load environment variables
-dotenv.load_dotenv("dev.env")
+# Initialize configuration
+config = Config()
 
 # Logging
 logging.basicConfig(format='%(levelname)s %(asctime)s [%(filename)s:%(lineno)d - %(funcName)s()]: %(message)s', 
@@ -24,8 +25,9 @@ logging.basicConfig(format='%(levelname)s %(asctime)s [%(filename)s:%(lineno)d -
                     level=logging.INFO)
 
 # Check if TOKEN is set
-if "TOKEN" in environ and (environ.get("TOKEN") == "INSERT_DISCORD_TOKEN") or (environ.get("TOKEN") is None) or (environ.get("TOKEN") == ""):
-    raise Exception("Please insert a valid Discord bot token")
+token = config.get("TOKEN")
+if not token or token == "INSERT_DISCORD_TOKEN":
+    raise Exception("Please insert a valid Discord bot token in your config.yaml or as a TOKEN environment variable")
 
 # Intents
 intents = discord.Intents.default()
@@ -41,15 +43,25 @@ class InitBot(ServicesInitBot):
         super().__init__(*args, **kwargs)
 
         # Prepare temporary directory
-        if environ.get("TEMP_DIR") is not None:
-            if Path(environ.get("TEMP_DIR")).exists():
-                for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
+        temp_dir_path_str = config.get("bot_settings.TEMP_DIR", "temp")
+        temp_dir_path = Path(temp_dir_path_str)
+
+        if temp_dir_path.exists():
+            for file in temp_dir_path.iterdir():
+                try:
                     file.unlink()
-            else:
-                mkdir(environ.get("TEMP_DIR"))
+                except OSError as e:
+                    logging.warning(f"Could not delete file {file} in temp dir: {e}")
         else:
-            environ["TEMP_DIR"] = "temp"
-            mkdir(environ.get("TEMP_DIR"))
+            try:
+                mkdir(temp_dir_path)
+            except OSError as e:
+                logging.error(f"Could not create temp directory {temp_dir_path}: {e}")
+                # Fallback if provided TEMP_DIR is invalid
+                temp_dir_path_str = "temp"
+                temp_dir_path = Path(temp_dir_path_str)
+                if not temp_dir_path.exists(): mkdir(temp_dir_path)
+
 
         # Wavelink
         self._wavelink = None
@@ -80,16 +92,21 @@ class InitBot(ServicesInitBot):
         logging.info("Services stopped successfully")
 
         # Remove temp files
-        if Path(environ.get("TEMP_DIR", "temp")).exists():
-            for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
-                await aiofiles.os.remove(file)
+        temp_dir_path_str = config.get("bot_settings.TEMP_DIR", "temp")
+        temp_dir_path = Path(temp_dir_path_str)
+        if temp_dir_path.exists():
+            for file in temp_dir_path.iterdir():
+                try:
+                    await aiofiles.os.remove(file)
+                except OSError as e:
+                    logging.warning(f"Could not delete file {file} in temp dir during close: {e}")
             
         # Close socket
         self._socket.close()
 
         await super().close()
 
-bot = InitBot(command_prefix=environ.get("BOT_PREFIX", "$"), intents = intents)
+bot = InitBot(command_prefix=config.get("bot_settings.BOT_PREFIX", "$"), intents = intents, config_loader=config)
 
 ###############################################
 # ON READY
@@ -186,4 +203,4 @@ class CustomHelp(commands.MinimalHelpCommand):
 
 bot.help_command = CustomHelp()
 
-bot.run(environ.get('TOKEN')) 
+bot.run(config.get('TOKEN'))

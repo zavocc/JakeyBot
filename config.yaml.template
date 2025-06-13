@@ -1,0 +1,70 @@
+# Refer to docs/CONFIG.MD#API-and-Search-tools
+
+# Discord Bot Token
+# It's highly recommended to set this as an ENVIRONMENT VARIABLE instead of putting it here directly.
+# TOKEN: "INSERT_DISCORD_TOKEN"
+
+bot_settings:
+  BOT_NAME: "Jakey Bot"
+  BOT_PREFIX: "$"
+  # Temporary directory
+  # TEMP_DIR: "/tmp/discord_jakey_tmpfiles" # Or set via ENV
+  # Enable shared chat history for guilds
+  # Setting this to False won't delete the chat history from guild IDs automatically
+  # SHARED_CHAT_HISTORY: false # Or set via ENV
+
+api_providers:
+  # API provider keys
+  # It's recommended to set these as ENVIRONMENT VARIABLES if possible.
+  # GEMINI_API_KEY: ""
+  # OPENAI_API_KEY: ""
+  # MISTRAL_API_KEY: ""
+  # ANTHROPIC_API_KEY: ""
+  # XAI_API_KEY: ""
+  # GROQ_API_KEY: ""
+
+  # Setting this API key will make the models use the OpenRouter API
+  # (Note: this only applies when AI providers does not have their API keys set)
+  # This overrides OPENAI_API_ENDPOINT if OpenAI keys isn't set
+  # Supported: OpenAI, Mistral, Anthropic
+  # OPENROUTER_API_KEY: ""
+
+  # For OpenAI models only
+  # Set this for custom OpenAI chat completions endpoint (baseURL)
+  # And depending on your endpoint provider, you must still set API Keys for OAI using OPENAI_API_KEY
+  # Must support additional parameters: reasoning_effort
+  # Must support these models: o1, o3-mini, gpt-4o, gpt-4o mini
+  # OPENAI_API_ENDPOINT: ""
+
+  # Enable LiteLLM debugging
+  # LITELLM_DEBUG: false
+
+  # OPTIONAL: Ranking this bot to OpenRouter
+  # openrouter_ranking:
+    # OR_SITE_URL: "https://github.com/zavocc/JakeyBot"
+    # OR_APP_NAME: "JakeyBot"
+
+database:
+  # Set the MongoDB connection string for chat history
+  # It's highly recommended to set the MONGO_DB_URL as an ENVIRONMENT VARIABLE.
+  # MONGO_DB_URL: "mongodb://connection_string"
+  MONGO_DB_NAME: "jakey_prod_db"
+  MONGO_DB_COLLECTION_NAME: "jakey_prod_db_collection"
+
+tool_keys:
+  # Bing search API key
+  # BING_SUBSCRIPTION_KEY: ""
+
+  # YouTube Data API key, enable it through GCP APIs and Services
+  # YOUTUBE_DATA_V3_API_KEY: ""
+
+  # For GitHub tool
+  # GITHUB_TOKEN: ""
+
+services:
+  azure_storage:
+    # Azure blob storage URL for file uploads
+    # It's highly recommended to set AZURE_STORAGE_CONNECTION_STRING as an ENVIRONMENT VARIABLE.
+    # AZURE_STORAGE_ACCOUNT_URL: ""
+    # AZURE_STORAGE_CONNECTION_STRING: ""
+    AZURE_STORAGE_CONTAINER_NAME: ""
