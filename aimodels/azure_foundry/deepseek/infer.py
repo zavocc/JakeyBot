@@ -48,12 +48,15 @@ class Completions(BaseInitProvider):
 
         # Show the thought process inside the <think> tag
         _custom_fields = _response.choices[0].message.provider_specific_fields
-        if _custom_fields:
-            if _custom_fields.get("reasoning_content"):
-                _thoughts = _custom_fields.get("reasoning_content")
-            else:
-                _thoughts = None
+        _reasoning_content = _response.choices[0].message.reasoning_content
+        if _custom_fields and _custom_fields.get("reasoning_content"):
+            _thoughts = _custom_fields.get("reasoning_content")
+        elif _reasoning_content:
+            _thoughts = _reasoning_content
+        else:
+            _thoughts = None
 
+        if _thoughts:
             # Show the thought process inside the <think> tag and format as quotes
             # There's always one <think>content</think> tag from the start of the response
             # so we assume it's the first one and we use [0] index

@@ -285,6 +285,7 @@ class Chat(commands.Cog):
         # Retrieve current settings
         _cur_feature = await self.DBConn.get_tool_config(guild_id=guild_id)
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
+        _openrouter_model = await self.DBConn.get_key(guild_id=guild_id, key="default_openrouter_model")
 
         # Convert "disabled" to None
         if capability == "disabled":
@@ -300,6 +301,7 @@ class Chat(commands.Cog):
             # Set new capability and restore default model
             await self.DBConn.set_tool_config(guild_id=guild_id, tool=capability)
             await self.DBConn.set_default_model(guild_id=guild_id, model=_model)
+            await self.DBConn.set_key(guild_id=guild_id, key="default_openrouter_model", value=_openrouter_model)
 
             if capability is None:
                 await ctx.respond("✅ Features disabled and chat is reset to reflect the changes")

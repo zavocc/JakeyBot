@@ -98,7 +98,7 @@ class ToolManifest:
                                     "speaker_type": {
                                         "type": "string",
                                         "enum": ["host_one", "host_two"],
-                                        "description": "Select which host to use for dialogue, this is used to ensure smooth podcast generation"
+                                        "description": "Select which host to use for dialogue, this is used to ensure smooth podcast generation. Host one is male, and host two is female"
                                     },
                                     "dialogue": {
                                         "type": "string",

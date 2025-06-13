@@ -5,7 +5,7 @@ from core.ai.history import History as typehint_History
 from os import environ
 import base64
 import discord
-import gc
+import json
 import litellm
 import logging
 
@@ -79,6 +79,9 @@ class Completions(ModelParams):
         # Indicate the model name
         logging.info("Using OpenRouter model: %s", self._model_name)
 
+        # Fetch tool
+        _Tool = await self._fetch_tool(db_conn)
+
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
 
@@ -131,14 +134,19 @@ class Completions(ModelParams):
                 "max_tokens": 1200,
             }
         elif any(_miscmodels in self._model_name for _miscmodels in ["openai/o", "x-ai/grok-3-beta"]):
-            self._genai_params["extra_body"]["reasoning"] = {
-                "effort": "medium",
-                "exclude": True 
-            }
+            if not "mini-high" in self._model_name:
+                self._genai_params["extra_body"]["reasoning"] = {
+                    "effort": "medium",
+                    "exclude": True 
+                }
 
 
         # Generate completion
-        _response = await litellm.acompletion(messages=_tempChatThread, model=self._model_name, **self._genai_params)
+        _response = await litellm.acompletion(
+            model=self._model_name, 
+            messages=_tempChatThread, 
+            tools=_Tool["tool_schema"], 
+            **self._genai_params)
 
         # Delete the temporary chat thread to prevent memory leaks
         del _tempChatThread
@@ -158,21 +166,89 @@ class Completions(ModelParams):
             # Clean up the file data to free memory
             del self._file_data
 
-        # TODO: remove this
-        #_objects_cleaned = gc.collect()
-        #logging.info("Cleaned %s objects", _objects_cleaned)
-
         # Append the cleaned prompt to the chat thread
         _chat_thread.append(_prompt)
 
-        # Append the response to chat thread
-        _chat_thread.append(_response.choices[0].message.model_dump())
+        # Agentic experiences
+        # Begin inference operation
+        _interstitial = None
+        _toolUseErrorOccurred = False
+        while True:
+            # Check for tools
+            if _response.choices[0].message.tool_calls:
+                if not _interstitial:
+                    _interstitial = await self._discord_method_send("▶️ Coming up with the plan...")
+
+                # Append the chat history
+                _chat_thread.append(_response.choices[0].message.model_dump())
+
+                # Send text message if needed
+                if _response.choices[0].message.content:
+                    await Utils.send_ai_response(self._discord_ctx, prompt, _response.choices[0].message.content, self._discord_method_send)
+
+                # Execute tools
+                _toolCalls = _response.choices[0].message.tool_calls
+                _toolParts = []
+                for _tool in _toolCalls:
+                    await _interstitial.edit(f"▶️ Executing tool: **{_tool.function.name}**")
+
+                    if hasattr(_Tool["tool_object"], "_tool_function"):
+                        _toExec = getattr(_Tool["tool_object"], "_tool_function")
+                    elif hasattr(_Tool["tool_object"], f"_tool_function_{_tool.function.name}"):
+                        _toExec = getattr(_Tool["tool_object"], f"_tool_function_{_tool.function.name}")
+                    else:
+                        logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s")
+                        raise CustomErrorMessage("⚠️ An error has occurred while calling tools, please try again later or choose another tool")
+            
+                    # Execute tools
+                    try:
+                        _toolResult = {"toolResult": await _toExec(**json.loads(_tool.function.arguments))}
+                    except Exception as e:
+                        logging.error("Something when calling specific tool lately, reason: %s", e)
+                        _toolResult = {"error": f"⚠️ Something went wrong while executing the tool: {e}\nTell the user about this error"}
+
+                        # Must not set status to true if it was already set to False
+                        if not _toolUseErrorOccurred:
+                            _toolUseErrorOccurred = True
+
+                    _toolParts.append({
+                        "role": "tool",
+                        "tool_call_id": _tool.id,
+                        "content": str(_toolResult)
+                    })
+
+            # Re-run the request after tool call
+            if _interstitial and _toolParts:
+                # Edit interstitial message
+                if not _toolUseErrorOccurred:
+                    await _interstitial.edit(f"✅ Used: **{_Tool['tool_human_name']}**")
+                else:
+                    await _interstitial.edit(f"⚠️ Error executing tool: **{_Tool['tool_human_name']}**")
+
+                # Append the tool call result to the chat thread
+                _chat_thread.extend(_toolParts)
+
+                # Re-run the request
+                _response = await litellm.acompletion(
+                    model=self._model_name,
+                    messages=_chat_thread,
+                    tools=_Tool["tool_schema"],
+                    **self._genai_params
+                )
+
+
+            # If the response has tool calls, re-run the request
+            if not _response.choices[0].message.tool_calls:
+                # Send final message in this condition since the agent is not looping anymore
+                if _response.choices[0].message.content:
+                    await Utils.send_ai_response(self._discord_ctx, prompt, _response.choices[0].message.content, self._discord_method_send)
+                break
 
         # Send message what model used
         await self._discord_method_send(f"-# Using OpenRouter model: **{self._model_name}**")
 
-        # Send the response
-        await Utils.send_ai_response(self._discord_ctx, prompt, _response.choices[0].message.content, self._discord_method_send)
+        # Append the response to chat thread
+        _chat_thread.append(_response.choices[0].message.model_dump())
         return {"response":"OK", "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
