@@ -51,14 +51,6 @@ class InitBot(ServicesInitBot):
             environ["TEMP_DIR"] = "temp"
             mkdir(environ.get("TEMP_DIR"))
 
-        # Wavelink
-        self._wavelink = None
-        try:
-            self._wavelink = importlib.import_module("wavelink")
-        except ModuleNotFoundError as e:
-            logging.warning("Playback support is disabled: %s", e)
-            self._wavelink = None
-
         # Initialize services
         self.loop.create_task(self.start_services())
         logging.info("Services initialized successfully")

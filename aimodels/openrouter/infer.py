@@ -1,13 +1,15 @@
+# TODO: KEEP THE BASE64 FORMAT REGARDLES
 from .config import ModelParams
 from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from core.ai.history import History as typehint_History
 from os import environ
 import base64
+import copy
 import discord
 import json
-import litellm
 import logging
+import openai
 
 class Completions(ModelParams):
     def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = None):
@@ -31,10 +33,16 @@ class Completions(ModelParams):
         # Discord bot object lifecycle instance
         self._discord_bot: discord.Bot = discord_bot
 
+        # Check if _openai_client_openrouter attribute is set
+        if not hasattr(discord_bot, "_openai_client_openrouter"):
+            raise Exception("OpenAI client for OpenRouter is not initialized, please check the bot initialization")
+        
+        # Check if OpenRouter API key is set
         if not environ.get("OPENROUTER_API_KEY"):
             raise ModelAPIKeyUnset("No OpenRouter API key was set, this model isn't available")
 
         self._guild_id = guild_id
+        self._openai_client: openai.AsyncOpenAI = discord_bot._openai_client_openrouter
 
 
     async def input_files(self, attachment: discord.Attachment):
@@ -74,7 +82,7 @@ class Completions(ModelParams):
 
     async def chat_completion(self, prompt, db_conn: typehint_History, system_instruction: str = None):
         # Before we begin, get the OpenRouter model name and override self._model_name
-        self._model_name = "openrouter/" + (await db_conn.get_key(guild_id=self._guild_id, key="default_openrouter_model"))
+        self._model_name = (await db_conn.get_key(guild_id=self._guild_id, key="default_openrouter_model"))
 
         # Indicate the model name
         logging.info("Using OpenRouter model: %s", self._model_name)
@@ -118,56 +126,62 @@ class Completions(ModelParams):
             # Add the attachment part to the prompt
             _prompt["content"].extend(self._file_data)
 
-
-        # Temporary chat thread
-        _tempChatThread = _chat_thread.copy()
-        _tempChatThread.append(_prompt)
-
-        # Params
-        litellm.api_key = environ.get("OPENROUTER_API_KEY")
-        if environ.get("LITELLM_DEBUG"):
-            litellm._turn_on_debug()
+            # Temporary chat thread            
+            _tempChatThread = copy.deepcopy(_chat_thread)
+            _tempChatThread.append(_prompt)
+            _one_off_chat_thread = _tempChatThread
+        else:
+            _chat_thread.append(_prompt)
+            _one_off_chat_thread = _chat_thread
 
         # Set the reasoning tokens to medium
         if any(_miscmodels in self._model_name for _miscmodels in [":thinking", "gemini-2.5-pro"]):
             self._genai_params["extra_body"]["reasoning"] = {
                 "max_tokens": 1200,
             }
-        elif any(_miscmodels in self._model_name for _miscmodels in ["openai/o", "x-ai/grok-3-beta"]):
+        elif any(_miscmodels in self._model_name for _miscmodels in ["openai/o", "x-ai/grok-3-beta", "openai/codex"]):
             if not "mini-high" in self._model_name:
                 self._genai_params["extra_body"]["reasoning"] = {
                     "effort": "medium",
                     "exclude": True 
                 }
 
+        _response = await self._openai_client.chat.completions.create(
+            model=self._model_name,
+            messages=_one_off_chat_thread,
+            tools=_Tool["tool_schema"],
+            **self._genai_params
+        )
 
-        # Generate completion
-        _response = await litellm.acompletion(
-            model=self._model_name, 
-            messages=_tempChatThread, 
-            tools=_Tool["tool_schema"], 
-            **self._genai_params)
-
-        # Delete the temporary chat thread to prevent memory leaks
-        del _tempChatThread
+        # Remove references
+        _one_off_chat_thread = None
 
         # Remove file attachments from prompt before saving to history
-        if hasattr(self, "_file_data"):
-            # Filter out image_url and file content types, keep only text
-            _prompt["content"] = [
-                _content for _content in _prompt["content"] 
-                if _content.get("type") == "text"
-            ]
-            # Add a note that file was processed
-            _prompt["content"].append({
+        if hasattr(self, "_file_data"):        
+            # Delete the temporary chat thread to prevent memory leaks
+            del _tempChatThread
+
+            # Create a clean copy of the prompt without file attachments
+            _clean_prompt = {
+                "role": _prompt["role"],
+                "content": [
+                    _content for _content in _prompt["content"] 
+                    if _content.get("type") == "text"
+                ]
+            }
+
+            # Add a system notice about file processing that file was processed
+            _clean_prompt["content"].append({
                 "type": "text",
                 "text": "[<system_notice>File attachment processed but removed from history. DO NOT make stuff up about it! Ask the user to reattach for more details</system_notice>]"
             })
+
+            # Append the clean prompt to chat thread
+            _chat_thread.append(_clean_prompt)
+
             # Clean up the file data to free memory
             del self._file_data
 
-        # Append the cleaned prompt to the chat thread
-        _chat_thread.append(_prompt)
 
         # Agentic experiences
         # Begin inference operation
@@ -229,13 +243,12 @@ class Completions(ModelParams):
                 _chat_thread.extend(_toolParts)
 
                 # Re-run the request
-                _response = await litellm.acompletion(
+                _response = await self._openai_client.chat.completions.create(
                     model=self._model_name,
                     messages=_chat_thread,
                     tools=_Tool["tool_schema"],
                     **self._genai_params
                 )
-
 
             # If the response has tool calls, re-run the request
             if not _response.choices[0].message.tool_calls:

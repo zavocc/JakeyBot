@@ -4,6 +4,7 @@ from google import genai
 from os import environ
 import aiohttp
 import logging
+import openai
 
 # List of services to be started, separated from main.py
 # for cleanliness and modularity
@@ -15,6 +16,13 @@ class ServicesInitBot(bridge.Bot):
         # Gemini API Client
         self._gemini_api_client = genai.Client(api_key=environ.get("GEMINI_API_KEY"))
         logging.info("Gemini API client initialized successfully")
+
+        # OpenAI client for OpenRouter
+        self._openai_client_openrouter = openai.AsyncOpenAI(
+            api_key=environ.get("OPENROUTER_API_KEY"),
+            base_url="https://openrouter.ai/api/v1"
+        )
+        logging.info("OpenAI client for OpenRouter initialized successfully")
 
         # Everything else (mostly GET requests)
         self._aiohttp_main_client_session = aiohttp.ClientSession(loop=self.loop)
