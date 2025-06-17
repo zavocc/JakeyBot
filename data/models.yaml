@@ -62,7 +62,7 @@
 - model: azure_foundry.deepseek::Deepseek-V3-0324
   name: DeepSeek V3
   description: DeepSeek latest non-reasoning model hosted on Azure
-- model: azure_foundry.deepseek::Deepseek-R1
+- model: azure_foundry.deepseek::Deepseek-R1-0528
   name: DeepSeek R1
   description: DeepSeek latest reasoning model hosted on Azure
 

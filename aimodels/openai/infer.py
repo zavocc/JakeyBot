@@ -3,8 +3,7 @@ from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
 import discord
-import litellm
-import logging
+import openai
 
 class Completions(ModelParams):
     def __init__(self, model_name, discord_ctx, discord_bot, guild_id: int = None):
@@ -28,19 +27,19 @@ class Completions(ModelParams):
         # Discord bot object lifecycle instance
         self._discord_bot: discord.Bot = discord_bot
 
-        if environ.get("OPENAI_API_KEY"):
-            # Set endpoint if OPENAI_API_ENDPOINT is set
-            if environ.get("OPENAI_API_ENDPOINT"):
-                self._oai_endpoint = environ.get("OPENAI_API_ENDPOINT")
-                logging.info("Using OpenAI API endpoint: %s", self._oai_endpoint)
-            else:
-                self._oai_endpoint = None
-                logging.info("Using default OpenAI API endpoint")
-            self._model_name = "openai/" + model_name
-        else:
+        # Check if _openai_client attribute is set
+        if not hasattr(discord_bot, "_openai_client"):
+            raise Exception("OpenAI client is not initialized, please check the bot initialization")
+        
+        # Check if OpenRouter API key is set
+        if not environ.get("OPENAI_API_KEY"):
             raise ModelAPIKeyUnset("No OpenAI API key was set, this model isn't available")
+        
+        # Model name
+        self._model_name = model_name
 
         self._guild_id = guild_id
+        self._openai_client: openai.AsyncOpenAI = discord_bot._openai_client
 
     async def input_files(self, attachment: discord.Attachment):
         # Check if the attachment is an image
@@ -86,38 +85,25 @@ class Completions(ModelParams):
 
         _chat_thread.append(_prompt)
 
-        # Generate completion
-        litellm.api_key = environ.get("OPENAI_API_KEY")
-        if self._oai_endpoint:
-            litellm.api_base = self._oai_endpoint
-        if environ.get("LITELLM_DEBUG"):
-            litellm._turn_on_debug() # Enable debugging
-        
-        # When O1 model is used, set reasoning effort to medium
-        # Since higher can be costly and lower performs similarly to GPT-4o 
-        _interstitial = None
-        if "o1" in self._model_name or "o4-mini" in self._model_name:
-            self._genai_params["reasoning_effort"] = "medium"
-            self._genai_params["temperature"] = None
+        # Check if the model starts with o
+        if self._model_name.startswith("o"):
+            if not any(self._model_name.startswith(_oprefix) for _oprefix in ["o1-preview", "o1-mini"]):
+                self._genai_params["reasoning_effort"] = "medium"
 
-        _response = await litellm.acompletion(
+            # Always set temperature to 1 for reasoning models
+            self._genai_params["temperature"] = 1
+
+        _response = await self._openai_client.chat.completions.create(
             model=self._model_name,
             messages=_chat_thread,
             **self._genai_params
         )
 
-        # AI response
-        _answer = _response.choices[0].message.content
-
         # Append to chat thread
         _chat_thread.append(_response.choices[0].message.model_dump())
 
-        if _interstitial:
-            await _interstitial.delete()
-
         # Send the response
-        await Utils.send_ai_response(self._discord_ctx, prompt, _answer, self._discord_method_send)
-
+        await Utils.send_ai_response(self._discord_ctx, prompt, _response.choices[0].message.content, self._discord_method_send)
         return {"response":"OK", "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
