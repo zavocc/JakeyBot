@@ -38,6 +38,9 @@
 - model: openai::o3-mini-high
   name: OpenAI O3 Mini High
   description: Slow but provides quality responses
+- model: openai::o1
+  name: OpenAI O1
+  description: OpenAI's model that spends time thinking before responding
 - model: openai::gpt-4.1
   name: GPT 4.1 Standard
   description: Latest OpenAI non-reasoning model for general coding tasks
@@ -47,9 +50,7 @@
 - model: openai::gpt-4o-mini
   name: GPT-4o Mini
   description: A smaller version of GPT-4o
-- model: openai::o1
-  name: OpenAI O1
-  description: OpenAI's model that spends time thinking before responding
+
 
 ############################################
 # Claude models
