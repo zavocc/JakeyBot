@@ -93,7 +93,18 @@ class Completions(ModelParams):
         # Check if the model starts with o
         if self._model_name.startswith("o"):
             if not any(self._model_name.startswith(_oprefix) for _oprefix in ["o1-preview", "o1-mini"]):
-                self._genai_params["reasoning_effort"] = "medium"
+                # Check if the suffix has -high
+                if self._model_name.endswith("-high"):
+                    # Set reasoning effort to high
+                    self._genai_params["reasoning_effort"] = "high"
+
+                    # Remove the -high suffix from the model name
+                    self._model_name = self._model_name.removesuffix("-high")
+                    logging.info("Using reasoning model with high reasoning effort: %s", self._model_name)
+                else:
+                    # Set reasoning effort to medium
+                    self._genai_params["reasoning_effort"] = "medium"
+                    logging.info("Using reasoning model with medium reasoning effort: %s", self._model_name)
 
             # Always set temperature to 1 for reasoning models
             self._genai_params["temperature"] = 1

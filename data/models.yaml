@@ -29,6 +29,15 @@
 - model: openai::o4-mini
   name: OpenAI O4 Mini
   description: OpenAI's latest and fast reasoning model
+- model: openai::o4-mini-high
+  name: OpenAI O4 Mini High
+  description: Slow but provides quality responses
+- model: openai::o3-mini
+  name: OpenAI O3 Mini
+  description: Smaller and faster version of O3
+- model: openai::o3-mini-high
+  name: OpenAI O3 Mini High
+  description: Slow but provides quality responses
 - model: openai::gpt-4.1
   name: GPT 4.1 Standard
   description: Latest OpenAI non-reasoning model for general coding tasks
