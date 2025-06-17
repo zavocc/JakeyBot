@@ -1,10 +1,12 @@
 from aimodels.gemini import Completions
-from core.ai.assistants import Assistants
+from core.services.helperfunctions import HelperFunctions
 from discord.ext import commands
 from google.genai import types
 from os import environ
 import discord
 import logging
+
+GEMINI_MODEL = HelperFunctions.fetch_default_model("gemini_default_model")
 
 class GeminiAIApps(commands.Cog):
     def __init__(self, bot):
@@ -30,8 +32,8 @@ class GeminiAIApps(commands.Cog):
             _prompt_feed = _prompt_feed.replace(f"<@{_mention.id}>", f"(mentions user: {_mention.display_name})")
         
         # Generative model settings
-        _completion = Completions(discord_ctx=ctx, discord_bot=self.bot)
-        _system_prompt = await Assistants.set_assistant_type("message_rephraser_prompt", type=1)
+        _completion = Completions(model_name=GEMINI_MODEL, discord_ctx=ctx, discord_bot=self.bot)
+        _system_prompt = await HelperFunctions.set_assistant_type("message_rephraser_prompt", type=1)
         _answer = await _completion.completion(_prompt_feed, system_instruction=_system_prompt)
 
         # Send message in an embed format
@@ -78,8 +80,8 @@ class GeminiAIApps(commands.Cog):
         )
 
         # Generative model settings
-        _completion = Completions(discord_ctx=ctx, discord_bot=self.bot)
-        _system_prompt = await Assistants.set_assistant_type("message_summarizer_prompt", type=1)
+        _completion = Completions(model_name=GEMINI_MODEL, discord_ctx=ctx, discord_bot=self.bot)
+        _system_prompt = await HelperFunctions.set_assistant_type("message_summarizer_prompt", type=1)
 
         # Craft prompt
         _prompt_feed = [
@@ -153,8 +155,8 @@ class GeminiAIApps(commands.Cog):
             _prompt_feed = _prompt_feed.replace(f"<@{_mention.id}>", f"(mentions user: {_mention.display_name})")
 
         # Generative model settings
-        _completion = Completions(discord_ctx=ctx, discord_bot=self.bot)
-        _system_prompt = await Assistants.set_assistant_type("message_suggestions_prompt", type=1)
+        _completion = Completions(model_name=GEMINI_MODEL, discord_ctx=ctx, discord_bot=self.bot)
+        _system_prompt = await HelperFunctions.set_assistant_type("message_suggestions_prompt", type=1)
         _answer = await _completion.completion(_prompt_feed, system_instruction=_system_prompt)
 
         # To protect privacy, send the message to the user

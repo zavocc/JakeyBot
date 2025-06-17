@@ -1,7 +1,7 @@
-from core.ai.assistants import Assistants
-from core.ai.core import ModelsList
 from aimodels.gemini import Completions
+from core.ai.core import ModelsList
 from core.exceptions import CustomErrorMessage, PollOffTopicRefusal
+from core.services.helperfunctions import HelperFunctions
 from discord.ext import commands
 from discord import Member, DiscordException
 from google.genai import types
@@ -11,6 +11,9 @@ import inspect
 import io
 import json
 import logging
+
+IMAGEGEN_MODEL = HelperFunctions.fetch_default_model(model_type="gemini_image_generation")
+GEMINI_MODEL = HelperFunctions.fetch_default_model(model_type="gemini_default_model")
 
 class GeminiUtils(commands.Cog):
     """Gemini powered utilities"""
@@ -68,7 +71,7 @@ class GeminiUtils(commands.Cog):
                     raise Exception("No file data")
                 
                 # Generate description
-                _infer = Completions(discord_ctx=ctx, discord_bot=self.bot)
+                _infer = Completions(model_name=GEMINI_MODEL, discord_ctx=ctx, discord_bot=self.bot)
                 _description = await _infer.completion([
                     "Generate image descriptions but one sentence short to describe, straight to the point",
                     types.Part.from_bytes(
@@ -150,7 +153,7 @@ class GeminiUtils(commands.Cog):
         # Craft prompt
         _crafted_prompt = f"Transform this image provided with the style of {_style_preprompt}."
 
-        _infer = Completions(discord_ctx=ctx, discord_bot=self.bot, model_name="gemini-2.0-flash-exp-image-generation")
+        _infer = Completions(model_name=IMAGEGEN_MODEL, discord_ctx=ctx, discord_bot=self.bot)
 
         # Update params with image response modalities
         _infer._genai_params["response_modalities"] = ["Image", "Text"]
@@ -225,7 +228,7 @@ class GeminiUtils(commands.Cog):
         ]
 
         # Init completions
-        _completions = Completions(discord_ctx=ctx, discord_bot=self.bot)
+        _completions = Completions(model_name=GEMINI_MODEL, discord_ctx=ctx, discord_bot=self.bot)
 
         # Attach files
         if attachment:
@@ -235,7 +238,7 @@ class GeminiUtils(commands.Cog):
             if hasattr(_completions, "_file_data"):
                 _prompt_feed.append(_completions._file_data)
         
-        _system_prompt = await Assistants.set_assistant_type("discord_polls_creator_prompt", type=1)
+        _system_prompt = await HelperFunctions.set_assistant_type("discord_polls_creator_prompt", type=1)
         # Configured controlled response generation
         _completions._genai_params.update({
             "response_schema": {

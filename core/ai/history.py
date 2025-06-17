@@ -1,9 +1,12 @@
 from core.exceptions import HistoryDatabaseError
+from core.services.helperfunctions import HelperFunctions
 from os import environ
 from pymongo import ReturnDocument
 import discord as typehint_Discord
 import logging
 import motor.motor_asyncio
+
+DEFAULT_MODEL = HelperFunctions.fetch_default_model("base_chat_model")
 
 # A class that is responsible for managing and manipulating the chat history
 class History:
@@ -27,7 +30,7 @@ class History:
 
 
     # Returns the document to be manipulated, creates one if it doesn't exist.
-    async def _ensure_document(self, guild_id: int, model: str = "gemini::gemini-2.0-flash-001", tool_use: str = None):
+    async def _ensure_document(self, guild_id: int, model: str = DEFAULT_MODEL, tool_use: str = None):
         # Ensures a document exists for the given guild_id, creates one if it doesn't exist.
         # Returns the current document.
         if guild_id is None or not isinstance(guild_id, int):

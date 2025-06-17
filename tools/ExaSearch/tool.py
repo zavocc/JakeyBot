@@ -14,6 +14,9 @@ class Tool(ToolManifest):
         self.discord_bot = discord_bot
 
     async def _tool_function_web_search(self, query: str = None, searchType: str = "auto", numResults: int = 5, includeDomains: list = None, excludeDomains: list = None, includeText: list = None, excludeText: list = None, showHighlights: bool = False, showSummary: bool = False):
+        if not query or not query.strip():
+            raise ValueError("query parameter is required and cannot be empty")
+        
         if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
             raise Exception("aiohttp client session for get requests not initialized and web browsing cannot continue, please check the bot configuration")
 
@@ -29,26 +32,30 @@ class Tool(ToolManifest):
             "x-api-key": environ.get("EXA_AI_KEY")
         }
         
-        # Construct params
+        # Construct params with proper validation
         _params = {
-            "query": query,
+            "query": query.strip(),
             "type": searchType,
-            "numResults": numResults,
-            "contents": {
-                "highlights": True,
-                "summary": True,
-            }
+            "numResults": max(1, min(numResults, 10))  # Ensure valid range
         }
 
-        # Add optional parameters if provided
-        if includeDomains:
+        # Add optional parameters if provided and valid
+        if includeDomains and isinstance(includeDomains, list):
             _params["includeDomains"] = includeDomains
-        if excludeDomains:
+        if excludeDomains and isinstance(excludeDomains, list):
             _params["excludeDomains"] = excludeDomains
-        if includeText:
+        if includeText and isinstance(includeText, list):
             _params["includeText"] = includeText
-        if excludeText:
+        if excludeText and isinstance(excludeText, list):
             _params["excludeText"] = excludeText
+
+        # Add contents if needed
+        if showHighlights or showSummary:
+            _params["contents"] = {}
+            if showHighlights:
+                _params["contents"]["highlights"] = True
+            if showSummary:
+                _params["contents"]["summary"] = True
 
         # Endpoint
         _endpoint = "https://api.exa.ai/search"
@@ -108,4 +115,3 @@ class Tool(ToolManifest):
         
         return _output
 
-        

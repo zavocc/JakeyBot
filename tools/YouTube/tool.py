@@ -1,4 +1,5 @@
 from .manifest import ToolManifest
+from core.services.helperfunctions import HelperFunctions
 from google.genai import types
 from os import environ
 import aiohttp
@@ -135,7 +136,7 @@ class Tool(ToolManifest):
 
         # Generate response
         _response = await _api_client.aio.models.generate_content(
-            model="gemini-2.0-flash-001",
+            model=HelperFunctions.fetch_default_model("gemini_default_model"),
             contents=_crafted_prompt,
             config={
                 "candidate_count": 1,

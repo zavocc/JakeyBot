@@ -1,4 +1,5 @@
 from .manifest import ToolManifest
+from core.services.helperfunctions import HelperFunctions
 from google.genai import types
 import aiohttp
 import datetime
@@ -63,7 +64,7 @@ class Tool(ToolManifest):
 
         # Generate response
         _response = await _api_client.aio.models.generate_content(
-            model="gemini-2.0-flash-exp-image-generation",
+            model=HelperFunctions.fetch_default_model("image_generation"),
             contents=_prompt,
             config={
                 "response_modalities": ["Text", "Image"],

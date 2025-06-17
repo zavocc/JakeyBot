@@ -1,6 +1,6 @@
-from core.ai.assistants import Assistants
 from core.ai.core import ModelsList
 from core.exceptions import *
+from core.services.helperfunctions import HelperFunctions
 from core.ai.history import History as typehint_History
 from discord import Message
 from os import environ
@@ -67,10 +67,10 @@ class BaseChat():
       
         try:
             _infer: typehint_AIModelTemplate.Completions = importlib.import_module(f"aimodels.{_model_provider}").Completions(
+                model_name=_model_name,
                 discord_ctx=prompt,
                 discord_bot=self.bot,
-                guild_id=guild_id,
-                model_name=_model_name)
+                guild_id=guild_id)
         except ModuleNotFoundError:
             raise CustomErrorMessage("⚠️ The model you've chosen is not available at the moment, please choose another model")
         _infer._discord_method_send = prompt.channel.send
@@ -95,7 +95,7 @@ class BaseChat():
         ###############################################
         # Through capturing group, we can remove the mention and the model selection from the prompt at both in the middle and at the end
         _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/model:{_model_name}(\s|$)|\/chat:ephemeral(\s|$)|\/chat:info(\s|$))", "", prompt.content).strip()
-        _system_prompt = await Assistants.set_assistant_type("jakey_system_prompt", type=0)
+        _system_prompt = await HelperFunctions.set_assistant_type("jakey_system_prompt", type=0)
 
         # Generate the response and simulate the typing
         async with prompt.channel.typing():
@@ -164,10 +164,11 @@ class BaseChat():
                     f"""<reply_metadata>
                     
                     # Replying to referenced message excerpt from {_context_message.author.display_name} (username: @{_context_message.author.name}):
-                    <|begin_msg_contexts|>
+                    <|begin_msg_contexts|diff>
                     {_context_message.content}
-                    <|end_msg_contexts|>
-
+                    <|end_msg_contexts|diff>
+                    
+                    <constraints>Do not echo this metadata, only use for retrieval purposes</constraints>
                     </reply_metadata>
                     {message.content}"""
                 )

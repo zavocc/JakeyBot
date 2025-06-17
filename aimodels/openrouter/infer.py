@@ -12,7 +12,7 @@ import logging
 import openai
 
 class Completions(ModelParams):
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = None):
+    def __init__(self, model_name, discord_ctx, discord_bot, guild_id: int = None):
         super().__init__()
 
         # Discord context
