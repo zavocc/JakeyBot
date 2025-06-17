@@ -6,7 +6,6 @@ from pathlib import Path
 import aiofiles.os
 import discord
 import dotenv
-import importlib
 import logging
 import re
 import socket
@@ -19,7 +18,7 @@ chdir(Path(__file__).parent.resolve())
 dotenv.load_dotenv("dev.env")
 
 # Logging
-logging.basicConfig(format='%(levelname)s %(asctime)s [%(filename)s:%(lineno)d - %(funcName)s()]: %(message)s', 
+logging.basicConfig(format='%(levelname)s %(asctime)s [%(pathname)s:%(lineno)d - %(module)s.%(funcName)s()]: %(message)s', 
                     datefmt='%m/%d/%Y %I:%M:%S %p', 
                     level=logging.INFO)
 
