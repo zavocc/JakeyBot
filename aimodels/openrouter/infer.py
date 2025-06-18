@@ -135,9 +135,9 @@ class Completions(ModelParams):
             _one_off_chat_thread = _chat_thread
 
         # Set the reasoning tokens to medium
-        if any(_miscmodels in self._model_name for _miscmodels in [":thinking", "gemini-2.5-pro"]):
+        if any(_miscmodels in self._model_name for _miscmodels in [":thinking", "gemini-2.5-pro", "gemini-2.5-flash-lite"]):
             self._genai_params["extra_body"]["reasoning"] = {
-                "max_tokens": 1200,
+                "max_tokens": 4096,
             }
         elif any(_miscmodels in self._model_name for _miscmodels in ["openai/o", "x-ai/grok-3-beta", "openai/codex"]):
             if not "mini-high" in self._model_name:
