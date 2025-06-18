@@ -4,14 +4,14 @@
 ############################################
 # Google Models
 ############################################
-- model: gemini::gemini-2.5-pro-preview-06-05
-  name: Gemini 2.5 Pro Experimental
+- model: gemini::gemini-2.5-pro
+  name: Gemini 2.5 Pro
   description: Google's reasoning model for complex tasks
-- model: gemini::gemini-2.5-flash-preview-05-20
-  name: Gemini 2.5 Flash Thinking Experimental
+- model: gemini::gemini-2.5-flash
+  name: Gemini 2.5 Flash Thinking
   description: Workhorse thinking model for everyday and advanced tasks
-- model: gemini::gemini-2.5-flash-preview-05-20-nonthinking
-  name: Gemini 2.5 Flash Experimental
+- model: gemini::gemini-2.5-flash-nonthinking
+  name: Gemini 2.5 Flash  
   description: Best for everyday and advanced tasks without thinking
 - model: gemini::gemini-2.0-flash-001
   name: Gemini 2.0 Flash

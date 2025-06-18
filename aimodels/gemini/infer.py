@@ -107,7 +107,7 @@ class Completions(ModelParams):
             _thinkingConfigBudget = types.ThinkingConfig(
                 thinking_budget=0,
             )
-            await self._discord_method_send("> ℹ️ Thinking is disabled for this model.")
+            logging.info("Using non-thinking variant of the model: %s", self._model_name)
         else:
             _thinkingConfigBudget = None
 
