@@ -13,7 +13,7 @@ class HelperFunctions:
     def fetch_default_model(model_type: Literal["base_chat_model", "gemini_default_model", "gemini_image_generation"] = "base_chat_model") -> str:
         # Get the default envvars
         if model_type == "base_chat_model":
-            _model = environ.get("DEFAULT_CHAT_MODEL", "google::gemini-2.5-flash")
+            _model = environ.get("DEFAULT_CHAT_MODEL", "gemini::gemini-2.5-flash")
             logging.info("Using default chat model: %s", _model)
             return _model
         elif model_type == "gemini_default_model":

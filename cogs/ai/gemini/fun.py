@@ -81,7 +81,10 @@ class GeminiUtils(commands.Cog):
                 ])
             except Exception as e:
                 logging.error("An error occurred while generating image descriptions: %s", e)
-                _description = "Failed to generate image descriptions, check console for more info."
+                if "Max file size reached" in str(e):
+                    _description = "Image file size is too large, please use smaller images."
+                else:
+                    _description = "Failed to generate image descriptions, check console for more info."
 
         # Embed
         embed = discord.Embed(
@@ -90,8 +93,11 @@ class GeminiUtils(commands.Cog):
             color=discord.Color.random()
         )
         embed.set_image(url=avatar_url)
-        if _description: embed.set_footer(text="Using Gemini 2.0 Flash to generate descriptions, result may not be accurate")
+        if _description: embed.set_footer(text="Using Gemini 2.5 Flash Thinking to generate descriptions, result may not be accurate")
         await ctx.respond(embed=embed, ephemeral=True)
+
+        # Free up memory
+        del _filedata
 
     @show.error
     async def on_application_command_error(self, ctx: commands.Context, error: DiscordException):
