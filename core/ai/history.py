@@ -6,7 +6,8 @@ import discord as typehint_Discord
 import logging
 import motor.motor_asyncio
 
-DEFAULT_MODEL = HelperFunctions.fetch_default_model("base_chat_model")
+_fetchdict = HelperFunctions.fetch_default_model(model_type="reasoning", output_modalities="text", provider="gemini")
+DEFAULT_MODEL = f"{_fetchdict['provider']}::{_fetchdict['model_name']}"
 
 # A class that is responsible for managing and manipulating the chat history
 class History:

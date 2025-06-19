@@ -62,9 +62,16 @@ class Tool(ToolManifest):
 
             _prompt.append(types.Part.from_bytes(data=_imagedata, mime_type=_mime_type))
 
+        # Set the model
+        _default_model = HelperFunctions.fetch_default_model(
+            model_type="base",
+            output_modalities="image",
+            provider="gemini"
+        )["model_name"]
+
         # Generate response
         _response = await _api_client.aio.models.generate_content(
-            model=HelperFunctions.fetch_default_model("gemini_image_generation"),
+            model=_default_model,
             contents=_prompt,
             config={
                 "response_modalities": ["Text", "Image"],

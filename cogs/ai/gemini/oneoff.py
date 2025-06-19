@@ -9,6 +9,11 @@ import logging
 class GeminiQuickChat(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Bot = bot
+        self._default_model = HelperFunctions.fetch_default_model(
+            model_type="base",
+            output_modalities="text",
+            provider="gemini"
+        )["model_name"]
 
     ###############################################
     # Ask slash command
@@ -30,7 +35,7 @@ class GeminiQuickChat(commands.Cog):
         await ctx.response.defer(ephemeral=True)
 
         _infer: typehint_AIModelTemplate.Completions = importlib.import_module(f"aimodels.gemini").Completions(
-            model_name=HelperFunctions.fetch_default_model("gemini_default_model"),
+            model_name=self._default_model,
             discord_ctx=ctx,
             discord_bot=self.bot)
        

@@ -12,14 +12,22 @@ import io
 import json
 import logging
 
-IMAGEGEN_MODEL = HelperFunctions.fetch_default_model(model_type="gemini_image_generation")
-GEMINI_MODEL = HelperFunctions.fetch_default_model(model_type="gemini_default_model")
-
 class GeminiUtils(commands.Cog):
     """Gemini powered utilities"""
     def __init__(self, bot):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
+
+        self._default_text_model = HelperFunctions.fetch_default_model(
+            model_type="base",
+            output_modalities="text",
+            provider="gemini"
+        )["model_name"]
+        self._default_imagegen_model = HelperFunctions.fetch_default_model(
+            model_type="base",
+            output_modalities="image",
+            provider="gemini"
+        )["model_name"]
 
     ###############################################
     # Avatar tools
@@ -71,7 +79,7 @@ class GeminiUtils(commands.Cog):
                     raise Exception("No file data")
                 
                 # Generate description
-                _infer = Completions(model_name=GEMINI_MODEL, discord_ctx=ctx, discord_bot=self.bot)
+                _infer = Completions(model_name=self._default_text_model, discord_ctx=ctx, discord_bot=self.bot)
                 _description = await _infer.completion([
                     "Generate image descriptions but one sentence short to describe, straight to the point",
                     types.Part.from_bytes(
@@ -159,7 +167,7 @@ class GeminiUtils(commands.Cog):
         # Craft prompt
         _crafted_prompt = f"Transform this image provided with the style of {_style_preprompt}."
 
-        _infer = Completions(model_name=IMAGEGEN_MODEL, discord_ctx=ctx, discord_bot=self.bot)
+        _infer = Completions(model_name=self._default_imagegen_model, discord_ctx=ctx, discord_bot=self.bot)
 
         # Update params with image response modalities
         _infer._genai_params["response_modalities"] = ["Image", "Text"]
@@ -234,7 +242,7 @@ class GeminiUtils(commands.Cog):
         ]
 
         # Init completions
-        _completions = Completions(model_name=GEMINI_MODEL, discord_ctx=ctx, discord_bot=self.bot)
+        _completions = Completions(model_name=self._default_text_model, discord_ctx=ctx, discord_bot=self.bot)
 
         # Attach files
         if attachment:

@@ -83,7 +83,7 @@ class Tool(ToolManifest):
 
         return _videos
     
-    async def _tool_function_youtube_corpus(self, video_id: str, corpus: str):
+    async def _tool_function_youtube_corpus(self, video_id: str, corpus: str, fps_mode: str = "dense", start_time: int = None, end_time: int = None):
         # Check if global aiohttp and google genai client session is initialized
         if not hasattr(self.discord_bot, "_gemini_api_client"):
             raise Exception("gemini api client isn't set up, please check the bot configuration")
@@ -120,23 +120,42 @@ class Tool(ToolManifest):
         You can either answer questions or provide passages or transcribe the video
         When answering questions you can provide the answer in a single passage element with relevant timestamp""")
 
+        # FPS
+        if fps_mode == "dense":
+            _fps = 1
+        elif fps_mode == "fast":
+            _fps = 5
+        elif fps_mode == "sparse":
+            _fps = 7
+
         # Craft prompt
         _crafted_prompt = [
             types.Content(
                 role="user",
                 parts=[
-                    types.Part.from_uri(
-                        file_uri=f"https://youtu.be/{video_id}",
-                        mime_type="video/*",
+                    types.Part(
+                        file_data=types.FileData(file_uri=f"https://youtube.com/watch?v={video_id}"),
+                        video_metadata=types.VideoMetadata(
+                            fps=_fps,
+                            start_offset=start_time,
+                            end_offset=end_time
+                        )
                     ),
                     types.Part.from_text(text=f"Get me relevant passage, excerpt, insights or answer questions,  based on the prompt: {corpus}")
                 ],
             ),
         ]
 
+        # Provide the base model
+        _default_model = HelperFunctions.fetch_default_model(
+            model_type="base",
+            output_modalities="text",
+            provider="gemini"
+        )["model_name"]
+
         # Generate response
         _response = await _api_client.aio.models.generate_content(
-            model=HelperFunctions.fetch_default_model("gemini_default_model"),
+            model=_default_model,
             contents=_crafted_prompt,
             config={
                 "candidate_count": 1,

@@ -11,12 +11,16 @@ import logging
 import json
 import random
 
-GEMINI_MODEL = HelperFunctions.fetch_default_model("gemini_default_model")
-
 class GeminiAITools(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
+
+        self._default_model = HelperFunctions.fetch_default_model(
+            model_type="base",
+            output_modalities="text",
+            provider="gemini"
+        )["model_name"]
 
    ###############################################
     # Summarize discord messages
@@ -113,7 +117,7 @@ class GeminiAITools(commands.Cog):
         # MODEL
         #################
         # set model
-        _completions = Completions(model_name=GEMINI_MODEL, discord_ctx=ctx, discord_bot=self.bot)
+        _completions = Completions(model_name=self._default_model, discord_ctx=ctx, discord_bot=self.bot)
         _system_prompt = await HelperFunctions.set_assistant_type("discord_msg_summarizer_prompt", type=1)
 
         # Constrain the output to JSON

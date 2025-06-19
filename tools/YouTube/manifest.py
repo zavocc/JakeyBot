@@ -17,7 +17,7 @@ class ToolManifest:
                         "n_results": {
                             "type": "integer",
                             "description": "The number of results to fetch"
-                        },
+                        }
                     },
                     "required": ["query"]
                 }
@@ -35,6 +35,23 @@ class ToolManifest:
                         "corpus": {
                             "type": "string",
                             "description": "Natural language description about the video to gather insights from and get excerpts"
+                        },
+                        "fps_mode": {
+                            "type": "string",
+                            "description": "The number of frames per second to process the video. Default is dense - 1. Options: dense - 1, fast - 5, sparse - 7. It's recommended to choose the best preferences based on video context clues from search results. Avoid using dense for static videos like lectures.",
+                            "enum": [
+                                "dense",
+                                "fast",
+                                "sparse"
+                            ]
+                        },
+                        "start_time": {
+                            "type": "integer",
+                            "description": "Start time in seconds"
+                        },
+                        "end_time": {
+                            "type": "integer",
+                            "description": "End time in seconds"
                         }
                     },
                     "required": ["video_id", "corpus"]
