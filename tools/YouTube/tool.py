@@ -1,4 +1,5 @@
 from .manifest import ToolManifest
+from aimodels.gemini import Completions
 from core.services.helperfunctions import HelperFunctions
 from google.genai import types
 from os import environ
@@ -87,34 +88,7 @@ class Tool(ToolManifest):
         # Check if global aiohttp and google genai client session is initialized
         if not hasattr(self.discord_bot, "_gemini_api_client"):
             raise Exception("gemini api client isn't set up, please check the bot configuration")
-        
-        _api_client: genai.Client = self.discord_bot._gemini_api_client
-        
-        # JSON schema
-        _output_schema = types.Schema(
-            type = types.Type.OBJECT,
-            required = ["answer"],
-            properties = {
-                "answer": types.Schema(
-                    type = types.Type.ARRAY,
-                    items = types.Schema(
-                        type = types.Type.OBJECT,
-                        required = ["passage", "timestamp"],
-                        properties = {
-                            "passage": types.Schema(
-                                type = types.Type.STRING,
-                            ),
-                            "timestamp": types.Schema(
-                                type = types.Type.STRING,
-                            ),
-                        },
-                    ),
-                ),
-            },
-        )
-        _output_result = None
-
-
+    
         # SYSTEM PROMPT
         _system_prompt = inspect.cleandoc("""Your name is YouTube Q&A, you will need to output relevant passages based on query
         You can either answer questions or provide passages or transcribe the video
@@ -137,8 +111,8 @@ class Tool(ToolManifest):
                         file_data=types.FileData(file_uri=f"https://youtube.com/watch?v={video_id}"),
                         video_metadata=types.VideoMetadata(
                             fps=_fps,
-                            start_offset=start_time,
-                            end_offset=end_time
+                            start_offset=f"{start_time}s" if start_time else None,
+                            end_offset=f"{end_time}s" if end_time else None
                         )
                     ),
                     types.Part.from_text(text=f"Get me relevant passage, excerpt, insights or answer questions,  based on the prompt: {corpus}")
@@ -153,20 +127,46 @@ class Tool(ToolManifest):
             provider="gemini"
         )["model_name"]
 
-        # Generate response
-        _response = await _api_client.aio.models.generate_content(
-            model=_default_model,
-            contents=_crafted_prompt,
-            config={
-                "candidate_count": 1,
-                "temperature": 0,
-                "max_output_tokens": 8192,
-                "response_schema": _output_schema,
-                "response_mime_type": "application/json",
-                "system_instruction": _system_prompt,
-            }
+        # Initiate completions
+        _completons = Completions(
+            model_name=_default_model,
+            discord_ctx=self.discord_ctx,
+            discord_bot=self.discord_bot,
         )
 
+        # JSON schema
+        _completons._genai_params.update({
+            "response_schema": types.Schema(
+                type = types.Type.OBJECT,
+                required = ["answer"],
+                properties = {
+                    "answer": types.Schema(
+                        type = types.Type.ARRAY,
+                        items = types.Schema(
+                            type = types.Type.OBJECT,
+                            required = ["passage", "timestamp"],
+                            properties = {
+                                "passage": types.Schema(
+                                    type = types.Type.STRING,
+                                ),
+                                "timestamp": types.Schema(
+                                    type = types.Type.STRING,
+                                ),
+                            },
+                        ),
+                    ),
+                },
+            ),
+            "response_mime_type": "application/json"
+        })
+        _output_result = None
+
+        # Generate response
+        _response = await _completons.completion(
+            prompt=_crafted_prompt,
+            system_instruction=_system_prompt,
+            return_text=False
+        )
         # Parse the response
         _output_result = json.loads(_response.text)
 
