@@ -127,7 +127,7 @@ class Completions(ModelParams):
                     _interstitial = await self._discord_method_send("▶️ Coming up with the plan...")
 
                 # Append the chat history
-                _chat_thread.append(_response.choices[0].message.model_dump())
+                _chat_thread.append(_response.choices[0].message.model_dump(exclude_unset=True))
 
                 # Send text message if needed
                 if _response.choices[0].message.content:
@@ -191,7 +191,7 @@ class Completions(ModelParams):
                 break
 
         # Append the final output to chat thread and send the response
-        _chat_thread.append(_response.choices[0].message.model_dump())
+        _chat_thread.append(_response.choices[0].message.model_dump(exclude_unset=True))
         return {"response":"OK", "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
