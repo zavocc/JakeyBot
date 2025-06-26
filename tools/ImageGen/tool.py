@@ -32,13 +32,6 @@ class Tool(ToolManifest):
         # Craft prompts
         _prompt = [prompt]
 
-        if text_controls == "INTERLEAVE_TEXT":
-            _prompt.append("By the way, also output text during the generation process")
-        elif text_controls == "EXPLAIN_PROCESS":
-            _prompt.append("Please explain your image generation process or reasoning then generate the image")
-        elif text_controls == "ITERATIVE_LOOP":
-            _prompt.append("By the way, you must continously refine the generated image until it looks right based on the prompt")
-
         # Download the image if needed        
         # We need to check the file size
         if discord_attachment_url:
@@ -96,10 +89,6 @@ class Tool(ToolManifest):
 
         # Send the image
         for _index, _parts in enumerate(_response.candidates[0].content.parts):
-            if _parts.text:
-                _gemini_responses["responsesLogs"].append(_parts.text)
-                await self.method_send(f"{_parts.text[:2000]}")
-
             if _parts.inline_data:
                 # HH_MM_SS_MMDDYYYY_EPOCH
                 _file_format = datetime.datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
