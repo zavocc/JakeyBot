@@ -87,13 +87,10 @@ class Tool(ToolManifest):
 
         _codebasemetadatas = []
 
-        # Interstitial
-        _interstitial = await self.method_send("🔍 Searching for files in the specified paths")
-
         # Iterate over the filepath
         for _files in files:
             # Send
-            await _interstitial.edit(f"📎 Reading the file **{_files}**")
+            await self.method_send(f"📎 Reading the file **{_files}**")
 
             # Check if the filepath starts with /
             if not _files.startswith("/"):
@@ -126,10 +123,6 @@ class Tool(ToolManifest):
         # Check if codebase metadata is empty
         if not _codebasemetadatas:
             raise ValueError("No files found in the specified paths")
-        
-        # Delete the interstitial
-        if _interstitial:
-            await _interstitial.delete()
         
         return _codebasemetadatas
     
