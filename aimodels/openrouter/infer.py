@@ -156,6 +156,10 @@ class Completions(ModelParams):
         # Remove references
         _one_off_chat_thread = None
 
+        # Check if _response is empty or choices is None
+        if not _response or not _response.choices:
+            raise CustomErrorMessage("⚠️ No response received from the model, please try again later or choose another model")
+
         # Remove file attachments from prompt before saving to history
         if hasattr(self, "_file_data"):        
             # Delete the temporary chat thread to prevent memory leaks
