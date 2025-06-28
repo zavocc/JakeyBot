@@ -148,13 +148,15 @@ class BaseChat():
             # Check for image attachments, if exists, put the URL in the prompt
             # TODO: put it on a constant and make have _ask() function to have attachments= named param
             if message.attachments:
-                message.content = inspect.cleandoc(
-                    f"""<extra_metadata>
-                    Related Attachment URL: {message.attachments[0].url}
-                    </extra_metadata>
+                _alttext = message.attachments[0].description if message.attachments[0].description else "No alt text provided"
+                message.content = inspect.cleandoc(f"""<extra_metadata>
+                    <attachment url="{message.attachments[0].url}" />
+                    <alt>
+                        {_alttext}
+                    </alt>
+                </extra_metadata>
 
-                    {message.content}"""
-                )
+                {message.content}""")
 
             # If the bot is mentioned through reply with mentions, also add its previous message as context
             # So that the bot will reply to that query without quoting the message providing relevant response
