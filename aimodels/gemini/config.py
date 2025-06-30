@@ -52,6 +52,10 @@ class ModelParams:
             logging.error("I cannot import the tool because the module is not found: %s", e)
             raise CustomErrorMessage("⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
 
+        # Run init_tool if it exists
+        if hasattr(_Tool, "init_tool"):
+            await _Tool.init_tool()
+
         # Check if tool is code execution
         if _Tool:
             if _tool_selection_name == "CodeExecution":
