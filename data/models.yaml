@@ -44,12 +44,16 @@
 - model: openai::gpt-4.1
   name: GPT 4.1 Standard
   description: Latest OpenAI non-reasoning model for general coding tasks
+- model: openai::gpt-4.1-mini
+  name: GPT-4.1 Mini
+  description: A smaller version of GPT-4.1
+- model: openai::gpt-4.1-nano
+  name: GPT-4.1 Nano
+  description: A very small version of GPT-4.1 for quick tasks
 - model: openai::gpt-4o
   name: GPT-4o
   description: OpenAI's flagship model
-- model: openai::gpt-4o-mini
-  name: GPT-4o Mini
-  description: A smaller version of GPT-4o
+
 
 
 ############################################
