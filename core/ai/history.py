@@ -4,7 +4,7 @@ from pymongo import ReturnDocument
 import discord as typehint_Discord
 import logging
 import motor.motor_asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 
 # A class that is responsible for managing and manipulating the chat history
 class History:
@@ -192,7 +192,7 @@ class History:
             "guild_id": guild_id,
             "checkpoint_name": checkpoint_name,
             "chat_threads": chat_threads,
-            "created_at": datetime.utcnow()
+            "created_at": datetime.now(timezone.utc)
         }
         
         try:
