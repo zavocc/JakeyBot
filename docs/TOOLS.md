@@ -8,7 +8,7 @@
 # JakeyBot Tools
 JakeyBot has tools that connects to the outside world and call functions outside text generation process. It is similar to [ChatGPT plugins](https://openai.com/index/chatgpt-plugins/) or [Gemini Extensions](https://support.google.com/gemini/answer/13695044) extending the functionality of the JakeyBot beyond its purpose.
 
-It uses [Function calling](https://github.com/google-gemini/cookbook/blob/main/quickstarts/Function_calling.ipynb) under the hood, whenever you ask Jakey a specific question that relates to calling specific function, it can intelligently call function by passing the function name and argument from the schema during text completion process and call a function to fulfill a specific task or ground its response.
+It uses function calling under the hood, whenever you ask Jakey a specific question that relates to calling specific function, it can intelligently call function by passing the function name and argument from the schema during text completion process and call a function to fulfill a specific task or ground its response.
 
 Jakey already has few tools since its initial implementation, first-party built-in tools include:
 - Disabled - You can disable these tools via `/feature capability:Disabled`
@@ -17,7 +17,7 @@ Jakey already has few tools since its initial implementation, first-party built-
 
 - Canvas - Ideation and brainstorming tool by creating a new thread focused on particular topic. With content, plan, and optionally code. Requires threads permission granted and must be in DMs
 
-- Code execution - Executes Python code and performs calculations but it cannot exchange unstructured data, this has been used by default before Jakey Tools are implemented.
+- Code execution - Executes Python code and performs calculations but it cannot exchange unstructured data, this has been used by default before Jakey Tools are implemented. (Gemini only)
 
 - Browse with Bing - Grounds responses with search results fetched by Bing, needs atleast one free Azure subscription and you need to choose either Key 1 or Key 2.
   
@@ -57,7 +57,3 @@ Please set `/feature capability:Disabled` to opt out.
 
 ## Limitations
 - One tool can be used at a time per chat thread. You cannot use multiple tools at the moment.
-
-- Tools only supports Gemini models
-
-- It's recommended to use Gemini 2.0 as it's specifically optimized for tool usage so a zero-shot prompting is enough to understand your intent and call tools. Gemini 1.5 models also work but they may require to explicitly call tools

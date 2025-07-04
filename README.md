@@ -112,7 +112,7 @@ When you enter a prompt to Jakey... you can use chat variables which are substri
 For claude-specific models, you can also use the `/cache:true` prompt variable to cache your inputs and save costs... Good for attaching PDF files.
 
 ## Model used
-By default, it uses **Gemini 2.0 Flash** a workhorse model, comparable with frontier models such as GPT-4o and surpasses Gemini 1.5 Pro in most key benchmarks at a fraction of a cost. Read more [here](https://developers.googleblog.com/en/gemini-2-family-expands/)
+I
 
 Other AI features uses Gemini, the reason for this is the AI features of this bot started with Gemini model.
 
