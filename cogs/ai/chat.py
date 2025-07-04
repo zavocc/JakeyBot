@@ -185,6 +185,167 @@ class Chat(commands.Cog):
             await ctx.respond("❌ Something went wrong, please try again later.")
         logging.error("An error has occurred while setting openrouter models, reason: ", exc_info=True)
 
+    #######################################################
+    # Checkpoint Slash Command Group
+    #######################################################
+    checkpoint = SlashCommandGroup(name="checkpoint", description="Manage chat history checkpoints")
+
+    @checkpoint.command(
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
+    )
+    @discord.option(
+        "name",
+        description="Name for the checkpoint",
+        required=True,
+    )
+    async def add(self, ctx, name: str):
+        """Save current chat history as a checkpoint"""
+        await ctx.response.defer(ephemeral=True)
+
+        # Determine guild/user based on SHARED_CHAT_HISTORY setting
+        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
+        else:
+            guild_id = ctx.author.id
+
+        # Check if inference is in progress
+        await self._check_awaiting_response_in_progress(guild_id)
+
+        try:
+            await self.DBConn.save_checkpoint(guild_id=guild_id, checkpoint_name=name)
+            await ctx.respond(f"✅ Checkpoint **{name}** saved successfully!")
+        except Exception as e:
+            await ctx.respond(f"❌ Failed to save checkpoint: {str(e)}")
+            logging.error("Error saving checkpoint: %s", e)
+
+    @add.error
+    async def add_on_error(self, ctx: discord.ApplicationContext, error):
+        _error = getattr(error, "original", error)
+        
+        if isinstance(_error, ConcurrentRequestError):
+            await ctx.respond("⚠️ Please wait until processing your previous request is completed before saving a checkpoint...")
+        else:
+            await ctx.respond("❌ Something went wrong, please try again later.")
+        logging.error("An error has occurred while saving checkpoint, reason: ", exc_info=True)
+
+    @checkpoint.command(
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
+    )
+    @discord.option(
+        "name",
+        description="Name of the checkpoint to load",
+        required=True,
+    )
+    async def load(self, ctx, name: str):
+        """Load a saved checkpoint"""
+        await ctx.response.defer(ephemeral=True)
+
+        # Determine guild/user based on SHARED_CHAT_HISTORY setting
+        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
+        else:
+            guild_id = ctx.author.id
+
+        # Check if inference is in progress
+        await self._check_awaiting_response_in_progress(guild_id)
+
+        try:
+            success = await self.DBConn.load_checkpoint(guild_id=guild_id, checkpoint_name=name)
+            if success:
+                await ctx.respond(f"✅ Checkpoint **{name}** loaded successfully!")
+            else:
+                await ctx.respond(f"❌ Checkpoint **{name}** not found!")
+        except Exception as e:
+            await ctx.respond(f"❌ Failed to load checkpoint: {str(e)}")
+            logging.error("Error loading checkpoint: %s", e)
+
+    @load.error
+    async def load_on_error(self, ctx: discord.ApplicationContext, error):
+        _error = getattr(error, "original", error)
+        
+        if isinstance(_error, ConcurrentRequestError):
+            await ctx.respond("⚠️ Please wait until processing your previous request is completed before loading a checkpoint...")
+        else:
+            await ctx.respond("❌ Something went wrong, please try again later.")
+        logging.error("An error has occurred while loading checkpoint, reason: ", exc_info=True)
+
+    @checkpoint.command(
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
+    )
+    async def list(self, ctx):
+        """List all saved checkpoints"""
+        await ctx.response.defer(ephemeral=True)
+
+        # Determine guild/user based on SHARED_CHAT_HISTORY setting
+        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
+        else:
+            guild_id = ctx.author.id
+
+        try:
+            checkpoints = await self.DBConn.list_checkpoints(guild_id=guild_id)
+            
+            if not checkpoints:
+                await ctx.respond("ℹ️ No checkpoints found!")
+                return
+            
+            checkpoint_list = "📋 **Available Checkpoints:**\n\n"
+            for cp in checkpoints:
+                created_date = cp['created_at'].strftime('%Y-%m-%d %H:%M:%S UTC')
+                checkpoint_list += f"• **{cp['checkpoint_name']}** - {created_date}\n"
+            
+            await ctx.respond(checkpoint_list)
+            
+        except Exception as e:
+            await ctx.respond(f"❌ Failed to list checkpoints: {str(e)}")
+            logging.error("Error listing checkpoints: %s", e)
+
+    @list.error
+    async def list_checkpoints_on_error(self, ctx: discord.ApplicationContext, error):
+        await ctx.respond("❌ Something went wrong, please try again later.")
+        logging.error("An error has occurred while listing checkpoints, reason: ", exc_info=True)
+
+    @checkpoint.command(
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
+    )
+    @discord.option(
+        "name",
+        description="Name of the checkpoint to delete",
+        required=True,
+    )
+    async def delete(self, ctx, name: str):
+        """Delete a saved checkpoint"""
+        await ctx.response.defer(ephemeral=True)
+
+        # Determine guild/user based on SHARED_CHAT_HISTORY setting
+        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
+        else:
+            guild_id = ctx.author.id
+
+        try:
+            success = await self.DBConn.delete_checkpoint(guild_id=guild_id, checkpoint_name=name)
+            if success:
+                await ctx.respond(f"✅ Checkpoint **{name}** deleted successfully!")
+            else:
+                await ctx.respond(f"❌ Checkpoint **{name}** not found!")
+        except Exception as e:
+            await ctx.respond(f"❌ Failed to delete checkpoint: {str(e)}")
+            logging.error("Error deleting checkpoint: %s", e)
+
+    @delete.error
+    async def delete_on_error(self, ctx: discord.ApplicationContext, error):
+        await ctx.respond("❌ Something went wrong, please try again later.")
+        logging.error("An error has occurred while deleting checkpoint, reason: ", exc_info=True)
+
+    #######################################################
+    # Other Slash Commands
+    #######################################################
+
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},

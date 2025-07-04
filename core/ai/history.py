@@ -4,6 +4,7 @@ from pymongo import ReturnDocument
 import discord as typehint_Discord
 import logging
 import motor.motor_asyncio
+from datetime import datetime
 
 # A class that is responsible for managing and manipulating the chat history
 class History:
@@ -16,6 +17,7 @@ class History:
         # Create a new database if it doesn't exist, access chat_history database
         self._db = self._db_conn[environ.get("MONGO_DB_NAME", "jakey_prod_db")]
         self._collection = self._db[environ.get("MONGO_DB_COLLECTION_NAME", "jakey_prod_db_collection")]
+        self._checkpoints_collection = self._db["checkpoints"]
         logging.info("Connected to the database %s and collection %s", self._db.name, self._collection.name)
 
         # Create task for indexing the collection
@@ -23,7 +25,8 @@ class History:
 
     async def _init_indexes(self):
         await self._collection.create_index([("guild_id", 1)], name="guild_id_index", background=True, unique=True)
-        logging.info("Created index for guild_id")
+        await self._checkpoints_collection.create_index([("guild_id", 1), ("checkpoint_name", 1)], name="guild_checkpoint_index", background=True, unique=True)
+        logging.info("Created index for guild_id and checkpoints")
 
     async def _ensure_document(self, guild_id: int, model: str = "gemini::gemini-2.0-flash-001", tool_use: str = None):
         """Ensures a document exists for the given guild_id, creates one if it doesn't exist.
@@ -163,4 +166,132 @@ class History:
         except Exception as e:
             logging.error("Error getting key: %s", e)
             raise HistoryDatabaseError(f"Error getting key: {key}")
+
+    #######################################################
+    # Checkpoint Management Methods
+    #######################################################
+    async def save_checkpoint(self, guild_id: int, checkpoint_name: str) -> None:
+        """Save current chat threads as a checkpoint"""
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
+        
+        if not checkpoint_name or not isinstance(checkpoint_name, str):
+            raise ValueError("checkpoint_name must be a non-empty string")
+        
+        # Get current document with all chat threads
+        _document = await self._ensure_document(guild_id)
+        
+        # Extract all chat thread data
+        chat_threads = {}
+        for key, value in _document.items():
+            if key.startswith("chat_thread_") and value is not None:
+                chat_threads[key] = value
+        
+        # Create checkpoint document
+        checkpoint_doc = {
+            "guild_id": guild_id,
+            "checkpoint_name": checkpoint_name,
+            "chat_threads": chat_threads,
+            "created_at": datetime.utcnow()
+        }
+        
+        try:
+            await self._checkpoints_collection.replace_one(
+                {"guild_id": guild_id, "checkpoint_name": checkpoint_name},
+                checkpoint_doc,
+                upsert=True
+            )
+            logging.info("Saved checkpoint '%s' for guild %d", checkpoint_name, guild_id)
+        except Exception as e:
+            logging.error("Error saving checkpoint: %s", e)
+            raise HistoryDatabaseError(f"Error saving checkpoint: {checkpoint_name}")
+
+    async def load_checkpoint(self, guild_id: int, checkpoint_name: str) -> bool:
+        """Load a checkpoint and restore chat threads"""
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
+        
+        if not checkpoint_name or not isinstance(checkpoint_name, str):
+            raise ValueError("checkpoint_name must be a non-empty string")
+        
+        try:
+            # Find the checkpoint
+            checkpoint = await self._checkpoints_collection.find_one({
+                "guild_id": guild_id,
+                "checkpoint_name": checkpoint_name
+            })
+            
+            if not checkpoint:
+                return False
+            
+            # Ensure document exists
+            await self._ensure_document(guild_id)
+            
+            # Clear existing chat threads first
+            update_doc = {}
+            _existing = await self._collection.find_one({"guild_id": guild_id})
+            if _existing:
+                for key in _existing.keys():
+                    if key.startswith("chat_thread_"):
+                        update_doc[key] = None
+            
+            # Restore chat threads from checkpoint
+            chat_threads = checkpoint.get("chat_threads", {})
+            update_doc.update(chat_threads)
+            
+            # Update the document
+            await self._collection.update_one(
+                {"guild_id": guild_id},
+                {"$set": update_doc},
+                upsert=True
+            )
+            
+            logging.info("Loaded checkpoint '%s' for guild %d", checkpoint_name, guild_id)
+            return True
+            
+        except Exception as e:
+            logging.error("Error loading checkpoint: %s", e)
+            raise HistoryDatabaseError(f"Error loading checkpoint: {checkpoint_name}")
+
+    async def list_checkpoints(self, guild_id: int) -> list:
+        """List all checkpoints for a guild"""
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
+        
+        try:
+            cursor = self._checkpoints_collection.find(
+                {"guild_id": guild_id},
+                {"checkpoint_name": 1, "created_at": 1, "_id": 0}
+            ).sort("created_at", -1)
+            
+            checkpoints = await cursor.to_list(length=None)
+            return checkpoints
+            
+        except Exception as e:
+            logging.error("Error listing checkpoints: %s", e)
+            raise HistoryDatabaseError("Error listing checkpoints")
+
+    async def delete_checkpoint(self, guild_id: int, checkpoint_name: str) -> bool:
+        """Delete a specific checkpoint"""
+        if guild_id is None or not isinstance(guild_id, int):
+            raise TypeError("guild_id is required and must be an integer")
+        
+        if not checkpoint_name or not isinstance(checkpoint_name, str):
+            raise ValueError("checkpoint_name must be a non-empty string")
+        
+        try:
+            result = await self._checkpoints_collection.delete_one({
+                "guild_id": guild_id,
+                "checkpoint_name": checkpoint_name
+            })
+            
+            if result.deleted_count > 0:
+                logging.info("Deleted checkpoint '%s' for guild %d", checkpoint_name, guild_id)
+                return True
+            else:
+                return False
+                
+        except Exception as e:
+            logging.error("Error deleting checkpoint: %s", e)
+            raise HistoryDatabaseError(f"Error deleting checkpoint: {checkpoint_name}")
 
