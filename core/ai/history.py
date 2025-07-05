@@ -25,17 +25,25 @@ class History:
         # Create task for indexing the collection
         bot.loop.create_task(self._init_indexes())
 
+    # Setup indexes for the collection
     async def _init_indexes(self):
         await self._collection.create_index([("guild_id", 1)], name="guild_id_index", background=True, unique=True)
         logging.info("Created index for guild_id")
 
+    # Type validation for guild_id
+    def _normalize_guild_id(self, guild_id: int) -> str:
+        if guild_id is None:
+            raise TypeError("guild_id is required")
+        _guild_id_str = str(guild_id)
+        if not _guild_id_str.isdigit():
+            raise ValueError("guild_id must be a string of digits")
+        return _guild_id_str
 
     # Returns the document to be manipulated, creates one if it doesn't exist.
-    async def _ensure_document(self, guild_id: int, model: str = DEFAULT_MODEL, tool_use: str = None):
-        # Ensures a document exists for the given guild_id, creates one if it doesn't exist.
-        # Returns the current document.
-        if guild_id is None or not isinstance(guild_id, int):
-            raise TypeError("guild_id is required and must be an integer")
+    async def _ensure_document(self, guild_id: str, model: str = DEFAULT_MODEL, tool_use: str = None):
+        # Check if guild_id is string
+        if not isinstance(guild_id, str):
+            raise TypeError("guild_id is required and must be a string")
 
         _existing = await self._collection.find_one({"guild_id": guild_id})
         if _existing:
@@ -60,7 +68,7 @@ class History:
             return_document=ReturnDocument.AFTER
         )
         return _document
-    
+
 
 ####################################################################################
 # Chat History Management
@@ -68,9 +76,7 @@ class History:
 
     # Load chat history
     async def load_history(self, guild_id: int, model_provider: str):
-        if guild_id is None or not isinstance(guild_id, int):
-            raise TypeError("guild_id is required and must be an integer")
-            
+        guild_id = self._normalize_guild_id(guild_id)
         _document = await self._ensure_document(guild_id)
 
         # Check if model_provider_{model_provider} exists in the document
@@ -83,11 +89,8 @@ class History:
         return _document[f"chat_thread_{model_provider}"]
 
     async def save_history(self, guild_id: int, chat_thread, model_provider: str) -> None:
-        if guild_id is None or not isinstance(guild_id, int):
-            raise TypeError("guild_id is required and must be an integer")
-
+        guild_id = self._normalize_guild_id(guild_id)
         await self._ensure_document(guild_id)
-        
         await self._collection.update_one({"guild_id": guild_id}, {
             "$set": {f"chat_thread_{model_provider}": chat_thread}
         }, upsert=True)
@@ -95,39 +98,33 @@ class History:
 
     # Clear chat history
     async def clear_history(self, guild_id: int) -> None:
-        if guild_id is None or not isinstance(guild_id, int):
-            raise TypeError("guild_id is required and must be an integer")
-
+        guild_id = self._normalize_guild_id(guild_id)
         await self._collection.delete_one({"guild_id": guild_id})
 
     # Tool configuration management
     async def set_tool_config(self, guild_id: int, tool: str = None) -> None:
+        guild_id = self._normalize_guild_id(guild_id)
         await self._ensure_document(guild_id, tool)
-        
         await self._collection.update_one({"guild_id": guild_id}, {
             "$set": {"tool_use": tool}
         }, upsert=True)
 
     async def get_tool_config(self, guild_id: int):
-        if guild_id is None or not isinstance(guild_id, int):
-            raise TypeError("guild_id is required and must be an integer")
-
+        guild_id = self._normalize_guild_id(guild_id)
         _document = await self._ensure_document(guild_id)
         return _document["tool_use"]
 
     # Default model management
     async def set_default_model(self, guild_id: int, model: str) -> None:
-        if guild_id is None or not isinstance(guild_id, int):
-            raise TypeError("guild_id is required and must be an integer")
+        guild_id = self._normalize_guild_id(guild_id)
 
         if not model or not isinstance(model, str):
             raise ValueError("Model must be a non-empty string")
 
         await self._ensure_document(guild_id, model=model)
-        
         try:
             await self._collection.update_one(
-                {"guild_id": guild_id}, 
+                {"guild_id": guild_id},
                 {"$set": {"default_model": model}},
                 upsert=True
             )
@@ -135,10 +132,9 @@ class History:
             logging.error("Error setting default model: %s", e)
             raise HistoryDatabaseError("Error setting default model")
 
+    # Get default model
     async def get_default_model(self, guild_id: int):
-        if guild_id is None or not isinstance(guild_id, int):
-            raise TypeError("guild_id is required and must be an integer")
-
+        guild_id = self._normalize_guild_id(guild_id)
         try:
             _document = await self._ensure_document(guild_id)
             return _document["default_model"]
@@ -148,13 +144,11 @@ class History:
         
     # Directly set custom keys and values to the document
     async def set_key(self, guild_id: int, key: str, value) -> None:
-        if guild_id is None or not isinstance(guild_id, int):
-            raise TypeError("guild_id is required and must be an integer")
-
+        guild_id = self._normalize_guild_id(guild_id)
         await self._ensure_document(guild_id)
         try:
             await self._collection.update_one(
-                {"guild_id": guild_id}, 
+                {"guild_id": guild_id},
                 {"$set": {key: value}},
                 upsert=True
             )
@@ -164,12 +158,10 @@ class History:
         
     # Directly get custom keys and values from the document
     async def get_key(self, guild_id: int, key: str):
-        if guild_id is None or not isinstance(guild_id, int):
-            raise TypeError("guild_id is required and must be an integer")
-
         if not key or not isinstance(key, str):
             raise ValueError("Key must be a non-empty string")
 
+        guild_id = self._normalize_guild_id(guild_id)
         _document = await self._ensure_document(guild_id)
         try:
             return _document[key]
