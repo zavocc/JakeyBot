@@ -28,26 +28,25 @@ class Chat(commands.Cog):
         self._ask_event = BaseChat(bot, self.author, self.DBConn)
 
     #######################################################
-    # Pending request checker, prevents running multiple requests concurrently
+    # Pending inference checker, prevents running multiple inferences concurrently
     #######################################################
     async def _check_awaiting_response_in_progress(self, guild_id: int):
         if guild_id in self._ask_event.pending_ids:
             raise ConcurrentRequestError
 
     #######################################################
-    # Event Listener: on_message
+    # Event Listeners
     #######################################################
     @commands.Cog.listener()
     async def on_message(self, message):
         await self._ask_event.on_message(message)
 
     #######################################################
+    # Slash Command Groups & Commands
+    #######################################################
     # Model Slash Command Group
     model = SlashCommandGroup(name="model", description="Configure default models for the conversation")
 
-    #######################################################
-    # Slash Command Group: model.set
-    #######################################################
     @model.command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
@@ -83,8 +82,8 @@ class Chat(commands.Cog):
             _model_provider = _model[0]
             _model_name = _model[-1]
 
-        #if _model_provider != "gemini" and _model_provider != "claude":
-        if not any(provider in _model_provider for provider in ["gemini", "claude", "openrouter", "openai"]):
+
+        if _model_provider != "gemini":
             await ctx.respond(
                 f"> This model lacks real time information and tools\n✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**"
             )
@@ -104,9 +103,6 @@ class Chat(commands.Cog):
         
         logging.error("An error has occurred while executing models command, reason: ", exc_info=True)
 
-    #######################################################
-    # Slash Command Group: model.list
-    #######################################################
     @model.command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
@@ -147,16 +143,13 @@ class Chat(commands.Cog):
         await ctx.respond("❌ Something went wrong, please try again later.")
         logging.error("An error has occurred while executing models command, reason: ", exc_info=True)
 
-    #######################################################
-    # Slash Command: openrouter
-    #######################################################
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
     )
     @discord.option(
         "model",
-        description="Choose models at https://openrouter.ai/models. Syntax: provider/model-name",
+        description="Choose models at https://openrouter.ai/models",
         required=True,
     )
     async def openrouter(self, ctx, model: str):
@@ -192,9 +185,6 @@ class Chat(commands.Cog):
             await ctx.respond("❌ Something went wrong, please try again later.")
         logging.error("An error has occurred while setting openrouter models, reason: ", exc_info=True)
 
-    #######################################################
-    # Slash Command: sweep
-    #######################################################
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
@@ -252,9 +242,6 @@ class Chat(commands.Cog):
             await ctx.respond("❌ Something went wrong, please try again later.")
             logging.error("An error has occurred while executing sweep command, reason: ", exc_info=True)
 
-    #######################################################
-    # Slash Command: feature
-    #######################################################
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
@@ -286,7 +273,6 @@ class Chat(commands.Cog):
         # Retrieve current settings
         _cur_feature = await self.DBConn.get_tool_config(guild_id=guild_id)
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
-        _openrouter_model = await self.DBConn.get_key(guild_id=guild_id, key="default_openrouter_model")
 
         # Convert "disabled" to None
         if capability == "disabled":
@@ -302,7 +288,6 @@ class Chat(commands.Cog):
             # Set new capability and restore default model
             await self.DBConn.set_tool_config(guild_id=guild_id, tool=capability)
             await self.DBConn.set_default_model(guild_id=guild_id, model=_model)
-            await self.DBConn.set_key(guild_id=guild_id, key="default_openrouter_model", value=_openrouter_model)
 
             if capability is None:
                 await ctx.respond("✅ Features disabled and chat is reset to reflect the changes")

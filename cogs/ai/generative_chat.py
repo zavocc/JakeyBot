@@ -1,6 +1,6 @@
+from core.ai.assistants import Assistants
 from core.ai.core import ModelsList
 from core.exceptions import *
-from core.services.helperfunctions import HelperFunctions
 from core.ai.history import History as typehint_History
 from discord import Message
 from os import environ
@@ -34,7 +34,7 @@ class BaseChat():
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
         if _model is None:
             logging.info("No default model found, using default model")
-            _model = await self.DBConn.get_default_model(guild_id=guild_id)
+            _model = "gemini::gemini-2.0-flash-001"
 
         _model_provider = _model.split("::")[0]
         _model_name = _model.split("::")[-1]
@@ -67,10 +67,10 @@ class BaseChat():
       
         try:
             _infer: typehint_AIModelTemplate.Completions = importlib.import_module(f"aimodels.{_model_provider}").Completions(
-                model_name=_model_name,
                 discord_ctx=prompt,
                 discord_bot=self.bot,
-                guild_id=guild_id)
+                guild_id=guild_id,
+                model_name=_model_name)
         except ModuleNotFoundError:
             raise CustomErrorMessage("⚠️ The model you've chosen is not available at the moment, please choose another model")
         _infer._discord_method_send = prompt.channel.send
@@ -95,7 +95,7 @@ class BaseChat():
         ###############################################
         # Through capturing group, we can remove the mention and the model selection from the prompt at both in the middle and at the end
         _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/model:{_model_name}(\s|$)|\/chat:ephemeral(\s|$)|\/chat:info(\s|$))", "", prompt.content).strip()
-        _system_prompt = await HelperFunctions.set_assistant_type("jakey_system_prompt", type=0)
+        _system_prompt = await Assistants.set_assistant_type("jakey_system_prompt", type=0)
 
         # Generate the response and simulate the typing
         async with prompt.channel.typing():
@@ -148,15 +148,13 @@ class BaseChat():
             # Check for image attachments, if exists, put the URL in the prompt
             # TODO: put it on a constant and make have _ask() function to have attachments= named param
             if message.attachments:
-                _alttext = message.attachments[0].description if message.attachments[0].description else "No alt text provided"
-                message.content = inspect.cleandoc(f"""<extra_metadata>
-                    <attachment url="{message.attachments[0].url}" />
-                    <alt>
-                        {_alttext}
-                    </alt>
-                </extra_metadata>
+                message.content = inspect.cleandoc(
+                    f"""<extra_metadata>
+                    Related Attachment URL: {message.attachments[0].url}
+                    </extra_metadata>
 
-                {message.content}""")
+                    {message.content}"""
+                )
 
             # If the bot is mentioned through reply with mentions, also add its previous message as context
             # So that the bot will reply to that query without quoting the message providing relevant response
@@ -166,11 +164,10 @@ class BaseChat():
                     f"""<reply_metadata>
                     
                     # Replying to referenced message excerpt from {_context_message.author.display_name} (username: @{_context_message.author.name}):
-                    <|begin_msg_contexts|diff>
+                    <|begin_msg_contexts|>
                     {_context_message.content}
-                    <|end_msg_contexts|diff>
-                    
-                    <constraints>Do not echo this metadata, only use for retrieval purposes</constraints>
+                    <|end_msg_contexts|>
+
                     </reply_metadata>
                     {message.content}"""
                 )

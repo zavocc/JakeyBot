@@ -4,10 +4,9 @@ from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
 import discord
 import litellm
-import logging
 
 class Completions(ModelParams):
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "gpt-4o-mini"):
+    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "mistral-large-2407"):
         super().__init__()
 
         # Discord context
@@ -27,18 +26,11 @@ class Completions(ModelParams):
         
         # Discord bot object lifecycle instance
         self._discord_bot: discord.Bot = discord_bot
-
-        if environ.get("OPENAI_API_KEY"):
-            # Set endpoint if OPENAI_API_ENDPOINT is set
-            if environ.get("OPENAI_API_ENDPOINT"):
-                self._oai_endpoint = environ.get("OPENAI_API_ENDPOINT")
-                logging.info("Using OpenAI API endpoint: %s", self._oai_endpoint)
-            else:
-                self._oai_endpoint = None
-                logging.info("Using default OpenAI API endpoint")
-            self._model_name = "openai/" + model_name
+        
+        if environ.get("MISTRAL_API_KEY"):
+            self._model_name = "mistral/" + model_name
         else:
-            raise ModelAPIKeyUnset("No OpenAI API key was set, this model isn't available")
+            raise ModelAPIKeyUnset("No Mistral API key was set, this model isn't available")
 
         self._guild_id = guild_id
 
@@ -62,16 +54,15 @@ class Completions(ModelParams):
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
-        
+
+        # System prompt
         if _chat_thread is None:
-            # Begin with system prompt
             _chat_thread = [{
                 "role": "system",
                 "content": system_instruction   
             }]
-
-        
-        # Craft prompt
+    
+        # User prompt
         _chat_thread.append(
              {
                 "role": "user",
@@ -84,17 +75,13 @@ class Completions(ModelParams):
             }
         )
 
-        # Generate completion
-        litellm.api_key = environ.get("OPENAI_API_KEY")
-        if self._oai_endpoint:
-            litellm.api_base = self._oai_endpoint
-        litellm._turn_on_debug() # Enable debugging
-        # When O1 model is used, set reasoning effort to medium
-        # Since higher can be costly and lower performs similarly to GPT-4o 
-        _interstitial = None
-        if "o1" in self._model_name or "o4-mini" in self._model_name:
-            self._genai_params["reasoning_effort"] = "medium"
+        # Check for file attachments
+        if hasattr(self, "_file_data"):
+            _chat_thread.append(self._file_data)
 
+        # Generate completion
+        litellm.api_key = environ.get("MISTRAL_API_KEY")
+        litellm._turn_on_debug() # Enable debugging
         _response = await litellm.acompletion(
             model=self._model_name,
             messages=_chat_thread,
@@ -107,12 +94,8 @@ class Completions(ModelParams):
         # Append to chat thread
         _chat_thread.append(_response.choices[0].message.model_dump())
 
-        if _interstitial:
-            await _interstitial.delete()
-
         # Send the response
         await Utils.send_ai_response(self._discord_ctx, prompt, _answer, self._discord_method_send)
-
         return {"response":"OK", "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):

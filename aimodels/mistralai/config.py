@@ -1,6 +1,9 @@
 class ModelParams:
     def __init__(self):
-        self.genai_params = {
+        # Model provider thread
+        self._model_provider_thread = "mistralai"
+
+        self._genai_params = {
             "max_tokens": 4096,
             "temperature": 0.7
         }

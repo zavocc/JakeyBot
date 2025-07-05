@@ -1,19 +1,54 @@
-from .manifest import ToolManifest
-from aimodels.gemini import Completions
-from core.services.helperfunctions import HelperFunctions
 from google.genai import types
 from os import environ
 import aiohttp
 import google.genai as genai
-import inspect
 import json
 
-class Tool(ToolManifest):
+class Tool:
+    tool_human_name = "YouTube"
     def __init__(self, method_send, discord_ctx, discord_bot):
-        super().__init__()
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
+
+        self.tool_schema = [
+            {
+                "name": "youtube_search",
+                "description": "Summarize and gather insights from a YouTube video.",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "query": {
+                            "type": "STRING",
+                            "description": "The query to search for"
+                        },
+                        "n_results": {
+                            "type": "INTEGER",
+                            "description": "The number of results to fetch"
+                        },
+                    },
+                    "required": ["query"]
+                }
+            },
+            {
+                "name": "youtube_corpus",
+                "description": "Call YouTube subagent and get summaries and gather insights from a YouTube video.",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "video_id": {
+                            "type": "STRING",
+                            "description": "The YouTube video ID from the URL or relevant context provided"
+                        },
+                        "corpus": {
+                            "type": "STRING",
+                            "description": "Natural language description about the video to gather insights from and get excerpts"
+                        }
+                    },
+                    "required": ["video_id", "corpus"]
+                }
+            }
+        ]
     
     async def _tool_function_youtube_search(self, query: str, n_results: int = 10):
         # Must not be above 50
@@ -84,89 +119,65 @@ class Tool(ToolManifest):
 
         return _videos
     
-    async def _tool_function_youtube_corpus(self, video_id: str, corpus: str, fps_mode: str = "dense", start_time: int = None, end_time: int = None):
+    async def _tool_function_youtube_corpus(self, video_id: str, corpus: str):
         # Check if global aiohttp and google genai client session is initialized
         if not hasattr(self.discord_bot, "_gemini_api_client"):
             raise Exception("gemini api client isn't set up, please check the bot configuration")
-    
-        # SYSTEM PROMPT
-        _system_prompt = inspect.cleandoc("""Your name is YouTube Q&A, you will need to output relevant passages based on query
-        You can either answer questions or provide passages or transcribe the video
-        When answering questions you can provide the answer in a single passage element with relevant timestamp""")
-
-        # FPS
-        if fps_mode == "dense":
-            _fps = 1
-        elif fps_mode == "fast":
-            _fps = 5
-        elif fps_mode == "sparse":
-            _fps = 7
+        
+        _api_client: genai.Client = self.discord_bot._gemini_api_client
+        
+        # JSON schema
+        _output_schema = types.Schema(
+            type = types.Type.OBJECT,
+            required = ["corpus"],
+            properties = {
+                "corpus": types.Schema(
+                    type = types.Type.ARRAY,
+                    items = types.Schema(
+                        type = types.Type.OBJECT,
+                        required = ["passage", "timestamp"],
+                        properties = {
+                            "passage": types.Schema(
+                                type = types.Type.STRING,
+                            ),
+                            "timestamp": types.Schema(
+                                type = types.Type.STRING,
+                            ),
+                        },
+                    ),
+                ),
+            },
+        )
+        _output_result = None
 
         # Craft prompt
         _crafted_prompt = [
             types.Content(
                 role="user",
                 parts=[
-                    types.Part(
-                        file_data=types.FileData(file_uri=f"https://youtube.com/watch?v={video_id}"),
-                        video_metadata=types.VideoMetadata(
-                            fps=_fps,
-                            start_offset=f"{start_time}s" if start_time else None,
-                            end_offset=f"{end_time}s" if end_time else None
-                        )
+                    types.Part.from_uri(
+                        file_uri=f"https://youtu.be/{video_id}",
+                        mime_type="video/*",
                     ),
-                    types.Part.from_text(text=f"Get me relevant passage, excerpt, insights or answer questions,  based on the prompt: {corpus}")
+                    types.Part.from_text(text=f"Get me relevant passage, excerpt, or insights based on the prompt: {corpus}")
                 ],
             ),
         ]
 
-        # Provide the base model
-        _default_model = HelperFunctions.fetch_default_model(
-            model_type="base",
-            output_modalities="text",
-            provider="gemini"
-        )["model_name"]
-
-        # Initiate completions
-        _completons = Completions(
-            model_name=_default_model,
-            discord_ctx=self.discord_ctx,
-            discord_bot=self.discord_bot,
-        )
-
-        # JSON schema
-        _completons._genai_params.update({
-            "response_schema": types.Schema(
-                type = types.Type.OBJECT,
-                required = ["answer"],
-                properties = {
-                    "answer": types.Schema(
-                        type = types.Type.ARRAY,
-                        items = types.Schema(
-                            type = types.Type.OBJECT,
-                            required = ["passage", "timestamp"],
-                            properties = {
-                                "passage": types.Schema(
-                                    type = types.Type.STRING,
-                                ),
-                                "timestamp": types.Schema(
-                                    type = types.Type.STRING,
-                                ),
-                            },
-                        ),
-                    ),
-                },
-            ),
-            "response_mime_type": "application/json"
-        })
-        _output_result = None
-
         # Generate response
-        _response = await _completons.completion(
-            prompt=_crafted_prompt,
-            system_instruction=_system_prompt,
-            return_text=False
+        _response = await _api_client.aio.models.generate_content(
+            model="gemini-2.0-flash-001",
+            contents=_crafted_prompt,
+            config={
+                "candidate_count": 1,
+                "temperature": 0,
+                "max_output_tokens": 8192,
+                "response_schema": _output_schema,
+                "response_mime_type": "application/json",
+                "system_instruction": "Your name is YouTube summarizer, you will need to output relevant passages based on query\nYou must keep the outputs relevant and optimize by only outputting the required passages and timestamps\nThe passage can either be a relevant excerpt or your own summary of the particular scene, do not make repetitive summary."
+            }
         )
+
         # Parse the response
         _output_result = json.loads(_response.text)
 

@@ -1,4 +1,3 @@
-from .config import ModelParams
 from core.exceptions import ModelAPIKeyUnset
 from os import environ
 import discord
@@ -29,6 +28,3 @@ class BaseInitProvider:
             raise ModelAPIKeyUnset("No GROQ API key was set, this model isn't available")
 
         self._guild_id = guild_id
-
-        # Initiate model params
-        self._model_params = ModelParams()

@@ -1,10 +1,7 @@
 from typing import Union
 import aiofiles
 import discord
-import importlib
 import io
-import logging
-import os
 import yaml
 
 class Utils:
@@ -15,10 +12,8 @@ class Utils:
     async def send_ai_response(ctx: Union[discord.ApplicationContext, discord.Message], prompt: str, response: str, method_send, strip: bool = True) -> None:
         """Optimized method to send message based on the length of the message"""
         # Check if we can strip the message
-        if strip and type(response) == str:
+        if strip:
             response = response.strip()
-        else:
-            raise TypeError("The response is not a string")
 
         # Embed the response if the response is more than 2000 characters
         # Check to see if this message is more than 2000 characters which embeds will be used for displaying the message
@@ -69,49 +64,13 @@ class ModelsList:
         
     @staticmethod
     def get_tools_list():
-        _hasYieldDisableValue = False
-        if not _hasYieldDisableValue:
-            yield discord.OptionChoice("Disabled", "disabled")
+        # Load the tools list from YAML file
+        with open("data/tools.yaml", "r") as tools:
+            _tools_list = yaml.safe_load(tools)
 
-        # Get directory names in projectroot/tools except ones starting with "."
-        # Then we yield each as a discord.OptionChoice
-        for _tool_names in os.listdir("tools"):
-            # Folders starting with __pycache__ or . are not tools
-            if _tool_names.startswith("__") or _tool_names.startswith("."):
-                logging.info("Skipping %s because it starts with __ or .", _tool_names)
-                continue
-
-            # If there's no manifest, handle exception to just continue
-            try:
-                _tool = importlib.import_module(f"tools.{_tool_names}")
-            except Exception as e:
-                # Log the error for syntax and import errors
-                logging.error("An error has occurred while importing the tool definition: %s, reason: %s", _tool_names, e)
-                continue
-
-            # Check if it has __init__.py file
-            if not os.path.isfile(f"tools/{_tool_names}/__init__.py"):
-                logging.error("The tool %s does not have __init__.py file", _tool_names)
-                continue
-
-            # Check if there's a _tool_manifest.ToolManifest class and has tool_human_name attribute
-            if hasattr(_tool, "Tool") and hasattr(_tool.Tool, "tool_human_name"):
-                # Check if the class Tool has constructor parameters:
-                # method_send, discord_ctx, discord_bot
-                if hasattr(_tool.Tool, "__init__"):
-                    # Check if the constructor has the parameters
-                    if not all(_params in _tool.Tool.__init__.__code__.co_varnames for _params in ["method_send", "discord_ctx", "discord_bot"]):
-                        logging.error("The tool %s does not have the required constructor parameters: method_send, discord_ctx, and discord_bot", _tool_names)
-                        continue
-
-                # Get the tool human name
-                _tool_human_name = getattr(_tool.Tool, "tool_human_name")
-            else:
-                logging.error("The tool %s does not have a tool_human_name and other necessary tool definition attributes", _tool_names)
-                continue
-
-            # Yield as discord.OptionChoice
-            yield discord.OptionChoice(_tool_human_name, _tool_names)
+        # Iterate through the tools and yield each as a discord.OptionChoice
+        for tool in _tools_list:
+            yield discord.OptionChoice(tool["ui_name"], tool['tool_module_name'])
 
     @staticmethod
     async def get_remix_styles_async(style: str = "I'm feeling lucky"):

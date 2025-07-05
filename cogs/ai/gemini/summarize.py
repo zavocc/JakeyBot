@@ -1,5 +1,5 @@
+from core.ai.assistants import Assistants
 from aimodels.gemini import Completions
-from core.services.helperfunctions import HelperFunctions
 from discord.ext import commands
 from google.genai import types
 from os import environ
@@ -15,12 +15,6 @@ class GeminiAITools(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
-
-        self._default_model = HelperFunctions.fetch_default_model(
-            model_type="base",
-            output_modalities="text",
-            provider="gemini"
-        )["model_name"]
 
    ###############################################
     # Summarize discord messages
@@ -117,8 +111,8 @@ class GeminiAITools(commands.Cog):
         # MODEL
         #################
         # set model
-        _completions = Completions(model_name=self._default_model, discord_ctx=ctx, discord_bot=self.bot)
-        _system_prompt = await HelperFunctions.set_assistant_type("discord_msg_summarizer_prompt", type=1)
+        _completions = Completions(discord_ctx=ctx, discord_bot=self.bot)
+        _system_prompt = await Assistants.set_assistant_type("discord_msg_summarizer_prompt", type=1)
 
         # Constrain the output to JSON
         _completions._genai_params.update({

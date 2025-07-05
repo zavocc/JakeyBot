@@ -4,7 +4,7 @@ import discord
 
 # A base template for other models
 class Completions():
-    def __init__(self, model_name, discord_ctx, discord_bot, guild_id: int = None):
+    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "agi-5-latest"):
         # Model provider thread
         self._model_provider_thread = "ai_provider_company"
 

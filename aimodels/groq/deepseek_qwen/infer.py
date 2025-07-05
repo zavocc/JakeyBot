@@ -5,7 +5,7 @@ import litellm
 import re
 
 class Completions(BaseInitProvider):
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "deepseek-r1-distill-llama-70b"):
+    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "deepseek-r1-distill-qwen-32b"):
         # Model provider thread
         self._model_provider_thread = "groq_deepseek"
 
