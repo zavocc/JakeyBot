@@ -1,4 +1,4 @@
-from core.ai.assistants import Assistants
+from core.services.helperfunctions import HelperFunctions
 from discord.ext import commands
 import aimodels._template_ as typehint_AIModelTemplate
 import discord
@@ -9,6 +9,11 @@ import logging
 class GeminiQuickChat(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Bot = bot
+        self._default_model = HelperFunctions.fetch_default_model(
+            model_type="base",
+            output_modalities="text",
+            provider="gemini"
+        )["model_name"]
 
     ###############################################
     # Ask slash command
@@ -30,13 +35,14 @@ class GeminiQuickChat(commands.Cog):
         await ctx.response.defer(ephemeral=True)
 
         _infer: typehint_AIModelTemplate.Completions = importlib.import_module(f"aimodels.gemini").Completions(
+            model_name=self._default_model,
             discord_ctx=ctx,
             discord_bot=self.bot)
        
         ###############################################
         # Answer generation
         ###############################################
-        _system_prompt = await Assistants.set_assistant_type("jakey_system_prompt", type=0)
+        _system_prompt = await HelperFunctions.set_assistant_type("jakey_system_prompt", type=0)
         _result = await _infer.completion(prompt=prompt, system_instruction=_system_prompt)
 
         _system_embed = discord.Embed(

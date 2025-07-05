@@ -1,9 +1,13 @@
 from core.exceptions import HistoryDatabaseError
+from core.services.helperfunctions import HelperFunctions
 from os import environ
 from pymongo import ReturnDocument
 import discord as typehint_Discord
 import logging
 import motor.motor_asyncio
+
+_fetchdict = HelperFunctions.fetch_default_model(model_type="reasoning", output_modalities="text", provider="gemini")
+DEFAULT_MODEL = f"{_fetchdict['provider']}::{_fetchdict['model_name']}"
 
 # A class that is responsible for managing and manipulating the chat history
 class History:
@@ -25,24 +29,23 @@ class History:
         await self._collection.create_index([("guild_id", 1)], name="guild_id_index", background=True, unique=True)
         logging.info("Created index for guild_id")
 
-    async def _ensure_document(self, guild_id: int, model: str = "gemini::gemini-2.0-flash-001", tool_use: str = None):
-        """Ensures a document exists for the given guild_id, creates one if it doesn't exist.
-        Returns the current document."""
+
+    # Returns the document to be manipulated, creates one if it doesn't exist.
+    async def _ensure_document(self, guild_id: int, model: str = DEFAULT_MODEL, tool_use: str = None):
+        # Ensures a document exists for the given guild_id, creates one if it doesn't exist.
+        # Returns the current document.
         if guild_id is None or not isinstance(guild_id, int):
             raise TypeError("guild_id is required and must be an integer")
 
         _existing = await self._collection.find_one({"guild_id": guild_id})
         if _existing:
-            if "tool_use" in _existing:
-                tool_use = _existing["tool_use"]
-            if "default_model" in _existing:
-                model = _existing["default_model"]
-            if "default_openrouter_model" in _existing:
-                default_openrouter_model = _existing["default_openrouter_model"]
-            else:
-                default_openrouter_model = None
+            tool_use = _existing.get("tool_use", tool_use)
+            default_model = _existing.get("default_model", model)
+            default_openrouter_model = _existing.get("default_openrouter_model", "openai/gpt-4.1-mini")
         else:
-            default_openrouter_model = None
+            tool_use = tool_use
+            default_model = model
+            default_openrouter_model = "openai/gpt-4.1-mini"
 
         # Use find_one_and_update with upsert to return the document after update.
         _document = await self._collection.find_one_and_update(
@@ -50,14 +53,20 @@ class History:
             {"$set": {
                 "guild_id": guild_id,
                 "tool_use": tool_use,
-                "default_model": model,
+                "default_model": default_model,
                 "default_openrouter_model": default_openrouter_model
             }},
             upsert=True,
             return_document=ReturnDocument.AFTER
         )
         return _document
+    
 
+####################################################################################
+# Chat History Management
+####################################################################################
+
+    # Load chat history
     async def load_history(self, guild_id: int, model_provider: str):
         if guild_id is None or not isinstance(guild_id, int):
             raise TypeError("guild_id is required and must be an integer")
@@ -83,12 +92,15 @@ class History:
             "$set": {f"chat_thread_{model_provider}": chat_thread}
         }, upsert=True)
 
+
+    # Clear chat history
     async def clear_history(self, guild_id: int) -> None:
         if guild_id is None or not isinstance(guild_id, int):
             raise TypeError("guild_id is required and must be an integer")
 
         await self._collection.delete_one({"guild_id": guild_id})
 
+    # Tool configuration management
     async def set_tool_config(self, guild_id: int, tool: str = None) -> None:
         await self._ensure_document(guild_id, tool)
         
@@ -103,6 +115,7 @@ class History:
         _document = await self._ensure_document(guild_id)
         return _document["tool_use"]
 
+    # Default model management
     async def set_default_model(self, guild_id: int, model: str) -> None:
         if guild_id is None or not isinstance(guild_id, int):
             raise TypeError("guild_id is required and must be an integer")

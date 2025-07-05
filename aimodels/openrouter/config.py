@@ -1,3 +1,7 @@
+from core.exceptions import CustomErrorMessage
+import importlib
+import logging
+
 class ModelParams:
     def __init__(self):
         # Model provider thread
@@ -5,25 +9,59 @@ class ModelParams:
 
         self._genai_params = {
             "max_tokens": 8192,
-            "temperature": 0.7
+            "temperature": 0.7,
+            "extra_body": {
+                "plugins": [
+                    {
+                        "id": "file-parser",
+                        "pdf": {
+                            "engine": "native"
+                        }
+                    },
+                    {
+                        "id": "file-parser",
+                        "pdf": {
+                            "engine": "pdf-text"
+                        }
+                    }
+                ]
+            }
         }
 
-        # Multi-modal models
-        self._MULTIMODAL_MODELS = (
-            "gpt-4",
-            "claude-3", 
-            "gemini-pro-1.5",
-            "gemini-flash-1.5",
-            "gemini-1.5",
-            "gemini-exp",
-            "gemini-2.0",
-            "grok-2-vision",
-            "pixtral"
-        )
+    # internal function to fetch tool
+    async def _fetch_tool(self, db_conn) -> dict:
+        # Tools
+        _tool_selection_name = await db_conn.get_tool_config(guild_id=self._guild_id)
+        try:
+            if _tool_selection_name is None:
+                _Tool = None
+            else:
+                _Tool = importlib.import_module(f"tools.{_tool_selection_name}").Tool(
+                    method_send=self._discord_method_send,
+                    discord_ctx=self._discord_ctx,
+                    discord_bot=self._discord_bot
+                )
+        except ModuleNotFoundError as e:
+            logging.error("I cannot import the tool because the module is not found: %s", e)
+            raise CustomErrorMessage("⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
 
-        # Block expensive models
-        self._BLOCKED_MODELS = (
-            "o1-pro",
-            "gpt-4.5-preview",
-            "owo"
-        )
+        # Check if tool is code execution
+        if _Tool:
+            if _tool_selection_name == "CodeExecution":
+                raise CustomErrorMessage("⚠️ Code execution is not supported in OpenRouter mode, please use other models that support it.")
+            else:
+                # Check if the tool schema is a list or not
+                # Since a list of tools could be a collection of tools, sometimes it's just a single tool
+                # But depends on the tool implementation
+                if type(_Tool.tool_schema_openai) == list:
+                    _tool_schema = _Tool.tool_schema_openai
+                else:
+                    _tool_schema = _Tool.tool_schema_openai
+        else:
+            _tool_schema = None
+
+        return {
+            "tool_schema": _tool_schema,
+            "tool_human_name": _Tool.tool_human_name if _Tool else None,
+            "tool_object": _Tool
+        }

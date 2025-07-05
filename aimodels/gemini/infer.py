@@ -14,10 +14,9 @@ import io
 import logging
 import typing
 import random
-import re
 
 class Completions(ModelParams):
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "gemini-2.0-flash-001"):
+    def __init__(self, model_name, discord_ctx, discord_bot, guild_id: int = None):
         super().__init__()
 
         # Discord context
@@ -48,8 +47,6 @@ class Completions(ModelParams):
 
         self._gemini_api_client: genai.Client = discord_bot._gemini_api_client
         self._aiohttp_main_client_session: aiohttp.ClientSession = discord_bot._aiohttp_main_client_session
-
-        #self._file_data = None
 
         self._model_name = model_name
         self._guild_id = guild_id
@@ -90,21 +87,30 @@ class Completions(ModelParams):
             if _msgstatus: await _msgstatus.delete()
             await aiofiles.os.remove(_xfilename)
 
-        self._file_data = types.Content(
-            parts=[
-                types.Part.from_uri(
-                    file_uri=_filedata.uri, 
-                    mime_type=_filedata.mime_type
-                )
-            ],
-            role="user"
-        ).model_dump(exclude_unset=True)
+        self._file_data = [
+            types.Part.from_uri(
+                file_uri=_filedata.uri, 
+                mime_type=_filedata.mime_type
+            ).model_dump(exclude_unset=True)
+        ]
 
     ############################
     # Inferencing
     ############################
     # Completion
     async def completion(self, prompt: typing.Union[str, list, types.Content], tool: dict = None, system_instruction: str = None, return_text: bool = True):
+        # Normalize model names to "-nonthinking" 
+        if self._model_name.endswith("-nonthinking"):
+            self._model_name = self._model_name.replace("-nonthinking", "")
+
+            # Configure thinking budget to 0
+            _thinkingConfigBudget = types.ThinkingConfig(
+                thinking_budget=0,
+            )
+            logging.info("Using non-thinking variant of the model: %s", self._model_name)
+        else:
+            _thinkingConfigBudget = None
+
         # Create response
         _response = await self._gemini_api_client.aio.models.generate_content(
             model=self._model_name,
@@ -112,7 +118,8 @@ class Completions(ModelParams):
             config=types.GenerateContentConfig(
                 **self._genai_params,
                 system_instruction=system_instruction or None,
-                tools=tool
+                tools=tool,
+                thinking_config=_thinkingConfigBudget
             )
         )
 
@@ -133,17 +140,21 @@ class Completions(ModelParams):
         if _chat_thread is None:
             _chat_thread = []
 
-        # Attach file attachment if it exists
-        if hasattr(self, "_file_data"): _chat_thread.append(self._file_data)
+        # Craft prompt
+        _prompt = {
+            "role": "user",
+            "parts": [
+                types.Part.from_text(text=prompt).model_dump(exclude_unset=True)
+            ]
+        }
 
-        # Parse prompts
-        _chat_thread.append(
-            types.Content(
-                parts=[types.Part.from_text(text=prompt)],
-                role="user"
-            ).model_dump(exclude_unset=True)
-        )
+        # Attach file attachment if it exists
+        if hasattr(self, "_file_data"):
+            _prompt["parts"].extend(self._file_data)
+
+        _chat_thread.append(_prompt)
     
+        # First response which is called only once
         try:
             _response = await self.completion(prompt=_chat_thread, tool=_Tool["tool_schema"], system_instruction=system_instruction, return_text=False)
         # Check if we get ClientError and has PERMISSION_DENIED
@@ -157,7 +168,7 @@ class Completions(ModelParams):
                         # Check if we have file_data key then we just set it as None and set the text to "Expired"
                         if _part.get("file_data"):
                             _part["file_data"] = None
-                            _part["text"] = "⚠️ The file attachment expired and was removed."
+                            _part["text"] = "[<system_notice>File attachment processed but expired from history. DO NOT make stuff up about it! Ask the user to reattach for more details</system_notice>]"
 
                 # Notify the user that the chat session has been re-initialized
                 await self._discord_method_send("> ⚠️ One or more file attachments or tools have been expired, the chat history has been reinitialized!")
@@ -168,115 +179,129 @@ class Completions(ModelParams):
                 logging.error("2nd try: I think I found a problem related to the request: %s", e.message)
                 raise e
 
+
         # Check if the response was blocked due to safety and other reasons than STOP
         # https://ai.google.dev/api/generate-content#FinishReason
-        if _response.candidates[0].finish_reason == "SAFETY":
-            raise CustomErrorMessage("🤬 I detected unsafe content in your prompt, Please rephrase your question.")
-        elif _response.candidates[0].finish_reason == "MAX_TOKENS":
-            raise CustomErrorMessage("⚠️ Response reached max tokens limit, please make your message concise.")
-        elif _response.candidates[0].finish_reason != "STOP":
-            raise CustomErrorMessage("⚠️ An error has occurred while giving you an answer, please try again later.")
-    
-        # Iterate through the parts and perform tasks
-        _toolParts = []
-        _toHalt = False
+        if hasattr(_response, "candidates") and _response.candidates: 
+            if _response.candidates[0].finish_reason == "SAFETY":
+                raise CustomErrorMessage("🤬 I detected unsafe content in your prompt, Please rephrase your question.")
+            elif _response.candidates[0].finish_reason == "MAX_TOKENS":
+                raise CustomErrorMessage("⚠️ Response reached max tokens limit, please make your message concise.")
+            elif _response.candidates[0].finish_reason != "STOP":
+                raise CustomErrorMessage("⚠️ An error has occurred while giving you an answer, please rephrase your prompt or try again later.")
+        else:
+            raise CustomErrorMessage("⚠️ An error has occurred while giving you an answer, please rephrase your prompt or try again later.")
+
+        # Agentic experiences
+        # Begin inference operation
         _interstitial = None
-
-        if _response.function_calls:
-            _interstitial = await self._discord_method_send("▶️ Coming up with the plan...")
-
-        for _part in _response.candidates[0].content.parts:
-            if _part.text and _part.text.strip():
-                await Utils.send_ai_response(self._discord_ctx, prompt, _part.text, self._discord_method_send)
-
-            if _part.function_call:
-                # Append the previous interaction to chat thread
-                _chat_thread.append(_response.candidates[0].content.model_dump(exclude_unset=True))
-
-                # Indicate the tool is called
+        _toolUseErrorOccurred = False
+        while True:
+            # Check for function calls
+            _toolParts = []
+            if _response.function_calls:
                 if not _interstitial:
-                    _interstitial = await self._discord_method_send(f"✅ Tool started: **{_Tool['tool_human_name']}**")
-                
-                try:
-                    # Edit the interstitial message
-                    await _interstitial.edit(f"▶️ Executing tool: **{_part.function_call.name}**")
+                    # Send interstitial message
+                    _interstitial = await self._discord_method_send("▶️ Coming up with the plan...")
 
-                    if hasattr(_Tool["tool_object"], "_tool_function"):
-                        _toExec = getattr(_Tool["tool_object"], "_tool_function")
-                    elif hasattr(_Tool["tool_object"], f"_tool_function_{_part.function_call.name}"):
-                        _toExec = getattr(_Tool["tool_object"], f"_tool_function_{_part.function_call.name}")
-                    else:
-                        logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s")
-                        raise CustomErrorMessage("⚠️ An error has occurred while calling tools, please try again later or choose another tool")
+            # Check for tools or other content to be sent
+            for _part in _response.candidates[0].content.parts:
+                # Send text message if needed
+                if _part.text and _part.text.strip():
+                    await Utils.send_ai_response(self._discord_ctx, prompt, _part.text, self._discord_method_send)
 
-                    # Check if _toHalts is True, if it is, we just need to tell the model to try again later
-                    # Since its not possible to just break the loop, it has to match the number of parts of toolInvoke
-                    if _toHalt:
-                        _toolResult = {
-                            "error": f"⚠️ Error occurred previously which in order to prevent further issues, the operation was halted",
-                            "tool_args": _part.function_call.args
-                        }
-                    else:
+                if _part.function_call:
+                    # Append the chat history here
+                    _chat_thread.append(_response.candidates[0].content.model_dump(exclude_unset=True))
+
+                    try:
+                        # Edit the interstitial message
+                        await _interstitial.edit(f"▶️ Executing tool: **{_part.function_call.name}**")
+
+                        if hasattr(_Tool["tool_object"], "_tool_function"):
+                            _toExec = getattr(_Tool["tool_object"], "_tool_function")
+                        elif hasattr(_Tool["tool_object"], f"_tool_function_{_part.function_call.name}"):
+                            _toExec = getattr(_Tool["tool_object"], f"_tool_function_{_part.function_call.name}")
+                        else:
+                            logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s")
+                            raise CustomErrorMessage("⚠️ An error has occurred while calling tools, please try again later or choose another tool")
+
                         _toolResult = {
                             "toolResult": (await _toExec(**_part.function_call.args)),
                             "tool_args": _part.function_call.args
                         }
-                # For other exceptions, log the error and add it as part of the chat thread
-                except Exception as e:
-                    _toHalt = True
+                            
+                    # For other exceptions, log the error and add it as part of the chat thread
+                    except Exception as e:
+                        # Must not set status to true if it was already set to False
+                        if not _toolUseErrorOccurred:
+                            _toolUseErrorOccurred = True
 
-                    # Also print the error to the console
-                    logging.error("Something when calling specific tool lately, reason: %s", e)
-                    _toolResult = {
-                        "error": f"⚠️ Something went wrong while executing the tool: {e}\nTell the user about this error",
-                        "tool_args": _part.function_call.args
-                    }
+                        # Also print the error to the console
+                        logging.error("Something when calling specific tool lately, reason: %s", e)
+                        _toolResult = {
+                            "error": f"⚠️ Something went wrong while executing the tool: {e}\nTell the user about this error",
+                            "tool_args": _part.function_call.args
+                        }
 
-                _toolParts.append(types.Part.from_function_response(
-                        name=_part.function_call.name,
-                        response=_toolResult
+                    # Append the tool part to the chat thread
+                    _toolParts.append(types.Part.from_function_response(
+                            name=_part.function_call.name,
+                            response=_toolResult
+                        )
                     )
+
+                # Function calling and code execution doesn't mix
+                if _part.executable_code:
+                    await self._discord_method_send(f"✅ Code analysis complete")
+                    await self._discord_method_send(f"```py\n{_part.executable_code.code[:1975]}\n```")
+
+                if _part.code_execution_result:
+                    if _part.code_execution_result.output:
+                        # Send the code execution result
+                        await self._discord_method_send(f"```{_part.code_execution_result.output[:1975]}```")
+
+                # Render the code execution inline data when needed
+                if _part.inline_data:
+                    if _part.inline_data.mime_type == "image/png":
+                        await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="image.png"))
+                    elif _part.inline_data.mime_type == "image/jpeg":
+                        await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="image.jpeg"))
+                    else:
+                        await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="code_exec_artifact.bin"))
+
+            # Edit interstitial message
+            # This is always executed when tools are used
+            if _toolParts and _interstitial:
+                if _toolUseErrorOccurred:
+                    await _interstitial.edit(f"⚠️ Error executing tool: **{_Tool['tool_human_name']}**")
+                else:
+                    await _interstitial.edit(f"✅ Used: **{_Tool['tool_human_name']}**")
+
+                # Append the tool parts to the chat thread
+                _chat_thread.append(
+                    types.Content(
+                        parts=_toolParts, 
+                        role="user"
+                    ).model_dump(exclude_unset=True)
                 )
 
-            # Function calling and code execution doesn't mix
-            if _part.executable_code:
-                await self._discord_method_send(f"✅ Code analysis complete")
-                await self._discord_method_send(f"```py\n{_part.executable_code.code[:1975]}\n```")
+                # Add function call parts to the response
+                _response = await self.completion(prompt=_chat_thread, tool=_Tool["tool_schema"], system_instruction=system_instruction, return_text=False)
 
-            if _part.code_execution_result:
-                if _part.code_execution_result.output:
-                    # Send the code execution result
-                    await self._discord_method_send(f"```{_part.code_execution_result.output[:1975]}```")
-
-            # Render the code execution inline data when needed
-            if _part.inline_data:
-                if _part.inline_data.mime_type == "image/png":
-                    await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="image.png"))
-                elif _part.inline_data.mime_type == "image/jpeg":
-                    await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="image.jpeg"))
+                # If the response has tool calls, re-run the request
+                if not _response.function_calls:
+                    if _response.text or _response.candidates[0].content.parts[-1].text:
+                        await Utils.send_ai_response(self._discord_ctx, prompt, _response.candidates[0].content.parts[-1].text, self._discord_method_send)
                 else:
-                    await self._discord_method_send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="code_exec_artifact.bin"))
+                    continue
 
-        # Edit interstitial message
-        if _toolParts and _interstitial:
-            if _toHalt:
-                await _interstitial.edit(f"⚠️ Error executing tool: **{_Tool['tool_human_name']}**")
-            else:
-                await _interstitial.edit(f"✅ Used: **{_Tool['tool_human_name']}**")
+            # Assuming we are done with the response and continue statement isn't triggered
+            break
 
-            # Append the tool parts to the chat thread
-            _chat_thread.append(types.Content(parts=_toolParts).model_dump(exclude_unset=True))
-
-            # Add function call parts to the response
-            _response = await self.completion(prompt=_chat_thread, system_instruction=system_instruction, return_text=False)
-            # Check if it has text part
-            if _response.candidates[0].content.parts[0].text:
-                await Utils.send_ai_response(self._discord_ctx, prompt, _response.candidates[0].content.parts[0].text, self._discord_method_send)
-
-        # Append the final response to the chat thread
+        # Done
+        # Append the chat thread and send the status response
         _chat_thread.append(_response.candidates[0].content.model_dump(exclude_unset=True))
-
-        # Return the status
         return {"response": "OK", "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):

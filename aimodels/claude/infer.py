@@ -3,11 +3,13 @@ from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
 from os import environ
 import discord
+import json
 import litellm
+import logging
 import re
 
 class Completions(ModelParams):
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "claude-3-5-haiku-20241022"):
+    def __init__(self, model_name, discord_ctx, discord_bot, guild_id: int = None):
         super().__init__()
 
         # Discord context
@@ -64,6 +66,9 @@ class Completions(ModelParams):
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
 
+        # Fetch tool
+        _Tool = await self._fetch_tool(db_conn)
+
         if _chat_thread is None:
             # Begin with system prompt
             _chat_thread = [{
@@ -117,23 +122,95 @@ class Completions(ModelParams):
 
         # Generate completion
         litellm.api_key = environ.get("ANTHROPIC_API_KEY")
-        litellm._turn_on_debug() # Enable debugging
-        
+        if environ.get("LITELLM_DEBUG"):
+            litellm._turn_on_debug()
+
+        # First response which is called only once
         _response = await litellm.acompletion(
             model=self._model_name,
             messages=_chat_thread,
+            tools=_Tool["tool_schema"],
             **self._genai_params
         )
 
-        # Append to chat thread
+        # Agentic experiences
+        # Begin inference operation
+        _interstitial = None
+        _toolUseErrorOccurred = False
+        while True:
+            # Check for tools
+            if _response.choices[0].message.tool_calls:
+                if not _interstitial:
+                    _interstitial = await self._discord_method_send("▶️ Coming up with the plan...")
+
+                # Append the chat history
+                _chat_thread.append(_response.choices[0].message.model_dump())
+
+                # Send text message if needed
+                if _response.choices[0].message.content:
+                    await Utils.send_ai_response(self._discord_ctx, prompt, _response.choices[0].message.content, self._discord_method_send)
+
+                # Execute tools
+                _toolCalls = _response.choices[0].message.tool_calls
+                _toolParts = []
+                for _tool in _toolCalls:
+                    await _interstitial.edit(f"▶️ Executing tool: **{_tool.function.name}**")
+
+                    if hasattr(_Tool["tool_object"], "_tool_function"):
+                        _toExec = getattr(_Tool["tool_object"], "_tool_function")
+                    elif hasattr(_Tool["tool_object"], f"_tool_function_{_tool.function.name}"):
+                        _toExec = getattr(_Tool["tool_object"], f"_tool_function_{_tool.function.name}")
+                    else:
+                        logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s")
+                        raise CustomErrorMessage("⚠️ An error has occurred while calling tools, please try again later or choose another tool")
+            
+                    # Execute tools
+                    try:
+                        _toolResult = {"toolResult": await _toExec(**json.loads(_tool.function.arguments))}
+                    except Exception as e:
+                        logging.error("Something when calling specific tool lately, reason: %s", e)
+                        _toolResult = {"error": f"⚠️ Something went wrong while executing the tool: {e}\nTell the user about this error"}
+
+                        # Must not set status to true if it was already set to False
+                        if not _toolUseErrorOccurred:
+                            _toolUseErrorOccurred = True
+
+                    _toolParts.append({
+                        "role": "tool",
+                        "tool_call_id": _tool.id,
+                        "content": str(_toolResult)
+                    })
+
+            # Re-run the request after tool call
+            if _interstitial and _toolParts:
+                # Edit interstitial message
+                if not _toolUseErrorOccurred:
+                    await _interstitial.edit(f"✅ Used: **{_Tool['tool_human_name']}**")
+                else:
+                    await _interstitial.edit(f"⚠️ Error executing tool: **{_Tool['tool_human_name']}**")
+
+                # Append the tool call result to the chat thread
+                _chat_thread.extend(_toolParts)
+
+                # Re-run the request
+                _response = await litellm.acompletion(
+                    model=self._model_name,
+                    messages=_chat_thread,
+                    tools=_Tool["tool_schema"],
+                    **self._genai_params
+                )
+
+
+            # If the response has tool calls, re-run the request
+            if not _response.choices[0].message.tool_calls:
+                # Send final message in this condition since the agent is not looping anymore
+                if _response.choices[0].message.content:
+                    await Utils.send_ai_response(self._discord_ctx, prompt, _response.choices[0].message.content, self._discord_method_send)
+                break
+
+        # Done
+        # Append the chat thread and send the status response
         _chat_thread.append(_response.choices[0].message.model_dump())
-        
-        # Answer
-        _answer = _response.choices[0].message.content
-
-        # Send the response
-        await Utils.send_ai_response(self._discord_ctx, prompt, _answer, self._discord_method_send)
-
         return {"response":"OK", "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):

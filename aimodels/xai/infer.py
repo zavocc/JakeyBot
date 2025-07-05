@@ -6,7 +6,7 @@ import discord
 import litellm
 
 class Completions(ModelParams):
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "grok-beta"):
+    def __init__(self, model_name, discord_ctx, discord_bot, guild_id: int = None):
         super().__init__()
 
         # Discord context
@@ -39,17 +39,14 @@ class Completions(ModelParams):
         if not attachment.content_type.startswith("image"):
             raise CustomErrorMessage("⚠️ This model only supports image attachments")
 
-        self._file_data = {
-            "role": "user",
-            "content": [
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": attachment.url
-                    }
+        self._file_data = [
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": attachment.url
                 }
-            ]
-        }
+            }
+        ]
 
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
@@ -63,25 +60,27 @@ class Completions(ModelParams):
             }]
 
         # Craft prompt
-        _chat_thread.append(
-             {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": prompt
-                    }
-                ]
-            }
-        )
+        _prompt = {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": prompt,
+                }
+            ]
+        }
 
-        # Check for file attachments
+        # Check if we have an attachment
         if hasattr(self, "_file_data"):
-            _chat_thread.append(self._file_data)
+            # Add the attachment part to the prompt
+            _prompt["content"].extend(self._file_data)
+
+        _chat_thread.append(_prompt)
         
         # Generate completion
         litellm.api_key = environ.get("XAI_API_KEY")
-        litellm._turn_on_debug() # Enable debugging
+        if environ.get("LITELLM_DEBUG"):
+            litellm._turn_on_debug()
 
         # Params and response
         _params = {

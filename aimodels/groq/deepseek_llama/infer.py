@@ -5,7 +5,7 @@ import litellm
 import re
 
 class Completions(BaseInitProvider):
-    def __init__(self, discord_ctx, discord_bot, guild_id = None, model_name = "deepseek-r1-distill-llama-70b"):
+    def __init__(self, model_name, discord_ctx, discord_bot, guild_id: int = None):
         # Model provider thread
         self._model_provider_thread = "groq_deepseek"
 
@@ -39,15 +39,11 @@ class Completions(BaseInitProvider):
 
         # Generate completion
         litellm.api_key = environ.get("GROQ_API_KEY")
-        litellm._turn_on_debug() # Enable debugging
-        _params = {
-            "messages": _chat_thread,
-            "model": self._model_name,
-            "max_tokens": 4096,
-            "temperature": 0.7
-        }
-        _response = await litellm.acompletion(**_params)
-
+        if environ.get("LITELLM_DEBUG"):
+            litellm._turn_on_debug()
+        
+        _response = await litellm.acompletion(model=self._model_name, messages=_chat_thread, **self._model_params.genai_params)
+    
         # Show the thought process inside the <think> tag
         _thoughts = re.findall(r"<think>(.*?)</think>", _response.choices[0].message.content, re.DOTALL)[0]
         # Show the thought process inside the <think> tag and format as quotes
