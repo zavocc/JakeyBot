@@ -4,7 +4,6 @@ from core.services.helperfunctions import HelperFunctions
 from google.genai import types
 from os import environ
 import aiohttp
-import google.genai as genai
 import inspect
 import json
 
@@ -84,7 +83,7 @@ class Tool(ToolManifest):
 
         return _videos
     
-    async def _tool_function_youtube_corpus(self, video_id: str, corpus: str, fps_mode: str = "dense", start_time: int = None, end_time: int = None):
+    async def _tool_function_youtube_corpus(self, video_id: str, corpus: str, fps_mode: str = "dense", start_time: int = None, end_time: int = None, media_resolution: str = "MEDIA_RESOLUTION_UNSPECIFIED"):
         # Check if global aiohttp and google genai client session is initialized
         if not hasattr(self.discord_bot, "_gemini_api_client"):
             raise Exception("gemini api client isn't set up, please check the bot configuration")
@@ -128,14 +127,14 @@ class Tool(ToolManifest):
         )["model_name"]
 
         # Initiate completions
-        _completons = Completions(
+        _completions = Completions(
             model_name=_default_model,
             discord_ctx=self.discord_ctx,
             discord_bot=self.discord_bot,
         )
 
         # JSON schema
-        _completons._genai_params.update({
+        _completions._genai_params.update({
             "response_schema": types.Schema(
                 type = types.Type.OBJECT,
                 required = ["answer"],
@@ -161,8 +160,13 @@ class Tool(ToolManifest):
         })
         _output_result = None
 
+        # Set default resolution mode
+        _completions._genai_params.update({
+            "media_resolution": media_resolution
+        })
+
         # Generate response
-        _response = await _completons.completion(
+        _response = await _completions.completion(
             prompt=_crafted_prompt,
             system_instruction=_system_prompt,
             return_text=False

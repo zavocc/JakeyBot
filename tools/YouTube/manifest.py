@@ -52,6 +52,15 @@ class ToolManifest:
                         "end_time": {
                             "type": "integer",
                             "description": "End time in seconds"
+                        },
+                        "media_resolution": {
+                            "type": "string",
+                            "description": "Default media resolution for the video: default (unspecified), medium, or low. Default or medium would mean the vision can better understand image fidelity but at cost of latency and context limitations. Low can compromise quality but it allows faster and can accept upto 3 hours of video. Medium or default can accept upto 1 hour of video.",
+                            "enum": [
+                                "MEDIA_RESOLUTION_UNSPECIFIED",
+                                "MEDIA_RESOLUTION_MEDIUM",
+                                "MEDIA_RESOLUTION_LOW"
+                            ]
                         }
                     },
                     "required": ["video_id", "corpus"]
