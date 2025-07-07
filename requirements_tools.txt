@@ -1,1 +1,1 @@
-gradio_client >= 1.4.2
+gradio_client
