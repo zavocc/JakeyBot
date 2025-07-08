@@ -32,7 +32,7 @@ class Tool(ToolManifest):
             _client.predict,
             prompt=prompt,
             nag_negative_prompt=negative_prompt,
-            nag_scale=11,
+            nag_scale=7,
             height=480,
             width=832,
             duration_seconds=duration,
@@ -49,7 +49,7 @@ class Tool(ToolManifest):
         print(_result)
 
         # Send the audio
-        await self.method_send(file=discord.File(fp=_result["video"]))
+        await self.method_send(file=discord.File(fp=_result[0]["video"]))
 
         # Cleanup
         await aiofiles.os.remove(_result)

@@ -26,6 +26,9 @@
 ############################################
 # OpenAI models
 ############################################
+- model: openai::gpt-4.5-preview
+  name: GPT-4.5 Preview
+  description: Shows the true Jakey's expression
 - model: openai::o4-mini
   name: OpenAI O4 Mini
   description: OpenAI's latest and fast reasoning model
