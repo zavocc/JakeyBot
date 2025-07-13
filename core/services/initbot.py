@@ -68,6 +68,14 @@ class ServicesInitBot(bridge.Bot):
         )
         logging.info("OpenAI client for OpenRouter initialized successfully")
 
+        # OpenAI client for Moonshot AI for Kimi
+        self._openai_client_moonshotai = openai.AsyncOpenAI(
+            api_key=environ.get("MOONSHOT_KIMI_API_KEY"),
+            base_url="https://api.moonshot.ai/v1"
+        )
+        logging.info("OpenAI client for Moonshot AI initialized successfully")
+
+
         # Everything else (mostly GET requests)
         self._aiohttp_main_client_session = aiohttp.ClientSession(loop=self.loop)
         logging.info("aiohttp client session initialized successfully")

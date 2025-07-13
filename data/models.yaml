@@ -1,6 +1,13 @@
 # Syntax
 # provider::model_name
 
+##############################################
+# Moonshot AI models
+##############################################
+- model: moonshotai::kimi-k2-0711-preview
+  name: Kimi K2 Preview
+  description: Moonshot open model comparable with frontier models and tool use
+
 ############################################
 # Google Models
 ############################################
@@ -53,7 +60,6 @@
 - model: openai::gpt-4o
   name: GPT-4o
   description: OpenAI's flagship model
-
 
 
 ############################################
