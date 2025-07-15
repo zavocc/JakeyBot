@@ -167,6 +167,7 @@ class Completions(ModelParams):
                     # Execute tools
                     try:
                         _toolResult = {"toolResult": await _toExec(**json.loads(_tool.function.arguments))}
+                        _toolUseErrorOccurred = False
                     except Exception as e:
                         logging.error("Something when calling specific tool lately, reason: %s", e)
                         _toolResult = {"error": f"⚠️ Something went wrong while executing the tool: {e}\nTell the user about this error"}
@@ -183,11 +184,11 @@ class Completions(ModelParams):
 
             # Re-run the request after tool call
             if _interstitial and _toolParts:
-                # Edit interstitial message
-                if not _toolUseErrorOccurred:
-                    await _interstitial.edit(f"✅ Used: **{_Tool['tool_human_name']}**")
-                else:
+                 # Edit interstitial message
+                if _toolUseErrorOccurred:
                     await _interstitial.edit(f"⚠️ Error executing tool: **{_Tool['tool_human_name']}**")
+                else:
+                    await _interstitial.edit(f"✅ Used: **{_Tool['tool_human_name']}**")
 
                 # Append the tool call result to the chat thread
                 _chat_thread.extend(_toolParts)

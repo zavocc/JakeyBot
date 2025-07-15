@@ -230,7 +230,7 @@ class Completions(ModelParams):
                             "toolResult": (await _toExec(**_part.function_call.args)),
                             "tool_args": _part.function_call.args
                         }
-                            
+                        _toolUseErrorOccurred = False
                     # For other exceptions, log the error and add it as part of the chat thread
                     except Exception as e:
                         # Must not set status to true if it was already set to False
