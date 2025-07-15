@@ -4,9 +4,9 @@
 ##############################################
 # Moonshot AI models
 ##############################################
-- model: moonshotai::kimi-k2-0711-preview
-  name: Kimi K2 Preview
-  description: Moonshot open model comparable with frontier models and tool use
+- model: kimi::kimi-k2-instruct
+  name: Kimi K2 (Groq)
+  description: Moonshot open model comparable with frontier models and tool use hosted
 
 ############################################
 # Google Models
@@ -92,13 +92,6 @@
 - model: xai::grok-3-latest
   name: Grok 3
   description: xAI's Grok model for creative tasks
-
-############################################
-# Models from Groq
-############################################
-- model: groq.deepseek_llama::deepseek-r1-distill-llama-70b
-  name: DeepSeek R1 Distilled LLaMA (Groq)
-  description: Distilled LLaMA 70B model from DeepSeek R1
 
 ############################################
 # More models on OpenRouter

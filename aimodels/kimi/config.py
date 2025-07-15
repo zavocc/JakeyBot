@@ -4,7 +4,7 @@ import logging
 class ModelParams:
     def __init__(self):
         # Model provider thread
-        self._model_provider_thread = "moonshotai"
+        self._model_provider_thread = "kimi"
 
         self._genai_params = {
             "temperature": 0.7
@@ -30,7 +30,7 @@ class ModelParams:
         # Check if tool is code execution
         if _Tool:
             if _tool_selection_name == "CodeExecution":
-                raise CustomErrorMessage("⚠️ Code execution is not supported in Moonshot AI model, please use other models that support it.")
+                raise CustomErrorMessage("⚠️ Code execution is not supported in Kimi model, please use other models that support it.")
             else:
                 # Check if the tool schema is a list or not
                 # Since a list of tools could be a collection of tools, sometimes it's just a single tool

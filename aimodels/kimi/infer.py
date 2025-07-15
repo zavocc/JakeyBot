@@ -30,18 +30,18 @@ class Completions(ModelParams):
         self._discord_bot: discord.Bot = discord_bot
 
         # Check if _openai_client attribute is set
-        if not hasattr(discord_bot, "_openai_client_moonshotai"):
-            raise Exception("OpenAI client for Moonshot AI is not initialized, please check the bot initialization")
+        if not hasattr(discord_bot, "_openai_client_groq"):
+            raise Exception("OpenAI client for Groq is not initialized, please check the bot initialization")
         
         # Check if OpenRouter API key is set
-        if not environ.get("MOONSHOT_KIMI_API_KEY"):
-            raise ModelAPIKeyUnset("No Moonshot AI API key was set, this model isn't available")
+        if not environ.get("GROQ_API_KEY"):
+            raise ModelAPIKeyUnset("No Groq API key was set, this model isn't available")
         
         # Model name
         self._model_name = model_name
 
         self._guild_id = guild_id
-        self._openai_client: openai.AsyncOpenAI = discord_bot._openai_client_moonshotai
+        self._openai_client: openai.AsyncOpenAI = discord_bot._openai_client_groq
 
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
@@ -72,7 +72,7 @@ class Completions(ModelParams):
         _chat_thread.append(_prompt)
 
         _response = await self._openai_client.chat.completions.create(
-            model=self._model_name,
+            model="moonshotai/" + self._model_name,
             messages=_chat_thread,
             tools=_Tool["tool_schema"],
             **self._genai_params
@@ -139,7 +139,7 @@ class Completions(ModelParams):
 
                 # Re-run the request
                 _response = await self._openai_client.chat.completions.create(
-                    model=self._model_name,
+                    model="moonshotai/" + self._model_name,
                     messages=_chat_thread,
                     tools=_Tool["tool_schema"],
                     **self._genai_params
