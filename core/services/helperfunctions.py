@@ -93,6 +93,20 @@ class HelperFunctions:
             _assistants_mode = _assistants_data["utility_assistants"]
 
         # Return the assistant
-        return _assistants_mode[assistant_name].strip()
+        # We format {} to have emojis, if we use type 0
+        if type == 0:
+            # The yaml format is
+            # - emoji1
+            # - emoji2
+            # So we need to join them with newline and dash each same as yaml
+            async with aiofiles.open("emojis.yaml") as emojis_list:
+                _emojis_list = "\n -".join(yaml.safe_load(await emojis_list.read()))
+                print(_emojis_list)
+
+                if not _emojis_list:
+                    _emojis_list = "No emojis found"
+            return _assistants_mode[assistant_name].strip().format(_emojis_list)
+        else:
+            return _assistants_mode[assistant_name].strip()
 
 
