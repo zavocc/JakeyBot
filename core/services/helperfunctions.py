@@ -3,6 +3,7 @@ from os import environ
 from typing import Literal
 from typing import TypedDict
 import aiofiles
+import aiofiles.ospath
 import discord
 import logging
 import yaml
@@ -94,11 +95,11 @@ class HelperFunctions:
 
         # Return the assistant
         # We format {} to have emojis, if we use type 0
-        if type == 0:
+        if type == 0 and (await aiofiles.ospath.exists("emojis.yaml")):
             # The yaml format is
             # - emoji1
             # - emoji2
-            # So we need to join them with newline and dash each same as yaml
+            # So we need to join them with newline and dash each same as yaml 
             async with aiofiles.open("emojis.yaml") as emojis_list:
                 _emojis_list = "\n -".join(yaml.safe_load(await emojis_list.read()))
                 print(_emojis_list)
