@@ -101,7 +101,7 @@ class HelperFunctions:
             # - emoji2
             # So we need to join them with newline and dash each same as yaml 
             async with aiofiles.open("emojis.yaml") as emojis_list:
-                _emojis_list = "\n -".join(yaml.safe_load(await emojis_list.read()))
+                _emojis_list = "\n - ".join(yaml.safe_load(await emojis_list.read()))
                 print(_emojis_list)
 
                 if not _emojis_list:
