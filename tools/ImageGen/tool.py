@@ -15,7 +15,7 @@ class Tool(ToolManifest):
         self.discord_bot = discord_bot
 
     # Image generator
-    async def _tool_function(self, prompt: str, temperature: int = 0.7, discord_attachment_url: str = None, text_controls: str = "NONE"):
+    async def _tool_function(self, prompt: str, temperature: int = 0.7, discord_attachment_url: str = None):
         # Create image
         _message_curent = await self.method_send(f"⌛ Generating with prompt **{prompt}**... this may take few minutes")
         
