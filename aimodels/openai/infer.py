@@ -91,7 +91,7 @@ class Completions(ModelParams):
         _chat_thread.append(_prompt)
 
         # Check if the model starts with o
-        if self._model_name.startswith("o"):
+        if self._model_name.startswith("o") or "gpt-oss" in self._model_name:
             if not any(self._model_name.startswith(_oprefix) for _oprefix in ["o1-preview", "o1-mini"]):
                 # Check if the suffix has -high
                 if self._model_name.endswith("-high"):
@@ -115,6 +115,15 @@ class Completions(ModelParams):
             tools=_Tool["tool_schema"],
             **self._genai_params
         )
+
+        # Show thoughts
+        _thoughts = getattr(_response.choices[0].message, "reasoning_content") or None
+        if _thoughts:
+            await Utils.send_ai_response(
+                self._discord_ctx, prompt, 
+                "\n".join(f"> {line}" for line in _thoughts[:1924].strip().split("\n")),
+                self._discord_method_send
+            )
 
         # Agentic experiences
         # Begin inference operation
@@ -186,6 +195,8 @@ class Completions(ModelParams):
 
             # If the response has tool calls, re-run the request
             if not _response.choices[0].message.tool_calls:
+                # Ensure no errors
+                _response.choices[0].message.tool_calls = None
                 # Send final message in this condition since the agent is not looping anymore
                 if _response.choices[0].message.content:
                     await Utils.send_ai_response(self._discord_ctx, prompt, _response.choices[0].message.content, self._discord_method_send)

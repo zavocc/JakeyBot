@@ -33,6 +33,12 @@
 ############################################
 # OpenAI models
 ############################################
+- model: openai::gpt-oss-120b
+  name: OpenAI GPT OSS 120B
+  description: OpenAI's latest open source reasoning model
+- model: openai::gpt-oss-120b-high
+  name: OpenAI GPT OSS 120B High
+  description: OpenAI's latest open source reasoning model with high quality responses
 - model: openai::o4-mini
   name: OpenAI O4 Mini
   description: OpenAI's latest and fast reasoning model
