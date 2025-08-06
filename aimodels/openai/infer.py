@@ -121,7 +121,7 @@ class Completions(ModelParams):
         if _thoughts:
             await Utils.send_ai_response(
                 self._discord_ctx, prompt, 
-                "\n".join(f"> {line}" for line in _thoughts[:1924].strip().split("\n")),
+                "\n".join(f"> {line}" for line in _thoughts[:1000].strip().split("\n")),
                 self._discord_method_send
             )
 
