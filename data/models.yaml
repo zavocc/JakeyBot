@@ -33,33 +33,21 @@
 ############################################
 # OpenAI models
 ############################################
+- model: openai::gpt-5
+  name: OpenAI GPT-5
+  description: OpenAI's latest model for every tasks
+- model: openai::gpt-5-mini
+  name: OpenAI GPT-5 Mini
+  description: A smaller version of GPT-5 for quick tasks
+- model: openai::gpt-5-mini-high
+  name: OpenAI GPT-5 Mini High
+  description: Slow but provides quality responses
 - model: openai::o4-mini
   name: OpenAI O4 Mini
   description: OpenAI's latest and fast reasoning model
 - model: openai::o4-mini-high
   name: OpenAI O4 Mini High
   description: Slow but provides quality responses
-- model: openai::o3-mini
-  name: OpenAI O3 Mini
-  description: Smaller and faster version of O3
-- model: openai::o3-mini-high
-  name: OpenAI O3 Mini High
-  description: Slow but provides quality responses
-- model: openai::o1
-  name: OpenAI O1
-  description: OpenAI's model that spends time thinking before responding
-- model: openai::gpt-4.1
-  name: GPT 4.1 Standard
-  description: Latest OpenAI non-reasoning model for general coding tasks
-- model: openai::gpt-4.1-mini
-  name: GPT-4.1 Mini
-  description: A smaller version of GPT-4.1
-- model: openai::gpt-4.1-nano
-  name: GPT-4.1 Nano
-  description: A very small version of GPT-4.1 for quick tasks
-- model: openai::gpt-4o
-  name: GPT-4o
-  description: OpenAI's flagship model
 
 
 ############################################
