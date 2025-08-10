@@ -91,7 +91,7 @@ class Completions(ModelParams):
         _chat_thread.append(_prompt)
 
         # Check if the model starts with o
-        if self._model_name.startswith("o") or "gpt-5" in self._model_name:
+        if self._model_name.startswith("o") or ("gpt-5" in self._model_name and "gpt-5-chat" not in self._model_name):
             if not any(self._model_name.startswith(_oprefix) for _oprefix in ["o1-preview", "o1-mini"]):
                 # Check if the suffix has -high
                 if self._model_name.endswith("-high"):
