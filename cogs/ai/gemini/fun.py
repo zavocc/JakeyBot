@@ -1,7 +1,7 @@
-from core.ai.assistants import Assistants
-from core.ai.core import ModelsList
 from aimodels.gemini import Completions
+from core.ai.core import ModelsList
 from core.exceptions import CustomErrorMessage, PollOffTopicRefusal
+from core.services.helperfunctions import HelperFunctions
 from discord.ext import commands
 from discord import Member, DiscordException
 from google.genai import types
@@ -17,6 +17,17 @@ class GeminiUtils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
+
+        self._default_text_model = HelperFunctions.fetch_default_model(
+            model_type="base",
+            output_modalities="text",
+            provider="gemini"
+        )["model_name"]
+        self._default_imagegen_model = HelperFunctions.fetch_default_model(
+            model_type="base",
+            output_modalities="image",
+            provider="gemini"
+        )["model_name"]
 
     ###############################################
     # Avatar tools
@@ -68,7 +79,7 @@ class GeminiUtils(commands.Cog):
                     raise Exception("No file data")
                 
                 # Generate description
-                _infer = Completions(discord_ctx=ctx, discord_bot=self.bot)
+                _infer = Completions(model_name=self._default_text_model, discord_ctx=ctx, discord_bot=self.bot)
                 _description = await _infer.completion([
                     "Generate image descriptions but one sentence short to describe, straight to the point",
                     types.Part.from_bytes(
@@ -78,7 +89,10 @@ class GeminiUtils(commands.Cog):
                 ])
             except Exception as e:
                 logging.error("An error occurred while generating image descriptions: %s", e)
-                _description = "Failed to generate image descriptions, check console for more info."
+                if "Max file size reached" in str(e):
+                    _description = "Image file size is too large, please use smaller images."
+                else:
+                    _description = "Failed to generate image descriptions, check console for more info."
 
         # Embed
         embed = discord.Embed(
@@ -87,8 +101,11 @@ class GeminiUtils(commands.Cog):
             color=discord.Color.random()
         )
         embed.set_image(url=avatar_url)
-        if _description: embed.set_footer(text="Using Gemini 2.0 Flash to generate descriptions, result may not be accurate")
+        if _description: embed.set_footer(text="Using Gemini 2.5 Flash Thinking to generate descriptions, result may not be accurate")
         await ctx.respond(embed=embed, ephemeral=True)
+
+        # Free up memory
+        del _filedata
 
     @show.error
     async def on_application_command_error(self, ctx: commands.Context, error: DiscordException):
@@ -150,7 +167,7 @@ class GeminiUtils(commands.Cog):
         # Craft prompt
         _crafted_prompt = f"Transform this image provided with the style of {_style_preprompt}."
 
-        _infer = Completions(discord_ctx=ctx, discord_bot=self.bot, model_name="gemini-2.0-flash-exp-image-generation")
+        _infer = Completions(model_name=self._default_imagegen_model, discord_ctx=ctx, discord_bot=self.bot)
 
         # Update params with image response modalities
         _infer._genai_params["response_modalities"] = ["Image", "Text"]
@@ -225,7 +242,7 @@ class GeminiUtils(commands.Cog):
         ]
 
         # Init completions
-        _completions = Completions(discord_ctx=ctx, discord_bot=self.bot)
+        _completions = Completions(model_name=self._default_text_model, discord_ctx=ctx, discord_bot=self.bot)
 
         # Attach files
         if attachment:
@@ -235,7 +252,7 @@ class GeminiUtils(commands.Cog):
             if hasattr(_completions, "_file_data"):
                 _prompt_feed.append(_completions._file_data)
         
-        _system_prompt = await Assistants.set_assistant_type("discord_polls_creator_prompt", type=1)
+        _system_prompt = await HelperFunctions.set_assistant_type("discord_polls_creator_prompt", type=1)
         # Configured controlled response generation
         _completions._genai_params.update({
             "response_schema": {

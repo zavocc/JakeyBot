@@ -6,16 +6,6 @@ This document defines the `dev.env` variables used to configure the Discord bot.
 - `BOT_NAME` - Set the name of your bot (defaults to "Jakey Bot")
 - `BOT_PREFIX` - Set the command prefix for the bot (defaults to "$")
 
-## Voice
-These are the default settings to connect to Lavalink v4.
-
-You can use lavalink instances in https://lavalink.darrennathanael.com/NoSSL/lavalink-without-ssl/ to make it easier to setup and get started.
-
-- `ENV_LAVALINK_URI` - Host where Lavalink server is running (defaults to local server URI: `http://127.0.0.1:2222`)
-- `ENV_LAVALINK_PASS` - Lavalink password (change this if connecting remotely) - (defaults to "youshallnotpass")
-- `ENV_LAVALINK_IDENTIFIER` - Lavalink identifier (optional, used for some servers that has it, defaults to `main`)
-
-Please do not use this module in production unless you're serving it yourself or other remote content than YouTube. Never verify your bot with YouTube playback or you'll risk violating terms in both parties.
 
 ## Database
 for chat history and other settings, this may be required.

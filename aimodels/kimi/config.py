@@ -1,40 +1,15 @@
 from core.exceptions import CustomErrorMessage
-from google.genai import types
 import importlib
 import logging
-
 class ModelParams:
     def __init__(self):
         # Model provider thread
-        self._model_provider_thread = "gemini"
+        self._model_provider_thread = "kimi"
 
         self._genai_params = {
-            "candidate_count": 1,
-            "max_output_tokens": 8192,
-            "temperature": 0.7,
-            "top_p": 0.95,
-            "top_k": 40,
-            "safety_settings": [
-                {
-                    "category": "HARM_CATEGORY_HARASSMENT",
-                    "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-                },
-                {
-                    "category": "HARM_CATEGORY_HATE_SPEECH",
-                    "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-                },
-                {
-                    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                    "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-                },
-                {
-                    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                    "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-                }
-            ]
+            "temperature": 0.7
         }
 
-    # Methods
     # internal function to fetch tool
     async def _fetch_tool(self, db_conn) -> dict:
         # Tools
@@ -55,15 +30,15 @@ class ModelParams:
         # Check if tool is code execution
         if _Tool:
             if _tool_selection_name == "CodeExecution":
-                _tool_schema = _Tool.tool_schema
+                raise CustomErrorMessage("⚠️ Code execution is not supported in Kimi model, please use other models that support it.")
             else:
                 # Check if the tool schema is a list or not
                 # Since a list of tools could be a collection of tools, sometimes it's just a single tool
                 # But depends on the tool implementation
-                if type(_Tool.tool_schema) == list:
-                    _tool_schema = [types.Tool(function_declarations=_Tool.tool_schema)]
+                if type(_Tool.tool_schema_openai) == list:
+                    _tool_schema = _Tool.tool_schema_openai
                 else:
-                    _tool_schema = [types.Tool(function_declarations=[_Tool.tool_schema])]
+                    _tool_schema = _Tool.tool_schema_openai
         else:
             _tool_schema = None
 

@@ -1,21 +1,28 @@
 # Syntax
 # provider::model_name
 
+##############################################
+# Moonshot AI models
+##############################################
+- model: kimi::kimi-k2-instruct
+  name: Kimi K2 (Groq)
+  description: Moonshot open model comparable with frontier models and tool use hosted
+
 ############################################
 # Google Models
 ############################################
-- model: gemini::gemini-2.5-pro-exp-03-25
-  name: Gemini 2.5 Pro Experimental
-  description: Advanced reasoning with tool use
+- model: gemini::gemini-2.5-pro
+  name: Gemini 2.5 Pro
+  description: Google's reasoning model for complex tasks
+- model: gemini::gemini-2.5-flash
+  name: Gemini 2.5 Flash Thinking
+  description: Workhorse thinking model for everyday and advanced tasks
+- model: gemini::gemini-2.5-flash-nonthinking
+  name: Gemini 2.5 Flash  
+  description: Best for everyday and advanced tasks without thinking
 - model: gemini::gemini-2.0-flash-001
   name: Gemini 2.0 Flash
   description: Best for everyday and advanced tasks
-- model: gemini::gemini-2.0-flash-lite-001
-  name: Gemini 2.0 Flash Lite
-  description: Best for quick answers
-- model: gemini::gemini-2.5-flash-preview-04-17
-  name: Gemini 2.5 Flash Experimental
-  description: Google's latest model that thinks before it responds
 - model: gemini::learnlm-2.0-flash-experimental
   name: LearnLM 2.0 Flash
   description: Gemini latest experimental model optimized for learning tasks
@@ -26,26 +33,30 @@
 ############################################
 # OpenAI models
 ############################################
+- model: openai::gpt-5
+  name: OpenAI GPT-5
+  description: OpenAI's latest model for every tasks
+- model: openai::gpt-5-mini
+  name: OpenAI GPT-5 Mini
+  description: A smaller version of GPT-5 for quick tasks
+- model: openai::gpt-5-mini-high
+  name: OpenAI GPT-5 Mini High
+  description: Slow but provides quality responses
 - model: openai::o4-mini
   name: OpenAI O4 Mini
   description: OpenAI's latest and fast reasoning model
-- model: openai::gpt-4.1
-  name: GPT 4.1 Standard
-  description: Latest OpenAI non-reasoning model for general coding tasks
-- model: openai::gpt-4o
-  name: GPT-4o
-  description: OpenAI's flagship model
-- model: openai::gpt-4o-mini
-  name: GPT-4o Mini
-  description: A smaller version of GPT-4o
-- model: openai::o1
-  name: OpenAI O1
-  description: OpenAI's model that spends time thinking before responding
+- model: openai::o4-mini-high
+  name: OpenAI O4 Mini High
+  description: Slow but provides quality responses
+
 
 ############################################
 # Claude models
 ############################################
 # Claude models
+- model: claude::claude-sonnet-4-20250514
+  name: Claude 4 Sonnet
+  description: State of the art for coding tasks
 - model: claude::claude-3-7-sonnet-20250219
   name: Claude 3.7 Sonnet
   description: Anthropic's most intelligent hybrid reasoning model
@@ -53,33 +64,26 @@
   name: Claude 3.5 Sonnet v2
   description: Top notch intelligence with greater accuracy for coding and other tasks
 
-############################################
-# Mistral models
-############################################
-- model: mistralai::pixtral-large-latest
-  name: Mistral Large 2 with Vision
-  description: Pixtral Large 2
+##############################################
+# DeepSeek models from Azure AI Foundry
+##############################################
+- model: azure_foundry.deepseek::Deepseek-V3-0324
+  name: DeepSeek V3
+  description: DeepSeek latest non-reasoning model hosted on Azure
+- model: azure_foundry.deepseek::Deepseek-R1-0528
+  name: DeepSeek R1
+  description: DeepSeek latest reasoning model hosted on Azure
 
 ############################################
 # X.AI
 ############################################
-- model: xai::grok-2-vision-1212
-  name: Grok 2.0
-  description: XAI's Grok 2 model
-
-############################################
-# Models from Groq
-############################################
-- model: groq.deepseek_llama::deepseek-r1-distill-llama-70b
-  name: DeepSeek R1 Distilled LLaMA (Groq)
-  description: Distilled LLaMA 70B model from DeepSeek R1
-- model: groq.deepseek_qwen::deepseek-r1-distill-qwen-32b
-  name: DeepSeek R1 Distilled Qwen (Groq)
-  description: Distilled LLaMA 32B model from DeepSeek R1
+- model: xai::grok-3-latest
+  name: Grok 3
+  description: xAI's Grok model for creative tasks
 
 ############################################
 # More models on OpenRouter
-############################################
+#########################################s###
 - model: openrouter::openrouter
   name: OpenRouter
   description: Use OpenRouter models, see the openrouter command.

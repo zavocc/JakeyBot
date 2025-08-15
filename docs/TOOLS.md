@@ -8,20 +8,24 @@
 # JakeyBot Tools
 JakeyBot has tools that connects to the outside world and call functions outside text generation process. It is similar to [ChatGPT plugins](https://openai.com/index/chatgpt-plugins/) or [Gemini Extensions](https://support.google.com/gemini/answer/13695044) extending the functionality of the JakeyBot beyond its purpose.
 
-It uses [Function calling](https://github.com/google-gemini/cookbook/blob/main/quickstarts/Function_calling.ipynb) under the hood, whenever you ask Jakey a specific question that relates to calling specific function, it can intelligently call function by passing the function name and argument from the schema during text completion process and call a function to fulfill a specific task or ground its response.
+It uses function calling under the hood, whenever you ask Jakey a specific question that relates to calling specific function, it can intelligently call function by passing the function name and argument from the schema during text completion process and call a function to fulfill a specific task or ground its response.
 
 Jakey already has few tools since its initial implementation, first-party built-in tools include:
 - Disabled - You can disable these tools via `/feature capability:Disabled`
 
-- Artifacts - File generation capability, ask Jakey to write code or markdown files and it will send as said file. Must allow Jakey to send attachments
+- Ideation Tools  
 
-- Canvas - Ideation and brainstorming tool by creating a new thread focused on particular topic. With content, plan, and optionally code. Requires threads permission granted and must be in DMs
+Features two tools
 
-- Code execution - Executes Python code and performs calculations but it cannot exchange unstructured data, this has been used by default before Jakey Tools are implemented.
+  - Artifacts - File generation capability, ask Jakey to write code or markdown files and it will send as said file. Must allow Jakey to send attachments
 
-- Browse with Bing - Grounds responses with search results fetched by Bing, needs atleast one free Azure subscription and you need to choose either Key 1 or Key 2.
+  - Canvas - Ideation and brainstorming tool by creating a new thread focused on particular topic. With content, plan, and optionally code. Requires threads permission granted and must be in DMs
+
+- Code execution - Executes Python code and performs calculations but it cannot exchange unstructured data, this has been used by default before Jakey Tools are implemented. (Gemini only)
+
+- Web Search - Searches the web using the Exa API
   
-    You must configure the Bing API key via `BING_SUBSCRIPTION_KEY` from [dev.env](/dev.env.template)
+    You must configure the Exa API key via `EXA_API_KEY` from [dev.env](/dev.env.template)
 
 - GitHub - Searches and reasons over GitHub repository files, you can ask Jakey to summarize files from specific repository (e.g. `Summarize this file README.md from zavocc/JakeyBot`)
   
@@ -31,7 +35,7 @@ Jakey already has few tools since its initial implementation, first-party built-
 
     You must configure GitHub PAT via `GITHUB_TOKEN` from [dev.env](/dev.env.template)
 
-- EzAudio - Edit specific segment of the audio using natural language prompt, provide the audio file to Gemini, specifiy what segment of the sound to be edited (e.g. a honk in the background), and how long that sound should last
+- Audio Tools - Clone voices, edit audio files, and more.
 
     - Dependencies required: `gradio_client`
   
@@ -57,7 +61,3 @@ Please set `/feature capability:Disabled` to opt out.
 
 ## Limitations
 - One tool can be used at a time per chat thread. You cannot use multiple tools at the moment.
-
-- Tools only supports Gemini models
-
-- It's recommended to use Gemini 2.0 as it's specifically optimized for tool usage so a zero-shot prompting is enough to understand your intent and call tools. Gemini 1.5 models also work but they may require to explicitly call tools

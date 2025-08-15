@@ -5,6 +5,10 @@ on:
     branches:
       - master
       - main
+  pull_request:
+    branches:
+      - master
+      - main
   workflow_dispatch:
     inputs:
       image_tag:
@@ -38,4 +42,7 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{ github.event_name == 'workflow_dispatch' && format('zavocc/jakey:{0}', inputs.image_tag) || 'zavocc/jakey:autobot' }}
+        tags: |
+          ${{ github.event_name == 'pull_request' && 'zavocc/jakey:necrofriggian' || '' }}
+          ${{ github.event_name == 'workflow_dispatch' && format('zavocc/jakey:{0}', inputs.image_tag) || '' }}
+          ${{ github.event_name == 'push' && 'zavocc/jakey:autobot' || '' }}

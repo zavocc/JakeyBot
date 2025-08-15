@@ -1,11 +1,7 @@
-# TODO: KEEP THE BASE64 FORMAT REGARDLES
 from .config import ModelParams
 from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
-from core.ai.history import History as typehint_History
 from os import environ
-import base64
-import copy
 import discord
 import json
 import logging
@@ -33,159 +29,54 @@ class Completions(ModelParams):
         # Discord bot object lifecycle instance
         self._discord_bot: discord.Bot = discord_bot
 
-        # Check if _openai_client_openrouter attribute is set
-        if not hasattr(discord_bot, "_openai_client_openrouter"):
-            raise Exception("OpenAI client for OpenRouter is not initialized, please check the bot initialization")
+        # Check if _openai_client attribute is set
+        if not hasattr(discord_bot, "_openai_client_groq"):
+            raise Exception("OpenAI client for Groq is not initialized, please check the bot initialization")
         
         # Check if OpenRouter API key is set
-        if not environ.get("OPENROUTER_API_KEY"):
-            raise ModelAPIKeyUnset("No OpenRouter API key was set, this model isn't available")
+        if not environ.get("GROQ_API_KEY"):
+            raise ModelAPIKeyUnset("No Groq API key was set, this model isn't available")
+        
+        # Model name
+        self._model_name = model_name
 
         self._guild_id = guild_id
-        self._openai_client: openai.AsyncOpenAI = discord_bot._openai_client_openrouter
+        self._openai_client: openai.AsyncOpenAI = discord_bot._openai_client_groq
 
-
-    async def input_files(self, attachment: discord.Attachment):
-        # Check if the attachment is an image
-        if not "image" in attachment.content_type and not "pdf" in attachment.content_type:
-            raise CustomErrorMessage("⚠️ This model only supports image or PDF attachments")
-
-        # Check if attachment size is more than 3MB in which reject it
-        if attachment.size > 3 * 1024 * 1024:
-            raise CustomErrorMessage("⚠️ Attachment size exceeds 3MB limit")
-        
-        # Encode the attachment data to base64
-        _encoded_data = base64.b64encode(await attachment.read()).decode('utf-8')
-
-        # Create a data url
-        _dataurl = f"data:{attachment.content_type};base64,{_encoded_data}"
-
-        if attachment.content_type.startswith("application/pdf"):
-            self._file_data = [
-                {
-                    "type": "file",
-                    "file": {
-                        "filename": attachment.filename,
-                        "file_data": _dataurl
-                    }
-                }
-            ]
-        else:
-            self._file_data = [
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": _dataurl
-                    }
-                }
-            ]
-
-    async def chat_completion(self, prompt, db_conn: typehint_History, system_instruction: str = None):
-        # Before we begin, get the OpenRouter model name and override self._model_name
-        self._model_name = (await db_conn.get_key(guild_id=self._guild_id, key="default_openrouter_model"))
-
-        # Indicate the model name
-        logging.info("Using OpenRouter model: %s", self._model_name)
-
-        # Fetch tool
-        _Tool = await self._fetch_tool(db_conn)
-
+    async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
         _chat_thread = await db_conn.load_history(guild_id=self._guild_id, model_provider=self._model_provider_thread)
+        
+        # Fetch tool
+        _Tool = await self._fetch_tool(db_conn)
 
         if _chat_thread is None:
             # Begin with system prompt
             _chat_thread = [{
                 "role": "system",
-                "content": [{
-                    "type": "text",
-                    "text": system_instruction
-                }]
+                "content": system_instruction   
             }]
 
-            # If it's from Anthropic, also append "cache_control" block to system prompt
-            if "claude-" in self._model_name:
-                _chat_thread[-1]["content"][0]["cache_control"] = {
-                    "type": "ephemeral"
-                }
-
-
+        
         # Craft prompt
         _prompt = {
             "role": "user",
             "content": [
                 {
                     "type": "text",
-                    "text": prompt
+                    "text": prompt,
                 }
             ]
         }
 
-        # Check if we have an attachment
-        if hasattr(self, "_file_data"):
-            # Add the attachment part to the prompt
-            _prompt["content"].extend(self._file_data)
-
-            # Temporary chat thread            
-            _tempChatThread = copy.deepcopy(_chat_thread)
-            _tempChatThread.append(_prompt)
-            _one_off_chat_thread = _tempChatThread
-        else:
-            _chat_thread.append(_prompt)
-            _one_off_chat_thread = _chat_thread
-
-        # Set the reasoning tokens to medium
-        if any(_miscmodels in self._model_name for _miscmodels in [":thinking", "gemini-2.5-pro", "gemini-2.5-flash-lite"]):
-            self._genai_params["extra_body"]["reasoning"] = {
-                "max_tokens": 4096,
-            }
-        elif any(_miscmodels in self._model_name for _miscmodels in ["openai/o", "x-ai/grok-3-beta", "openai/codex"]):
-            if not "mini-high" in self._model_name:
-                self._genai_params["extra_body"]["reasoning"] = {
-                    "effort": "medium",
-                    "exclude": True 
-                }
+        _chat_thread.append(_prompt)
 
         _response = await self._openai_client.chat.completions.create(
-            model=self._model_name,
-            messages=_one_off_chat_thread,
+            model="moonshotai/" + self._model_name,
+            messages=_chat_thread,
             tools=_Tool["tool_schema"],
             **self._genai_params
         )
-
-        # Remove references
-        _one_off_chat_thread = None
-
-        # Check if _response is empty or choices is None
-        if not _response or not _response.choices:
-            raise CustomErrorMessage("⚠️ No response received from the model, please try again later or choose another model")
-
-        # Remove file attachments from prompt before saving to history
-        if hasattr(self, "_file_data"):        
-            # Delete the temporary chat thread to prevent memory leaks
-            del _tempChatThread
-
-            # Create a clean copy of the prompt without file attachments
-            _clean_prompt = {
-                "role": _prompt["role"],
-                "content": [
-                    _content for _content in _prompt["content"] 
-                    if _content.get("type") == "text"
-                ]
-            }
-
-            # Add a system notice about file processing that file was processed
-            _clean_prompt["content"].append({
-                "type": "text",
-                "text": "[<system_notice>File attachment processed but removed from history. DO NOT make stuff up about it! Ask the user to reattach for more details</system_notice>]"
-            })
-
-            # Append the clean prompt to chat thread
-            _chat_thread.append(_clean_prompt)
-
-            # Clean up the file data to free memory
-            del self._file_data
-
 
         # Agentic experiences
         # Begin inference operation
@@ -198,7 +89,7 @@ class Completions(ModelParams):
                     _interstitial = await self._discord_method_send("▶️ Coming up with the plan...")
 
                 # Append the chat history
-                _chat_thread.append(_response.choices[0].message.model_dump())
+                _chat_thread.append(_response.choices[0].message.model_dump(exclude_unset=True))
 
                 # Send text message if needed
                 if _response.choices[0].message.content:
@@ -249,7 +140,7 @@ class Completions(ModelParams):
 
                 # Re-run the request
                 _response = await self._openai_client.chat.completions.create(
-                    model=self._model_name,
+                    model="moonshotai/" + self._model_name,
                     messages=_chat_thread,
                     tools=_Tool["tool_schema"],
                     **self._genai_params
@@ -262,11 +153,8 @@ class Completions(ModelParams):
                     await Utils.send_ai_response(self._discord_ctx, prompt, _response.choices[0].message.content, self._discord_method_send)
                 break
 
-        # Send message what model used
-        await self._discord_method_send(f"-# Using OpenRouter model: **{self._model_name}**")
-
-        # Append the response to chat thread
-        _chat_thread.append(_response.choices[0].message.model_dump())
+        # Append the final output to chat thread and send the response
+        _chat_thread.append(_response.choices[0].message.model_dump(exclude_unset=True))
         return {"response":"OK", "chat_thread": _chat_thread}
 
     async def save_to_history(self, db_conn, chat_thread = None):
