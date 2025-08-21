@@ -23,12 +23,9 @@
 - model: gemini::gemini-2.0-flash-001
   name: Gemini 2.0 Flash
   description: Best for everyday and advanced tasks
-- model: gemini::learnlm-2.0-flash-experimental
-  name: LearnLM 2.0 Flash
-  description: Gemini latest experimental model optimized for learning tasks
 - model: google::gemma-3-27b-it
   name: Gemma 3 (27B)
-  description: Google's latest state of the art open model
+  description: Google's latest open model
 
 ############################################
 # OpenAI models
