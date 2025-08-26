@@ -93,6 +93,9 @@ class GeminiUtils(commands.Cog):
                     _description = "Image file size is too large, please use smaller images."
                 else:
                     _description = "Failed to generate image descriptions, check console for more info."
+            finally:
+                 # Free up memory
+                del _filedata
 
         # Embed
         embed = discord.Embed(
@@ -104,8 +107,6 @@ class GeminiUtils(commands.Cog):
         if _description: embed.set_footer(text="Using Gemini 2.5 Flash Thinking to generate descriptions, result may not be accurate")
         await ctx.respond(embed=embed, ephemeral=True)
 
-        # Free up memory
-        del _filedata
 
     @show.error
     async def on_application_command_error(self, ctx: commands.Context, error: DiscordException):

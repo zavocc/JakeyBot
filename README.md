@@ -76,7 +76,7 @@ NOTE: You need to provide [the dev.env file](#configuring) as explained below
   pip3 install -r requirements.txt
 
   # This is optional
-  pip3 install wavelink gradio_client
+  pip3 install gradio_client
   pip3 uninstall py-cord discord.py
   pip3 install py-cord
   ```
