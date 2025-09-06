@@ -127,7 +127,7 @@ class GeminiUtils(commands.Cog):
         description="A user to get avatar from",
         required=False
     )
-    async def remix(self, ctx: discord.ApplicationContext, style: str, user: Member = None, temperature: float = 0.7):
+    async def remix(self, ctx: discord.ApplicationContext, style: str, user: Member = None):
         """Remix user avatar using Gemini 2.5 Flash native image generation"""
         await ctx.response.defer(ephemeral=True)
 
@@ -165,7 +165,6 @@ class GeminiUtils(commands.Cog):
 
         # Update params with image response modalities
         _infer._genai_params["response_modalities"] = ["Image", "Text"]
-        _infer._genai_params["temperature"] = temperature
         _completion_data = await _infer.completion([
             "Only transform if the style requested here is different from the original image."
             "If the style is the same, DO NOT create an image, instead you must send message as 'I cannot restyle an image with already similar style'. Anyway, let's proceed",
