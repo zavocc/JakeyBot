@@ -127,15 +127,8 @@ class GeminiUtils(commands.Cog):
         description="A user to get avatar from",
         required=False
     )
-    @discord.option(
-        "temperature",
-        description="Controls the temperature of the model, higher the temperature, more creative the output",
-        required=False,
-        default=0.7,
-        max_value=2.0
-    )
     async def remix(self, ctx: discord.ApplicationContext, style: str, user: Member = None, temperature: float = 0.7):
-        """Remix user avatar using Gemini 2.0 Flash native image generation (EXPERIMENTAL)"""
+        """Remix user avatar using Gemini 2.5 Flash native image generation"""
         await ctx.response.defer(ephemeral=True)
 
         _user = await self.bot.fetch_user(user.id if user else ctx.author.id)

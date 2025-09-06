@@ -45,7 +45,7 @@ class HelperFunctions:
                     _constructed_dict["model_name"] = "gemini-2.5-flash"
             elif output_modalities == "image":
                 if model_type == "base":
-                    _constructed_dict["model_name"] = "gemini-2.0-flash-preview-image-generation"
+                    _constructed_dict["model_name"] = "gemini-2.5-flash-image-preview"
                 elif model_type == "reasoning":
                     raise ValueError("Reasoning mode is not supported for image output modality")
         else:
