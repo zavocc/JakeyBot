@@ -3,8 +3,9 @@ from core.exceptions import *
 from core.services.helperfunctions import HelperFunctions
 from core.ai.history import History as typehint_History
 from discord import Message
+from models.utils import fetch_model
+from models.providers.openai.completion import ChatSessionOpenAI
 from os import environ
-import aimodels._template_ as typehint_AIModelTemplate
 import discord
 import importlib
 import inspect
@@ -31,29 +32,20 @@ class BaseChat():
             guild_id = prompt.author.id
 
         # Set default model
-        _model = await self.DBConn.get_default_model(guild_id=guild_id)
-        if _model is None:
-            logging.info("No default model found, using default model")
-            _model = await self.DBConn.get_default_model(guild_id=guild_id)
+        _model_alias = await fetch_model(model_alias=(await self.DBConn.get_default_model(guild_id=guild_id)))
+        
+        # Check what provider to call
+        # TODO: add more checks, for now we lock in to OpenAI
+        #if _model_alias.provider == "openai":
+        _chat_session = ChatSessionOpenAI(
+            user_id=guild_id,
+            model_props=_model_alias,
+            openai_client=self.bot._openai_client if hasattr(self.bot, "_openai_client") else None,
+            discord_bot=self.bot,
+            discord_context=prompt,
+            db_conn=self.DBConn
+        )
 
-        _model_provider = _model.split("::")[0]
-        _model_name = _model.split("::")[-1]
-        if "/model:" in prompt.content:
-            _modelUsed = await prompt.channel.send(f"🔍 Using specific model")
-            async for _model_selection in ModelsList.get_models_list_async():
-                _model_provider = _model_selection.split("::")[0]
-                _model_name = _model_selection.split("::")[-1]
-
-                # In this regex, we are using \s at the end since when using gpt-4o-mini, it will match with gpt-4o at first
-                # So, we are using \s|$ to match the end of the string and the suffix gets matched or if it's placed at the end of the string
-                if re.search(rf"\/model:{_model_name}(\s|$)", prompt.content):
-                    await _modelUsed.edit(content=f"🔍 Using model: **{_model_name}**")
-                    break
-            else:
-                _model_provider = _model.split("::")[0]
-                _model_name = _model.split("::")[-1]
-                await _modelUsed.edit(content=f"🔍 Using model: **{_model_name}**")
-    
         # Check for /chat:ephemeral
         _append_history = True
         if "/chat:ephemeral" in prompt.content:
@@ -64,57 +56,47 @@ class BaseChat():
             _show_info = True
         else:
             _show_info = False
-      
-        try:
-            _infer: typehint_AIModelTemplate.Completions = importlib.import_module(f"aimodels.{_model_provider}").Completions(
-                model_name=_model_name,
-                discord_ctx=prompt,
-                discord_bot=self.bot,
-                guild_id=guild_id)
-        except ModuleNotFoundError:
-            raise CustomErrorMessage("⚠️ The model you've chosen is not available at the moment, please choose another model")
-        _infer._discord_method_send = prompt.channel.send
 
         ###############################################
         # File attachment processing
         ###############################################
-        if len(prompt.attachments) > 1:
-            await prompt.reply("🚫 I can only process one file at a time")
-            return
-        
-        if prompt.attachments:
-            if not hasattr(_infer, "input_files"):
-                raise CustomErrorMessage(f"🚫 The model **{_model_name}** cannot process file attachments, please try another model")
-
-            _processFileInterstitial = await prompt.channel.send(f"📄 Processing the file: **{prompt.attachments[0].filename}**")
-            await _infer.input_files(attachment=prompt.attachments[0])
-            await _processFileInterstitial.edit(f"✅ Used: **{prompt.attachments[0].filename}**")
+        for _attachment in prompt.attachments:
+            _processFileInterstitial = await prompt.channel.send(f"📄 Processing the file: **{_attachment.filename}**")
+            await _chat_session.upload_files(attachment=_attachment)
+            await _processFileInterstitial.edit(f"✅ Added: **{_attachment.filename}**")
 
         ###############################################
         # Answer generation
         ###############################################
         # Through capturing group, we can remove the mention and the model selection from the prompt at both in the middle and at the end
-        _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/model:{_model_name}(\s|$)|\/chat:ephemeral(\s|$)|\/chat:info(\s|$))", "", prompt.content).strip()
+        _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/chat:ephemeral(\s|$)|\/chat:info(\s|$))", "", prompt.content).strip()
         _system_prompt = await HelperFunctions.set_assistant_type("jakey_system_prompt", type=0)
 
         # Generate the response and simulate the typing
         async with prompt.channel.typing():
-            _result = await _infer.chat_completion(prompt=_final_prompt, db_conn=self.DBConn, system_instruction=_system_prompt)
-
-        # Check if result says "OK"
-        if _result["response"] == "OK" and _show_info:
-            await prompt.channel.send(
-                embed=discord.Embed(
-                    description=f"Answered by **{_model_name}** by **{_model_provider}** {"(this response isn't saved)" if not _append_history else ''}",
-                )
+            # TODO: Call historydb function to query chat  history using get key and set key
+            # WIP TODO: Call load history method and we can do checks here if it supports chat threads than completions part
+            _result = await _chat_session.send_message(
+                prompt=_final_prompt,
+                system_instructions=_system_prompt
             )
 
+        # WIP TODO: Check if _result is a list and has _show_info
+        #if _result["response"] == "OK" and _show_info:
+        #    await prompt.channel.send(
+        #        embed=discord.Embed(
+        #            description=f"Answered by **{_model_name}** by **{_model_provider}** {"(this response isn't saved)" if not _append_history else ''}",
+        #        )
+        #    )
+
         # Save to chat history
+        # WIP TODO: Call save history method
         if _append_history:
-            if not hasattr(_infer, "save_to_history"):
-                await prompt.channel.send("⚠️ This model doesn't allow saving the conversation")
-            else:
-                await _infer.save_to_history(db_conn=self.DBConn, chat_thread=_result["chat_thread"])
+            #if not hasattr(_infer, "save_to_history"):
+            #    await prompt.channel.send("⚠️ This model doesn't allow saving the conversation")
+            #else:
+            #    await _infer.save_to_history(db_conn=self.DBConn, chat_thread=_result["chat_thread"])
+            await prompt.channel.send("⚠️ Under Construction")
 
     async def on_message(self, message: Message):
         # Ignore messages from the bot itself
@@ -146,17 +128,17 @@ class BaseChat():
             message.content = re.sub(f"<@{self.bot.user.id}>", '', message.content).strip()
 
             # Check for image attachments, if exists, put the URL in the prompt
-            # TODO: put it on a constant and make have _ask() function to have attachments= named param
-            if message.attachments:
-                _alttext = message.attachments[0].description if message.attachments[0].description else "No alt text provided"
-                message.content = inspect.cleandoc(f"""<extra_metadata>
-                    <attachment url="{message.attachments[0].url}" />
-                    <alt>
-                        {_alttext}
-                    </alt>
-                </extra_metadata>
-
-                {message.content}""")
+            # TODO: Support for multiple attachments
+            #if message.attachments:
+            #    _alttext = message.attachments[0].description if message.attachments[0].description else "No alt text provided"
+            #    message.content = inspect.cleandoc(f"""<extra_metadata>
+            #        <attachment url="{message.attachments[0].url}" />
+            #        <alt>
+            #            {_alttext}
+            #        </alt>
+            #    </extra_metadata>
+            #
+            #    {message.content}""")
 
             # If the bot is mentioned through reply with mentions, also add its previous message as context
             # So that the bot will reply to that query without quoting the message providing relevant response

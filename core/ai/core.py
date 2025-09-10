@@ -42,31 +42,20 @@ class Utils:
 
 
 class ModelsList:
-    # Must be used everytime when needing to get the models list on demand
     @staticmethod
-    async def get_models_list_async():
-        # Load the models list from YAML file
-        async with aiofiles.open("data/models.yaml", "r") as models:
-            _internal_model_data = yaml.safe_load(await models.read())
-
-        # Iterate through the models and yield each as a discord.OptionChoice
-        for model in _internal_model_data:
-            yield model["model"]
-        
-    @staticmethod
-    def get_models_list():
+    def get_models():
         # Load the models list from YAML file
         with open("data/models.yaml", "r") as models:
             _internal_model_data = yaml.safe_load(models)
 
         # Iterate through the models and yield each as a discord.OptionChoice
         for model in _internal_model_data:
-            # Check if the model dict has hide_ui key
-            if model.get("hide_ui") is not None and model.get("hide_ui") == True:
+            # Check if the model dict has disabled key
+            if model.get("disabled") is not None and model.get("disabled") == True:
                 continue
 
-            yield discord.OptionChoice(f"{model['name']} - {model['description']}", model["model"])
-        
+            yield discord.OptionChoice(f"{model['model_human_name']} - {model['model_description']}", model["model_alias"])
+         
     @staticmethod
     def get_tools_list():
         _hasYieldDisableValue = False

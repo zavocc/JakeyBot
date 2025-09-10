@@ -55,7 +55,7 @@ class Chat(commands.Cog):
     @discord.option(
         "model",
         description="Choose default model for the conversation",
-        choices=ModelsList.get_models_list(),
+        choices=ModelsList.get_models(),
         required=True,
     )
     async def set(self, ctx, model: str):
@@ -104,48 +104,6 @@ class Chat(commands.Cog):
         
         logging.error("An error has occurred while executing models command, reason: ", exc_info=True)
 
-    #######################################################
-    # Slash Command Group: model.list
-    #######################################################
-    @model.command(
-        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
-        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
-    )
-    async def list(self, ctx):
-        """List all available models"""
-        await ctx.response.defer(ephemeral=True)
-
-        # Create an embed to list models
-        _embed = discord.Embed(
-            title="Available models",
-            description=inspect.cleandoc(
-                f"""Here are the list of available models that you can use
-
-                You can set the default model for the conversation using `/model set` command or on demand through chat prompting
-                via `@{self.bot.user.name} /model:model-name` command.
-                
-                Each provider has its own chat history, skills, and capabilities. Choose what's best for you."""
-            ),
-            color=discord.Color.random(),
-        )
-
-        # Group models by provider
-        _model_provider_tabledict = {}
-        async for _model in ModelsList.get_models_list_async():
-            _model_provider = _model.split("::")[0]
-            _model_name = _model.split("::")[-1]
-            _model_provider_tabledict.setdefault(_model_provider, []).append(_model_name)
-
-        # Add each provider and its models as a field in the embed
-        for provider, models in _model_provider_tabledict.items():
-            _embed.add_field(name=provider, value=", ".join(models), inline=False)
-
-        await ctx.respond(embed=_embed)
-
-    @list.error
-    async def list_on_error(self, ctx: discord.ApplicationContext, error):
-        await ctx.respond("❌ Something went wrong, please try again later.")
-        logging.error("An error has occurred while executing models command, reason: ", exc_info=True)
 
     #######################################################
     # Slash Command: openrouter

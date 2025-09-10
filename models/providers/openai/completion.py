@@ -1,14 +1,15 @@
+from .utils import OpenAIUtils
+from core.ai.core import Utils
 from core.ai.history import History as typehint_History
 from core.exceptions import CustomErrorMessage
 from models.validation import ModelParamsOpenAIDefaults as typehint_ModelParams
 from models.validation import ModelProps as typehint_ModelProps
 from os import environ
 import discord as typehint_Discord
-import importlib
 import logging
 import openai
 
-class ChatSession:
+class ChatSessionOpenAI(OpenAIUtils):
     def __init__(self, 
                  user_id: int, 
                  model_props: typehint_ModelProps,
@@ -29,7 +30,12 @@ class ChatSession:
 
         # Model properties
         try:
-            self.model_props = typehint_ModelProps(**model_props)
+            # Check if model_props is already a ModelProps instance
+            if isinstance(model_props, typehint_ModelProps):
+                self.model_props = model_props
+            else:
+                # If it's a dict, create a new ModelProps instance
+                self.model_props = typehint_ModelProps(**model_props)
         except Exception as e:
             logging.error("Invalid model_props provided: %s", e)
             raise ValueError(f"Invalid model_props: {e}")
@@ -43,64 +49,6 @@ class ChatSession:
 
         # Database
         self.db_conn: typehint_History = db_conn or None
-
-    # Process Tools
-    async def load_tools(self):
-        _tool_name = self.db_conn.get_key(self.user_id, "tool_use")
-        if _tool_name is None:
-            _function_payload = None
-        else:
-            # Tool CodeExecution is not supported
-            if _tool_name == "CodeExecution":
-                logging.error("CodeExecution tool is not supported.")
-                raise CustomErrorMessage("⚠️ CodeExecution is not available for this model. Please choose another model to continue")
-
-            try:
-                _function_payload = importlib.import_module(f"tools.{_tool_name}").Tool(
-                    method_send=self.discord_context.channel.send,
-                    discord_ctx=self.discord_context,
-                    discord_bot=self.discord_bot
-                )
-            except ModuleNotFoundError:
-                logging.error("I cannot import the tool because the module is not found: %s", e)
-                raise CustomErrorMessage("⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
-            
-        # Get the schemas
-        if _function_payload:
-            if type(_function_payload.tool_schema_openai) == list:
-                _tool_schema = _function_payload.tool_schema_openai
-            else:
-                _tool_schema = [_function_payload.tool_schema_openai]
-        else:
-            _tool_schema = None
-
-        # For models to read the available tools to be executed
-        self.tool_schema = _tool_schema
-
-        # Pretty UI
-        self.tool_human_name = _function_payload.tool_human_name
-
-        # Tool class object containing all functions
-        self.tool_object_payload = _function_payload.tool_object_payload
-
-    # Handle multimodal
-    # Remove one per image restrictions so we'll just
-    async def upload_files(self, attachment: typehint_Discord.Message):
-        # Check if the attachment is an image
-        if not attachment.content_type.startswith("image"):
-            raise CustomErrorMessage("⚠️ This model only supports image attachments")
-
-        self.uploaded_files = []
-
-        for _attachment_urls in attachment.attachments:
-            self.uploaded_files.append(
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": _attachment_urls.url
-                    }
-                }
-            )
         
     # Chat
     async def send_message(self, prompt: str, chat_history: list = None, system_instructions: str = None):
@@ -108,21 +56,21 @@ class ChatSession:
         # model_id -> required, str
         # enable_tools -> true or false
         # enable_files -> true or false
-        # enable_threads -> true or false
+        # enable_threads -> true or false (NOT YET FINAL AS THIS CHECK MIGHT MOVE TO generative_chat.py)
         # has_reasoning -> required, true or false
 
         # Load chat history and system instructions
         # checks "enable_threads", if set false then this will be disabled
         if self.model_props.enable_threads:
-            if chat_history is None and type(chat_history) != list:
+            if chat_history is None or type(chat_history) != list:
                 chat_history = []
                 if system_instructions:
                     chat_history.append({
                         "role": "system",
                         "content": system_instructions
                     })
-            else:
-                chat_history = []
+        else:
+            chat_history = []
 
         # Format the prompt
         _prep_prompt = {
@@ -131,12 +79,13 @@ class ChatSession:
         }
 
         # Check if we have an attachment
-        if hasattr(self, "_file_data"):
+        # TODO: Remove relevant redundant code in generative_chat.py as we have a new declarative format
+        if hasattr(self, "uploaded_files") and self.uploaded_files:
             if not self.model_props.enable_files:
                 raise CustomErrorMessage("⚠️ This model does not support file attachments, please choose another model to continue")
 
-             # Add the attachment part to the prompt
-            _prep_prompt["content"].extend(self._file_data)
+            # Add the attachment part to the prompt
+            _prep_prompt["content"].extend(self.uploaded_files)
         
         # Append the actual prompt
         _prep_prompt["content"].append({
@@ -144,8 +93,17 @@ class ChatSession:
             "text": prompt,
         })
 
+        # Add the prepared prompt to chat history
+        chat_history.append(_prep_prompt)
+
         # Normalize reasoning
         if self.model_props.has_reasoning:
+            _extra_body_block = {
+                "reasoning": {
+                    "max_tokens": 4096
+                }
+            }
+
             # If the model reasoning uses simple
             if self.model_props.reasoning_type == "simple":
                 # if model ID has "-minimal" at the end
@@ -158,11 +116,90 @@ class ChatSession:
                 else:
                     self.model_params["reasoning_effort"] = "low"
 
-            # This is specific for OpenRouter
+                # Remove max_tokens to max_completion_tokens
+                self.model_params["max_completion_tokens"] = 32000
+                self.model_params.pop("max_tokens", None)
+
+            # This is specific for OpenRouter / Anthropic style models
             elif self.model_props.reasoning_type == "advanced":
-            #TODO: NOT YET COMPLETE< THIS IS DRY
+                if self.model_props.model_id.endswith("-minimal"):
+                    _extra_body_block["reasoning"]["max_tokens"] = 128
+                    self.model_params["extra_body"] = _extra_body_block
+                elif self.model_props.model_id.endswith("-medium"):
+                    _extra_body_block["reasoning"]["max_tokens"] = 12000
+                    self.model_params["extra_body"] = _extra_body_block
+                elif self.model_props.model_id.endswith("-high"):
+                    _extra_body_block["reasoning"]["max_tokens"] = 24000
+                    self.model_params["extra_body"] = _extra_body_block
+                else:
+                    self.model_params["extra_body"] = _extra_body_block
 
+            # Strip any suffixes "-minimal", "-medium", "-high"
+            self.model_props.model_id = self.model_props.model_id.replace("-minimal", "").replace("-medium", "").replace("-high", "")
+        # For reasoning disabled
+        else:
+            # If the model ID has any suffix, throw ValueError exception
+            if any(self.model_props.model_id.endswith(suffix) for suffix in ["-minimal", "-medium", "-high"]):
+                logging.error("Model ID has reasoning suffix but reasoning disabled: %s", self.model_props.model_id)
+                raise ValueError("Model ID has reasoning suffix but reasoning disabled")
+            
+        # Check for tools
+        print(self.model_params)
+        if self.model_props.enable_tools:
+            await self.load_tools()
+        else:
+            self.tool_schema = None
 
+        # Get response
+        if not self.model_props.model_id:
+            raise ValueError("Model is required, chose nothing")
+        
+        _response = await self.openai_client.chat.completions.create(
+            model=self.model_props.model_id,
+            messages=chat_history,
+            tools=self.tool_schema,
+            **self.model_params
+        )
 
+        print(_response)
 
+        # Check for tool calls
+        while True:
+            # Initial check
+            if _response.choices[0].message.tool_calls:
+                # Append the chat history
+                chat_history.append(_response.choices[0].message.model_dump(exclude_unset=True))
 
+                # Tool calls
+                _tool_calls = _response.choices[0].message.tool_calls
+                print(_tool_calls)
+
+                # Tool parts
+                _tool_parts = await self.execute_tools(_tool_calls)
+
+                # Append the tool parts to chat history
+                chat_history.extend(_tool_parts)
+
+                # Run the response the second time
+                _response = await self.openai_client.chat.completions.create(
+                    model=self.model_props.model_id,
+                    messages=chat_history,
+                    tools=self.tool_schema,
+                    **self.model_params
+                )
+
+            # Check if we need to run tools again, this block will stop the loop and send the response
+            if not _response.choices[0].message.tool_calls:
+                if _response.choices[0].message.content:
+                    await Utils.send_ai_response(self.discord_context, prompt, _response.choices[0].message.content, self.discord_context.channel.send)
+                break
+
+        # Append to chat history
+        chat_history.append(_response.choices[0].message.model_dump(exclude_unset=True))
+
+        # Clear uploaded files after use to prevent reuse in subsequent messages
+        if hasattr(self, "uploaded_files"):
+            self.uploaded_files = []
+
+        # Return the chat history
+        return chat_history
