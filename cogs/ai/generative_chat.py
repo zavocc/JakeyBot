@@ -1,4 +1,3 @@
-from core.ai.core import ModelsList
 from core.exceptions import *
 from core.services.helperfunctions import HelperFunctions
 from core.ai.history import History as typehint_History
@@ -191,23 +190,13 @@ class BaseChat():
                 await message.add_reaction("⌛")
                 await self._ask(message)
             except Exception as _error:
-                #if isinstance(_error, genai_errors.ClientError) or isinstance(_error, genai_errors.ServerError):
-                #    await message.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: **{_error.message}**")
-                if isinstance(_error, HistoryDatabaseError):
-                    await message.reply(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
-                elif isinstance(_error, ModelAPIKeyUnset):
-                    await message.reply(f"⛔ The model you've chosen is not available at the moment, please choose another model, reason: **{_error.message}**")
                 # Check if the error is about empty message
-                elif isinstance(_error, discord.errors.HTTPException) and "Cannot send an empty message" in str(_error):
+                if isinstance(_error, discord.errors.HTTPException) and "Cannot send an empty message" in str(_error):
                     await message.reply("⚠️ I recieved an empty response, please rephrase your question or change another model")
                 elif isinstance(_error, CustomErrorMessage):
                     await message.reply(_error.message)
                 else:
-                    # Check if the error has message attribute
-                    #if hasattr(_error, "message"):
-                    #    await message.reply(f"❌ Sorry, I couldn't answer your question at the moment, please try again later or change another model. What exactly happened: **{_error.message}**")
-                    #else:
-                    await message.reply(f"🚫 Sorry, I couldn't answer your question at the moment, please try again later or change another model. What exactly happened: **{type(_error).__name__}**")
+                    await message.reply(f"🚫 A problem occured while generating response, please try again later or change another model.\n> -# What went wrong: ***`{type(_error).__name__}`***")
 
                 # Log the error
                 logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)
