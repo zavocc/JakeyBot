@@ -72,16 +72,8 @@ class Chat(commands.Cog):
         await self._check_awaiting_response_in_progress(guild_id)
 
         # Save the default model in the database
-        await self.DBConn.set_default_model(guild_id=guild_id, model=model)
-
-        # Validate model format
-        #if "::" not in model:
-        #    await ctx.respond("❌ Invalid model name, please choose a model from the list")
-        #    return
-        #else:
-        #    _model = model.split("::")
-        #    _model_provider = _model[0]
-        #    _model_name = _model[-1]
+        # await self.DBConn.set_default_model(guild_id=guild_id, model=model)
+        await self.DBConn.set_key(guild_id=guild_id, key="default_model", value=model)
 
         # Validate model
         _model_props = await fetch_model(model_alias=model)
@@ -92,18 +84,7 @@ class Chat(commands.Cog):
         else:
             await ctx.respond(_strings)
 
-    @set.error
-    async def set_on_error(self, ctx: discord.ApplicationContext, error):
-        _error = getattr(error, "original", error)
 
-        if isinstance(_error, ConcurrentRequestError):
-            await ctx.respond("⚠️ Please wait until processing your previous request is completed before changing the model...")
-        elif isinstance(_error, CustomErrorMessage):
-            await ctx.respond(_error.message)
-        else:
-            await ctx.respond("❌ Something went wrong, please try again later.")
-        
-        logging.error("An error has occurred while executing models command, reason: ", exc_info=True)
 
 
     #######################################################
@@ -134,22 +115,17 @@ class Chat(commands.Cog):
         # Set the default OpenRouter model and clear the OpenRouter chat thread
         await self.DBConn.set_key(guild_id=guild_id, key="default_openrouter_model", value=model)
         _setkeymodel = await self.DBConn.get_key(guild_id=guild_id, key="default_openrouter_model")
+
+        # Clear ongoing conversations
         await self.DBConn.set_key(guild_id=guild_id, key="chat_thread_openrouter", value=None)
 
+        # Respond
         await ctx.respond(
             f"✅ Default OpenRouter model set to **{_setkeymodel}** and chat history for OpenRouter chats are cleared!\n"
             "To use this model, please set the model to OpenRouter using `/model set` command"
         )
 
-    @openrouter.error
-    async def openrouter_on_error(self, ctx: discord.ApplicationContext, error):
-        _error = getattr(error, "original", error)
 
-        if isinstance(_error, ConcurrentRequestError):
-            await ctx.respond("⚠️ Please wait until processing your previous request is completed before changing the OpenRouter model...")
-        else:
-            await ctx.respond("❌ Something went wrong, please try again later.")
-        logging.error("An error has occurred while setting openrouter models, reason: ", exc_info=True)
 
     #######################################################
     # Slash Command: sweep
@@ -182,8 +158,8 @@ class Chat(commands.Cog):
                 return
 
         # Save current settings before clearing history
-        _feature = await self.DBConn.get_tool_config(guild_id=guild_id)
-        _model = await self.DBConn.get_default_model(guild_id=guild_id)
+        _feature = await self.DBConn.get_key(guild_id=guild_id, key="tool_use")
+        _model = await self.DBConn.get_key(guild_id=guild_id, key="default_model")
         _openrouter_model = await self.DBConn.get_key(guild_id=guild_id, key="default_openrouter_model")
 
         # Clear chat history
@@ -191,25 +167,14 @@ class Chat(commands.Cog):
 
         if not reset_prefs:
             # Restore settings if not resetting preferences
-            await self.DBConn.set_tool_config(guild_id=guild_id, tool=_feature)
-            await self.DBConn.set_default_model(guild_id=guild_id, model=_model)
+            await self.DBConn.set_key(guild_id=guild_id, key="tool_use", value=_feature)
+            await self.DBConn.set_key(guild_id=guild_id, key="default_model", value=_model)
             await self.DBConn.set_key(guild_id=guild_id, key="default_openrouter_model", value=_openrouter_model)
             await ctx.respond("✅ Chat history reset!")
         else:
             await ctx.respond("✅ Chat history reset, model and feature settings are cleared!")
 
-    @sweep.error
-    async def sweep_on_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
-        _error = getattr(error, "original", error)
-        if isinstance(_error, PermissionError):
-            await ctx.respond("⚠️ An error has occurred while clearing chat history, logged the error to the owner")
-        elif isinstance(_error, FileNotFoundError):
-            await ctx.respond("ℹ️ Chat history is already cleared!")
-        elif isinstance(_error, ConcurrentRequestError):
-            await ctx.respond("⚠️ Please wait until processing your previous request is completed before clearing the chat history...")
-        else:
-            await ctx.respond("❌ Something went wrong, please try again later.")
-            logging.error("An error has occurred while executing sweep command, reason: ", exc_info=True)
+
 
     #######################################################
     # Slash Command: feature
@@ -243,8 +208,8 @@ class Chat(commands.Cog):
                 return
 
         # Retrieve current settings
-        _cur_feature = await self.DBConn.get_tool_config(guild_id=guild_id)
-        _model = await self.DBConn.get_default_model(guild_id=guild_id)
+        _cur_feature = await self.DBConn.get_key(guild_id=guild_id, key="tool_use")
+        _model = await self.DBConn.get_key(guild_id=guild_id, key="default_model")
         _openrouter_model = await self.DBConn.get_key(guild_id=guild_id, key="default_openrouter_model")
 
         # Convert "disabled" to None
@@ -259,8 +224,8 @@ class Chat(commands.Cog):
                 await self.DBConn.clear_history(guild_id=guild_id)
 
             # Set new capability and restore default model
-            await self.DBConn.set_tool_config(guild_id=guild_id, tool=capability)
-            await self.DBConn.set_default_model(guild_id=guild_id, model=_model)
+            await self.DBConn.set_key(guild_id=guild_id, key="tool_use", value=capability)
+            await self.DBConn.set_key(guild_id=guild_id, key="default_model", value=_model)
             await self.DBConn.set_key(guild_id=guild_id, key="default_openrouter_model", value=_openrouter_model)
 
             if capability is None:
@@ -271,16 +236,23 @@ class Chat(commands.Cog):
                 else:
                     await ctx.respond(f"✅ Feature **{capability}** enabled successfully and chat is reset to reflect the changes")
 
-    @feature.error
-    async def feature_on_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):
+    # Global error handler for the Cog
+    async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
         _error = getattr(error, "original", error)
-
+        
         if isinstance(_error, ConcurrentRequestError):
-            await ctx.respond("⚠️ Please wait until processing your previous request is completed before changing agents...")
+            await ctx.reply("⚠️ Please wait until processing your previous request is completed...")
+        elif isinstance(_error, CustomErrorMessage):
+            await ctx.reply(_error.message)
+        elif isinstance(_error, PermissionError):
+            await ctx.reply("⚠️ An error has occurred while clearing chat history, logged the error to the owner")
+        elif isinstance(_error, FileNotFoundError):
+            await ctx.reply("ℹ️ Chat history is already cleared!")
+        elif isinstance(error, commands.PrivateMessageOnly):
+            await ctx.reply("Sorry, you can only use this in private messages!")
         else:
-            await ctx.respond("❌ Something went wrong, please try again later.")
-        logging.error("An error has occurred while executing feature command, reason: ", exc_info=True)
-
+            await ctx.reply("❌ Something went wrong, please try again later.")
+            logging.error("An error has occurred while executing command, reason: ", exc_info=True)
 
 def setup(bot):
     bot.add_cog(Chat(bot))
