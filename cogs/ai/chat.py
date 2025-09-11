@@ -4,9 +4,9 @@ from core.ai.history import History
 from core.exceptions import *
 from discord.commands import SlashCommandGroup
 from discord.ext import commands
+from models.utils import fetch_model
 from os import environ
 import discord
-import inspect
 import logging
 import motor.motor_asyncio
 
@@ -75,23 +75,22 @@ class Chat(commands.Cog):
         await self.DBConn.set_default_model(guild_id=guild_id, model=model)
 
         # Validate model format
-        if "::" not in model:
-            await ctx.respond("❌ Invalid model name, please choose a model from the list")
-            return
-        else:
-            _model = model.split("::")
-            _model_provider = _model[0]
-            _model_name = _model[-1]
+        #if "::" not in model:
+        #    await ctx.respond("❌ Invalid model name, please choose a model from the list")
+        #    return
+        #else:
+        #    _model = model.split("::")
+        #    _model_provider = _model[0]
+        #    _model_name = _model[-1]
 
-        #if _model_provider != "gemini" and _model_provider != "claude":
-        if not any(provider in _model_provider for provider in ["gemini", "claude", "openrouter", "openai", "kimi"]):
-            await ctx.respond(
-                f"> This model lacks real time information and tools\n✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**"
-            )
+        # Validate model
+        _model_props = await fetch_model(model_alias=model)
+
+        _strings = f"✅ Default model set to **{_model_props.model_human_name}** and chat history is set for provider **{_model_props.provider}**"
+        if not _model_props.enable_tools:
+            await ctx.respond(f"> This model lacks real time information and tools\n" + _strings)
         else:
-            await ctx.respond(
-                f"✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**"
-            )
+            await ctx.respond(_strings)
 
     @set.error
     async def set_on_error(self, ctx: discord.ApplicationContext, error):
@@ -99,6 +98,8 @@ class Chat(commands.Cog):
 
         if isinstance(_error, ConcurrentRequestError):
             await ctx.respond("⚠️ Please wait until processing your previous request is completed before changing the model...")
+        elif isinstance(_error, CustomErrorMessage):
+            await ctx.respond(_error.message)
         else:
             await ctx.respond("❌ Something went wrong, please try again later.")
         

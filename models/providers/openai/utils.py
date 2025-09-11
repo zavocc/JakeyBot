@@ -7,7 +7,7 @@ import logging
 class OpenAIUtils:
     # Handle multimodal
     # Remove one per image restrictions so we'll just
-    async def upload_files(self, attachment: typehint_Discord.Attachment):
+    async def upload_files(self, attachment: typehint_Discord.Attachment, extra_metadata: str = None):
         # Check if the attachment is an image
         if not attachment.content_type.startswith("image"):
             raise CustomErrorMessage("⚠️ This model only supports image attachments")
@@ -23,6 +23,15 @@ class OpenAIUtils:
                 }
             }
         )
+
+        # Check for extra metadata
+        if extra_metadata:
+            self.uploaded_files.append(
+                {
+                    "type": "text",
+                    "text": extra_metadata
+                }
+            )
 
     # Tool Runs
     # Process Tools
@@ -57,9 +66,6 @@ class OpenAIUtils:
 
         # For models to read the available tools to be executed
         self.tool_schema: list = _tool_schema
-
-        # Pretty UI
-        self.tool_human_name: str = _function_payload.tool_human_name
 
         # Tool class object containing all functions
         self.tool_object_payload: object = _function_payload

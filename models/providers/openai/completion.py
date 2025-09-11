@@ -52,25 +52,21 @@ class ChatSessionOpenAI(OpenAIUtils):
         
     # Chat
     async def send_message(self, prompt: str, chat_history: list = None, system_instructions: str = None):
-        # We will validate model_props dict each:
+        # Props used:
         # model_id -> required, str
         # enable_tools -> true or false
-        # enable_files -> true or false
-        # enable_threads -> true or false (NOT YET FINAL AS THIS CHECK MIGHT MOVE TO generative_chat.py)
         # has_reasoning -> required, true or false
+        # reasoning_type -> simple or advanced
 
         # Load chat history and system instructions
-        # checks "enable_threads", if set false then this will be disabled
-        if self.model_props.enable_threads:
-            if chat_history is None or type(chat_history) != list:
-                chat_history = []
-                if system_instructions:
-                    chat_history.append({
-                        "role": "system",
-                        "content": system_instructions
-                    })
-        else:
+        if chat_history is None or type(chat_history) != list:
             chat_history = []
+            if system_instructions:
+                chat_history.append({
+                    "role": "system",
+                    "content": system_instructions
+                })
+
 
         # Format the prompt
         _prep_prompt = {
@@ -79,11 +75,7 @@ class ChatSessionOpenAI(OpenAIUtils):
         }
 
         # Check if we have an attachment
-        # TODO: Remove relevant redundant code in generative_chat.py as we have a new declarative format
         if hasattr(self, "uploaded_files") and self.uploaded_files:
-            if not self.model_props.enable_files:
-                raise CustomErrorMessage("⚠️ This model does not support file attachments, please choose another model to continue")
-
             # Add the attachment part to the prompt
             _prep_prompt["content"].extend(self.uploaded_files)
         
@@ -134,12 +126,12 @@ class ChatSessionOpenAI(OpenAIUtils):
                 else:
                     self.model_params["extra_body"] = _extra_body_block
 
-            # Strip any suffixes "-minimal", "-medium", "-high"
-            self.model_props.model_id = self.model_props.model_id.replace("-minimal", "").replace("-medium", "").replace("-high", "")
+            # Strip any suffixes "-minimal", "-low", "-medium", "-high"
+            self.model_props.model_id = self.model_props.model_id.replace("-minimal", "").replace("-low", "").replace("-medium", "").replace("-high", "")
         # For reasoning disabled
         else:
             # If the model ID has any suffix, throw ValueError exception
-            if any(self.model_props.model_id.endswith(suffix) for suffix in ["-minimal", "-medium", "-high"]):
+            if any(self.model_props.model_id.endswith(_rsning_suffix) for _rsning_suffix in ["-minimal", "-low", "-medium", "-high"]):
                 logging.error("Model ID has reasoning suffix but reasoning disabled: %s", self.model_props.model_id)
                 raise ValueError("Model ID has reasoning suffix but reasoning disabled")
             
@@ -147,8 +139,7 @@ class ChatSessionOpenAI(OpenAIUtils):
         print(self.model_params)
         if self.model_props.enable_tools:
             await self.load_tools()
-        else:
-            self.tool_schema = None
+            self.model_params["tools"] = self.tool_schema
 
         # Get response
         if not self.model_props.model_id:
@@ -157,11 +148,8 @@ class ChatSessionOpenAI(OpenAIUtils):
         _response = await self.openai_client.chat.completions.create(
             model=self.model_props.model_id,
             messages=chat_history,
-            tools=self.tool_schema,
             **self.model_params
         )
-
-        print(_response)
 
         # Check for tool calls
         while True:
@@ -172,7 +160,6 @@ class ChatSessionOpenAI(OpenAIUtils):
 
                 # Tool calls
                 _tool_calls = _response.choices[0].message.tool_calls
-                print(_tool_calls)
 
                 # Tool parts
                 _tool_parts = await self.execute_tools(_tool_calls)
@@ -184,7 +171,6 @@ class ChatSessionOpenAI(OpenAIUtils):
                 _response = await self.openai_client.chat.completions.create(
                     model=self.model_props.model_id,
                     messages=chat_history,
-                    tools=self.tool_schema,
                     **self.model_params
                 )
 

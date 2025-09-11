@@ -71,34 +71,31 @@ class History:
 
 
 ####################################################################################
-# Database Management
+# Chat History Management
 ####################################################################################
-    # Directly set custom keys and values to the document
-    async def set_key(self, guild_id: int, key: str, value) -> None:
-        guild_id = self._normalize_guild_id(guild_id)
-        await self._ensure_document(guild_id)
-        try:
-            await self._collection.update_one(
-                {"guild_id": guild_id},
-                {"$set": {key: value}},
-                upsert=True
-            )
-        except Exception as e:
-            logging.error("Error setting keys: %s", e)
-            raise HistoryDatabaseError(f"Error setting keys: {key}")
-        
-    # Directly get custom keys and values from the document
-    async def get_key(self, guild_id: int, key: str):
-        if not key or not isinstance(key, str):
-            raise ValueError("Key must be a non-empty string")
 
+    # Load chat history (DEPRECATED)
+    async def load_history(self, guild_id: int, model_provider: str):
         guild_id = self._normalize_guild_id(guild_id)
         _document = await self._ensure_document(guild_id)
-        try:
-            return _document.get(key, None)
-        except Exception as e:
-            logging.error("Error getting key: %s", e)
-            raise HistoryDatabaseError(f"Error getting key: {key}")
+
+        # Check if model_provider_{model_provider} exists in the document
+        if f"chat_thread_{model_provider}" not in _document:
+            await self._collection.update_one({"guild_id": guild_id}, {
+                "$set": {f"chat_thread_{model_provider}": None}
+            })
+            _document[f"chat_thread_{model_provider}"] = None
+
+        return _document[f"chat_thread_{model_provider}"]
+
+    # DEPRECATED
+    async def save_history(self, guild_id: int, chat_thread, model_provider: str) -> None:
+        guild_id = self._normalize_guild_id(guild_id)
+        await self._ensure_document(guild_id)
+        await self._collection.update_one({"guild_id": guild_id}, {
+            "$set": {f"chat_thread_{model_provider}": chat_thread}
+        }, upsert=True)
+
 
     # Clear chat history
     async def clear_history(self, guild_id: int) -> None:
@@ -145,3 +142,31 @@ class History:
         except Exception as e:
             logging.error("Error getting default model: %s", e)
             raise HistoryDatabaseError("Error getting default model")
+        
+    # Directly set custom keys and values to the document
+    async def set_key(self, guild_id: int, key: str, value) -> None:
+        guild_id = self._normalize_guild_id(guild_id)
+        await self._ensure_document(guild_id)
+        try:
+            await self._collection.update_one(
+                {"guild_id": guild_id},
+                {"$set": {key: value}},
+                upsert=True
+            )
+        except Exception as e:
+            logging.error("Error setting keys: %s", e)
+            raise HistoryDatabaseError(f"Error setting keys: {key}")
+        
+    # Directly get custom keys and values from the document
+    async def get_key(self, guild_id: int, key: str):
+        if not key or not isinstance(key, str):
+            raise ValueError("Key must be a non-empty string")
+
+        guild_id = self._normalize_guild_id(guild_id)
+        _document = await self._ensure_document(guild_id)
+        try:
+            return _document.get(key, None)
+        except Exception as e:
+            logging.error("Error getting key: %s", e)
+            raise HistoryDatabaseError(f"Error getting key: {key}")
+

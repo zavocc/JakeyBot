@@ -3,11 +3,10 @@ from core.exceptions import *
 from core.services.helperfunctions import HelperFunctions
 from core.ai.history import History as typehint_History
 from discord import Message
-from models.utils import fetch_model
+from models.utils import fetch_model, load_history, save_history
 from models.providers.openai.completion import ChatSessionOpenAI
 from os import environ
 import discord
-import importlib
 import inspect
 import logging
 import re
@@ -32,71 +31,94 @@ class BaseChat():
             guild_id = prompt.author.id
 
         # Set default model
-        _model_alias = await fetch_model(model_alias=(await self.DBConn.get_default_model(guild_id=guild_id)))
+        _model_props = await fetch_model(model_alias=(await self.DBConn.get_default_model(guild_id=guild_id)))
         
         # Check what provider to call
         # TODO: add more checks, for now we lock in to OpenAI
-        #if _model_alias.provider == "openai":
+        #if _model_props.provider == "openai":
         _chat_session = ChatSessionOpenAI(
             user_id=guild_id,
-            model_props=_model_alias,
+            model_props=_model_props,
             openai_client=self.bot._openai_client if hasattr(self.bot, "_openai_client") else None,
             discord_bot=self.bot,
             discord_context=prompt,
             db_conn=self.DBConn
         )
 
-        # Check for /chat:ephemeral
-        _append_history = True
-        if "/chat:ephemeral" in prompt.content:
-            await prompt.channel.send("🔒 This conversation is not saved and Jakey won't remember this")
+        # Check if we need to load history by checking enable_threads prop
+        if _model_props.enable_threads:
+            _chat_history = await load_history(user_id=guild_id, provider=_model_props.provider, db_conn=self.DBConn)
+
+            # Check for /chat:ephemeral only if enable_threads is true
+            if not "/chat:ephemeral" in prompt.content:
+                _append_history = True
+            else:
+                await prompt.channel.send("🔒 This conversation is not saved and Jakey won't remember this")
+                _append_history = False  
+        else:
+            await prompt.channel.send("> -# ⚠️ This model doesn't support threads and therefore this interaction won't remember the previous and won't be saved.")
+            _chat_history = None
             _append_history = False
 
+        # Check to show stats
         if "/chat:info" in prompt.content:
             _show_info = True
         else:
             _show_info = False
 
-        ###############################################
-        # File attachment processing
-        ###############################################
-        for _attachment in prompt.attachments:
-            _processFileInterstitial = await prompt.channel.send(f"📄 Processing the file: **{_attachment.filename}**")
-            await _chat_session.upload_files(attachment=_attachment)
-            await _processFileInterstitial.edit(f"✅ Added: **{_attachment.filename}**")
+        
 
-        ###############################################
+        # File attachment processing
+        if prompt.attachments:
+            if _model_props.enable_files:
+                for _attachment in prompt.attachments:
+                    _processFileInterstitial = await prompt.channel.send(f"📄 Processing the file: **{_attachment.filename}**")
+
+                    # Check for alt text
+                    _extraMetadata = inspect.cleandoc(
+                        f"""
+                        <meta>
+                        additional metadata (do not expose this to user! this ia auto-annontated by system)
+                        filename: {_attachment.filename}
+                        alt: {_attachment.description if _attachment.description else None}
+                        url: {_attachment.url}
+                        </meta>
+                        """)
+                    await _chat_session.upload_files(attachment=_attachment, extra_metadata=_extraMetadata)
+                    
+                    # Done
+                    await _processFileInterstitial.edit(f"✅ Added: **{_attachment.filename}**")
+            else:
+                raise CustomErrorMessage("⚠️ This model doesn't support file attachments, please choose another model to continue")
+
         # Answer generation
-        ###############################################
         # Through capturing group, we can remove the mention and the model selection from the prompt at both in the middle and at the end
         _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/chat:ephemeral(\s|$)|\/chat:info(\s|$))", "", prompt.content).strip()
         _system_prompt = await HelperFunctions.set_assistant_type("jakey_system_prompt", type=0)
 
         # Generate the response and simulate the typing
         async with prompt.channel.typing():
-            # TODO: Call historydb function to query chat  history using get key and set key
-            # WIP TODO: Call load history method and we can do checks here if it supports chat threads than completions part
             _result = await _chat_session.send_message(
                 prompt=_final_prompt,
+                chat_history=_chat_history,
                 system_instructions=_system_prompt
             )
 
-        # WIP TODO: Check if _result is a list and has _show_info
-        #if _result["response"] == "OK" and _show_info:
-        #    await prompt.channel.send(
-        #        embed=discord.Embed(
-        #            description=f"Answered by **{_model_name}** by **{_model_provider}** {"(this response isn't saved)" if not _append_history else ''}",
-        #        )
-        #    )
+        if _show_info:
+            await prompt.channel.send(
+                embed=discord.Embed(
+                    description=f"Answered by **{_model_props.model_human_name}** by **{_model_props.provider}** {"(this response isn't saved)" if not _append_history else ''}",
+                )
+            )
 
         # Save to chat history
-        # WIP TODO: Call save history method
         if _append_history:
-            #if not hasattr(_infer, "save_to_history"):
-            #    await prompt.channel.send("⚠️ This model doesn't allow saving the conversation")
-            #else:
-            #    await _infer.save_to_history(db_conn=self.DBConn, chat_thread=_result["chat_thread"])
-            await prompt.channel.send("⚠️ Under Construction")
+            await save_history(
+                user_id=guild_id,
+                provider=_model_props.provider,
+                chat_thread=_result,
+                db_conn=self.DBConn
+            )
 
     async def on_message(self, message: Message):
         # Ignore messages from the bot itself
@@ -179,7 +201,7 @@ class BaseChat():
                 elif isinstance(_error, discord.errors.HTTPException) and "Cannot send an empty message" in str(_error):
                     await message.reply("⚠️ I recieved an empty response, please rephrase your question or change another model")
                 elif isinstance(_error, CustomErrorMessage):
-                    await message.reply(f"{_error.message}")
+                    await message.reply(_error.message)
                 else:
                     # Check if the error has message attribute
                     #if hasattr(_error, "message"):
