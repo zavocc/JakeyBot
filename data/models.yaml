@@ -37,7 +37,7 @@
   provider: openai
   model_id: gpt-5-mini-high
   has_reasoning: true
-  reasoning_type: simple
+  reasoning_type: openai
   enable_tools: true
   enable_files: true
   enable_threads: true

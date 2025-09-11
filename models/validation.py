@@ -11,7 +11,7 @@ class ModelProps(BaseModel):
     enable_tools: bool = Field(default=True, description="Enable tools")
     enable_files: bool = Field(default=True, description="Enable files (e.g. Images)")
     enable_threads: bool = Field(default=True, description="Enable chat history")
-    reasoning_type: str = Field(default="simple", description="Reasoning type")
+    reasoning_type: str = Field(default="openai", description="Reasoning type")
 
 class ModelParamsOpenAIDefaults(BaseModel):
     temperature: int = Field(default=1)

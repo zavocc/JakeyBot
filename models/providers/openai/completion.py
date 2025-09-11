@@ -96,8 +96,8 @@ class ChatSessionOpenAI(OpenAIUtils):
                 }
             }
 
-            # If the model reasoning uses simple
-            if self.model_props.reasoning_type == "simple":
+            # If the model reasoning uses OpenAI-style reasoning syntax
+            if self.model_props.reasoning_type == "openai":
                 # if model ID has "-minimal" at the end
                 if self.model_props.model_id.endswith("-minimal"):
                     self.model_params["reasoning_effort"] = "minimal"
@@ -112,8 +112,8 @@ class ChatSessionOpenAI(OpenAIUtils):
                 self.model_params["max_completion_tokens"] = 32000
                 self.model_params.pop("max_tokens", None)
 
-            # This is specific for OpenRouter / Anthropic style models
-            elif self.model_props.reasoning_type == "advanced":
+            # This is specific for OpenRouter hosted models
+            elif self.model_props.reasoning_type == "openrouter":
                 if self.model_props.model_id.endswith("-minimal"):
                     _extra_body_block["reasoning"]["max_tokens"] = 128
                     self.model_params["extra_body"] = _extra_body_block
