@@ -136,7 +136,6 @@ class ChatSessionOpenAI(OpenAIUtils):
                 raise ValueError("Model ID has reasoning suffix but reasoning disabled")
             
         # Check for tools
-        print(self.model_params)
         if self.model_props.enable_tools:
             await self.load_tools()
             self.model_params["tools"] = self.tool_schema
