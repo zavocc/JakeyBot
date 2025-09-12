@@ -125,8 +125,6 @@ class Chat(commands.Cog):
             "To use this model, please set the model to OpenRouter using `/model set` command"
         )
 
-
-
     #######################################################
     # Slash Command: sweep
     #######################################################
