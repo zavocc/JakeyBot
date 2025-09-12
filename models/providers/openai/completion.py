@@ -90,50 +90,21 @@ class ChatSessionOpenAI(OpenAIUtils):
 
         # Normalize reasoning
         if self.model_props.has_reasoning:
-            _extra_body_block = {
-                "reasoning": {
-                    "max_tokens": 4096
-                }
-            }
-
-            # If the model reasoning uses OpenAI-style reasoning syntax
-            if self.model_props.reasoning_type == "openai":
-                # if model ID has "-minimal" at the end
-                if self.model_props.model_id.endswith("-minimal"):
-                    self.model_params["reasoning_effort"] = "minimal"
-                elif self.model_props.model_id.endswith("-medium"):
-                    self.model_params["reasoning_effort"] = "medium"
-                elif self.model_props.model_id.endswith("-high"):
-                    self.model_params["reasoning_effort"] = "high"
-                else:
-                    self.model_params["reasoning_effort"] = "low"
-
-                # Remove max_tokens to max_completion_tokens
-                self.model_params["max_completion_tokens"] = 32000
-                self.model_params.pop("max_tokens", None)
-
-            # This is specific for OpenRouter hosted models
-            elif self.model_props.reasoning_type == "openrouter":
-                if self.model_props.model_id.endswith("-minimal"):
-                    _extra_body_block["reasoning"]["max_tokens"] = 128
-                    self.model_params["extra_body"] = _extra_body_block
-                elif self.model_props.model_id.endswith("-medium"):
-                    _extra_body_block["reasoning"]["max_tokens"] = 12000
-                    self.model_params["extra_body"] = _extra_body_block
-                elif self.model_props.model_id.endswith("-high"):
-                    _extra_body_block["reasoning"]["max_tokens"] = 24000
-                    self.model_params["extra_body"] = _extra_body_block
-                else:
-                    self.model_params["extra_body"] = _extra_body_block
-
+            # Parse reasoning and get constructed params
+            _reasoning_params = self.parse_reasoning(self.model_props.model_id, self.model_props.reasoning_type)
+            
+            # Update model_params with reasoning parameters
+            self.model_params.update(_reasoning_params)
+            self.model_params.pop("max_tokens", None) # Remove max tokens if present
+            
             # Strip any suffixes "-minimal", "-low", "-medium", "-high"
             self.model_props.model_id = self.model_props.model_id.replace("-minimal", "").replace("-low", "").replace("-medium", "").replace("-high", "")
         # For reasoning disabled
         else:
-            # If the model ID has any suffix, throw ValueError exception
+            # If the model ID has any suffix but reasoning is disabled, raise error
             if any(self.model_props.model_id.endswith(_rsning_suffix) for _rsning_suffix in ["-minimal", "-low", "-medium", "-high"]):
                 logging.error("Model ID has reasoning suffix but reasoning disabled: %s", self.model_props.model_id)
-                raise ValueError("Model ID has reasoning suffix but reasoning disabled")
+                raise CustomErrorMessage("⚠️ The selected model requires reasoning to be enabled. But it has not been configured, please select other models.")
             
         # Check for tools
         if self.model_props.enable_tools:

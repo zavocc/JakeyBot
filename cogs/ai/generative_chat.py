@@ -30,7 +30,7 @@ class BaseChat():
             guild_id = prompt.author.id
 
         # Set default model
-        _model_props = await fetch_model(model_alias=(await self.DBConn.get_default_model(guild_id=guild_id)))
+        _model_props = await fetch_model(model_alias=(await self.DBConn.get_key(guild_id=guild_id, key="default_model")) or environ.get("DEFAULT_MODEL", "openai::gpt-4.1-mini"))
         
         # Check what provider to call
         # TODO: add more checks, for now we lock in to OpenAI
@@ -70,9 +70,9 @@ class BaseChat():
         # File attachment processing
         if prompt.attachments:
             if _model_props.enable_files:
+                _uploadedFilesCount = 0
+                _processFileInterstitial = await prompt.channel.send("⬆️ Please wait...")
                 for _attachment in prompt.attachments:
-                    _processFileInterstitial = await prompt.channel.send(f"📄 Processing the file: **{_attachment.filename}**")
-
                     # Check for alt text
                     _extraMetadata = inspect.cleandoc(
                         f"""
@@ -85,8 +85,9 @@ class BaseChat():
                         """)
                     await _chat_session.upload_files(attachment=_attachment, extra_metadata=_extraMetadata)
                     
-                    # Done
-                    await _processFileInterstitial.edit(f"✅ Added: **{_attachment.filename}**")
+                    # Update status
+                    _uploadedFilesCount += 1
+                    await _processFileInterstitial.edit(f"✅ Added: **{_uploadedFilesCount}** file(s)...")
             else:
                 raise CustomErrorMessage("⚠️ This model doesn't support file attachments, please choose another model to continue")
 

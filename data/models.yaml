@@ -1,7 +1,7 @@
 # TODO: Add baseURL for custom model endpoints such as Azure, Kimi, Groq
 
-- model_alias: openai::o3-mini
-  model_human_name: OpenAI O3 Mini
+- model_alias: openai::o3-mini-low
+  model_human_name: OpenAI O3 Mini (Low)
   model_description: Uses advanced and quick reasoning
   provider: openai
   model_id: o3-mini-low
@@ -11,8 +11,8 @@
   enable_threads: false
 
 - model_alias: openai::gpt-5-chat
-  model_human_name: OpenAI GPT-5 Chat
-  model_description: Instant Answers
+  model_human_name: OpenAI GPT-5 (Instant)
+  model_description: Instant and fast response
   provider: openai
   model_id: gpt-5-chat-latest
   has_reasoning: false
@@ -36,6 +36,18 @@
   model_description: Slow but provides quality responses
   provider: openai
   model_id: gpt-5-mini-high
+  has_reasoning: true
+  reasoning_type: openai
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+
+
+- model_alias: openai::gpt-5-mini-minimal
+  model_human_name: OpenAI GPT-5 Mini (Minimal)
+  model_description: Fast performance with basic reasoning
+  provider: openai
+  model_id: gpt-5-mini-minimal
   has_reasoning: true
   reasoning_type: openai
   enable_tools: true

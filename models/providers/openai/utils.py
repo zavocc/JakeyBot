@@ -1,10 +1,60 @@
 from core.exceptions import CustomErrorMessage
+from enum import Enum
 import discord as typehint_Discord
 import importlib
 import json
 import logging
 
+class ReasoningType(Enum):
+    OPENAI_GOOGLE = "openai"
+    OPENROUTER = "openrouter"
+    ANTHROPIC_COMPAT = "anthropic"
+
 class OpenAIUtils:
+    # Normalize reasoning
+    def parse_reasoning(self, model_id: str, reasoning_type: ReasoningType) -> dict:
+        _constructed_params = {
+            "extra_body": {},
+        }
+
+        # If the model reasoning uses OpenAI-style reasoning syntax
+        if reasoning_type == "openai":
+            # if model ID has "-minimal" at the end
+            if model_id.endswith("-minimal"):
+                _constructed_params["reasoning_effort"] = "minimal"
+            elif model_id.endswith("-medium"):
+                _constructed_params["reasoning_effort"] = "medium"
+            elif model_id.endswith("-high"):
+                _constructed_params["reasoning_effort"] = "high"
+            else:
+                _constructed_params["reasoning_effort"] = "low"
+
+            # Remove max_tokens to max_completion_tokens
+            _constructed_params["max_completion_tokens"] = 32000
+            _constructed_params.pop("max_tokens", None)
+
+        # This is specific for OpenRouter hosted models
+        elif reasoning_type == "openrouter":
+            _constructed_params["extra_body"]["reasoning"] = {"max_tokens": 4096}
+            if model_id.endswith("-minimal"):
+                _constructed_params["extra_body"]["reasoning"]["max_tokens"] = 128
+            elif model_id.endswith("-medium"):
+                _constructed_params["extra_body"]["reasoning"]["max_tokens"] = 12000
+            elif model_id.endswith("-high"):
+                _constructed_params["extra_body"]["reasoning"]["max_tokens"] = 24000
+
+        # This is specific for Anthropic hosted models
+        elif reasoning_type == "anthropic":
+            _constructed_params["extra_body"]["thinking"] = {"type": "enabled", "budget_tokens": 4096}
+            if model_id.endswith("-minimal"):
+                _constructed_params["extra_body"]["thinking"]["budget_tokens"] = 128
+            elif model_id.endswith("-medium"):
+                _constructed_params["extra_body"]["thinking"]["budget_tokens"] = 12000
+            elif model_id.endswith("-high"):
+                _constructed_params["extra_body"]["thinking"]["budget_tokens"] = 24000
+
+        return _constructed_params
+
     # Handle multimodal
     # Remove one per image restrictions so we'll just
     async def upload_files(self, attachment: typehint_Discord.Attachment, extra_metadata: str = None):
@@ -97,5 +147,7 @@ class OpenAIUtils:
                 "content": json.dumps(_tool_result)
             })
 
+        # Return the parts
+        return _tool_parts
         # Return the parts
         return _tool_parts
