@@ -149,5 +149,3 @@ class OpenAIUtils:
 
         # Return the parts
         return _tool_parts
-        # Return the parts
-        return _tool_parts
