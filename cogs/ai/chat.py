@@ -30,8 +30,8 @@ class Chat(commands.Cog):
     #######################################################
     # Pending request checker, prevents running multiple requests concurrently
     #######################################################
-    async def _check_awaiting_response_in_progress(self, guild_id: int):
-        if guild_id in self._ask_event.pending_ids:
+    async def _check_awaiting_response_in_progress(self, user_id: int):
+        if user_id in self._ask_event.pending_ids:
             raise ConcurrentRequestError
 
     #######################################################
@@ -62,18 +62,12 @@ class Chat(commands.Cog):
         """Set the default model whenever you mention me!"""
         await ctx.response.defer(ephemeral=True)
 
-        # Determine guild/user based on SHARED_CHAT_HISTORY setting
-        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
-            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
-        else:
-            guild_id = ctx.author.id
-
         # Check if inference is in progress
-        await self._check_awaiting_response_in_progress(guild_id)
+        await self._check_awaiting_response_in_progress(ctx.author.id)
 
         # Save the default model in the database
-        # await self.DBConn.set_default_model(guild_id=guild_id, model=model)
-        await self.DBConn.set_key(guild_id=guild_id, key="default_model", value=model)
+        # await self.DBConn.set_default_model(guild_id=ctx.author.id, model=model)
+        await self.DBConn.set_key(guild_id=ctx.author.id, key="default_model", value=model)
 
         # Validate model
         _model_props = await fetch_model(model_alias=model)
@@ -107,21 +101,15 @@ class Chat(commands.Cog):
         """Set the default OpenRouter model"""
         await ctx.response.defer(ephemeral=True)
 
-        # Determine guild/user based on SHARED_CHAT_HISTORY setting
-        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
-            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
-        else:
-            guild_id = ctx.author.id
-
         # Check if inference is in progress
-        await self._check_awaiting_response_in_progress(guild_id)
+        await self._check_awaiting_response_in_progress(ctx.author.id)
 
         # Set the default OpenRouter model and clear the OpenRouter chat thread
-        await self.DBConn.set_key(guild_id=guild_id, key="default_openrouter_model", value=model)
-        _setkeymodel = await self.DBConn.get_key(guild_id=guild_id, key="default_openrouter_model")
+        await self.DBConn.set_key(guild_id=ctx.author.id, key="default_openrouter_model", value=model)
+        _setkeymodel = await self.DBConn.get_key(guild_id=ctx.author.id, key="default_openrouter_model")
 
         # Clear ongoing conversations
-        await self.DBConn.set_key(guild_id=guild_id, key="chat_thread_openrouter", value=None)
+        await self.DBConn.set_key(guild_id=ctx.author.id, key="chat_thread_openrouter", value=None)
 
         # Respond
         await ctx.respond(
@@ -144,14 +132,8 @@ class Chat(commands.Cog):
         """Clear the context history of the conversation"""
         await ctx.response.defer(ephemeral=True)
 
-        # Determine guild/user based on SHARED_CHAT_HISTORY setting
-        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
-            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
-        else:
-            guild_id = ctx.author.id
-
         # Check if inference is in progress
-        await self._check_awaiting_response_in_progress(guild_id)
+        await self._check_awaiting_response_in_progress(ctx.author.id)
 
         # Command allowed only in DMs or in authorized guilds
         if ctx.guild is not None:
@@ -160,18 +142,18 @@ class Chat(commands.Cog):
                 return
 
         # Save current settings before clearing history
-        _feature = await self.DBConn.get_key(guild_id=guild_id, key="tool_use")
-        _model = await self.DBConn.get_key(guild_id=guild_id, key="default_model")
-        _openrouter_model = await self.DBConn.get_key(guild_id=guild_id, key="default_openrouter_model")
+        _feature = await self.DBConn.get_key(guild_id=ctx.author.id, key="tool_use")
+        _model = await self.DBConn.get_key(guild_id=ctx.author.id, key="default_model")
+        _openrouter_model = await self.DBConn.get_key(guild_id=ctx.author.id, key="default_openrouter_model")
 
         # Clear chat history
-        await self.DBConn.clear_history(guild_id=guild_id)
+        await self.DBConn.clear_history(guild_id=ctx.author.id)
 
         if not reset_prefs:
             # Restore settings if not resetting preferences
-            await self.DBConn.set_key(guild_id=guild_id, key="tool_use", value=_feature)
-            await self.DBConn.set_key(guild_id=guild_id, key="default_model", value=_model)
-            await self.DBConn.set_key(guild_id=guild_id, key="default_openrouter_model", value=_openrouter_model)
+            await self.DBConn.set_key(guild_id=ctx.author.id, key="tool_use", value=_feature)
+            await self.DBConn.set_key(guild_id=ctx.author.id, key="default_model", value=_model)
+            await self.DBConn.set_key(guild_id=ctx.author.id, key="default_openrouter_model", value=_openrouter_model)
             await ctx.respond("✅ Chat history reset!")
         else:
             await ctx.respond("✅ Chat history reset, model and feature settings are cleared!")
@@ -194,14 +176,8 @@ class Chat(commands.Cog):
         """Connect chat with tools to perform tasks, such as searching the web, generate images, and more."""
         await ctx.response.defer(ephemeral=True)
 
-        # Determine guild/user based on SHARED_CHAT_HISTORY setting
-        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
-            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
-        else:
-            guild_id = ctx.author.id
-
         # Check if inference is in progress
-        await self._check_awaiting_response_in_progress(guild_id)
+        await self._check_awaiting_response_in_progress(ctx.author.id)
 
         # Command allowed only in DMs or in authorized guilds
         if ctx.guild is not None:
@@ -210,9 +186,9 @@ class Chat(commands.Cog):
                 return
 
         # Retrieve current settings
-        _current_agent = await self.DBConn.get_key(guild_id=guild_id, key="tool_use")
-        _model = await self.DBConn.get_key(guild_id=guild_id, key="default_model")
-        _openrouter_model = await self.DBConn.get_key(guild_id=guild_id, key="default_openrouter_model")
+        _current_agent = await self.DBConn.get_key(guild_id=ctx.author.id, key="tool_use")
+        _model = await self.DBConn.get_key(guild_id=ctx.author.id, key="default_model")
+        _openrouter_model = await self.DBConn.get_key(guild_id=ctx.author.id, key="default_openrouter_model")
 
         # Convert "disabled" to None
         if agent_name == "disabled":
@@ -223,17 +199,17 @@ class Chat(commands.Cog):
         else:
             # Clear chat history IF the agent is not set to None
             if _current_agent:
-                await self.DBConn.clear_history(guild_id=guild_id)
+                await self.DBConn.clear_history(guild_id=ctx.author.id)
 
             # Set new agent_name and restore default model
-            await self.DBConn.set_key(guild_id=guild_id, key="tool_use", value=agent_name)
-            await self.DBConn.set_key(guild_id=guild_id, key="default_model", value=_model)
-            await self.DBConn.set_key(guild_id=guild_id, key="default_openrouter_model", value=_openrouter_model)
+            await self.DBConn.set_key(guild_id=ctx.author.id, key="tool_use", value=agent_name)
+            await self.DBConn.set_key(guild_id=ctx.author.id, key="default_model", value=_model)
+            await self.DBConn.set_key(guild_id=ctx.author.id, key="default_openrouter_model", value=_openrouter_model)
 
             if agent_name is None:
                 await ctx.respond("✅ Features disabled and chat is reset to reflect the changes")
             else:
-                if not _cur_feature:
+                if not _current_agent:
                     await ctx.respond(f"✅ Feature **{agent_name}** enabled successfully")
                 else:
                     await ctx.respond(f"✅ Feature **{agent_name}** enabled successfully and chat is reset to reflect the changes")

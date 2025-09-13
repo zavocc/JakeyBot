@@ -23,20 +23,14 @@ class BaseChat():
     # Events-based chat
     ###############################################
     async def _ask(self, prompt: Message):
-        # Check if SHARED_CHAT_HISTORY is enabled
-        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
-            guild_id = prompt.guild.id if prompt.guild else prompt.author.id # Always fallback to ctx.author.id for DMs since ctx.guild is None
-        else:
-            guild_id = prompt.author.id
-
         # Set default model
-        _model_props = await fetch_model(model_alias=(await self.DBConn.get_key(guild_id=guild_id, key="default_model")) or environ.get("DEFAULT_MODEL", "openai::gpt-4.1-mini"))
+        _model_props = await fetch_model(model_alias=(await self.DBConn.get_key(guild_id=prompt.author.id, key="default_model")) or environ.get("DEFAULT_MODEL", "openai::gpt-4.1-mini"))
         
         # Check what provider to call
         # TODO: add more checks, for now we lock in to OpenAI
         #if _model_props.provider == "openai":
         _chat_session = ChatSessionOpenAI(
-            user_id=guild_id,
+            user_id=prompt.author.id,
             model_props=_model_props,
             discord_bot=self.bot,
             discord_context=prompt,
@@ -52,7 +46,7 @@ class BaseChat():
 
         # Check if we need to load history by checking enable_threads prop
         if _model_props.enable_threads:
-            _chat_history = await load_history(user_id=guild_id, thread_name=_thread_name, db_conn=self.DBConn)
+            _chat_history = await load_history(user_id=prompt.author.id, thread_name=_thread_name, db_conn=self.DBConn)
 
             # Check for /chat:ephemeral only if enable_threads is true
             if not "/chat:ephemeral" in prompt.content:
@@ -118,7 +112,7 @@ class BaseChat():
         # Save to chat history
         if _append_history:
             await save_history(
-                user_id=guild_id,
+                user_id=prompt.author.id,
                 thread_name=_thread_name,
                 chat_thread=_result,
                 db_conn=self.DBConn

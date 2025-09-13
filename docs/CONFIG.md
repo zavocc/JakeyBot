@@ -35,5 +35,3 @@ To use Google Search, Bing Search, and YouTube tools, you must set the following
 
 ## Administrative
 - `TEMP_DIR` - Path to store temporary uploaded/downloaded attachments for multimodal use. Defaults to `temp/` in the cuurent directory if not set. Files are always deleted on every execution regardless if its successful or not, or when the bot is restared or shutdown.
-
-- `SHARED_CHAT_HISTORY` - Determines whether to share the chat history to all members inside the guild. Accepts case insensitive boolean values. We recommend setting this to `false` as the bot does not have admin controls to manage chat history guild wide and conversations are treated as single dialogue. Setting to `false` makes it as if interacting the bot in DMs having their own history regardless of the setting. Keep in mind that this does not immediately delete per-guild chat history when set to `false`. Use SQLite database browser to manually manage history, refer to [HistoryManagement class](../core/ai/history.py) for more information.
