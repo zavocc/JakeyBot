@@ -13,11 +13,10 @@ class ChatSessionOpenAI(OpenAIUtils):
     def __init__(self, 
                  user_id: int, 
                  model_props: typehint_ModelProps,
-                 openai_client: openai.Client = None,
                  discord_bot: typehint_Discord.Bot = None,
                  discord_context: typehint_Discord.ApplicationContext = None,
-                 db_conn: typehint_History = None):
-        
+                 db_conn: typehint_History = None,
+                 client_name: str = None):
         # Discord bot object - needed for interactions with current state of Discord API
         self.discord_bot: typehint_Discord.Bot = discord_bot or None
 
@@ -25,8 +24,17 @@ class ChatSessionOpenAI(OpenAIUtils):
         self.discord_context: typehint_Discord.ApplicationContext = discord_context or None
 
         # OpenAI Client, for efficiency we can reuse the same client instance
+        # Check if its a legitimate client SDK from openai
         # Otherwise we create a new one
-        self.openai_client: openai.AsyncClient = openai_client or openai.AsyncClient(api_key=environ.get("OPENAI_API_KEY"))
+        if client_name and type(getattr(discord_bot, client_name, None)) == openai.AsyncClient:
+            if not discord_bot and not isinstance(discord_bot, typehint_Discord.Bot):
+                raise ValueError("client_name is provided but discord_bot is None and is not a valid discord.Bot instance")
+
+            logging.info("Reusing existing OpenAI client from discord.Bot subclass: %s", client_name)
+            self.openai_client: openai.AsyncClient = getattr(discord_bot, client_name)
+        else:
+            logging.info("Creating new OpenAI client instance for ChatSessionOpenAI")
+            self.openai_client: openai.AsyncClient = openai.AsyncClient(api_key=environ.get("OPENAI_API_KEY"))
 
         # Model properties
         try:
@@ -126,7 +134,7 @@ class ChatSessionOpenAI(OpenAIUtils):
             # Initial check
             if _response.choices[0].message.tool_calls:
                 # Append the chat history
-                chat_history.append(_response.choices[0].message.model_dump(exclude_unset=True))
+                chat_history.append(_response.choices[0].message.model_dump(exclude_defaults=True, exclude_none=True, exclude_unset=True))
 
                 # Tool calls
                 _tool_calls = _response.choices[0].message.tool_calls
@@ -151,7 +159,7 @@ class ChatSessionOpenAI(OpenAIUtils):
                 break
 
         # Append to chat history
-        chat_history.append(_response.choices[0].message.model_dump(exclude_unset=True))
+        chat_history.append(_response.choices[0].message.model_dump(exclude_defaults=True, exclude_none=True, exclude_unset=True))
 
         # Clear uploaded files after use to prevent reuse in subsequent messages
         if hasattr(self, "uploaded_files"):

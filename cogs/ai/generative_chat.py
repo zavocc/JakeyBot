@@ -38,15 +38,21 @@ class BaseChat():
         _chat_session = ChatSessionOpenAI(
             user_id=guild_id,
             model_props=_model_props,
-            openai_client=self.bot._openai_client if hasattr(self.bot, "_openai_client") else None,
             discord_bot=self.bot,
             discord_context=prompt,
-            db_conn=self.DBConn
+            db_conn=self.DBConn,
+            client_name=_model_props.client_name
         )
+
+        # Check if "thread_name" is set in model props so we can separate chat threads
+        if _model_props.thread_name:
+            _thread_name = f"chat_thread_{_model_props.thread_name}"
+        else:
+            _thread_name = f"chat_thread_{_model_props.provider}"
 
         # Check if we need to load history by checking enable_threads prop
         if _model_props.enable_threads:
-            _chat_history = await load_history(user_id=guild_id, provider=_model_props.provider, db_conn=self.DBConn)
+            _chat_history = await load_history(user_id=guild_id, provider=_thread_name, db_conn=self.DBConn)
 
             # Check for /chat:ephemeral only if enable_threads is true
             if not "/chat:ephemeral" in prompt.content:

@@ -14,10 +14,11 @@ class ServicesInitBot(bridge.Bot):
 
     async def start_services(self):
         # Gemini API Client
-        self._gemini_api_client = genai.Client(api_key=environ.get("GEMINI_API_KEY"))
+        self.gemini_api_client = genai.Client(api_key=environ.get("GEMINI_API_KEY"))
         logging.info("Gemini API client initialized successfully")
 
         # OpenAI client for openai models
+        # TODO: To be deprecated in the future to move to declarative yaml syntax
         _base_url = environ.get("OPENAI_API_ENDPOINT")
 
         # Check if we need to use default_query param for Azure OpenAI
@@ -28,7 +29,7 @@ class ServicesInitBot(bridge.Bot):
         else:
             _default_query = None
 
-        self._openai_client = openai.AsyncOpenAI(
+        self.openai_client = openai.AsyncClient(
             api_key=environ.get("OPENAI_API_KEY"),
             base_url=_base_url,
             default_query=_default_query
@@ -38,38 +39,15 @@ class ServicesInitBot(bridge.Bot):
         else:
             logging.info("OpenAI client initialized successfully with default endpoint")
 
-        # We are currently testing the next generation of Azure OpenAI
-        # Simply pass this to your baseURL: https://YOUR-RESOURCE-NAME.openai.azure.com/openai/v1/
-        # If things break, enable the commented code below to use Azure OpenAI without the nextgen API
-        # and comment the above line
-
-        # if environ.get("OPENAI_USE_AZURE_OPENAI"):
-        #     # OpenAI API endpoint must be set to Azure OpenAI endpoint
-        #     if not _base_url:
-        #         raise ValueError("OPENAI_API_ENDPOINT must be set when using Azure OpenAI")
-        #     
-        #     self._openai_client = openai.AsyncAzureOpenAI(
-        #         azure_endpoint=_base_url,
-        #         api_key=environ.get("OPENAI_API_KEY"),
-        #         api_version="2024-12-01-preview"
-        #     )
-        #     logging.info("Using Azure OpenAI service for serving OpenAI models")
-        # else:
-        #     self._openai_client = openai.AsyncOpenAI(
-        #         api_key=environ.get("OPENAI_API_KEY"),
-        #         base_url=_base_url
-        #     )
-        #     logging.info("Using OpenAI API for serving OpenAI models")
-
         # OpenAI client for OpenRouter
-        self._openai_client_openrouter = openai.AsyncOpenAI(
+        self.openai_client_openrouter = openai.AsyncClient(
             api_key=environ.get("OPENROUTER_API_KEY"),
             base_url="https://openrouter.ai/api/v1"
         )
         logging.info("OpenAI client for OpenRouter initialized successfully")
 
         # OpenAI client for Groq based models
-        self._openai_client_groq = openai.AsyncOpenAI(
+        self.openai_client_groq = openai.AsyncClient(
             api_key=environ.get("GROQ_API_KEY"),
             base_url="https://api.groq.com/openai/v1"
         )
