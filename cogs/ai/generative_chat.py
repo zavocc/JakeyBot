@@ -48,11 +48,11 @@ class BaseChat():
         if _model_props.thread_name:
             _thread_name = f"chat_thread_{_model_props.thread_name}"
         else:
-            _thread_name = f"chat_thread_{_model_props.provider}"
+            _thread_name = f"chat_thread_{_model_props.sdk}"
 
         # Check if we need to load history by checking enable_threads prop
         if _model_props.enable_threads:
-            _chat_history = await load_history(user_id=guild_id, provider=_thread_name, db_conn=self.DBConn)
+            _chat_history = await load_history(user_id=guild_id, thread_name=_thread_name, db_conn=self.DBConn)
 
             # Check for /chat:ephemeral only if enable_threads is true
             if not "/chat:ephemeral" in prompt.content:
@@ -70,8 +70,6 @@ class BaseChat():
             _show_info = True
         else:
             _show_info = False
-
-        
 
         # File attachment processing
         if prompt.attachments:
@@ -121,7 +119,7 @@ class BaseChat():
         if _append_history:
             await save_history(
                 user_id=guild_id,
-                provider=_model_props.provider,
+                thread_name=_thread_name,
                 chat_thread=_result,
                 db_conn=self.DBConn
             )
@@ -154,19 +152,6 @@ class BaseChat():
             
             # Remove the mention from the prompt
             message.content = re.sub(f"<@{self.bot.user.id}>", '', message.content).strip()
-
-            # Check for image attachments, if exists, put the URL in the prompt
-            # TODO: Support for multiple attachments
-            #if message.attachments:
-            #    _alttext = message.attachments[0].description if message.attachments[0].description else "No alt text provided"
-            #    message.content = inspect.cleandoc(f"""<extra_metadata>
-            #        <attachment url="{message.attachments[0].url}" />
-            #        <alt>
-            #            {_alttext}
-            #        </alt>
-            #    </extra_metadata>
-            #
-            #    {message.content}""")
 
             # If the bot is mentioned through reply with mentions, also add its previous message as context
             # So that the bot will reply to that query without quoting the message providing relevant response

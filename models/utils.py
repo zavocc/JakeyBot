@@ -20,17 +20,17 @@ async def fetch_model(model_alias: str) -> ModelProps:
 
     return ModelProps(**_model_dict)
 
-# Load chat history from provider
-async def load_history(user_id: int, provider: str, db_conn: History) -> list:
-    """Fetch chat history for a specific provider using get_key method."""
+# Load chat history from thread_name
+async def load_history(user_id: int, thread_name: str, db_conn: History) -> list:
+    """Fetch chat history for a specific thread_name using get_key method."""
     try:
-        _history = await db_conn.get_key(user_id, f"chat_thread_{provider}")
+        _history = await db_conn.get_key(user_id, f"chat_thread_{thread_name}")
         return _history # Returns none for new threads
     except Exception as e:
-        logging.error("Error loading history for provider %s, reason: %s", provider, e)
+        logging.error("Error loading history for thread_name %s, reason: %s", thread_name, e)
         return None
 
 # Save chat history
-async def save_history(user_id: int, provider: str, chat_thread: list, db_conn: History) -> None:
-    """Save chat history for a specific provider using set_key method."""
-    await db_conn.set_key(user_id, f"chat_thread_{provider}", chat_thread)
+async def save_history(user_id: int, thread_name: str, chat_thread: list, db_conn: History) -> None:
+    """Save chat history for a specific thread_name using set_key method."""
+    await db_conn.set_key(user_id, f"chat_thread_{thread_name}", chat_thread)

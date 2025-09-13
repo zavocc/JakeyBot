@@ -78,13 +78,17 @@ class Chat(commands.Cog):
         # Validate model
         _model_props = await fetch_model(model_alias=model)
 
-        _strings = f"✅ Default model set to **{_model_props.model_human_name}** and chat history is set for provider **{_model_props.provider}**"
+        # Chat thread
+        if _model_props.thread_name:
+            _thread_name = _model_props.thread_name
+        else:
+            _thread_name = _model_props.sdk
+
+        _strings = f"✅ Default model set to **{_model_props.model_human_name}** and chat thread is assigned to **{_thread_name}**"
         if not _model_props.enable_tools:
             await ctx.respond(f"> This model lacks real time information and tools\n" + _strings)
         else:
             await ctx.respond(_strings)
-
-
 
 
     #######################################################
@@ -175,19 +179,19 @@ class Chat(commands.Cog):
 
 
     #######################################################
-    # Slash Command: feature
+    # Slash Command: agent
     #######################################################
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
     )
     @discord.option(
-        "capability",
-        description="Integrate tools to chat! Setting chat features will clear your history!",
+        "agent_name",
+        description="Integrate tools to chat! Setting chat agents will clear your history!",
         choices=ModelsList.get_tools_list(),
     )
-    async def feature(self, ctx, capability: str):
-        """Enhance your chat with capabilities! Some are in BETA so things may not always pick up"""
+    async def agent(self, ctx, agent_name: str):
+        """Connect chat with tools to perform tasks, such as searching the web, generate images, and more."""
         await ctx.response.defer(ephemeral=True)
 
         # Determine guild/user based on SHARED_CHAT_HISTORY setting
@@ -206,33 +210,33 @@ class Chat(commands.Cog):
                 return
 
         # Retrieve current settings
-        _cur_feature = await self.DBConn.get_key(guild_id=guild_id, key="tool_use")
+        _current_agent = await self.DBConn.get_key(guild_id=guild_id, key="tool_use")
         _model = await self.DBConn.get_key(guild_id=guild_id, key="default_model")
         _openrouter_model = await self.DBConn.get_key(guild_id=guild_id, key="default_openrouter_model")
 
         # Convert "disabled" to None
-        if capability == "disabled":
-            capability = None
+        if agent_name == "disabled":
+            agent_name = None
 
-        if _cur_feature == capability:
-            await ctx.respond("✅ Feature already set!")
+        if _current_agent == agent_name:
+            await ctx.respond("✅ Agent already set!")
         else:
-            # Clear chat history IF the feature is not set to None
-            if _cur_feature:
+            # Clear chat history IF the agent is not set to None
+            if _current_agent:
                 await self.DBConn.clear_history(guild_id=guild_id)
 
-            # Set new capability and restore default model
-            await self.DBConn.set_key(guild_id=guild_id, key="tool_use", value=capability)
+            # Set new agent_name and restore default model
+            await self.DBConn.set_key(guild_id=guild_id, key="tool_use", value=agent_name)
             await self.DBConn.set_key(guild_id=guild_id, key="default_model", value=_model)
             await self.DBConn.set_key(guild_id=guild_id, key="default_openrouter_model", value=_openrouter_model)
 
-            if capability is None:
+            if agent_name is None:
                 await ctx.respond("✅ Features disabled and chat is reset to reflect the changes")
             else:
                 if not _cur_feature:
-                    await ctx.respond(f"✅ Feature **{capability}** enabled successfully")
+                    await ctx.respond(f"✅ Feature **{agent_name}** enabled successfully")
                 else:
-                    await ctx.respond(f"✅ Feature **{capability}** enabled successfully and chat is reset to reflect the changes")
+                    await ctx.respond(f"✅ Feature **{agent_name}** enabled successfully and chat is reset to reflect the changes")
 
     # Global error handler for the Cog
     async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
