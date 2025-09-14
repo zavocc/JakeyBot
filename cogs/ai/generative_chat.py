@@ -1,6 +1,6 @@
 from core.exceptions import *
 from core.services.helperfunctions import HelperFunctions
-from core.ai.history import History as typehint_History
+from core.history import History as typehint_History
 from discord import Message
 from models.utils import fetch_model, load_history, save_history
 from models.providers.openai.completion import ChatSessionOpenAI

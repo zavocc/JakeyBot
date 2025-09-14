@@ -18,6 +18,13 @@ class HelperFunctions:
     # TODO: When adding multiple models, we may need to use YAML-based or environment-based configuration
     # Right now Gemini is the solid choice for almost everything. 
     # Also, prevent breaking changes... we keep the same structure
+    #
+    #
+    # TODO (9/12/2025): Refactor to use the latest declarative yaml syntax from models.yaml
+    # More specifically the fetch_model method from models.utils
+    #
+    # Rather than hardcoding the model names here, we find the "default: true" key in declarative yaml syntax
+    # Or similar
     @staticmethod
     def fetch_default_model(
         model_type: Literal["base", "reasoning"] = "base",

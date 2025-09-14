@@ -1,5 +1,5 @@
 from aimodels.gemini import Completions
-from core.ai.core import ModelsList
+from models.core import ModelsList
 from core.exceptions import CustomErrorMessage, PollOffTopicRefusal
 from core.services.helperfunctions import HelperFunctions
 from discord.ext import commands

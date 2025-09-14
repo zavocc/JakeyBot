@@ -6,6 +6,8 @@ import aiohttp
 import logging
 import openai
 
+# TODO: Change from initbot.py to subclassbot.py and class name to SubClassBotServicesPlug
+
 # List of services to be started, separated from main.py
 # for cleanliness and modularity
 class ServicesInitBot(bridge.Bot):

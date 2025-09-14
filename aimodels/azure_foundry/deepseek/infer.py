@@ -1,5 +1,5 @@
 from ..base import BaseInitProvider
-from core.ai.core import Utils
+from models.core import Utils
 from os import environ
 import litellm
 import re

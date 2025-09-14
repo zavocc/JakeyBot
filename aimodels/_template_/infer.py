@@ -1,5 +1,5 @@
 # type: ignore
-from core.ai.core import Utils
+from models.core import Utils
 import discord
 
 # A base template for other models

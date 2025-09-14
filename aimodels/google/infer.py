@@ -1,5 +1,5 @@
 from .config import ModelParams
-from core.ai.core import Utils
+from models.core import Utils
 from core.exceptions import CustomErrorMessage
 from google import genai
 from google.genai import types

@@ -1,6 +1,6 @@
 from .utils import OpenAIUtils
-from core.ai.core import Utils
-from core.ai.history import History as typehint_History
+from models.core import Utils
+from core.history import History as typehint_History
 from core.exceptions import CustomErrorMessage
 from models.validation import ModelParamsOpenAIDefaults as typehint_ModelParams
 from models.validation import ModelProps as typehint_ModelProps

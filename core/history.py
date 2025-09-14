@@ -6,6 +6,11 @@ import discord as typehint_Discord
 import logging
 import motor.motor_asyncio
 
+
+# TODO: 
+# - Revamp fetch_default_model to use latest declarative yaml syntax from core.services.helperfunctions
+# - Move history.py to /models/database.py and rename History class to DatabaseConnector or similar
+
 _fetchdict = HelperFunctions.fetch_default_model(model_type="reasoning", output_modalities="text", provider="gemini")
 DEFAULT_MODEL = f"{_fetchdict['provider']}::{_fetchdict['model_name']}"
 
@@ -71,78 +76,8 @@ class History:
 
 
 ####################################################################################
-# Chat History Management
+# Database Management
 ####################################################################################
-
-    # Load chat history (DEPRECATED)
-    async def load_history(self, guild_id: int, model_provider: str):
-        guild_id = self._normalize_guild_id(guild_id)
-        _document = await self._ensure_document(guild_id)
-
-        # Check if model_provider_{model_provider} exists in the document
-        if f"chat_thread_{model_provider}" not in _document:
-            await self._collection.update_one({"guild_id": guild_id}, {
-                "$set": {f"chat_thread_{model_provider}": None}
-            })
-            _document[f"chat_thread_{model_provider}"] = None
-
-        return _document[f"chat_thread_{model_provider}"]
-
-    # DEPRECATED
-    async def save_history(self, guild_id: int, chat_thread, model_provider: str) -> None:
-        guild_id = self._normalize_guild_id(guild_id)
-        await self._ensure_document(guild_id)
-        await self._collection.update_one({"guild_id": guild_id}, {
-            "$set": {f"chat_thread_{model_provider}": chat_thread}
-        }, upsert=True)
-
-
-    # Clear chat history
-    async def clear_history(self, guild_id: int) -> None:
-        guild_id = self._normalize_guild_id(guild_id)
-        await self._collection.delete_one({"guild_id": guild_id})
-
-    # Tool configuration management
-    async def set_tool_config(self, guild_id: int, tool: str = None) -> None:
-        guild_id = self._normalize_guild_id(guild_id)
-        await self._ensure_document(guild_id, tool)
-        await self._collection.update_one({"guild_id": guild_id}, {
-            "$set": {"tool_use": tool}
-        }, upsert=True)
-
-    async def get_tool_config(self, guild_id: int):
-        guild_id = self._normalize_guild_id(guild_id)
-        _document = await self._ensure_document(guild_id)
-        return _document["tool_use"]
-
-    # Default model management
-    async def set_default_model(self, guild_id: int, model: str) -> None:
-        guild_id = self._normalize_guild_id(guild_id)
-
-        if not model or not isinstance(model, str):
-            raise ValueError("Model must be a non-empty string")
-
-        await self._ensure_document(guild_id, model=model)
-        try:
-            await self._collection.update_one(
-                {"guild_id": guild_id},
-                {"$set": {"default_model": model}},
-                upsert=True
-            )
-        except Exception as e:
-            logging.error("Error setting default model: %s", e)
-            raise HistoryDatabaseError("Error setting default model")
-
-    # Get default model
-    async def get_default_model(self, guild_id: int):
-        guild_id = self._normalize_guild_id(guild_id)
-        try:
-            _document = await self._ensure_document(guild_id)
-            return _document["default_model"]
-        except Exception as e:
-            logging.error("Error getting default model: %s", e)
-            raise HistoryDatabaseError("Error getting default model")
-        
     # Directly set custom keys and values to the document
     async def set_key(self, guild_id: int, key: str, value) -> None:
         guild_id = self._normalize_guild_id(guild_id)
@@ -169,4 +104,9 @@ class History:
         except Exception as e:
             logging.error("Error getting key: %s", e)
             raise HistoryDatabaseError(f"Error getting key: {key}")
+
+    # Clear chat history
+    async def clear_history(self, guild_id: int) -> None:
+        guild_id = self._normalize_guild_id(guild_id)
+        await self._collection.delete_one({"guild_id": guild_id})
 

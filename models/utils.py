@@ -1,5 +1,5 @@
 from .validation import ModelProps
-from core.ai.history import History
+from core.history import History
 from core.exceptions import CustomErrorMessage
 import aiofiles
 import logging

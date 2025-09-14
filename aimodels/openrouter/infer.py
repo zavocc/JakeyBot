@@ -1,8 +1,8 @@
 # TODO: KEEP THE BASE64 FORMAT REGARDLES
 from .config import ModelParams
-from core.ai.core import Utils
+from models.core import Utils
 from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
-from core.ai.history import History as typehint_History
+from core.history import History as typehint_History
 from os import environ
 import base64
 import copy
