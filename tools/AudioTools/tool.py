@@ -62,10 +62,10 @@ class Tool(ToolManifest):
             raise ValueError("GROQ_API_KEY is not set, please set it in the environment variables")
 
         # Check if global aiohttp client session is initialized
-        if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
+        if not hasattr(self.discord_bot, "aiohttp_instance"):
             raise Exception("aiohttp client session for get requests not initialized, please check the bot configuration")
         
-        _client_session: aiohttp.ClientSession = self.discord_bot._aiohttp_main_client_session
+        _client_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
         _headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {environ.get('GROQ_API_KEY')}"

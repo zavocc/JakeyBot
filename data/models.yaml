@@ -12,6 +12,18 @@
   client_name: openai_client_groq
   thread_name: moonshotai
 
+- model_alias: googlepro
+  model_human_name: Gemini 2.5 Flash
+  model_description: Fast performance for everyday tasks
+  sdk: google
+  model_id: gemini-2.5-flash-medium
+  has_reasoning: true
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+  client_name: gemini_api_client
+  thread_name: gemini
+
 - model_alias: o3-mini-low
   model_human_name: OpenAI O3 Mini (Low)
   model_description: Uses advanced and quick reasoning

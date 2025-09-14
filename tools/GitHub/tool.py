@@ -69,14 +69,14 @@ class Tool(ToolManifest):
 
     async def _tool_function_github_file_tool(self, files: list, repo: str, branch: str = "master"):
         # Must initialize the aiohttp client session
-        if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
+        if not hasattr(self.discord_bot, "aiohttp_instance"):
             raise Exception("aiohttp client session for get requests not initialized, please check the bot configuration")
         
         # Check if we have GITHUB_TOKEN is set
         if not environ.get("GITHUB_TOKEN"):
             raise ValueError("GitHub API token not set, please go to https://github.com/settings/tokens?type=beta")
 
-        _session: aiohttp.ClientSession = self.discord_bot._aiohttp_main_client_session
+        _session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
 
         # Headers
         _headers = {
@@ -140,7 +140,7 @@ class Tool(ToolManifest):
             raise ValueError("Must be a proper search query, must not contain newlines or code blocks")
         
         # Must initialize the aiohttp client session
-        if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
+        if not hasattr(self.discord_bot, "aiohttp_instance"):
             raise Exception("aiohttp client session for get requests not initialized, please check the bot configuration")
         
         # Must not include symbols like --, .., etc. since this will cause 422 error
@@ -159,7 +159,7 @@ class Tool(ToolManifest):
         # Strip the query
         query = query.strip()
 
-        _session: aiohttp.ClientSession = self.discord_bot._aiohttp_main_client_session
+        _session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
 
         # Check if we have GITHUB_TOKEN is set
         if not environ.get("GITHUB_TOKEN"):

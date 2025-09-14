@@ -32,12 +32,12 @@ class Completions(ModelParams):
         if not hasattr(discord_bot, "_gemini_api_client"):
             raise Exception("Gemini API client for completions not initialized, please check the bot configuration")
 
-        # Check if _aiohttp_main_client_session is in the self._discord_bot object
-        if not hasattr(discord_bot, "_aiohttp_main_client_session"):
+        # Check if aiohttp_instance is in the self._discord_bot object
+        if not hasattr(discord_bot, "aiohttp_instance"):
             raise Exception("aiohttp client session for get requests not initialized, please check the bot configuration")
 
         self._gemini_api_client: genai.Client = discord_bot._gemini_api_client
-        self._aiohttp_main_client_session: aiohttp.ClientSession = discord_bot._aiohttp_main_client_session
+        self.aiohttp_instance: aiohttp.ClientSession = discord_bot.aiohttp_instance
 
         self._model_name = model_name
         self._guild_id = guild_id

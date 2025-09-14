@@ -1,3 +1,4 @@
+from typing import List, Literal
 from pydantic import BaseModel, Field
 
 class ModelProps(BaseModel):
@@ -18,3 +19,27 @@ class ModelProps(BaseModel):
 class ModelParamsOpenAIDefaults(BaseModel):
     temperature: int = Field(default=1)
     max_tokens: int = Field(default=8192)
+
+class GeminiSafetySetting(BaseModel):
+    category: Literal[
+        "HARM_CATEGORY_HARASSMENT",
+        "HARM_CATEGORY_HATE_SPEECH",
+        "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        "HARM_CATEGORY_DANGEROUS_CONTENT"
+    ]
+    threshold: Literal["BLOCK_MEDIUM_AND_ABOVE"]
+
+class ModelParamsGeminiDefaults(BaseModel):
+    candidate_count: int = Field(default=1)
+    max_output_tokens: int = Field(default=8192)
+    temperature: float = Field(default=0.7)
+    top_p: float = Field(default=0.95)
+    top_k: int = Field(default=40)
+    safety_settings: List[GeminiSafetySetting] = Field(
+        default=[
+            GeminiSafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_MEDIUM_AND_ABOVE"),
+            GeminiSafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_MEDIUM_AND_ABOVE"),
+            GeminiSafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_MEDIUM_AND_ABOVE"),
+            GeminiSafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_MEDIUM_AND_ABOVE"),
+        ]
+    )

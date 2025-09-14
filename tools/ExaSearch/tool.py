@@ -17,10 +17,10 @@ class Tool(ToolManifest):
         if not query or not query.strip():
             raise ValueError("query parameter is required and cannot be empty")
         
-        if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
+        if not hasattr(self.discord_bot, "aiohttp_instance"):
             raise Exception("aiohttp client session for get requests not initialized and web browsing cannot continue, please check the bot configuration")
 
-        _session: aiohttp.ClientSession = self.discord_bot._aiohttp_main_client_session
+        _session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
 
         # Bing Subscription Key
         if not environ.get("EXA_AI_KEY"):

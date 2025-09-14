@@ -20,14 +20,14 @@ class Tool(ToolManifest):
             n_results = 10
 
         # Using piped.video to get the video data
-        if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
+        if not hasattr(self.discord_bot, "aiohttp_instance"):
             raise Exception("aiohttp client session for get requests not initialized, please check the bot configuration")
         
         # Check if we have YOUTUBE_DATA_v3_API_KEY is set
         if not environ.get("YOUTUBE_DATA_v3_API_KEY"):
             raise ValueError("YouTube Data v3 API key not set, please go to https://console.cloud.google.com/apis/library/youtube.googleapis.com and get an API key under Credentials in API & Services")
 
-        _session: aiohttp.ClientSession = self.discord_bot._aiohttp_main_client_session
+        _session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
 
         # YouTube Data v3 API Endpoint
         _endpoint = "https://www.googleapis.com/youtube/v3/search"

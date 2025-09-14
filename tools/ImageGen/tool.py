@@ -23,11 +23,11 @@ class Tool(ToolManifest):
         if not hasattr(self.discord_bot, "_gemini_api_client"):
             raise Exception("gemini api client isn't set up, please check the bot configuration")
         
-        if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
+        if not hasattr(self.discord_bot, "aiohttp_instance"):
             raise Exception("aiohttp client session for get requests not initialized, please check the bot configuration")
         
         _api_client: genai.Client = self.discord_bot._gemini_api_client
-        _client_session: aiohttp.ClientSession = self.discord_bot._aiohttp_main_client_session
+        _client_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
 
         # Craft prompts
         _prompt = [prompt]

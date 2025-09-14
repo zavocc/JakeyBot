@@ -64,12 +64,12 @@ class GeminiUtils(commands.Cog):
                 _mime_type = None
                 # Download the image as files like
                 # Maximum file size is 3MB so check it
-                async with self.bot._aiohttp_main_client_session.head(avatar_url) as _response:
+                async with self.bot.aiohttp_instance.head(avatar_url) as _response:
                     if int(_response.headers.get("Content-Length")) > 1500000:
                         raise Exception("Max file size reached")
                 
                 # Save it as bytes so base64 can read it
-                async with self.bot._aiohttp_main_client_session.get(avatar_url) as response:
+                async with self.bot.aiohttp_instance.get(avatar_url) as response:
                     # Get mime type
                     _mime_type = response.headers.get("Content-Type")
                     _filedata = await response.content.read()
@@ -148,12 +148,12 @@ class GeminiUtils(commands.Cog):
         _mime_type = None
         # Download the image as files like
         # Maximum file size is 3MB so check it
-        async with self.bot._aiohttp_main_client_session.head(_avatar_url) as _response:
+        async with self.bot.aiohttp_instance.head(_avatar_url) as _response:
             if int(_response.headers.get("Content-Length")) > 1500000:
                 raise CustomErrorMessage("Reduce the file size of the image to less than 1.5MB")
         
         # Save it as bytes so base64 can read it
-        async with self.bot._aiohttp_main_client_session.get(_avatar_url) as response:
+        async with self.bot.aiohttp_instance.get(_avatar_url) as response:
             # Get mime type
             _mime_type = response.headers.get("Content-Type")
             _filedata = await response.content.read()

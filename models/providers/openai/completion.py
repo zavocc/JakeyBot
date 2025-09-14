@@ -161,9 +161,5 @@ class ChatSessionOpenAI(OpenAIUtils):
         # Append to chat history
         chat_history.append(_response.choices[0].message.model_dump(exclude_defaults=True, exclude_none=True, exclude_unset=True))
 
-        # Clear uploaded files after use to prevent reuse in subsequent messages
-        if hasattr(self, "uploaded_files"):
-            self.uploaded_files = []
-
         # Return the chat history
         return chat_history

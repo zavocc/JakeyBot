@@ -1,0 +1,193 @@
+from .utils import GoogleUtils
+from models.core import Utils
+from core.database import History as typehint_History
+from core.exceptions import CustomErrorMessage
+from models.validation import ModelParamsGeminiDefaults as typehint_ModelParams
+from models.validation import ModelProps as typehint_ModelProps
+from os import environ
+import discord
+import io
+import logging
+import google.genai as google_genai
+import google.genai.types as google_genai_types
+
+class ChatSessionGoogle(GoogleUtils):
+    def __init__(self, 
+                 user_id: int, 
+                 model_props: typehint_ModelProps,
+                 discord_bot: discord.Bot = None,
+                 discord_context: discord.ApplicationContext = None,
+                 db_conn: typehint_History = None,
+                 client_name: str = None):
+        # Discord bot object - needed for interactions with current state of Discord API
+        self.discord_bot: discord.Bot = discord_bot or None
+
+        # For sending message
+        self.discord_context: discord.ApplicationContext = discord_context or None
+
+        # Google GenAI client, for efficiency we can reuse the same client instance
+        # Check if its a legitimate client SDK from google.genai
+        # Otherwise we create a new one
+        if client_name and type(getattr(discord_bot, client_name, None)) == google_genai.Client:
+            if not discord_bot and not isinstance(discord_bot, discord.Bot):
+                raise ValueError("client_name is provided but discord_bot is None and is not a valid discord.Bot instance")
+
+            logging.info("Reusing existing Google GenAI client from discord.Bot subclass: %s", client_name)
+            self.google_genai_client: google_genai.Client = getattr(discord_bot, client_name)
+        else:
+            logging.info("Creating new Google GenAI client instance for ChatSessionGoogle")
+            self.google_genai_client: google_genai.Client = google_genai.Client(api_key=environ.get("GEMINI_API_KEY"))
+
+        # Model properties
+        try:
+            # Check if model_props is already a ModelProps instance
+            if isinstance(model_props, typehint_ModelProps):
+                self.model_props = model_props
+            else:
+                # If it's a dict, create a new ModelProps instance
+                self.model_props = typehint_ModelProps(**model_props)
+        except Exception as e:
+            logging.error("Invalid model_props provided: %s", e)
+            raise ValueError(f"Invalid model_props: {e}")
+
+        # Model config
+        _model_params: typehint_ModelParams = typehint_ModelParams()
+        self.model_params: dict = _model_params.model_dump()
+
+        # User ID
+        self.user_id: int = user_id
+
+        # Database
+        self.db_conn: typehint_History = db_conn or None
+        
+    # Chat
+    async def send_message(self, prompt: str, chat_history: list = None, system_instructions: str = None):
+        # Props used:
+        # model_id -> required, str
+        # enable_tools -> true or false
+        # has_reasoning -> required, true or false
+        # reasoning_type -> simple or advanced
+
+        # Load chat history and system instructions
+        if chat_history is None or type(chat_history) != list:
+            chat_history = []
+
+        # Format the prompt
+        _prep_prompt = {
+            "role": "user",
+            "parts": []
+        }
+
+        # Check if we have an attachment
+        if hasattr(self, "uploaded_files") and self.uploaded_files:
+            # Add the attachment part to the prompt
+            _prep_prompt["parts"].extend(self.uploaded_files)
+        
+        # Append the actual prompt
+        _prep_prompt["parts"].append({
+            "text": prompt,
+        })
+
+        # Add the prepared prompt to chat history
+        chat_history.append(_prep_prompt)
+
+        # Normalize reasoning
+        if self.model_props.has_reasoning:
+            # Parse reasoning and get constructed params
+            _reasoning_params = self.parse_reasoning(self.model_props.model_id)
+            
+            # Update model_params with reasoning parameters
+            self.model_params.update(_reasoning_params)
+            
+            # Strip any suffixes "-minimal", "-low", "-medium", "-high"
+            self.model_props.model_id = self.model_props.model_id.replace("-minimal", "").replace("-low", "").replace("-medium", "").replace("-high", "")
+        # For reasoning disabled
+        else:
+            # If the model ID has any suffix but reasoning is disabled, raise error
+            if any(self.model_props.model_id.endswith(_rsning_suffix) for _rsning_suffix in ["-minimal", "-low", "-medium", "-high"]):
+                logging.error("Model ID has reasoning suffix but reasoning disabled: %s", self.model_props.model_id)
+                raise CustomErrorMessage("⚠️ The selected model requires reasoning to be enabled. But it has not been configured, please select other models.")
+            
+        # Check for tools
+        if self.model_props.enable_tools:
+            await self.load_tools()
+            self.model_params["tools"] = [{"function_declarations": self.tool_schema}]
+
+        # Get response
+        if not self.model_props.model_id:
+            raise ValueError("Model is required, chose nothing")
+        
+        # Generate
+        _response: google_genai_types.GenerateContentResponse = await self.google_genai_client.aio.models.generate_content(
+            model=self.model_props.model_id,
+            contents=chat_history,
+            config={
+                **self.model_params,
+                "system_instruction": system_instructions or "You are a helpful assistant."
+            }
+        )
+
+        # TODO: Add validation if the file expires from server
+        # Either throw exception, reinit chat thread and throw exception, or rerun response with reinit chat thread
+
+        # Check if the model reaches to STOP
+        if not hasattr(_response, "candidates") and _response.candidates[0].finish_reason != "STOP":
+            logging.warning("The model did not finish with STOP, it finished with: %s", _response.candidates[0].finish_reason)
+            raise CustomErrorMessage("⚠️ The model did not return a response, please try again.")
+
+        # Send each part of the response
+        while True:
+            _tool_parts = None
+            # Iterate through each part of the response
+            for _part in _response.candidates[0].content.parts:
+                # Send text message if needed
+                if _part.text and _part.text.strip():
+                    await Utils.send_ai_response(self.discord_context, prompt, _part.text, self.discord_context.channel.send)
+
+                # Render the code execution inline data when needed
+                if _part.inline_data:
+                    if _part.inline_data.mime_type == "image/png":
+                        await self.discord_context.channel.send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="image.png"))
+                    elif _part.inline_data.mime_type == "image/jpeg":
+                        await self.discord_context.channel.send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="image.jpeg"))
+                    else:
+                        await self.discord_context.channel.send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="code_exec_artifact.bin"))
+
+                # Check for tool calls
+                if _part.function_call:
+                    chat_history.append(_response.candidates[0].content.model_dump(exclude_unset=True))
+
+                    # Tool parts
+                    _tool_parts = await self.execute_tools(name=_part.function_call.name, arguments=_part.function_call.args)
+
+                    # Extend chat history with tool parts
+                    chat_history.extend(_tool_parts)
+
+                    # Run the response the second time
+                    _response: google_genai_types.GenerateContentResponse = await self.google_genai_client.aio.models.generate_content(
+                        model=self.model_props.model_id,
+                        contents=chat_history,
+                        config={
+                            **self.model_params,
+                            "system_instruction": system_instructions or "You are a helpful assistant."
+                        }
+                    )
+
+            # Check if we need to run tools again, this block will stop the loop and response should have been sent
+            # _tool_parts would indicate if we ran tools before, which means there is a new _response assigned
+            if _tool_parts:
+                if not _response.function_calls:
+                    _textResponse = _response.text or _response.candidates[0].content.parts[-1].text
+                    if _textResponse and _textResponse.strip():
+                        await Utils.send_ai_response(self.discord_context, prompt, _textResponse, self.discord_context.channel.send)
+                else:
+                    continue  # Continue the while loop to process tool calls
+                
+            # Assuming everything went well
+            break
+
+
+        # Append to chat history
+        chat_history.append(_response.candidates[0].content.model_dump(exclude_unset=True))
+        # Return the chat history
+        return chat_history

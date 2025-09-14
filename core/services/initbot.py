@@ -57,7 +57,7 @@ class ServicesInitBot(bridge.Bot):
 
 
         # Everything else (mostly GET requests)
-        self._aiohttp_main_client_session = aiohttp.ClientSession(loop=self.loop)
+        self.aiohttp_instance = aiohttp.ClientSession(loop=self.loop)
         logging.info("aiohttp client session initialized successfully")
 
         # Azure Blob Storage Client
@@ -71,7 +71,7 @@ class ServicesInitBot(bridge.Bot):
 
     async def stop_services(self):
         # Close aiohttp client sessions
-        await self._aiohttp_main_client_session.close()
+        await self.aiohttp_instance.close()
         logging.info("aiohttp client session closed successfully")
 
         # Close Azure Blob Storage client

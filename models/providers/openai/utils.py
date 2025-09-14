@@ -29,9 +29,8 @@ class OpenAIUtils:
             else:
                 _constructed_params["reasoning_effort"] = "low"
 
-            # Remove max_tokens to max_completion_tokens
+            # Set max_completion_tokens
             _constructed_params["max_completion_tokens"] = 32000
-            _constructed_params.pop("max_tokens", None)
 
         # This is specific for OpenRouter hosted models
         elif reasoning_type == "openrouter":
