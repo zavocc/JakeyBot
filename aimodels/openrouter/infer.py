@@ -2,7 +2,7 @@
 from .config import ModelParams
 from models.core import Utils
 from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
-from core.history import History as typehint_History
+from core.database import History as typehint_History
 from os import environ
 import base64
 import copy

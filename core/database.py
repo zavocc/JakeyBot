@@ -6,10 +6,10 @@ import discord as typehint_Discord
 import logging
 import motor.motor_asyncio
 
-
 # TODO: 
 # - Revamp fetch_default_model to use latest declarative yaml syntax from core.services.helperfunctions
 # - Move history.py to /models/database.py and rename History class to DatabaseConnector or similar
+#    - Did moving to core.database
 
 _fetchdict = HelperFunctions.fetch_default_model(model_type="reasoning", output_modalities="text", provider="gemini")
 DEFAULT_MODEL = f"{_fetchdict['provider']}::{_fetchdict['model_name']}"

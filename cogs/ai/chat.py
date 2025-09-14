@@ -1,6 +1,6 @@
 from models.core import ModelsList
 from cogs.ai.generative_chat import BaseChat
-from core.history import History
+from core.database import History
 from core.exceptions import *
 from discord.commands import SlashCommandGroup
 from discord.ext import commands
