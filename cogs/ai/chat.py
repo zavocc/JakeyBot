@@ -6,7 +6,7 @@ from discord.commands import SlashCommandGroup
 from discord.ext import commands
 from models.utils import fetch_model
 from os import environ
-from tools.utils import fetch_actual_tool_name
+from tools import fetch_actual_tool_name
 import discord
 import logging
 import motor.motor_asyncio

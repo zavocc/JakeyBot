@@ -1,11 +1,12 @@
 from core.exceptions import CustomErrorMessage
 from os import environ
 from pathlib import Path
-from tools.utils import fetch_tool_schema, mcp_check, return_tool_object
+from tools import ToolUseInstance
 import discord as typehint_Discord
 import aiofiles
 import aiohttp
 import asyncio
+import json
 import logging
 import random
 
@@ -107,10 +108,15 @@ class GoogleUtils:
         # And to use mcp_check utility function
 
         # For models to read the available tools to be executed
-        self.tool_schema: list = await fetch_tool_schema(_tool_name, tool_type="google")
+        self.tool_state = ToolUseInstance()
+        _tool_schema = await self.tool_state.fetch_and_load_tool_schema(_tool_name, tool_type="google")
 
         # Tool class object containing all functions
-        self.tool_object_payload: object = await return_tool_object(_tool_name, discord_context=self.discord_context, discord_bot=self.discord_bot)
+        if (await self.tool_state.mcp_check()):
+            self.tool_schema = [_tool_schema]
+        else:
+            self.tool_schema = [{"function_declarations": _tool_schema}]
+            self.tool_object_payload: object = await self.tool_state.return_tool_object(_tool_name, discord_context=self.discord_context, discord_bot=self.discord_bot)
 
     # Runs tools and outputs parts
     async def execute_tools(self, name: str, arguments: str) -> list:
@@ -118,18 +124,28 @@ class GoogleUtils:
         await self.discord_context.channel.send(f"> -# Using: ***{name}***")
 
         # Execute tools
-        if hasattr(self.tool_object_payload, f"tool_{name}"):
-            _func_payload = getattr(self.tool_object_payload, f"tool_{name}")
+        # Check if we can use MCP
+        if (await self.tool_state.mcp_check()):
+            try:
+                _tool_result = {"api_result": (await self.tool_state.execute_mcp_tool(name, json.loads(arguments)))}
+            except Exception as e:
+                logging.error("An error occurred while calling remote tool function: %s", e)
+                _tool_result = {"error": f"⚠️ Something went wrong while executing the tool: {e}"}
+            finally:
+                await self.tool_state.close_mcpclient()
         else:
-            logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s")
-            raise CustomErrorMessage("⚠️ An error has occurred while performing action, try choosing another tools to continue.")
+            if hasattr(self.tool_object_payload, f"tool_{name}"):
+                _func_payload = getattr(self.tool_object_payload, f"tool_{name}")
+            else:
+                logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s")
+                raise CustomErrorMessage("⚠️ An error has occurred while performing action, try choosing another tools to continue.")
 
-        # Call the tools
-        try:
-            _tool_result = {"api_result": await _func_payload(**arguments)}
-        except Exception as e:
-            logging.error("An error occurred while calling tool function: %s", e)
-            _tool_result = {"error": f"⚠️ Something went wrong while executing the tool: {e}\nTell the user about this error"}
+            # Call the tools
+            try:
+                _tool_result = {"api_result": await _func_payload(**arguments)}
+            except Exception as e:
+                logging.error("An error occurred while calling tool function: %s", e)
+                _tool_result = {"error": f"⚠️ Something went wrong while executing the tool: {e}\nTell the user about this error"}
 
         # Append the parts
         _tool_parts.append(

@@ -1,0 +1,3 @@
+tool_name: Web Fetcher (REMOTE)
+is_mcp: true
+mcp_url: https://remote.mcpservers.org/fetch/mcp

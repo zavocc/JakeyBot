@@ -1,6 +1,6 @@
 from core.exceptions import CustomErrorMessage
 from enum import Enum
-from tools.utils import fetch_tool_schema, mcp_check, return_tool_object
+from tools import ToolUseInstance
 import discord as typehint_Discord
 import json
 import logging
@@ -91,10 +91,12 @@ class OpenAIUtils:
         # And to use mcp_check utility function
 
         # For models to read the available tools to be executed
-        self.tool_schema: list = await fetch_tool_schema(_tool_name, tool_type="openai")
+        self.tool_state = ToolUseInstance()
+        self.tool_schema: list = await self.tool_state.fetch_and_load_tool_schema(_tool_name, tool_type="openai")
 
         # Tool class object containing all functions
-        self.tool_object_payload: object = await return_tool_object(_tool_name, discord_context=self.discord_context, discord_bot=self.discord_bot)
+        if not (await self.tool_state.mcp_check()):
+            self.tool_object_payload: object = await self.tool_state.return_tool_object(_tool_name, discord_context=self.discord_context, discord_bot=self.discord_bot)
 
     # Runs tools and outputs parts
     async def execute_tools(self, tool_calls: list) -> list:
@@ -102,18 +104,29 @@ class OpenAIUtils:
         for _tool_call in tool_calls:
             await self.discord_context.channel.send(f"> -# Using: ***{_tool_call.function.name}***")
 
-            if hasattr(self.tool_object_payload, f"tool_{_tool_call.function.name}"):
-                _func_payload = getattr(self.tool_object_payload, f"tool_{_tool_call.function.name}")
-            else:
-                logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s")
-                raise CustomErrorMessage("⚠️ An error has occurred while performing action, try choosing another tools to continue.")
+            # Check if we can use MCP
+            if (await self.tool_state.mcp_check()):
+                try:
+                    _tool_result = {"api_result": (await self.tool_state.execute_mcp_tool(_tool_call.function.name, json.loads(_tool_call.function.arguments)))}
+                except Exception as e:
+                    logging.error("An error occurred while calling remote tool function: %s", e)
+                    _tool_result = {"error": f"⚠️ Something went wrong while executing the tool: {e}"}
+                finally:
+                    await self.tool_state.close_mcpclient()
 
-            # Call the tools
-            try:
-                _tool_result = {"api_result": await _func_payload(**json.loads(_tool_call.function.arguments))}
-            except Exception as e:
-                logging.error("An error occurred while calling tool function: %s", e)
-                _tool_result = {"error": f"⚠️ Something went wrong while executing the tool: {e}\nTell the user about this error"}
+            else:
+                if hasattr(self.tool_object_payload, f"tool_{_tool_call.function.name}"):
+                    _func_payload = getattr(self.tool_object_payload, f"tool_{_tool_call.function.name}")
+                else:
+                    logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s")
+                    raise CustomErrorMessage("⚠️ An error has occurred while performing action, try choosing another tools to continue.")
+
+                # Call the tools
+                try:
+                    _tool_result = {"api_result": await _func_payload(**json.loads(_tool_call.function.arguments))}
+                except Exception as e:
+                    logging.error("An error occurred while calling tool function: %s", e)
+                    _tool_result = {"error": f"⚠️ Something went wrong while executing the tool: {e}"}
 
             _tool_parts.append({
                 "role": "tool",

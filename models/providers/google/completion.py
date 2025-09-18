@@ -116,7 +116,7 @@ class ChatSessionGoogle(GoogleUtils):
         # Check for tools
         if self.model_props.enable_tools:
             await self.load_tools()
-            self.model_params["tools"] = [{"function_declarations": self.tool_schema}]
+            self.model_params["tools"] = self.tool_schema
 
         # Get response
         if not self.model_props.model_id:
