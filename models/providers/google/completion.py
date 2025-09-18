@@ -73,6 +73,10 @@ class ChatSessionGoogle(GoogleUtils):
         if chat_history is None or type(chat_history) != list:
             chat_history = []
 
+        # If system instructions is disabled
+        if not self.model_props.enable_system_instructions:
+            system_instructions = None
+
         # Format the prompt
         _prep_prompt = {
             "role": "user",
@@ -125,7 +129,7 @@ class ChatSessionGoogle(GoogleUtils):
                 contents=chat_history,
                 config={
                     **self.model_params,
-                    "system_instruction": system_instructions or "You are a helpful assistant."
+                    "system_instruction": system_instructions or None
                 }
             )
         except google_genai_errors.ClientError as e:
@@ -186,7 +190,7 @@ class ChatSessionGoogle(GoogleUtils):
                         contents=chat_history,
                         config={
                             **self.model_params,
-                            "system_instruction": system_instructions or "You are a helpful assistant."
+                            "system_instruction": system_instructions or None
                         }
                     )
 

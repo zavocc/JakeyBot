@@ -69,7 +69,7 @@ class ChatSessionOpenAI(OpenAIUtils):
         # Load chat history and system instructions
         if chat_history is None or type(chat_history) != list:
             chat_history = []
-            if system_instructions:
+            if self.model_props.enable_system_instructions and system_instructions:
                 chat_history.append({
                     "role": "system",
                     "content": system_instructions

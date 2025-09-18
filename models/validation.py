@@ -13,6 +13,7 @@ class ModelProps(BaseModel):
     enable_tools: bool = Field(default=True, description="Enable tools")
     enable_files: bool = Field(default=True, description="Enable files (e.g. Images)")
     enable_threads: bool = Field(default=True, description="Enable chat history")
+    enable_system_instructions: bool = Field(default=True, description="Enable system instructions")
     reasoning_type: str = Field(default="openai", description="Reasoning type")
     client_name: str = Field(default=None, description="SDK Instance name from discord.Bot subclass")
 
