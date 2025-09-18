@@ -9,6 +9,7 @@ import discord
 import io
 import logging
 import google.genai as google_genai
+import google.genai.errors as google_genai_errors
 import google.genai.types as google_genai_types
 
 class ChatSessionGoogle(GoogleUtils):
@@ -118,14 +119,30 @@ class ChatSessionGoogle(GoogleUtils):
             raise ValueError("Model is required, chose nothing")
         
         # Generate
-        _response: google_genai_types.GenerateContentResponse = await self.google_genai_client.aio.models.generate_content(
-            model=self.model_props.model_id,
-            contents=chat_history,
-            config={
-                **self.model_params,
-                "system_instruction": system_instructions or "You are a helpful assistant."
-            }
-        )
+        try:
+            _response: google_genai_types.GenerateContentResponse = await self.google_genai_client.aio.models.generate_content(
+                model=self.model_props.model_id,
+                contents=chat_history,
+                config={
+                    **self.model_params,
+                    "system_instruction": system_instructions or "You are a helpful assistant."
+                }
+            )
+        except google_genai_errors.ClientError as e:
+            # Attempt to clear all file URLs since they may be expired
+            logging.error("Uh oh something went wrong while generating content, files may be expired, clearing files and raising error: %s", e)
+
+            for _chat_turns in chat_history:
+                for _part in _chat_turns["parts"]:
+                    # Check if we have file_data key then we just set it as None and set the text to "Expired"
+                    if _part.get("file_data"):
+                        _part["file_data"] = None
+                        _part["text"] = "[<system_notice>File attachment processed but expired from history. DO NOT make stuff up about it! Ask the user to reattach for more details</system_notice>]"
+
+
+            # Send message
+            await self.discord_context.channel.send("Something went wrong, please send me a message again.")
+            return chat_history
 
         # TODO: Add validation if the file expires from server
         # Either throw exception, reinit chat thread and throw exception, or rerun response with reinit chat thread
