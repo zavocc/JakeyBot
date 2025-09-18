@@ -1,11 +1,11 @@
 from core.exceptions import CustomErrorMessage
 from os import environ
 from pathlib import Path
+from tools.utils import fetch_tool_schema, mcp_check, return_tool_object
 import discord as typehint_Discord
 import aiofiles
 import aiohttp
 import asyncio
-import importlib
 import logging
 import random
 
@@ -102,38 +102,15 @@ class GoogleUtils:
     # Process Tools
     async def load_tools(self):
         _tool_name = await self.db_conn.get_key(self.user_id, "tool_use")
-        if _tool_name is None:
-            _function_payload = None
-        else:
-            # Tool CodeExecution is not supported
-            if _tool_name == "CodeExecution":
-                logging.error("CodeExecution tool is not supported.")
-                raise CustomErrorMessage("⚠️ CodeExecution is not available for this model. Please choose another model to continue")
 
-            try:
-                _function_payload = importlib.import_module(f"tools.{_tool_name}").Tool(
-                    method_send=self.discord_context.channel.send,
-                    discord_ctx=self.discord_context,
-                    discord_bot=self.discord_bot
-                )
-            except ModuleNotFoundError as e:
-                logging.error("I cannot import the tool because the module is not found: %s", e)
-                raise CustomErrorMessage("⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
-            
-        # Get the schemas
-        if _function_payload:
-            if type(_function_payload.tool_schema) == list:
-                _tool_schema = _function_payload.tool_schema
-            else:
-                _tool_schema = [_function_payload.tool_schema]
-        else:
-            _tool_schema = None
+        # TODO: Add proper checks if it's MCP so we can add attribute self.used_mcp = True
+        # And to use mcp_check utility function
 
         # For models to read the available tools to be executed
-        self.tool_schema: list = _tool_schema
+        self.tool_schema: list = await fetch_tool_schema(_tool_name, tool_type="google")
 
         # Tool class object containing all functions
-        self.tool_object_payload: object = _function_payload
+        self.tool_object_payload: object = await return_tool_object(_tool_name, discord_context=self.discord_context, discord_bot=self.discord_bot)
 
     # Runs tools and outputs parts
     async def execute_tools(self, name: str, arguments: str) -> list:
@@ -141,10 +118,8 @@ class GoogleUtils:
         await self.discord_context.channel.send(f"> -# Using: ***{name}***")
 
         # Execute tools
-        if hasattr(self.tool_object_payload, "_tool_function"):
-            _func_payload = getattr(self.tool_object_payload, "_tool_function")
-        elif hasattr(self.tool_object_payload, f"_tool_function_{name}"):
-            _func_payload = getattr(self.tool_object_payload, f"_tool_function_{name}")
+        if hasattr(self.tool_object_payload, f"tool_{name}"):
+            _func_payload = getattr(self.tool_object_payload, f"tool_{name}")
         else:
             logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s")
             raise CustomErrorMessage("⚠️ An error has occurred while performing action, try choosing another tools to continue.")

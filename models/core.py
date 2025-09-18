@@ -58,49 +58,35 @@ class ModelsList:
          
     @staticmethod
     def get_tools_list():
+        _toolsPath = "tools/apis"
+
         _hasYieldDisableValue = False
         if not _hasYieldDisableValue:
             yield discord.OptionChoice("Disabled", "disabled")
 
-        # Get directory names in projectroot/tools except ones starting with "."
+        # Get directory names in /tools/apis except ones starting with "."
         # Then we yield each as a discord.OptionChoice
-        for _tool_names in os.listdir("tools"):
+        for _tool_names in os.listdir("tools/apis"):
             # Folders starting with __pycache__ or . are not tools
             if _tool_names.startswith("__") or _tool_names.startswith("."):
                 logging.info("Skipping %s because it starts with __ or .", _tool_names)
                 continue
 
-            # If there's no manifest, handle exception to just continue
-            try:
-                _tool = importlib.import_module(f"tools.{_tool_names}")
-            except Exception as e:
-                # Log the error for syntax and import errors
-                logging.error("An error has occurred while importing the tool definition: %s, reason: %s", _tool_names, e)
+            # Check if it has manifest.yaml file
+            if not os.path.isfile(f"{_toolsPath}/{_tool_names}/manifest.yaml"):
+                logging.error("The tool %s does not have manifest.yaml file", _tool_names)
                 continue
 
-            # Check if it has __init__.py file
-            if not os.path.isfile(f"tools/{_tool_names}/__init__.py"):
-                logging.error("The tool %s does not have __init__.py file", _tool_names)
-                continue
+            # Check if we have "tool_name" in the manifest
+            with open(f"{_toolsPath}/{_tool_names}/manifest.yaml", "r") as _manifest:
+                _manifest_data = yaml.safe_load(_manifest)
 
-            # Check if there's a _tool_manifest.ToolManifest class and has tool_human_name attribute
-            if hasattr(_tool, "Tool") and hasattr(_tool.Tool, "tool_human_name"):
-                # Check if the class Tool has constructor parameters:
-                # method_send, discord_ctx, discord_bot
-                if hasattr(_tool.Tool, "__init__"):
-                    # Check if the constructor has the parameters
-                    if not all(_params in _tool.Tool.__init__.__code__.co_varnames for _params in ["method_send", "discord_ctx", "discord_bot"]):
-                        logging.error("The tool %s does not have the required constructor parameters: method_send, discord_ctx, and discord_bot", _tool_names)
-                        continue
-
-                # Get the tool human name
-                _tool_human_name = getattr(_tool.Tool, "tool_human_name")
-            else:
-                logging.error("The tool %s does not have a tool_human_name and other necessary tool definition attributes", _tool_names)
-                continue
+                if not _manifest_data.get("tool_name"):
+                    logging.error("The tool %s does not have a tool_name", _tool_names)
+                    continue
 
             # Yield as discord.OptionChoice
-            yield discord.OptionChoice(_tool_human_name, _tool_names)
+            yield discord.OptionChoice(_manifest_data["tool_name"], _tool_names)
 
     @staticmethod
     async def get_remix_styles_async(style: str = "I'm feeling lucky"):

@@ -206,10 +206,18 @@ class BaseChat():
                 logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)
             finally:
                 # Remove the reaction
-                await message.remove_reaction("⌛", self.bot.user)
+                if isinstance(message, discord.Message):
+                    try:
+                        await message.remove_reaction("⌛", self.bot.user)
+                    except discord.NotFound:
+                        # Message was deleted, so we can't remove the reaction
+                        pass
+                    except discord.HTTPException:
+                        # Other HTTP errors (like missing permissions)
+                        pass
 
                 # Remove the user from the pending list
                 if _userID in self.pending_ids:
                     self.pending_ids.remove(_userID)
 
-    
+

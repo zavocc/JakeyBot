@@ -6,6 +6,7 @@ from discord.commands import SlashCommandGroup
 from discord.ext import commands
 from models.utils import fetch_model
 from os import environ
+from tools.utils import fetch_actual_tool_name
 import discord
 import logging
 import motor.motor_asyncio
@@ -209,10 +210,13 @@ class Chat(commands.Cog):
             if agent_name is None:
                 await ctx.respond("✅ Features disabled and chat is reset to reflect the changes")
             else:
+                # Return with actual tool name
+                _actual_human_agent_name = await fetch_actual_tool_name(agent_name)
+
                 if not _current_agent:
-                    await ctx.respond(f"✅ Feature **{agent_name}** enabled successfully")
+                    await ctx.respond(f"✅ Feature **{_actual_human_agent_name}** enabled successfully")
                 else:
-                    await ctx.respond(f"✅ Feature **{agent_name}** enabled successfully and chat is reset to reflect the changes")
+                    await ctx.respond(f"✅ Feature **{_actual_human_agent_name}** enabled successfully and chat is reset to reflect the changes")
 
     # Global error handler for the Cog
     async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):

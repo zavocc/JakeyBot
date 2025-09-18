@@ -1,19 +1,15 @@
-# Built in Tools
-from .manifest import ToolManifest
 from os import environ
 import aiohttp
 import discord
 
 # Function implementations
-class Tool(ToolManifest):
+class Tools:
     def __init__(self, method_send, discord_ctx, discord_bot):
-        super().__init__()
-
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-    async def _tool_function_web_search(self, query: str = None, searchType: str = "auto", numResults: int = 5, includeDomains: list = None, excludeDomains: list = None, includeText: list = None, excludeText: list = None, showHighlights: bool = False, showSummary: bool = False):
+    async def tool_web_search(self, query: str = None, searchType: str = "auto", numResults: int = 5, includeDomains: list = None, excludeDomains: list = None, includeText: list = None, excludeText: list = None, showHighlights: bool = False, showSummary: bool = False):
         if not query or not query.strip():
             raise ValueError("query parameter is required and cannot be empty")
         
