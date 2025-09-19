@@ -1,10 +1,10 @@
-from core.services.helperfunctions import HelperFunctions
-from google.genai import types
+from models.tasks.images.fal_ai import run
 import aiohttp
 import datetime
 import discord
-import google.genai as genai
+import filetype
 import io
+import logging
 
 class Tools:
     def __init__(self, method_send, discord_ctx, discord_bot):
@@ -13,97 +13,139 @@ class Tools:
         self.discord_bot = discord_bot
 
     # Image generator
-    async def tool_image_generator(self, prompt: str, temperature: int = 0.7, discord_attachment_url: str = None):
+    async def tool_image_generator(self, prompt: str, aspect_ratio: str = "1:1", resolution: str = "1K", negative_prompt: str = None, enable_safety_checker: bool = True, model: str = "imagen4/preview/ultra"):
         # Create image
         _message_curent = await self.method_send(f"⌛ Generating with prompt **{prompt}**... this may take few minutes")
         
-        # Check if global aiohttp and google genai client session is initialized
-        if not hasattr(self.discord_bot, "_gemini_api_client"):
-            raise Exception("gemini api client isn't set up, please check the bot configuration")
-        
-        if not hasattr(self.discord_bot, "aiohttp_instance"):
-            raise Exception("aiohttp client session for get requests not initialized, please check the bot configuration")
-        
-        _api_client: genai.Client = self.discord_bot._gemini_api_client
-        _client_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
+        if hasattr(self.discord_bot, "aiohttp_instance"):
+            _aiohttp_client_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
 
-        # Craft prompts
-        _prompt = [prompt]
+        # Initialize _params with default empty dict
+        _params = {}
 
-        # Download the image if needed        
-        # We need to check the file size
-        if discord_attachment_url:
-            async with _client_session.head(url=discord_attachment_url) as _response:
-                _content_length = int(_response.headers.get("Content-Length", 0))
-
-                if _content_length == 0:
-                    raise ValueError("The image size is zero or invalid, please provide a valid image")
-                
-                # Check if the mime type is image
-                _mime_type = _response.headers.get("Content-Type", None)
-                if not _mime_type or not _mime_type.startswith("image"):
-                    raise ValueError("The file is not an image, please provide an image file")
-
-                if _content_length > 10 * 1024 * 1024:
-                    raise ValueError("The image size is too large, please provide an image that is less than 10MB")
-                
-            # Download the image
-            async with _client_session.get(discord_attachment_url) as _response:
-                _imagedata = await _response.read()
-
-            _prompt.append(types.Part.from_bytes(data=_imagedata, mime_type=_mime_type))
-
-        # Set the model
-        _default_model = HelperFunctions.fetch_default_model(
-            model_type="base",
-            output_modalities="image",
-            provider="gemini"
-        )["model_name"]
-
-        # Generate response
-        _response = await _api_client.aio.models.generate_content(
-            model=_default_model,
-            contents=_prompt,
-            config={
-                "response_modalities": ["Text", "Image"],
-                "candidate_count": 1,
-                "temperature": temperature,
-                "max_output_tokens": 8192
+        # Update parameters for SeeDream 4
+        if model == "imagen4/preview/ultra":
+            logging.info("Using Imagen 4 model for generation and passing negative prompt")
+            negative_prompt = negative_prompt
+            _params = {
+                "aspect_ratio": aspect_ratio,
+                "resolution": resolution
             }
+        elif model == "bytedance/seedream/v4/text-to-image":
+            logging.info("Using Seedream 4 model for generation, setting width and height to 4096 and disabling negative prompt")
+            negative_prompt = None
+            _params = {
+                "enable_safety_checker": enable_safety_checker,
+                "image_size": {
+                    "width": 3840,
+                    "height": 2160
+                }
+            }
+
+        # Generate image
+        _discordImageURLs = []
+        _imagesInBytes = await run(
+            prompt=prompt,
+            model_name=model,
+            negative_prompt=negative_prompt,
+            aiohttp_session=_aiohttp_client_session,
+            **_params
         )
 
-        if _response.candidates[0].finish_reason == "IMAGE_SAFETY":
-            raise ValueError("The image is blocked by the filter, try again")
+        # Send the image and add each of the discord message to the list so we can add it as context later
+        for _index, _images in enumerate(_imagesInBytes):
+            # Check the image type
+            _magicType = filetype.guess(_images)
+            if _magicType.mime == "image/jpeg":
+                _formatExtension = "jpg"
+            elif _magicType.mime == "image/png":
+                _formatExtension = "png"
+            elif _magicType.mime == "image/webp":
+                _formatExtension = "webp"
+            else:
+                _formatExtension = "bin"
 
-        # ResponseRM
-        _gemini_responses = {
-            "status": "IMAGE_GENERATION_SUCCESS",
-            "additionalMetadata": "Here are responses generated by Gemini during generation process, this is only used for debugging purposes so only use this if the model spits out errors like refusals. Do not send this to the end users",
-            "additionalInstructions": "DO NOT present te Gemini responses to end users!!! These texts are already sent.. Also, do not send the image URL as it will also be used for internal purposes and it would end up displaying it twice",
-            "userExperienceConstraints": "DO NOT send the link to the image, it will be sent automatically. Unless the user explicitly asks for the image URL, then you can send it",
-            "responsesLogs": [],
-            "generatedImagesURL": []
-        }
+            # Filename
+            _fileName = f"image_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_index_{_index}.{_formatExtension}"
 
-        # Send the image
-        for _index, _parts in enumerate(_response.candidates[0].content.parts):
-            if _parts.inline_data:
-                # HH_MM_SS_MMDDYYYY_EPOCH
-                _file_format = datetime.datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
+            _sentImg = await self.discord_ctx.channel.send(file=discord.File(io.BytesIO(_images), filename=_fileName))
+            _discordImageURLs.append(_sentImg.attachments[0].url)
+            
 
-                 # Send the image
-                _files = await self.method_send(file=discord.File(fp=io.BytesIO(_parts.inline_data.data), filename=f"generated_image{_file_format}_image_part{_index}.png"))
-                _gemini_responses["generatedImagesURL"].append(
-                    {
-                        "generatedImageDiscordURL": _files.attachments[0].url,
-                        "fileName": _files.attachments[0].filename,
-                        "createdTime": _file_format,
-                        "index": _index
-                    }
-                )
+        # Delete the _imagesInBytes to save memory
+        del _imagesInBytes
 
         # Delete status
         await _message_curent.delete()
 
-        # Cleanup
-        return _gemini_responses
+         # Cleanup
+        return {
+            "guidelines": "The image is already sent to the UI, no need to print the URLs as it will just cause previews to display images twice.",
+            "context_results": _discordImageURLs,
+            "status": "Image generated successfully"
+        }
+    
+    # Image editor
+    async def tool_image_editor(self, prompt: str, image_url: list[str], enable_safety_checker: bool = True, model: str = "gemini-25-flash-image"):
+        # Create image
+        _message_curent = await self.method_send(f"⌛ I will now edit the images with prompt **{prompt}**... this may take few minutes")
+        
+        if hasattr(self.discord_bot, "aiohttp_instance"):
+            _aiohttp_client_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
+
+        # Output in 4k for seedream 
+        if model == "bytedance/seedream/v4":
+            logging.info("Using Seedream 4 model for editing, setting width and height to 4096")
+            _additional_params = {
+                "enable_safety_checker": enable_safety_checker,
+                "image_size": {
+                    "width": 3840,
+                    "height": 2160
+                }
+            }
+        else:
+            logging.info("Using Gemini 2.5 Flash model for editing")
+            _additional_params = {}
+
+        # Generate image
+        _discordImageURLs = []
+        _imagesInBytes = await run(
+            prompt=prompt,
+            model_name=model,
+            image_urls=image_url,
+            aiohttp_session=_aiohttp_client_session,
+            **_additional_params
+        )
+
+        # Send the image and add each of the discord message to the list so we can add it as context later
+        for _index, _images in enumerate(_imagesInBytes):
+            # Check the image type
+            _magicType = filetype.guess(_images)
+            if _magicType.mime == "image/jpeg":
+                _formatExtension = "jpg"
+            elif _magicType.mime == "image/png":
+                _formatExtension = "png"
+            elif _magicType.mime == "image/webp":
+                _formatExtension = "webp"
+            else:
+                _formatExtension = "bin"
+
+            # Filename
+            _fileName = f"image_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_index_{_index}.{_formatExtension}"
+
+            _sentImg = await self.discord_ctx.channel.send(file=discord.File(io.BytesIO(_images), filename=_fileName))
+            _discordImageURLs.append(_sentImg.attachments[0].url)
+            
+
+        # Delete the _imagesInBytes to save memory
+        del _imagesInBytes
+
+        # Delete status
+        await _message_curent.delete()
+
+         # Cleanup
+        return {
+            "guidelines": "The image is already sent to the UI, no need to print the URLs as it will just cause previews to display images twice.",
+            "context_results": _discordImageURLs,
+            "status": "Image generated successfully"
+        }
