@@ -25,7 +25,6 @@ async def fetch_tool_schema(tool_name: str, tool_type: Literal['openai', 'google
     if not _manifest_list.get("tool_list"):
         raise CustomErrorMessage("⚠️ The agent you selected is currently misconfigured, please choose another agent using `/agent` command")
     
-    # TODO: Chk if it's MCP
     # Iterate each list and pop one of the dict keys to validate
     if tool_type == 'openai':
         for _schema in _manifest_list["tool_list"]:
@@ -69,8 +68,3 @@ async def return_tool_object(tool_name: str, discord_context = None, discord_bot
         raise CustomErrorMessage("⚠️ The feature you've chosen is not available at the moment, please choose another tool using `/feature` command or try again later")
     
     return _function_payload
-
-# Checks if tool_name is MCP so return_tool_objects won't be called as we use FastMCP for remote MCPs
-# Used in load_tools in models.providers.provider_name.utils 
-async def mcp_check(tool_name: str) -> bool:
-    pass

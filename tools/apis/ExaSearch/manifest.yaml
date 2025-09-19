@@ -1,5 +1,4 @@
 tool_name: Web Search
-is_mcp: false
 tool_list: 
   - name: web_search
     description: Search the web to inform response, use semantic or keyword based search.

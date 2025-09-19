@@ -1,6 +1,6 @@
 from core.exceptions import CustomErrorMessage
 from enum import Enum
-from tools.utils import fetch_tool_schema, mcp_check, return_tool_object
+from tools.utils import fetch_tool_schema, return_tool_object
 import discord as typehint_Discord
 import json
 import logging
@@ -87,8 +87,6 @@ class OpenAIUtils:
     async def load_tools(self):
         _tool_name = await self.db_conn.get_key(self.user_id, "tool_use")
 
-        # TODO: Add proper checks if it's MCP so we can add attribute self.used_mcp = True
-        # And to use mcp_check utility function
 
         # For models to read the available tools to be executed
         self.tool_schema: list = await fetch_tool_schema(_tool_name, tool_type="openai")
