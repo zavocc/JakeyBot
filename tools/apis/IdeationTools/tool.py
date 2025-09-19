@@ -1,14 +1,12 @@
-from .manifest import ToolManifest
 import discord
 import io
-class Tool(ToolManifest):
+class Tools:
     def __init__(self, method_send, discord_ctx, discord_bot):
-        super().__init__()
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-    async def _tool_function_canvas(self, thread_title: str, plan: str, content: str, code: str = None, todos: list = None):
+    async def tool_canvas(self, thread_title: str, plan: str, content: str, code: str = None, todos: list = None):
         # Check if we're in a server
         if not self.discord_ctx.guild:
             raise Exception("This tool can only be used in a server")
@@ -33,7 +31,7 @@ class Tool(ToolManifest):
 
         return "Thread created successfully"
 
-    async def _tool_function_artifacts(self, file_contents: str, file_name: str):
+    async def tool_artifacts(self, file_contents: str, file_name: str):
         # Send the file
         await self.method_send(file=discord.File(io.StringIO(file_contents), file_name))
 

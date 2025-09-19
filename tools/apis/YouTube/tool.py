@@ -1,4 +1,3 @@
-from .manifest import ToolManifest
 from aimodels.gemini import Completions
 from core.services.helperfunctions import HelperFunctions
 from google.genai import types
@@ -7,14 +6,13 @@ import aiohttp
 import inspect
 import json
 
-class Tool(ToolManifest):
+class Tools:
     def __init__(self, method_send, discord_ctx, discord_bot):
-        super().__init__()
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
     
-    async def _tool_function_youtube_search(self, query: str, n_results: int = 10):
+    async def tool_youtube_search(self, query: str, n_results: int = 10):
         # Must not be above 50
         if n_results > 50:
             n_results = 10
@@ -83,7 +81,7 @@ class Tool(ToolManifest):
 
         return _videos
     
-    async def _tool_function_youtube_corpus(self, video_id: str, corpus: str, fps_mode: str = "dense", start_time: int = None, end_time: int = None, media_resolution: str = "MEDIA_RESOLUTION_UNSPECIFIED"):
+    async def tool_youtube_corpus(self, video_id: str, corpus: str, fps_mode: str = "dense", start_time: int = None, end_time: int = None, media_resolution: str = "MEDIA_RESOLUTION_UNSPECIFIED"):
         # Check if global aiohttp and google genai client session is initialized
         if not hasattr(self.discord_bot, "_gemini_api_client"):
             raise Exception("gemini api client isn't set up, please check the bot configuration")

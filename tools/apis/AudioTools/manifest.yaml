@@ -1,0 +1,157 @@
+tool_name: Audio Tools
+tool_list:
+  - name: audio_editor
+    description: Edit audio, simply provide the description for editing, and EzAudio will do the rest
+    parameters:
+      type: object
+      properties:
+        discord_attachment_url:
+          type: string
+          description: The discord attachment URL of the audio file
+        prompt:
+          type: string
+          description: The prompt for the model to add elements to the audio
+        edit_start_in_seconds:
+          type: number
+          description: The start time in seconds to edit the audio
+        edit_length_in_seconds:
+          type: number
+          description: The length in seconds to edit the audio
+      required:
+        - discord_attachment_url
+        - prompt
+  - name: audio_generator
+    description: Generate audio from text using PlayHT (Legacy)
+    parameters:
+      type: object
+      properties:
+        text:
+          type: string
+        voice:
+          type: string
+          enum:
+            - Aaliyah
+            - Adelaide
+            - Angelo
+            - Arista
+            - Atlas
+            - Basil
+            - Briggs
+            - Calum
+            - Celeste
+            - Cheyenne
+            - Chip
+            - Cillian
+            - Deedee
+            - Eleanor
+            - Fritz
+            - Gail
+            - Indigo
+            - Jennifer
+            - Judy
+            - Mamaw
+            - Mason
+            - Mikail
+            - Mitch
+            - Nia
+            - Quinn
+            - Ruby
+            - Thunder
+      required:
+        - text
+  - name: audio_generator_gemini
+    description: Generate audio from text using Gemini models with steerable speech
+    parameters:
+      type: object
+      properties:
+        text:
+          type: string
+        style:
+          type: string
+          description: Steer the speech style and can accept such as whisper, laughter, singing, sarcasm, accent, pace etc.
+        voice:
+          type: string
+          enum:
+            - Zephyr
+            - Kore
+            - Orus
+            - Autonoe
+            - Umbriel
+            - Erinome
+            - Laomedeia
+            - Schedar
+            - Achird
+            - Sadachbia
+            - Puck
+            - Fenrir
+            - Aoede
+            - Enceladus
+            - Algieba
+            - Algenib
+            - Achernar
+            - Gacrux
+            - Zubenelgenubi
+            - Sadalager
+            - Charon
+            - Leda
+            - Callirrhoe
+            - Iapetus
+            - Despina
+            - Rasalgethi
+            - Alnilam
+            - Pulcherrima
+            - Vindemiatrix
+            - Sulafar
+      required:
+        - text
+  - name: podcastgen
+    description: Generate long comprehensive audio podcasts from given prompts of a subject matter.
+    parameters:
+      type: object
+      properties:
+        dialogues:
+          type: array
+          items:
+            type: object
+            properties:
+              speaker_type:
+                type: string
+                enum:
+                  - host_one
+                  - host_two
+                description: Select which host to use for dialogue, this is used to ensure smooth podcast generation. Host one is male, and host two is female
+              dialogue:
+                type: string
+                description: The dialogue for the host to speak
+            required:
+              - speaker_type
+              - dialogue
+          description: This parameter is used as a syntax to construct a flow of a podcast. It's recommended to have 15-20 dialogues min
+        intent:
+          type: string
+          description: The title of the podcast for presentation purposes
+        est_listening_time:
+          type: string
+          description: Estimated listening time of the podcast, this is used for presentation purposes
+        brief_premise:
+          type: string
+          description: A brief premise of the podcast, this is used for presentation purposes
+      required:
+        - dialogues
+        - intent
+        - est_listening_time
+        - brief_premise
+  - name: voice_cloner
+    description: Clone voices and perform TTS tasks from the given audio files
+    parameters:
+      type: object
+      properties:
+        discord_attachment_url:
+          type: string
+          description: The discord attachment URL of the audio file
+        text:
+          type: string
+          description: The text for the target voice to dictate the text
+      required:
+        - discord_attachment_url
+        - text

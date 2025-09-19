@@ -1,4 +1,3 @@
-from .manifest import ToolManifest
 from core.services.helperfunctions import HelperFunctions
 from os import environ
 import aiofiles.os
@@ -12,15 +11,13 @@ import io
 import wave
 
 # Function implementations
-class Tool(ToolManifest):
+class Tools:
     def __init__(self, method_send, discord_ctx, discord_bot):
-        super().__init__()
-
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-    async def _tool_function_audio_editor(self, discord_attachment_url: str, prompt: str, edit_start_in_seconds: int = 3, edit_length_in_seconds: int = 5):
+    async def tool_audio_editor(self, discord_attachment_url: str, prompt: str, edit_start_in_seconds: int = 3, edit_length_in_seconds: int = 5):
         # Validate parameters
         if edit_length_in_seconds > 10 or edit_length_in_seconds < 0.5:
             edit_length_in_seconds = 5
@@ -56,7 +53,7 @@ class Tool(ToolManifest):
         return "Audio editing success"
     
     # Audio generator using PlayHT Groq Voices
-    async def _tool_function_audio_generator(self, text: str, voice: str = "Atlas"):
+    async def tool_audio_generator(self, text: str, voice: str = "Atlas"):
         # Check if GROQ_API_KEY is set
         if not environ.get("GROQ_API_KEY"):
             raise ValueError("GROQ_API_KEY is not set, please set it in the environment variables")
@@ -97,7 +94,7 @@ class Tool(ToolManifest):
         # Cleanup
         return "Audio success and the file should be sent automatically"
     
-    async def _tool_function_audio_generator_gemini(self, text: str, style: str = None, voice: str = "Puck"):
+    async def tool_audio_generator_gemini(self, text: str, style: str = None, voice: str = "Puck"):
         # Check if global aiohttp and google genai client session is initialized
         if not hasattr(self.discord_bot, "_gemini_api_client"):
             raise Exception("gemini api client isn't set up, please check the bot configuration")
@@ -145,7 +142,7 @@ class Tool(ToolManifest):
         else:
             raise Exception("The response from Gemini is not in audio format")
         
-    async def _tool_function_podcastgen(self, dialogues: dict, intent: str, est_listening_time, brief_premise):
+    async def tool_podcastgen(self, dialogues: dict, intent: str, est_listening_time, brief_premise):
         # Check if global aiohttp and google genai client session is initialized
         if not hasattr(self.discord_bot, "_gemini_api_client"):
             raise Exception("gemini api client isn't set up, please check the bot configuration")
@@ -237,7 +234,7 @@ class Tool(ToolManifest):
         # Get the URL of the podcast
         return f"Podcast generation success, remind the user to download the file as [Download here]({_podcast_url}) as this hosted audio will expire in two days"
 
-    async def _tool_function_voice_cloner(self, discord_attachment_url: str, text: str):
+    async def tool_voice_cloner(self, discord_attachment_url: str, text: str):
         # Import
         _gradio_client = importlib.import_module("gradio_client")
         

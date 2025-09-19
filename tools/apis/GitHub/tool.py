@@ -1,4 +1,3 @@
-from .manifest import ToolManifest
 from os import environ
 import aiohttp
 import base64
@@ -6,9 +5,8 @@ import html
 import re
 
 # Function implementations
-class Tool(ToolManifest):
+class Tools:
     def __init__(self, method_send, discord_ctx, discord_bot):
-        super().__init__()
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
@@ -67,7 +65,7 @@ class Tool(ToolManifest):
         
         return _search_results
 
-    async def _tool_function_github_file_tool(self, files: list, repo: str, branch: str = "master"):
+    async def tool_github_file_tool(self, files: list, repo: str, branch: str = "master"):
         # Must initialize the aiohttp client session
         if not hasattr(self.discord_bot, "aiohttp_instance"):
             raise Exception("aiohttp client session for get requests not initialized, please check the bot configuration")
@@ -126,7 +124,7 @@ class Tool(ToolManifest):
         
         return _codebasemetadatas
     
-    async def _tool_function_github_search_tool(self, search_type: str, query: str, page: int = 1):
+    async def tool_github_search_tool(self, search_type: str, query: str, page: int = 1):
         # Check if search query is
         # - Less than 256 characters
         # - Must not be crooked (e.g. literal code block)

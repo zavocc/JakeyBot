@@ -1,4 +1,3 @@
-from .manifest import ToolManifest
 from core.services.helperfunctions import HelperFunctions
 from google.genai import types
 import aiohttp
@@ -7,15 +6,14 @@ import discord
 import google.genai as genai
 import io
 
-class Tool(ToolManifest):
+class Tools:
     def __init__(self, method_send, discord_ctx, discord_bot):
-        super().__init__()
         self.method_send = method_send
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
     # Image generator
-    async def _tool_function(self, prompt: str, temperature: int = 0.7, discord_attachment_url: str = None):
+    async def tool_image_generator(self, prompt: str, temperature: int = 0.7, discord_attachment_url: str = None):
         # Create image
         _message_curent = await self.method_send(f"⌛ Generating with prompt **{prompt}**... this may take few minutes")
         
