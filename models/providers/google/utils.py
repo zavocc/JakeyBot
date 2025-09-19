@@ -109,13 +109,13 @@ class GoogleUtils:
 
         # For models to read the available tools to be executed
         self.tool_state = ToolUseInstance()
-        _tool_schema = await self.tool_state.fetch_and_load_tool_schema(_tool_name, tool_type="google")
+
+        await self.tool_state.init_fastmcp_client(mcp_url=(await self.tool_state.determine_mcp_url(_tool_name)))
 
         # Tool class object containing all functions
-        if (await self.tool_state.mcp_check()):
-            self.tool_schema = [_tool_schema]
-        else:
-            self.tool_schema = [{"function_declarations": _tool_schema}]
+        self.tool_schema = [{"function_declarations": (await self.tool_state.fetch_and_load_tool_schema(_tool_name, tool_type="google"))}]
+
+        if not (await self.tool_state.mcp_check()):
             self.tool_object_payload: object = await self.tool_state.return_tool_object(_tool_name, discord_context=self.discord_context, discord_bot=self.discord_bot)
 
     # Runs tools and outputs parts
@@ -127,12 +127,11 @@ class GoogleUtils:
         # Check if we can use MCP
         if (await self.tool_state.mcp_check()):
             try:
-                _tool_result = {"api_result": (await self.tool_state.execute_mcp_tool(name, json.loads(arguments)))}
+                _tool_result = {"api_result": (await self.tool_state.execute_mcp_tool(name, arguments))}
             except Exception as e:
                 logging.error("An error occurred while calling remote tool function: %s", e)
                 _tool_result = {"error": f"⚠️ Something went wrong while executing the tool: {e}"}
-            finally:
-                await self.tool_state.close_mcpclient()
+
         else:
             if hasattr(self.tool_object_payload, f"tool_{name}"):
                 _func_payload = getattr(self.tool_object_payload, f"tool_{name}")

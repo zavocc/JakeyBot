@@ -92,6 +92,9 @@ class OpenAIUtils:
 
         # For models to read the available tools to be executed
         self.tool_state = ToolUseInstance()
+
+        # Initialize MCP client if needed
+        await self.tool_state.init_fastmcp_client(mcp_url=(await self.tool_state.determine_mcp_url(_tool_name)))
         self.tool_schema: list = await self.tool_state.fetch_and_load_tool_schema(_tool_name, tool_type="openai")
 
         # Tool class object containing all functions
@@ -111,8 +114,6 @@ class OpenAIUtils:
                 except Exception as e:
                     logging.error("An error occurred while calling remote tool function: %s", e)
                     _tool_result = {"error": f"⚠️ Something went wrong while executing the tool: {e}"}
-                finally:
-                    await self.tool_state.close_mcpclient()
 
             else:
                 if hasattr(self.tool_object_payload, f"tool_{_tool_call.function.name}"):
