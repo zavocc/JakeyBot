@@ -1,72 +1,11 @@
 from azure.storage.blob.aio import BlobServiceClient
 from os import environ
-from typing import Literal
-from typing import TypedDict
 import aiofiles
 import aiofiles.ospath
 import discord
-import logging
 import yaml
 
-class DefaultModelDict(TypedDict):
-    provider: Literal["gemini"]
-    model_name: str
-
-# You can choose other service like GCP or your custom solution
 class HelperFunctions:
-    # Default model getter
-    # TODO: When adding multiple models, we may need to use YAML-based or environment-based configuration
-    # Right now Gemini is the solid choice for almost everything. 
-    # Also, prevent breaking changes... we keep the same structure
-    #
-    #
-    # TODO (9/12/2025): Refactor to use the latest declarative yaml syntax from models.yaml
-    # More specifically the fetch_model method from models.utils
-    #
-    # Rather than hardcoding the model names here, we find the "default: true" key in declarative yaml syntax
-    # Or similar
-    @staticmethod
-    def fetch_default_model(
-        model_type: Literal["base", "reasoning"] = "base",
-        output_modalities: Literal["text", "image"] = "text",
-        provider: Literal["gemini"] = "gemini"
-    ) -> DefaultModelDict:
-        # Check if the model type is valid
-        if not any(output_modalities == _types for _types in ["text", "image"]):
-            raise ValueError("Invalid model type. Must be 'text' or 'image'")
-        # Check if the provider is valid
-        if not any(provider == _provider for _provider in ["gemini"]):
-            raise ValueError("Invalid provider. Only supported ones is 'gemini'")
-        
-        # Constructed dict
-        _constructed_dict = {
-            "provider": provider,
-        }
-
-        # Return the default model based on the type and provider
-        if provider == "gemini":
-            if output_modalities == "text":
-                if model_type == "base":
-                    _constructed_dict["model_name"] = "gemini-2.5-flash-nonthinking"
-                elif model_type == "reasoning":
-                    _constructed_dict["model_name"] = "gemini-2.5-flash"
-            elif output_modalities == "image":
-                if model_type == "base":
-                    _constructed_dict["model_name"] = "gemini-2.0-flash-preview-image-generation"
-                elif model_type == "reasoning":
-                    raise ValueError("Reasoning mode is not supported for image output modality")
-        else:
-            raise ValueError("Unsupported provider. Only 'gemini' is supported")
-        
-        # Log for debugging
-        logging.info("Fetched and used default model | Provider: %s | Model: %s | Type: %s | Output Modality: %s |  ", 
-            provider,
-            _constructed_dict["model_name"],
-            model_type,
-            output_modalities
-        )        
-        return _constructed_dict
-
     # Requires "bot" to access services
     @staticmethod
     async def upload_file_service(bot: discord.Bot, filename: str, data: bytes) -> None:

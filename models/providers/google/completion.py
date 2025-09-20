@@ -1,5 +1,4 @@
 from .utils import GoogleUtils
-from models.core import Utils
 from core.database import History as typehint_History
 from core.exceptions import CustomErrorMessage
 from models.validation import ModelParamsGeminiDefaults as typehint_ModelParams
@@ -11,6 +10,7 @@ import logging
 import google.genai as google_genai
 import google.genai.errors as google_genai_errors
 import google.genai.types as google_genai_types
+import models.core
 
 class ChatSessionGoogle(GoogleUtils):
     def __init__(self, 
@@ -163,7 +163,7 @@ class ChatSessionGoogle(GoogleUtils):
             for _part in _response.candidates[0].content.parts:
                 # Send text message if needed
                 if _part.text and _part.text.strip():
-                    await Utils.send_ai_response(self.discord_context, prompt, _part.text, self.discord_context.channel.send)
+                    await models.core.send_ai_response(self.discord_context, prompt, _part.text, self.discord_context.channel.send)
 
                 # Render the code execution inline data when needed
                 if _part.inline_data:
@@ -200,7 +200,7 @@ class ChatSessionGoogle(GoogleUtils):
                 if not _response.function_calls:
                     _textResponse = _response.text or _response.candidates[0].content.parts[-1].text
                     if _textResponse and _textResponse.strip():
-                        await Utils.send_ai_response(self.discord_context, prompt, _textResponse, self.discord_context.channel.send)
+                        await models.core.send_ai_response(self.discord_context, prompt, _textResponse, self.discord_context.channel.send)
                 else:
                     continue  # Continue the while loop to process tool calls
                 

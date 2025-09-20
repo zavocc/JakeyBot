@@ -23,6 +23,7 @@
   enable_threads: true
   client_name: gemini_api_client
   thread_name: gemini
+  default: true
 
 - model_alias: fast
   model_human_name: Fast

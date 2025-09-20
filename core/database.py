@@ -1,26 +1,19 @@
 from core.exceptions import HistoryDatabaseError
-from core.services.helperfunctions import HelperFunctions
 from os import environ
 from pymongo import ReturnDocument
 import discord as typehint_Discord
 import logging
+import models.core
 import motor.motor_asyncio
-
-# TODO: 
-# - Revamp fetch_default_model to use latest declarative yaml syntax from core.services.helperfunctions
-# - Move history.py to /models/database.py and rename History class to DatabaseConnector or similar
-#    - Did moving to core.database
-
-_fetchdict = HelperFunctions.fetch_default_model(model_type="reasoning", output_modalities="text", provider="gemini")
-DEFAULT_MODEL = f"{_fetchdict['provider']}::{_fetchdict['model_name']}"
 
 # A class that is responsible for managing and manipulating the chat history
 class History:
-    def __init__(self, bot: typehint_Discord.Bot, db_conn: motor.motor_asyncio.AsyncIOMotorClient = None):
-        self._db_conn = db_conn
+    def __init__(self, bot: typehint_Discord.Bot, conn_string):
+        # Grab default model
+        self.DEFAULT_MODEL = models.core.get_default_chat_model()
 
-        if db_conn is None:
-            raise ConnectionError("Please set MONGO_DB_URL in dev.env")
+        # Create new connection
+        self._db_conn = motor.motor_asyncio.AsyncIOMotorClient(conn_string)
         
         # Create a new database if it doesn't exist, access chat_history database
         self._db = self._db_conn[environ.get("MONGO_DB_NAME", "jakey_prod_db")]
@@ -45,19 +38,19 @@ class History:
         return _guild_id_str
 
     # Returns the document to be manipulated, creates one if it doesn't exist.
-    async def _ensure_document(self, guild_id: str, model: str = DEFAULT_MODEL, tool_use: str = None):
+    async def _ensure_document(self, guild_id: str):
         # Check if guild_id is string
         if not isinstance(guild_id, str):
             raise TypeError("guild_id is required and must be a string")
 
         _existing = await self._collection.find_one({"guild_id": guild_id})
         if _existing:
-            tool_use = _existing.get("tool_use", tool_use)
-            default_model = _existing.get("default_model", model)
+            tool_use = _existing.get("tool_use", None)
+            default_model = _existing.get("default_model", self.DEFAULT_MODEL)
             default_openrouter_model = _existing.get("default_openrouter_model", "openai/gpt-4.1-mini")
         else:
-            tool_use = tool_use
-            default_model = model
+            tool_use = None
+            default_model = self.DEFAULT_MODEL
             default_openrouter_model = "openai/gpt-4.1-mini"
 
         # Use find_one_and_update with upsert to return the document after update.

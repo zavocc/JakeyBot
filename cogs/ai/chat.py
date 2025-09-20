@@ -1,4 +1,3 @@
-from models.core import ModelsList
 from cogs.ai.generative_chat import BaseChat
 from core.database import History
 from core.exceptions import *
@@ -9,7 +8,7 @@ from os import environ
 from tools.utils import fetch_actual_tool_name
 import discord
 import logging
-import motor.motor_asyncio
+import models.core
 
 class Chat(commands.Cog):
     def __init__(self, bot):
@@ -20,7 +19,7 @@ class Chat(commands.Cog):
         try:
             self.DBConn: History = History(
                 bot=bot,
-                db_conn=motor.motor_asyncio.AsyncIOMotorClient(environ.get("MONGO_DB_URL"))
+                conn_string=environ.get("MONGO_DB_URL")
             )
         except Exception as e:
             raise e(f"Failed to connect to MongoDB: {e}...\n\nPlease set MONGO_DB_URL in dev.env")
@@ -56,7 +55,7 @@ class Chat(commands.Cog):
     @discord.option(
         "model",
         description="Choose default model for the conversation",
-        choices=ModelsList.get_models(),
+        choices=models.core.get_models_generator(),
         required=True,
     )
     async def set(self, ctx, model: str):
@@ -171,7 +170,7 @@ class Chat(commands.Cog):
     @discord.option(
         "agent_name",
         description="Integrate tools to chat! Setting chat agents will clear your history!",
-        choices=ModelsList.get_tools_list(),
+        choices=models.core.get_tools_list_generator(),
     )
     async def agent(self, ctx, agent_name: str):
         """Connect chat with tools to perform tasks, such as searching the web, generate images, and more."""

@@ -1,5 +1,4 @@
 from .utils import OpenAIUtils
-from models.core import Utils
 from core.database import History as typehint_History
 from core.exceptions import CustomErrorMessage
 from models.validation import ModelParamsOpenAIDefaults as typehint_ModelParams
@@ -7,6 +6,7 @@ from models.validation import ModelProps as typehint_ModelProps
 from os import environ
 import discord as typehint_Discord
 import logging
+import models.core
 import openai
 
 class ChatSessionOpenAI(OpenAIUtils):
@@ -155,7 +155,7 @@ class ChatSessionOpenAI(OpenAIUtils):
             # Check if we need to run tools again, this block will stop the loop and send the response
             if not _response.choices[0].message.tool_calls:
                 if _response.choices[0].message.content:
-                    await Utils.send_ai_response(self.discord_context, prompt, _response.choices[0].message.content, self.discord_context.channel.send)
+                    await models.core.send_ai_response(self.discord_context, prompt, _response.choices[0].message.content, self.discord_context.channel.send)
                 break
 
         # Append to chat history

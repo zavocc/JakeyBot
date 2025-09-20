@@ -9,6 +9,7 @@ class ModelProps(BaseModel):
     model_id: str = Field(..., description="Model identifier")
     sdk: str = Field(..., description="Model SDK which will be used to call the model")
     has_reasoning: bool = Field(..., description="Determine if the model is optimized for reasoning")
+    default: bool = Field(default=False, description="Set the model as default chat model")
     thread_name: str = Field(default=None, description="Use the same SDK but use a different thread name for chat separation")
     enable_tools: bool = Field(default=True, description="Enable tools")
     enable_files: bool = Field(default=True, description="Enable files (e.g. Images)")
