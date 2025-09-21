@@ -45,3 +45,18 @@ tool_list:
           description: Show summary in the search results. Disable this if the user explicitly asks to only fetch the results without any summary or highlights to also save costs and time
       required:
         - query
+    
+  # YouTube Search
+  - name: youtube_video_search
+    description: Search for YouTube videos.
+    parameters:
+      type: object
+      properties:
+        query:
+          type: string
+          description: The query to search for
+        n_results:
+          type: integer
+          description: The number of results to fetch
+      required:
+        - query

@@ -1,19 +1,15 @@
 from core.exceptions import CustomErrorMessage
-from enum import Enum
 from tools.utils import fetch_tool_schema, return_tool_object
+from typing_extensions import Literal
 import discord as typehint_Discord
 import json
 import logging
 
-class ReasoningType(Enum):
-    OPENAI_GOOGLE = "openai"
-    OPENROUTER = "openrouter"
-    ANTHROPIC_COMPAT = "anthropic"
-
 class OpenAIUtils:
     # Normalize reasoning
-    def parse_reasoning(self, model_id: str, reasoning_type: ReasoningType) -> dict:
+    def parse_reasoning(self, model_id: str, reasoning_type: Literal["openai", "openrouter-int", "anthropic"]) -> dict:
         _constructed_params = {
+            "reasoning_effort": "low",
             "extra_body": {},
         }
 
@@ -26,21 +22,26 @@ class OpenAIUtils:
                 _constructed_params["reasoning_effort"] = "medium"
             elif model_id.endswith("-high"):
                 _constructed_params["reasoning_effort"] = "high"
-            else:
-                _constructed_params["reasoning_effort"] = "low"
 
             # Set max_completion_tokens
             _constructed_params["max_completion_tokens"] = 32000
 
+            # Log
+            logging.info("Using OpenAI-style reasoning with effort: %s", _constructed_params["reasoning_effort"])
+
         # This is specific for OpenRouter hosted models
-        elif reasoning_type == "openrouter":
-            _constructed_params["extra_body"]["reasoning"] = {"max_tokens": 4096}
+        # Only for models like Anthropic and Google
+        elif reasoning_type == "openrouter-int":
+            _constructed_params["extra_body"]["reasoning"] = {"enabled": True, "max_tokens": 4096}
             if model_id.endswith("-minimal"):
                 _constructed_params["extra_body"]["reasoning"]["max_tokens"] = 128
             elif model_id.endswith("-medium"):
                 _constructed_params["extra_body"]["reasoning"]["max_tokens"] = 12000
             elif model_id.endswith("-high"):
                 _constructed_params["extra_body"]["reasoning"]["max_tokens"] = 24000
+
+            # Log
+            logging.info("Using OpenRouter-style reasoning with effort value %d", _constructed_params["extra_body"]["reasoning"]["max_tokens"])
 
         # This is specific for Anthropic hosted models
         elif reasoning_type == "anthropic":
@@ -51,6 +52,9 @@ class OpenAIUtils:
                 _constructed_params["extra_body"]["thinking"]["budget_tokens"] = 12000
             elif model_id.endswith("-high"):
                 _constructed_params["extra_body"]["thinking"]["budget_tokens"] = 24000
+
+            # Log
+            logging.info("Using Anthropic-style reasoning with budget_tokens value %d", _constructed_params["extra_body"]["thinking"]["budget_tokens"])
 
         return _constructed_params
 

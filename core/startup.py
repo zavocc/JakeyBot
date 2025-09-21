@@ -10,7 +10,7 @@ import openai
 
 # List of services to be started, separated from main.py
 # for cleanliness and modularity
-class ServicesInitBot(bridge.Bot):
+class SubClassBotPlugServices(bridge.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

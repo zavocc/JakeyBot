@@ -119,7 +119,7 @@ class BaseChat():
         if _show_info:
             await prompt.channel.send(
                 embed=discord.Embed(
-                    description=f"Answered by **{_model_props.model_human_name}** by **{_model_props.sdk}** {"(this response isn't saved)" if not _append_history else ''}",
+                    description=f"Answered by **{_model_props.model_human_name}** {"(this response isn't saved)" if not _append_history else ''}",
                 )
             )
 

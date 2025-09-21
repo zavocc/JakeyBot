@@ -1,4 +1,4 @@
-from core.services.initbot import ServicesInitBot
+from core.startup import SubClassBotPlugServices
 from discord.ext import commands
 from inspect import cleandoc
 from os import chdir, mkdir, environ
@@ -32,7 +32,7 @@ intents.message_content = True
 intents.members = True
 
 # Subclass this bot
-class InitBot(ServicesInitBot):
+class InitBot(SubClassBotPlugServices):
     def __init__(self, *args, **kwargs):
         # Create socket instance and bind socket to 45769
         self._lock_socket_instance(45769)

@@ -12,6 +12,19 @@
   client_name: openai_client_groq
   thread_name: moonshotai
 
+- model_alias: muskybot
+  model_human_name: Grok 4 Fast (High)
+  model_description: SOTA-efficient fast model
+  sdk: openai
+  model_id: x-ai/grok-4-fast:free-high
+  has_reasoning: true
+  reasoning_type: openai
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+  client_name: openai_client_openrouter
+  thread_name: xai
+
 - model_alias: googleflash
   model_human_name: Gemini 2.5 Flash
   model_description: Fast performance for everyday tasks
