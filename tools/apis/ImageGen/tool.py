@@ -1,4 +1,4 @@
-from models.tasks.images.fal_ai import run
+from models.tasks.media.fal_ai import run_image
 import aiohttp
 import datetime
 import discord
@@ -18,7 +18,11 @@ class Tools:
         _message_curent = await self.method_send(f"⌛ Generating with prompt **{prompt}**... this may take few minutes")
         
         if hasattr(self.discord_bot, "aiohttp_instance"):
+            logging.info("Using existing aiohttp instance from discord bot subclass for Image Generation tool")
             _aiohttp_client_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
+        else:
+            logging.info("No aiohttp instance found in discord bot subclass, creating a new one for Image Generation tool")
+            _aiohttp_client_session = aiohttp.ClientSession()
 
         # Initialize _params with default empty dict
         _params = {}
@@ -44,7 +48,7 @@ class Tools:
 
         # Generate image
         _discordImageURLs = []
-        _imagesInBytes = await run(
+        _imagesInBytes = await run_image(
             prompt=prompt,
             model_name=model,
             negative_prompt=negative_prompt,
@@ -91,8 +95,12 @@ class Tools:
         _message_curent = await self.method_send(f"⌛ I will now edit the images with prompt **{prompt}**... this may take few minutes")
         
         if hasattr(self.discord_bot, "aiohttp_instance"):
+            logging.info("Using existing aiohttp instance from discord bot subclass for Image Editing tool")
             _aiohttp_client_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
-
+        else:
+            logging.info("No aiohttp instance found in discord bot subclass, creating a new one for Image Editing tool")
+            _aiohttp_client_session = aiohttp.ClientSession()
+        
         # Output in 4k for seedream 
         if model == "bytedance/seedream/v4":
             logging.info("Using Seedream 4 model for editing, setting width and height to 4096")
@@ -109,7 +117,7 @@ class Tools:
 
         # Generate image
         _discordImageURLs = []
-        _imagesInBytes = await run(
+        _imagesInBytes = await run_image(
             prompt=prompt,
             model_name=model,
             image_urls=image_url,
