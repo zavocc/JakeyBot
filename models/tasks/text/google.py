@@ -4,8 +4,7 @@ from google.genai import google_types
 from typing import Union
 import logging
 
-async def completion(self, 
-                     prompt: Union[str, list, google_types.Content],
+async def completion(prompt: Union[str, list, google_types.Content],
                      model_name: str,
                      system_instruction: str = None,
                      client_session: google_genai.Client = None,
@@ -28,6 +27,10 @@ async def completion(self,
     # Check if we have system instruction
     if system_instruction:
         _gparams["system_instruction"] = system_instruction
+
+    # Append additional parameters
+    if additional_params:
+        _gparams.update(additional_params)
 
     # Create response
     _response = await _client.aio.models.generate_content(
