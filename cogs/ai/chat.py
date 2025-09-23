@@ -3,7 +3,7 @@ from core.database import History
 from core.exceptions import *
 from discord.commands import SlashCommandGroup
 from discord.ext import commands
-from models.utils import fetch_model
+from models.chat_utils import fetch_model
 from os import environ
 from tools.utils import fetch_actual_tool_name
 import discord

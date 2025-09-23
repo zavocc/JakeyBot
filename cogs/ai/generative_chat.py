@@ -2,7 +2,7 @@ from core.exceptions import *
 from core.database import History as typehint_History
 from discord import Message
 from models.core import set_assistant_type
-from models.utils import fetch_model, load_history, save_history
+from models.chat_utils import fetch_model, load_history, save_history
 
 # TODO: use importlib
 from models.providers.google.completion import ChatSessionGoogle
