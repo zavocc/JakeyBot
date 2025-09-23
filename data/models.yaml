@@ -78,6 +78,17 @@
   client_name: gemini_api_client
   thread_name: fastadvancedmax
 
+- model_alias: jippytyfive
+  model_human_name: OpenAI GPT-5
+  model_description: Decides when to use advanced reasoning
+  sdk: openai
+  model_id: openai/gpt-5-low
+  has_reasoning: true
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+  client_name: openai_client_openrouter
+
 - model_alias: o3-mini-low
   model_human_name: OpenAI O3 Mini (Low)
   model_description: Uses advanced and quick reasoning
