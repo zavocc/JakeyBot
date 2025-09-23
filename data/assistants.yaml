@@ -176,9 +176,10 @@ utility_assistants:
         - Always prioritize interesting and meaningful messages that are relevant to the current conversation events
         - Brief summaries should be 2-3 sentences long, and detailed summaries should be 3-4 sentences long
         - Use the markdown format
-        - Bold **username**, **key points**, and **important details** including dates in the message body
+        - Emphasize **username**, **key points**, and **important details** including dates in the message body
         - Do not provide duplicate summaries or references that is based on the same or similar message content, refer to Rule 1
         - Remember the 4096 character limit in embeds
+        - Separate each topics AND / OR timeline of events with a line break
 
         Rules when providing references:
         - The maximum number of references is 5-10 and no minimum whatsoever

@@ -55,7 +55,7 @@ class Chat(commands.Cog):
     @discord.option(
         "model",
         description="Choose default model for the conversation",
-        choices=models.core.get_models_generator(),
+        choices=models.core.get_chat_models_generator(),
         required=True,
     )
     async def set(self, ctx, model: str):

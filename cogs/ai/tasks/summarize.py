@@ -1,4 +1,5 @@
-from models.core import get_default_textgen_model_async, set_assistant_type
+from models.core import set_assistant_type
+from models.tasks.text_model_utils import get_text_models_async, get_text_models_generator
 from discord.ext import commands
 from os import environ
 import aiofiles
@@ -21,6 +22,11 @@ class GeminiAITools(commands.Cog):
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild},
         integration_types={discord.IntegrationType.guild_install}
+    )
+    @discord.option(
+        "steer",
+        description="Additional instruction to guide which content to focus on",
+        default=None
     )
     @discord.option(
         "before_date",
@@ -51,7 +57,14 @@ class GeminiAITools(commands.Cog):
         max_value=100,
         default=25
     )
-    async def summarize(self, ctx, before_date: str, after_date: str, around_date: str, max_references: int, limit: int):
+    @discord.option(
+        "model",
+        description="Select model to be used for summarization",
+        choices=get_text_models_generator(),
+        default=None
+    )
+    @commands.cooldown(1, 30, commands.BucketType.user)
+    async def summarize(self, ctx, steer: str, before_date: str, after_date: str, around_date: str, max_references: int, limit: int, model: str):
         """Summarize or catch up latest messages based on the current channel"""
         await ctx.response.defer(ephemeral=True)
             
@@ -69,7 +82,7 @@ class GeminiAITools(commands.Cog):
             around_date = datetime.datetime.strptime(around_date, '%m/%d/%Y')
 
         # Fetch default model
-        _default_model_config = await get_default_textgen_model_async()
+        _default_model_config = await get_text_models_async(override_model_id=model)
 
         # Check if we can use OpenAI or Google format
         if _default_model_config["sdk"] == "openai":
@@ -157,6 +170,7 @@ class GeminiAITools(commands.Cog):
         _DZBL = {
             "text": inspect.cleandoc(
                 f"""Date today is {datetime.datetime.now().strftime('%m/%d/%Y')}
+                    Additional Instruction: {steer if steer is not None else 'N/A'}
                     OK, now generate summaries"""
             )
         }
@@ -235,6 +249,10 @@ class GeminiAITools(commands.Cog):
 
             # Iterate over links and display it as field
             for _links in _summary["links"]:
+                # Check if JUMP URL is Discord link, if not, skip it
+                if "discord.com/channels" not in _links["jump_url"]:
+                    continue
+
                 if len(_embed.fields) >= max_references:
                     break
                 # Truncate the description to 256 characters if it exceeds beyond that since discord wouldn't allow it
@@ -254,6 +272,8 @@ class GeminiAITools(commands.Cog):
         _error = getattr(error, "original", error)
         if "time data" in str(_error):
             await ctx.respond("⚠️ Sorry, I couldn't summarize messages with that date format! Please use **mm/dd/yyyy** format.")
+        elif isinstance(_error, commands.CommandOnCooldown):
+            await ctx.respond("ℹ️ Please wait for a minute before using this command again.")
         else:
             await ctx.respond("❌ Sorry, I can't summarize messages at the moment, I'm still learning! Please try again, and please try again later.")
         

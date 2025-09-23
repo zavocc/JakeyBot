@@ -96,26 +96,6 @@ async def get_default_chat_model_async():
     # If no default model is found, raise an error
     raise ValueError("No default model found in models.yaml. Please set at least one model with 'default: true'")
 
-async def get_default_textgen_model_async() -> dict:
-    # Load models list
-    async with aiofiles.open("data/text_models.yaml", "r") as _textmodels:
-        _text_models_list = yaml.safe_load(await _textmodels.read())
-
-    # Search through models for the first one with default: true
-    _accessFirstDefaultModel = None
-
-    for _model in _text_models_list:
-        if _model.get("default") == True:
-            logging.info("Used default text model %s", _model.get("model_id"))
-            _accessFirstDefaultModel = _model
-            break
-    
-    if not _accessFirstDefaultModel:
-        raise ValueError("No default text generation model found in text_models.yaml. Please set at least one model with 'default: true'")
-
-    # return and validate
-    return TextTaskModelProps(**_accessFirstDefaultModel).model_dump()
-
 ############################################
 # SYNC FUNCTIONS
 ############################################
@@ -133,7 +113,7 @@ def get_default_chat_model():
     # If no default model is found, raise an error
     raise ValueError("No default model found in models.yaml. Please set at least one model with 'default: true'")
 
-def get_models_generator():
+def get_chat_models_generator():
     # Load the models list from YAML file
     with open("data/models.yaml", "r") as models:
         _internal_model_data = yaml.safe_load(models)
@@ -145,7 +125,7 @@ def get_models_generator():
             continue
 
         yield discord.OptionChoice(f"{model['model_human_name']} - {model['model_description']}", model["model_alias"])
-        
+    
 def get_tools_list_generator():
     _toolsPath = "tools/apis"
 

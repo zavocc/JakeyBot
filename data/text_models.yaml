@@ -9,7 +9,8 @@
     thinkingConfig:
       thinking_budget: 0
   client_name: gemini_api_client
-  default: false
+  default: true
+
 
 - model_id: x-ai/grok-4-fast:free
   model_human_name: Grok 4 Fast
@@ -21,4 +22,4 @@
       reasoning:
         enabled: false
   client_name: openai_client_openrouter
-  default: true
+
