@@ -20,9 +20,7 @@ async def completion(prompt: Union[str, list, google_types.Content],
         _client = google_genai.Client(api_key=environ.get("GEMINI_API_KEY"))
 
     # Construct parameters
-    _gparams = {
-        "temperature": 1.0,
-    }
+    _gparams = {}
 
     # Check if we have system instruction
     if system_instruction:

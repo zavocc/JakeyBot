@@ -1,6 +1,13 @@
 from typing import List, Literal
 from pydantic import BaseModel, Field
 
+class TextTaskModelProps(BaseModel):
+    model_id: str = Field(..., description="Model identifier")
+    sdk: str = Field(..., description="Model SDK which will be used to call the model")
+    model_specific_params: dict = Field(default={"temperature": 1}, description="Model specific parameters")
+    default: bool = Field(default=False, description="Set the model as default text generation model")
+    client_name: str = Field(default=None, description="SDK Instance name from discord.Bot subclass")
+
 class ModelProps(BaseModel):
     # model_alias is used as a unique identifier to the model for fetching model from history and parse it
     model_alias: str = Field(..., description="Model alias")
