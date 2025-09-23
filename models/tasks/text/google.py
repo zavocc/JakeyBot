@@ -1,6 +1,6 @@
+from google.genai import types as google_types
 from os import environ
-from google import google_genai
-from google.genai import google_types
+import google.genai as google_genai
 from typing import Union
 import logging
 

@@ -1,7 +1,7 @@
 from core.exceptions import *
-from core.services.helperfunctions import HelperFunctions
 from core.database import History as typehint_History
 from discord import Message
+from models.core import set_assistant_type
 from models.utils import fetch_model, load_history, save_history
 
 # TODO: use importlib
@@ -106,7 +106,7 @@ class BaseChat():
         # Answer generation
         # Through capturing group, we can remove the mention and the model selection from the prompt at both in the middle and at the end
         _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/chat:ephemeral(\s|$)|\/chat:info(\s|$))", "", prompt.content).strip()
-        _system_prompt = await HelperFunctions.set_assistant_type("jakey_system_prompt", type=0)
+        _system_prompt = await set_assistant_type("jakey_system_prompt", type=0)
 
         # Generate the response and simulate the typing
         async with prompt.channel.typing():

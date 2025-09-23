@@ -1,26 +1,19 @@
-from aimodels.gemini import Completions
-from core.services.helperfunctions import HelperFunctions
+from models.core import get_default_textgen_model_async, set_assistant_type
 from discord.ext import commands
-from google.genai import types
 from os import environ
 import aiofiles
 import datetime
 import discord
 import inspect
-import logging
+import importlib
 import json
+import logging
 import random
 
 class GeminiAITools(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
-
-        self._default_model = HelperFunctions.fetch_default_model(
-            model_type="base",
-            output_modalities="text",
-            provider="gemini"
-        )["model_name"]
 
    ###############################################
     # Summarize discord messages
@@ -75,17 +68,43 @@ class GeminiAITools(commands.Cog):
         if around_date is not None:
             around_date = datetime.datetime.strptime(around_date, '%m/%d/%Y')
 
-        # Prompt feed which contains the messages
-        _prompt_feed = [
-            types.Part.from_text(
-                text = inspect.cleandoc(
-                    f"""Date today is {datetime.datetime.now().strftime('%m/%d/%Y')}
-                    OK, now generate summaries for me:"""
-                )
-            )
-        ]
-        
+        # Fetch default model
+        _default_model_config = await get_default_textgen_model_async()
 
+        # Check if we can use OpenAI or Google format
+        if _default_model_config["sdk"] == "openai":
+            _SYM = "content"
+        else:
+            _SYM = "parts"
+
+        _SCHEMA = {
+            "type": "object",
+            "properties": {
+                "summary": {
+                    "type": "string"
+                },
+                "links": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "description": {
+                                "type": "string"
+                            },
+                            "jump_url": {
+                                "type": "string"
+                            }
+                        },
+                        "required": ["description", "jump_url"]
+                    }
+                }
+            },
+            "required": ["summary", "links"]
+        }
+
+        # Prompt feed which contains the messages
+        _prompt_feed = []
+        
         _messages = ctx.channel.history(limit=limit, before=before_date, after=after_date, around=around_date)
         async for x in _messages:
             # Check if the message is empty, has less than 3 characters
@@ -94,22 +113,36 @@ class GeminiAITools(commands.Cog):
 
             # Handle 2000 characters limit since 4000 characters is considered spam
             if len(x.content) <= 2000:
-                _prompt_feed.append(
-                    types.Part.from_text(
-                        text = inspect.cleandoc(
-                            f"""# Message by: {x.author.name} at {x.created_at}
+                # Check for mentions and replace them with the username
+                for _mention in x.mentions:
+                    x.content = x.content.replace(f"<@{_mention.id}>", f"(mentioned user: {_mention.display_name})")
 
-                            # Message body:
-                            {x.content}
+                _D = {
+                    "text": inspect.cleandoc(
+                        f"""# Message by: {x.author.name} at {x.created_at}
 
-                            # Message jump link:
-                            {x.jump_url}
+                        # Message body:
+                        {x.content}
 
-                            # Additional information:
-                            - Discord User ID: {x.author.id}
-                            - Discord User Display Name: {x.author.display_name}""")
+                        # Message jump link:
+                        {x.jump_url}
+
+                        # Additional information:
+                        - Discord User ID: {x.author.id}
+                        - Discord User Display Name: {x.author.display_name}"""
                     )
-                )
+                }
+
+                # If it's openai client, add "type": "input_text"
+                if _default_model_config["sdk"] == "openai":
+                    _D["type"] = "text"
+
+                _part = {
+                    "role": "user",
+                    _SYM: [_D]
+                }
+
+                _prompt_feed.append(_part)
             else:
                 continue
 
@@ -117,45 +150,58 @@ class GeminiAITools(commands.Cog):
         # MODEL
         #################
         # set model
-        _completions = Completions(model_name=self._default_model, discord_ctx=ctx, discord_bot=self.bot)
-        _system_prompt = await HelperFunctions.set_assistant_type("discord_msg_summarizer_prompt", type=1)
+        _completionImport = importlib.import_module(f"models.tasks.text.{_default_model_config['sdk']}")
+        _completions = getattr(_completionImport, "completion")
 
-        # Constrain the output to JSON
-        _completions._genai_params.update({
-            "response_schema": {
-                "type": "object",
-                "properties": {
-                    "summary": {
-                        "type": "STRING"
-                    },
-                    "links": {
-                        "type": "array",
-                        "items": {
-                            "type": "OBJECT",
-                            "properties": {
-                                "description": {
-                                    "type": "STRING"
-                                },
-                                "jump_url": {
-                                    "type": "STRING"
-                                }
-                            },
-                            "required": ["description", "jump_url"]
-                        }
-                    }
-                },
-                "required": ["summary", "links"]
-            },
-            "response_mime_type": "application/json"
+        # Add final prompt to prompt feed
+        _DZBL = {
+            "text": inspect.cleandoc(
+                f"""Date today is {datetime.datetime.now().strftime('%m/%d/%Y')}
+                    OK, now generate summaries"""
+            )
+        }
+
+        if _default_model_config["sdk"] == "openai":
+            _DZBL["type"] = "text"
+
+        _prompt_feed.append({
+            "role": "user",
+            _SYM: [_DZBL]
         })
 
-        # Turn prompt feed to content
-        _prompt_feed = types.Content(
-            parts=_prompt_feed,
-            role="user"
-        )
 
-        _summary = json.loads(await _completions.completion(_prompt_feed, system_instruction=_system_prompt))
+        # Update the params to use the schema
+        if _default_model_config["sdk"] == "openai":
+            # Add additionalProperties to false in _SCHEMA
+            _SCHEMA["additionalProperties"] = False
+
+            _default_model_config["model_specific_params"].update({
+                "response_format": {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "discord_message_summarizer",
+                        "strict": True,
+                        "schema": _SCHEMA
+                    }
+                }
+            })
+        else:
+            _default_model_config["model_specific_params"].update({
+                "response_schema": _SCHEMA,
+                "response_mime_type": "application/json"
+            })
+
+        # Get client attributes
+        _clientAttributes = getattr(self.bot, _default_model_config["client_name"], None)
+
+        _summary = json.loads(await _completions(
+            prompt=_prompt_feed,
+            model_name=_default_model_config["model_id"],
+            system_instruction=(await set_assistant_type("discord_msg_summarizer_prompt", 1)),
+            client_session=_clientAttributes,
+            return_text=True,
+            **_default_model_config["model_specific_params"]
+        ))
 
         # If arguments are given, also display the date
         _app_title = f"Summary for {ctx.channel.name}"
@@ -194,7 +240,7 @@ class GeminiAITools(commands.Cog):
                 # Truncate the description to 256 characters if it exceeds beyond that since discord wouldn't allow it
                 _embed.add_field(name=_links["description"][:256], value=_links["jump_url"], inline=False)
                 
-            _embed.set_footer(text="Responses generated by AI may not give accurate results! Double check with facts!")
+            _embed.set_footer(text=f"Generated summaries powered by {_default_model_config.get('model_human_name', _default_model_config['model_id'])}")
             await ctx.respond(embed=_embed)
 
     # Handle errors

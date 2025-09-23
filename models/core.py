@@ -51,6 +51,37 @@ async def get_remix_styles_async(style: str = "I'm feeling lucky"):
         if styles["image_style"] == style:
             return styles["preprompt"]
 
+
+async def set_assistant_type(assistant_name: str, type: int = 0):
+    # 0 - chat_assistants
+    # 1 - utility_assistants
+
+    # Load the assistants from YAML file
+    async with aiofiles.open("data/assistants.yaml", "r") as assistants:
+        _assistants_data = yaml.safe_load(await assistants.read())
+
+    if type == 0:
+        _assistants_mode = _assistants_data["chat_assistants"]
+    else:
+        _assistants_mode = _assistants_data["utility_assistants"]
+
+    # Return the assistant
+    # We format {} to have emojis, if we use type 0
+    if type == 0 and (await aiofiles.ospath.exists("emojis.yaml")):
+        # The yaml format is
+        # - emoji1
+        # - emoji2
+        # So we need to join them with newline and dash each same as yaml 
+        async with aiofiles.open("emojis.yaml") as emojis_list:
+            _emojis_list = "\n - ".join(yaml.safe_load(await emojis_list.read()))
+            print(_emojis_list)
+
+            if not _emojis_list:
+                _emojis_list = "No emojis found"
+        return _assistants_mode[assistant_name].strip().format(_emojis_list)
+    else:
+        return _assistants_mode[assistant_name].strip()
+
 async def get_default_chat_model_async():
     # Load the models list from YAML file
     async with aiofiles.open("data/models.yaml", "r") as models:
@@ -58,7 +89,8 @@ async def get_default_chat_model_async():
 
     # Search through models for the first one with default: true
     for _model in _models_list:
-        if _model.get("default") is True:
+        if _model.get("default") == True:
+            logging.info("Used default chat model %s", _model.get("model_id"))
             return _model["model_alias"]
     
     # If no default model is found, raise an error
@@ -73,7 +105,8 @@ async def get_default_textgen_model_async() -> dict:
     _accessFirstDefaultModel = None
 
     for _model in _text_models_list:
-        if _model.get("default") is True:
+        if _model.get("default") == True:
+            logging.info("Used default text model %s", _model.get("model_id"))
             _accessFirstDefaultModel = _model
             break
     
@@ -94,6 +127,7 @@ def get_default_chat_model():
     # Search through models for the first one with default: true
     for _model in _models_list:
         if _model.get("default") is True:
+            logging.info("Used default chat model %s", _model.get("model_id"))
             return _model["model_alias"]
     
     # If no default model is found, raise an error

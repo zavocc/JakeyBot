@@ -36,11 +36,16 @@ async def completion(prompt: Union[str, list],
     if system_instruction:
         _prompts.append({"role": "system", "content": system_instruction})
     _prompts.extend(_formatted_prompt)
+
+
+    import json
+    with open("temp/debug.json", "w") as f:
+        json.dump(_prompts, f, indent=4)
     
     # Create response
     _response = await _client.chat.completions.create(
         model=model_name,
-        messages=prompt,
+        messages=_prompts,
         **_oparams
     )
 

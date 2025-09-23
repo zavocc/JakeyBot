@@ -1,4 +1,3 @@
-from azure.storage.blob.aio import BlobServiceClient
 from discord.ext import bridge
 from google import genai
 from os import environ
@@ -60,24 +59,7 @@ class SubClassBotPlugServices(bridge.Bot):
         self.aiohttp_instance = aiohttp.ClientSession(loop=self.loop)
         logging.info("aiohttp client session initialized successfully")
 
-        # Azure Blob Storage Client
-        try:
-            self._azure_blob_service_client = BlobServiceClient(
-                account_url=environ.get("AZURE_STORAGE_ACCOUNT_URL")
-            ).from_connection_string(environ.get("AZURE_STORAGE_CONNECTION_STRING"))
-            logging.info("Azure Blob Storage client initialized successfully")
-        except Exception as e:
-            logging.error("Failed to initialize Azure Blob Storage client: %s, skipping....", e)
-
     async def stop_services(self):
         # Close aiohttp client sessions
         await self.aiohttp_instance.close()
         logging.info("aiohttp client session closed successfully")
-
-        # Close Azure Blob Storage client
-        if hasattr(self, "_azure_blob_service_client"):
-            try:
-                await self._azure_blob_service_client.close()
-                logging.info("Azure Blob Storage client closed successfully")
-            except Exception as e:
-                logging.error("Failed to close Azure Blob Storage client: %s", e)

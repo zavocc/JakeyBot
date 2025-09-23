@@ -1,6 +1,7 @@
 # A list of models to be used for defaults in models.core function name get_default_textgen_model_async
 
 - model_id: gemini-2.5-flash
+  model_human_name: Gemini 2.5 Flash
   sdk: google
   model_specific_params:
     temperature: 1
@@ -8,9 +9,10 @@
     thinkingConfig:
       thinking_budget: 0
   client_name: gemini_api_client
-  default: true
+  default: false
 
 - model_id: x-ai/grok-4-fast:free
+  model_human_name: Grok 4 Fast
   sdk: openai
   model_specific_params:
     temperature: 1
@@ -19,3 +21,4 @@
       reasoning:
         enabled: false
   client_name: openai_client_openrouter
+  default: true
