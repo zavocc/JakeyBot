@@ -19,6 +19,7 @@ class ModelProps(BaseModel):
     sdk: str = Field(..., description="Model SDK which will be used to call the model")
     client_name: str = Field(default=None, description="SDK Instance name from discord.Bot subclass")
     default: bool = Field(default=False, description="Set the model as default chat model")
+    disabled: bool = Field(default=False, description="Hide the model from being shown in selector")
     enable_tools: bool = Field(default=True, description="Enable tools")
     enable_files: bool = Field(default=True, description="Enable files (e.g. Images)")
     enable_threads: bool = Field(default=True, description="Enable chat history")
