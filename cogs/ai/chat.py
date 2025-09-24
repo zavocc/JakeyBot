@@ -24,6 +24,9 @@ class Chat(commands.Cog):
         except Exception as e:
             raise e(f"Failed to connect to MongoDB: {e}...\n\nPlease set MONGO_DB_URL in dev.env")
 
+        # Configure cooldown
+        self._cooldown = commands.CooldownMapping.from_cooldown(2, 25, commands.BucketType.user)
+
         # Initialize the chat system
         self._ask_event = BaseChat(bot, self.author, self.DBConn)
 
@@ -39,6 +42,17 @@ class Chat(commands.Cog):
     #######################################################
     @commands.Cog.listener()
     async def on_message(self, message):
+        # Ignore bot messages
+        if message.author.bot:
+            return
+        
+        # Check cooldown
+        _ubucket = self._cooldown.get_bucket(message)
+        _rl_float_rate = _ubucket.update_rate_limit()
+        if _rl_float_rate:
+            await message.reply(f"⌛ Please wait for **{int(_rl_float_rate)}** seconds before sending another message...", mention_author=True, delete_after=5)
+            return
+        
         await self._ask_event.on_message(message)
 
     #######################################################
