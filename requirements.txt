@@ -9,6 +9,3 @@ py-cord >= 2.6.0
 pymongo >= 4.8.0
 python-dotenv >= 1.0.0
 PyYAML >= 6.0.1
-
-# File uploads, change if you use different solution
-azure-storage-blob
