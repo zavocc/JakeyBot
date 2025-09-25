@@ -45,6 +45,18 @@ tool_list:
           description: Show summary in the search results. Disable this if the user explicitly asks to only fetch the results without any summary or highlights to also save costs and time
       required:
         - query
+  
+  # Browse
+  - name: url_browse
+    description: Reads the content of the webpage at the specified URL.
+    parameters:
+      type: object
+      properties:
+        url:
+          type: string
+          description: The URL of the webpage to read
+      required:
+        - url
     
   # YouTube Search
   - name: youtube_video_search

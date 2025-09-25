@@ -1,9 +1,7 @@
 from os import environ
 import aiohttp
-import base64
 import discord
-import html
-import re
+import logging
 
 # Function implementations
 class Tools:
@@ -16,10 +14,14 @@ class Tools:
         if not query or not query.strip():
             raise ValueError("query parameter is required and cannot be empty")
         
-        if not hasattr(self.discord_bot, "aiohttp_instance"):
-            raise Exception("aiohttp client session for get requests not initialized and web browsing cannot continue, please check the bot configuration")
+        if hasattr(self.discord_bot, "aiohttp_instance"):
+            logging.info("Using existing aiohttp client session for post requests")
+            _clientAIOHTTP = self.discord_bot.aiohttp_instance
+        else:
+            logging.info("Creating new aiohttp client session for post requests")
+            _clientAIOHTTP = aiohttp.ClientSession()
 
-        _session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
+        _session: aiohttp.ClientSession = _clientAIOHTTP
 
         # Bing Subscription Key
         if not environ.get("EXA_AI_KEY"):
@@ -113,6 +115,32 @@ class Tools:
         await self.method_send(f"🔍 Searched for **{query}**", embed=_sembed)
         
         return _output
+
+    async def tool_url_browse(self, url: str):
+        # Powered by Jina AI
+        
+        if hasattr(self.discord_bot, "aiohttp_instance"):
+            logging.info("Using existing aiohttp client session for GET requests using Jina AI")
+            _clientAIOHTTP = self.discord_bot.aiohttp_instance
+        else:
+            logging.info("Creating new aiohttp client session for GET requests using Jina AI")
+            _clientAIOHTTP = aiohttp.ClientSession()
+
+        _session: aiohttp.ClientSession = _clientAIOHTTP
+        _endpoint = f"https://r.jina.ai/{url}"
+
+        await self.discord_ctx.channel.send(f"🖱️ Browsing: **`{url}`**")
+
+        async with _session.get(_endpoint) as _response:
+            if _response.status != 200:
+                raise Exception(f"Failed to fetch URL content with code {_response.status}, reason: {_response.reason}")
+            _data = await _response.text()
+
+        # Return the data
+        return {
+            "url": url,
+            "content": _data
+        }
 
 
     async def tool_youtube_video_search(self, query: str, n_results: int = 10):
