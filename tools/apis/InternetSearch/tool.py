@@ -5,8 +5,7 @@ import logging
 
 # Function implementations
 class Tools:
-    def __init__(self, method_send, discord_ctx, discord_bot):
-        self.method_send = method_send
+    def __init__(self, discord_ctx, discord_bot):
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
@@ -112,7 +111,7 @@ class Tools:
                 break
         _sembed.description = "\n".join(_desclinks)
         _sembed.set_footer(text="Used search tool powered by Exa to fetch results")
-        await self.method_send(f"🔍 Searched for **{query}**", embed=_sembed)
+        await self.discord_ctx.channel.send(f"🔍 Searched for **{query}**", embed=_sembed)
         
         return _output
 
@@ -208,6 +207,6 @@ class Tools:
         if not _videos[0]["videos"]:
             return f"No videos found for the given query: {query}"
 
-        await self.method_send(f"🔍 Searched for **{query}**")
+        await self.discord_ctx.channel.send(f"🔍 Searched for **{query}**")
 
         return _videos

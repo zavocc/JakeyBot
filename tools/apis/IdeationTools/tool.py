@@ -1,8 +1,7 @@
 import discord
 import io
 class Tools:
-    def __init__(self, method_send, discord_ctx, discord_bot):
-        self.method_send = method_send
+    def __init__(self, discord_ctx, discord_bot):
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
@@ -33,6 +32,6 @@ class Tools:
 
     async def tool_artifacts(self, file_contents: str, file_name: str):
         # Send the file
-        await self.method_send(file=discord.File(io.StringIO(file_contents), file_name))
+        await self.discord_ctx.channel.send(file=discord.File(io.StringIO(file_contents), file_name))
 
         return f"Artifact {file_name} created successfully"

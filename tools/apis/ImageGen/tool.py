@@ -7,15 +7,14 @@ import io
 import logging
 
 class Tools:
-    def __init__(self, method_send, discord_ctx, discord_bot):
-        self.method_send = method_send
+    def __init__(self, discord_ctx, discord_bot):
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
     # Image generator
     async def tool_image_generator(self, prompt: str, aspect_ratio: str = "1:1", resolution: str = "1K", negative_prompt: str = None, enable_safety_checker: bool = True, model: str = "imagen4/preview/ultra"):
         # Create image
-        _message_curent = await self.method_send(f"⌛ Generating with prompt **{prompt}**... this may take few minutes")
+        _message_curent = await self.discord_ctx.channel.send(f"⌛ Generating with prompt **{prompt}**... this may take few minutes")
         
         if hasattr(self.discord_bot, "aiohttp_instance"):
             logging.info("Using existing aiohttp instance from discord bot subclass for Image Generation tool")
@@ -92,7 +91,7 @@ class Tools:
     # Image editor
     async def tool_image_editor(self, prompt: str, image_url: list[str], enable_safety_checker: bool = True, model: str = "gemini-25-flash-image"):
         # Create image
-        _message_curent = await self.method_send(f"⌛ I will now edit the images with prompt **{prompt}**... this may take few minutes")
+        _message_curent = await self.discord_ctx.channel.send(f"⌛ I will now edit the images with prompt **{prompt}**... this may take few minutes")
         
         if hasattr(self.discord_bot, "aiohttp_instance"):
             logging.info("Using existing aiohttp instance from discord bot subclass for Image Editing tool")

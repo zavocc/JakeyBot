@@ -59,7 +59,6 @@ async def return_tool_object(tool_name: str, discord_context = None, discord_bot
 
     try:
         _function_payload = importlib.import_module(f"tools.apis.{tool_name}.tool").Tools(
-            method_send=discord_context.channel.send,
             discord_ctx=discord_context,
             discord_bot=discord_bot
         )
