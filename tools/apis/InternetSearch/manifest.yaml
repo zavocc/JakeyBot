@@ -37,9 +37,6 @@ tool_list:
           items:
             type: string
           description: A list of text to exclude from the search results
-        showHighlights:
-          type: boolean
-          description: Show highlights in the search results, it's recommended to set this true. Disable this if the user explicitly asks to only fetch the results without any summary or highlights to also save costs and time
         showSummary:
           type: boolean
           description: Show summary in the search results. Disable this if the user explicitly asks to only fetch the results without any summary or highlights to also save costs and time

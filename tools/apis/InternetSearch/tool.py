@@ -9,7 +9,7 @@ class Tools:
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
-    async def tool_web_search(self, query: str = None, searchType: str = "auto", numResults: int = 5, includeDomains: list = None, excludeDomains: list = None, includeText: list = None, excludeText: list = None, showHighlights: bool = False, showSummary: bool = False):
+    async def tool_web_search(self, query: str = None, searchType: str = "auto", numResults: int = 5, includeDomains: list = None, excludeDomains: list = None, includeText: list = None, excludeText: list = None, showSummary: bool = False):
         if not query or not query.strip():
             raise ValueError("query parameter is required and cannot be empty")
         
@@ -50,10 +50,8 @@ class Tools:
             _params["excludeText"] = excludeText
 
         # Add contents if needed
-        if showHighlights or showSummary:
+        if showSummary:
             _params["contents"] = {}
-            if showHighlights:
-                _params["contents"]["highlights"] = True
             if showSummary:
                 _params["contents"]["summary"] = True
 
