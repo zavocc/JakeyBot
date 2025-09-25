@@ -1,33 +1,22 @@
-from aimodels.gemini import Completions
-from models.core import ModelsList
+from models.tasks.text_model_utils import get_text_models_async, get_text_models_generator
 from core.exceptions import CustomErrorMessage, PollOffTopicRefusal
-from core.services.helperfunctions import HelperFunctions
 from discord.ext import commands
 from discord import Member, DiscordException
 from google.genai import types
 from os import environ
+import asyncio
+import base64
 import discord
+import importlib
 import inspect
 import io
 import json
 import logging
 
-class GeminiUtils(commands.Cog):
-    """Gemini powered utilities"""
+class GenerativeAIFunUtils(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: discord.Bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
-
-        self._default_text_model = HelperFunctions.fetch_default_model(
-            model_type="base",
-            output_modalities="text",
-            provider="gemini"
-        )["model_name"]
-        self._default_imagegen_model = HelperFunctions.fetch_default_model(
-            model_type="base",
-            output_modalities="image",
-            provider="gemini"
-        )["model_name"]
 
     ###############################################
     # Avatar tools
@@ -53,8 +42,8 @@ class GeminiUtils(commands.Cog):
         """Get user avatar"""
         await ctx.response.defer(ephemeral=True)
 
-        user = await self.bot.fetch_user(user.id if user else ctx.author.id)
-        avatar_url = user.avatar.url if user.avatar else "https://cdn.discordapp.com/embed/avatars/0.png"
+        _xuser = await self.bot.fetch_user(user.id if user else ctx.author.id)
+        avatar_url = _xuser.avatar.url if _xuser.avatar else "https://cdn.discordapp.com/embed/avatars/0.png"
 
         # Generate image descriptions
         _description = None
@@ -62,31 +51,84 @@ class GeminiUtils(commands.Cog):
             try:
                 _filedata = None
                 _mime_type = None
-                # Download the image as files like
-                # Maximum file size is 3MB so check it
-                async with self.bot.aiohttp_instance.head(avatar_url) as _response:
-                    if int(_response.headers.get("Content-Length")) > 1500000:
-                        raise Exception("Max file size reached")
-                
-                # Save it as bytes so base64 can read it
-                async with self.bot.aiohttp_instance.get(avatar_url) as response:
-                    # Get mime type
-                    _mime_type = response.headers.get("Content-Type")
-                    _filedata = await response.content.read()
-                
-                # Check filedata
-                if not _filedata:
-                    raise Exception("No file data")
                 
                 # Generate description
-                _infer = Completions(model_name=self._default_text_model, discord_ctx=ctx, discord_bot=self.bot)
-                _description = await _infer.completion([
-                    "Generate image descriptions but one sentence short to describe, straight to the point",
-                    types.Part.from_bytes(
-                        data=_filedata,
-                        mime_type=_mime_type
-                    )
-                ])
+                # Fetch default model
+                _default_model_config = await get_text_models_async()
+                _completionImport = importlib.import_module(f"models.tasks.text.{_default_model_config['sdk']}")
+                _completions = getattr(_completionImport, "completion")
+
+                # Match symbols
+                if _default_model_config["sdk"] == "openai":
+                    _SYM = "content"
+                else:
+                    _SYM = "parts"
+
+                # Generate description
+                _strprompt = "Generate a single liner image description but one sentence short to describe, straight to the point, concise"
+                
+                # Check if we use OpenAI SDK or Google
+                if _default_model_config["sdk"] == "openai":
+                    _SYM = "content"
+                    _contents = [
+                        {
+                            "type": "image_url",
+                            "image_url": avatar_url
+
+                        },
+                        {
+                            "type": "text",
+                            "text": _strprompt
+                        }
+                    ]
+                else:
+                    # We download the file instead
+                    # Maximum file size is 3MB so check it
+                    async with self.bot.aiohttp_instance.head(avatar_url) as _response:
+                        if int(_response.headers.get("Content-Length")) > 1500000:
+                            raise Exception("Max file size reached")
+                    
+                    # Save it as bytes so base64 can read it
+                    async with self.bot.aiohttp_instance.get(avatar_url) as response:
+                        # Get mime type
+                        _mime_type = response.headers.get("Content-Type")
+                        _filedata = await response.content.read()
+                    
+                    # Check filedata
+                    if not _filedata:
+                        raise Exception("No file data")
+
+                    _SYM = "parts"
+
+                    # Contents
+                    _contents = [
+                        {
+                            "text": _strprompt,
+                            "inlineData": {
+                                "mimeType": _mime_type,
+                                "data": (await asyncio.to_thread(base64.b64encode, _filedata)).decode("utf-8")
+                            }
+                        }
+                    ]
+
+                _prompt = [
+                    {
+                        "role": "user",
+                        _SYM: _contents
+                    }
+                ]
+
+                if _default_model_config.get("client_name"):
+                    _client_session = getattr(self.bot, _default_model_config.get("client_name"))
+                else:
+                    _client_session = None
+
+                _description = await _completions(
+                    prompt=_prompt,
+                    model_name=_default_model_config["model_id"],
+                    client_session=_client_session,
+                    return_text=True
+                )
             except Exception as e:
                 logging.error("An error occurred while generating image descriptions: %s", e)
                 if "Max file size reached" in str(e):
@@ -94,18 +136,19 @@ class GeminiUtils(commands.Cog):
                 else:
                     _description = "Failed to generate image descriptions, check console for more info."
             finally:
-                 # Free up memory
-                del _filedata
+                # Free up memory
+                if _filedata:
+                    del _filedata
 
         # Embed
-        embed = discord.Embed(
+        _embed = discord.Embed(
             title=f"{user.name}'s Avatar",
             description=_description,
             color=discord.Color.random()
         )
-        embed.set_image(url=avatar_url)
-        if _description: embed.set_footer(text="Using Gemini 2.5 Flash Thinking to generate descriptions, result may not be accurate")
-        await ctx.respond(embed=embed, ephemeral=True)
+        _embed.set_image(url=avatar_url)
+        if _description: _embed.set_footer(text=f"Using {_default_model_config.get('model_human_name', 'model_id')} to generate descriptions, result may not be accurate")
+        await ctx.respond(embed=_embed, ephemeral=True)
 
 
     @show.error
@@ -119,7 +162,7 @@ class GeminiUtils(commands.Cog):
     @discord.option(
         "style",
         description="Style of avatar",
-        choices=ModelsList.get_remix_styles(),
+        #choices=ModelsList.get_remix_styles(),
         required=True
     )
     @discord.option(
@@ -163,13 +206,13 @@ class GeminiUtils(commands.Cog):
             raise Exception("No file data")
         
         # Get the style
-        _style_preprompt = await ModelsList.get_remix_styles_async(style=style)
+        _style_preprompt = None #await ModelsList.get_remix_styles_async(style=style)
         
         # Craft prompt
         _crafted_prompt = f"Transform this image provided with the style of {_style_preprompt}."
 
-        _infer = Completions(model_name=self._default_imagegen_model, discord_ctx=ctx, discord_bot=self.bot)
-
+        #_infer = Completions(model_name=self._default_imagegen_model, discord_ctx=ctx, discord_bot=self.bot)
+        _infer = None
         # Update params with image response modalities
         _infer._genai_params["response_modalities"] = ["Image", "Text"]
         _infer._genai_params["temperature"] = temperature
@@ -243,7 +286,8 @@ class GeminiUtils(commands.Cog):
         ]
 
         # Init completions
-        _completions = Completions(model_name=self._default_text_model, discord_ctx=ctx, discord_bot=self.bot)
+        #_completions = Completions(model_name=self._default_text_model, discord_ctx=ctx, discord_bot=self.bot)
+        _completions = None
 
         # Attach files
         if attachment:
@@ -253,7 +297,8 @@ class GeminiUtils(commands.Cog):
             if hasattr(_completions, "_file_data"):
                 _prompt_feed.append(_completions._file_data)
         
-        _system_prompt = await HelperFunctions.set_assistant_type("discord_polls_creator_prompt", type=1)
+        #_system_prompt = await HelperFunctions.set_assistant_type("discord_polls_creator_prompt", type=1)
+        _system_prompt = None
         # Configured controlled response generation
         _completions._genai_params.update({
             "response_schema": {
@@ -329,4 +374,4 @@ class GeminiUtils(commands.Cog):
             logging.error("An error has occurred while executing create command, reason: ", exc_info=True)
 
 def setup(bot):
-    bot.add_cog(GeminiUtils(bot))
+    bot.add_cog(GenerativeAIFunUtils(bot))

@@ -1,5 +1,6 @@
 # A list of commands to be initialized from cogs directory
 - ai.chat
 - ai.tasks.summarize
+- ai.tasks.fun
 - admin
 - misc
