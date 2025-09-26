@@ -194,6 +194,7 @@ class AvatarTools(commands.Cog):
         _imageURL = await run_image(
             model_name="gemini-25-flash-image/edit",
             aiohttp_session=self.bot.aiohttp_instance,
+            send_url_only=True,
             **_params
         )
 
@@ -203,7 +204,8 @@ class AvatarTools(commands.Cog):
             description=f"Here's a remixed avatar of {_user.name}",
             color=discord.Color.random()
         )
-        _embed.set_image(url=_imageURL)
+        _embed.set_image(url=_imageURL[0])
+        _embed.set_footer(text=f"Powered by Nano Banana")
         await ctx.respond(embed=_embed, ephemeral=True)
 
     @remix.error
