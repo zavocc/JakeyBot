@@ -16,7 +16,7 @@ async def fetch_model(model_alias: str) -> ModelProps:
     _model_dict = next((mdl for mdl in _models_list if mdl.get("model_alias") == model_alias), None)
 
     if not _model_dict:
-        raise CustomErrorMessage(f"⚠️ The current model is not yet available, please try another model.")
+        raise CustomErrorMessage("⚠️ The current model you had chosen is not yet available, please try another model.")
 
     return ModelProps(**_model_dict)
 

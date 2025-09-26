@@ -1,6 +1,7 @@
 # NOTE: to use different chat thread using same sdk, pass thread_name
+# Model alias can be any unique string without spaces
 
-- model_alias: kimi-k2
+- model_alias: kimi::kimi-k2-instruct
   model_human_name: Kimi K2
   model_description: Agentic open intelligence
   sdk: openai
@@ -12,9 +13,9 @@
   client_name: openai_client_groq
   thread_name: moonshotai
 
-- model_alias: muskybot
+- model_alias: x-ai::grok-4-fast
   model_human_name: Grok 4 Fast (High)
-  model_description: SOTA-efficient fast model
+  model_description: SOTA-efficient fast reasoning model
   sdk: openai
   model_id: x-ai/grok-4-fast:free-high
   has_reasoning: true
@@ -25,12 +26,36 @@
   client_name: openai_client_openrouter
   thread_name: xai
 
-- model_alias: googleflash
-  model_human_name: Gemini 2.5 Flash Thinking
-  model_description: Fast performance for everyday tasks
+- model_alias: gemini::gemini-2.5-pro
+  model_human_name: Gemini 2.5 Pro
+  model_description: Reasoning, math, and code.
   sdk: google
-  model_id: gemini-2.5-flash-medium
+  model_id: gemini-2.5-pro-medium
   has_reasoning: true
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+  client_name: gemini_api_client
+  thread_name: gemini
+
+- model_alias: gemini::gemini-2.5-flash
+  model_human_name: Gemini 2.5 Flash Thinking
+  model_description: Balanced reasoning model with speed
+  sdk: google
+  model_id: gemini-2.5-flash-preview-09-2025-medium
+  has_reasoning: true
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+  client_name: gemini_api_client
+  thread_name: gemini
+
+- model_alias: gemini::gemini-2.5-flash-nonthinking
+  model_human_name: Gemini 2.5 Flash Instant
+  model_description: Instant answers for fast all-around help
+  sdk: google
+  model_id: gemini-2.5-flash-preview-09-2025
+  has_reasoning: false
   enable_tools: true
   enable_files: true
   enable_threads: true
@@ -38,136 +63,46 @@
   thread_name: gemini
   default: true
 
-- model_alias: googleflashfast
-  model_human_name: Gemini 2.5 Flash Instant
-  model_description: Fast performance for everyday tasks
+- model_alias: gemini::gemini-2.0-flash-001
+  model_human_name: Gemini 2.5 Flash Lite Thinking
+  model_description: Ultra fast thinking model
   sdk: google
-  model_id: gemini-2.5-flash
-  has_reasoning: false
+  model_id: gemini-2.5-flash-lite-preview-09-2025-medium
+  has_reasoning: true
   enable_tools: true
   enable_files: true
   enable_threads: true
   client_name: gemini_api_client
   thread_name: gemini
 
-- model_alias: fast
-  model_human_name: Fast
-  model_description: Fast and efficient for very low latency tasks
-  sdk: google
-  model_id: gemma-3n-e2b-it
-  has_reasoning: false
-  enable_tools: false
-  enable_files: false
-  enable_threads: true
-  enable_system_instructions: false
-  client_name: gemini_api_client
-  thread_name: fast
-
-- model_alias: fastadvanced
-  model_human_name: Fast Advanced 4x faster
-  model_description: Fast and efficient for smart tasks
-  sdk: google
-  model_id: gemini-2.5-flash-lite
-  has_reasoning: false
-  enable_tools: true
-  enable_files: true
-  enable_threads: true
-  enable_system_instructions: true
-  client_name: gemini_api_client
-  thread_name: fastadvanced
-
-
-- model_alias: fastadvancedmax
-  model_human_name: Fast Advanced 1.5x faster
-  model_description: Fast and efficient with acceptable latency
-  sdk: google
-  model_id: gemini-2.5-flash-lite-high
-  has_reasoning: true
-  enable_tools: true
-  enable_files: true
-  enable_threads: true
-  enable_system_instructions: true
-  client_name: gemini_api_client
-  thread_name: fastadvancedmax
-
-
-- model_alias: codexfive
-  model_human_name: GPT-5 Codex
-  model_description: Good for code and technical documentation
-  sdk: openai
-  model_id: openai/gpt-5-codex-low
-  has_reasoning: true
-  reasoning_type: openai
-  enable_tools: true
-  enable_files: true
-  enable_threads: true
-  client_name: openai_client_openrouter
-
-- model_alias: jippytyfive
+- model_alias: openai::gpt-5
   model_human_name: OpenAI GPT-5
-  model_description: Decides when to use advanced reasoning
+  model_description: OpenAI's latest reasoning model
   sdk: openai
-  model_id: openai/gpt-5-low
+  model_id: gpt-5
   has_reasoning: true
   enable_tools: true
   enable_files: true
   enable_threads: true
-  client_name: openai_client_openrouter
-
-- model_alias: o3-mini-low
-  model_human_name: OpenAI O3 Mini (Low)
-  model_description: Uses advanced and quick reasoning
-  sdk: openai
-  model_id: o3-mini-low
-  has_reasoning: true
-  enable_tools: false
-  enable_files: false
-  enable_threads: false
   client_name: openai_client
 
-- model_alias: gpt-5-chat
-  model_human_name: OpenAI GPT-5 (Instant)
-  model_description: Instant and fast response
+- model_alias: openai::gpt-5-mini
+  model_human_name: OpenAI GPT-5 Mini
+  model_description: Fast and intelligent thinking model
   sdk: openai
-  model_id: gpt-5-chat-latest
+  model_id: gpt-5-mini-medium
+  has_reasoning: true
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+  client_name: openai_client
+
+- model_alias: openai::gpt-4.1
+  model_human_name: OpenAI GPT-4.1
+  model_description: Smartest non-reasoning model
+  sdk: openai
+  model_id: gpt-4.1
   has_reasoning: false
-  enable_tools: false
-  enable_files: false
-  enable_threads: true
-  client_name: openai_client
-
-- model_alias: gpt-4.1-mini
-  model_human_name: OpenAI GPT-4.1 Mini
-  model_description: A smaller version of GPT-4.1 for everyday fast conversations
-  sdk: openai
-  model_id: gpt-4.1-mini
-  has_reasoning: false
-  enable_tools: true
-  enable_files: true
-  enable_threads: true
-  client_name: openai_client
-
-
-- model_alias: openai::gpt-5-mini-high
-  model_human_name: OpenAI GPT-5 Mini High
-  model_description: Slow but provides quality responses
-  sdk: openai
-  model_id: gpt-5-mini-high
-  has_reasoning: true
-  reasoning_type: openai
-  enable_tools: true
-  enable_files: true
-  enable_threads: true
-  client_name: openai_client
-
-
-- model_alias: openai::gpt-5-mini-minimal
-  model_human_name: OpenAI GPT-5 Mini (Minimal)
-  model_description: Fast performance with basic reasoning
-  sdk: openai
-  model_id: gpt-5-mini-minimal
-  has_reasoning: true
-  reasoning_type: openai
   enable_tools: true
   enable_files: true
   enable_threads: true

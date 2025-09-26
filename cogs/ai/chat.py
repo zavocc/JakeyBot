@@ -182,11 +182,11 @@ class Chat(commands.Cog):
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
     )
     @discord.option(
-        "agent_name",
+        "name",
         description="Integrate tools to chat! Setting chat agents will clear your history!",
         choices=models.core.get_tools_list_generator(),
     )
-    async def agent(self, ctx, agent_name: str):
+    async def agent(self, ctx, name: str):
         """Connect chat with tools to perform tasks, such as searching the web, generate images, and more."""
         await ctx.response.defer(ephemeral=True)
 
@@ -205,26 +205,26 @@ class Chat(commands.Cog):
         _openrouter_model = await self.DBConn.get_key(guild_id=ctx.author.id, key="default_openrouter_model")
 
         # Convert "disabled" to None
-        if agent_name == "disabled":
-            agent_name = None
+        if name == "disabled":
+            name = None
 
-        if _current_agent == agent_name:
+        if _current_agent == name:
             await ctx.respond("✅ Agent already set!")
         else:
             # Clear chat history IF the agent is not set to None
             if _current_agent:
                 await self.DBConn.clear_history(guild_id=ctx.author.id)
 
-            # Set new agent_name and restore default model
-            await self.DBConn.set_key(guild_id=ctx.author.id, key="tool_use", value=agent_name)
+            # Set new agent name and restore default model
+            await self.DBConn.set_key(guild_id=ctx.author.id, key="tool_use", value=name)
             await self.DBConn.set_key(guild_id=ctx.author.id, key="default_model", value=_model)
             await self.DBConn.set_key(guild_id=ctx.author.id, key="default_openrouter_model", value=_openrouter_model)
 
-            if agent_name is None:
+            if name is None:
                 await ctx.respond("✅ Features disabled and chat is reset to reflect the changes")
             else:
                 # Return with actual tool name
-                _actual_human_agent_name = await fetch_actual_tool_name(agent_name)
+                _actual_human_agent_name = await fetch_actual_tool_name(name)
 
                 if not _current_agent:
                     await ctx.respond(f"✅ Feature **{_actual_human_agent_name}** enabled successfully")

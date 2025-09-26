@@ -113,8 +113,12 @@ class ChatSessionGoogle(GoogleUtils):
                 logging.error("Model ID has reasoning suffix but reasoning disabled: %s", self.model_props.model_id)
                 raise CustomErrorMessage("⚠️ The selected model requires reasoning to be enabled. But it has not been configured, please select other models.")
             
-            logging.info("Reasoning is disabled, setting thinking_budget to 0")
+            logging.info("Reasoning is disabled, setting thinking_budget to null")
             # Disable reasoning
+            # NOTE: This parameter, if set for non reasoning models like 2.0 Flash, then it will error out
+            # So for now we support Gemini 2.5 and beyond reasoning models only
+            # Either we may need to add new suffix -nonreasoning and let this parameter be None instead if has_reasoning is disabled
+            # But it will cause reasoning models to implicitly enable reasoning if this set to None, might also be the same for OpenAI models
             self.model_params["thinkingConfig"] = {
                 "thinking_budget": 0
             }
