@@ -113,6 +113,13 @@ class ChatSessionGoogle(GoogleUtils):
                 logging.error("Model ID has reasoning suffix but reasoning disabled: %s", self.model_props.model_id)
                 raise CustomErrorMessage("⚠️ The selected model requires reasoning to be enabled. But it has not been configured, please select other models.")
             
+            logging.info("Reasoning is disabled, setting thinking_budget to 0")
+            # Disable reasoning
+            self.model_params["thinkingConfig"] = {
+                "thinking_budget": 0
+            }
+
+
         # Check for tools
         if self.model_props.enable_tools:
             await self.load_tools()

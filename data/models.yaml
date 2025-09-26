@@ -26,7 +26,7 @@
   thread_name: xai
 
 - model_alias: googleflash
-  model_human_name: Gemini 2.5 Flash
+  model_human_name: Gemini 2.5 Flash Thinking
   model_description: Fast performance for everyday tasks
   sdk: google
   model_id: gemini-2.5-flash-medium
@@ -37,6 +37,18 @@
   client_name: gemini_api_client
   thread_name: gemini
   default: true
+
+- model_alias: googleflashfast
+  model_human_name: Gemini 2.5 Flash Instant
+  model_description: Fast performance for everyday tasks
+  sdk: google
+  model_id: gemini-2.5-flash
+  has_reasoning: false
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+  client_name: gemini_api_client
+  thread_name: gemini
 
 - model_alias: fast
   model_human_name: Fast
