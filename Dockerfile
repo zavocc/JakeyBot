@@ -9,9 +9,9 @@ RUN useradd -u 6969 --home-dir /jakeybot jakey
 # Copy the source code
 COPY . .
 
-# Install clang compiler
+# Install C compiler
 RUN apt-get update
-RUN apt-get install clang --no-install-recommends --yes
+RUN apt-get install g++ --no-install-recommends --yes
 
 # Correct ownership
 RUN chown -R 6969:6969 /jakeybot
