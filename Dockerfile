@@ -8,6 +8,9 @@ RUN useradd -u 6969 --home-dir /jakeybot jakey
 # Copy the source code
 COPY . .
 
+# Install clang compiler
+RUN apt-get install clang --no-install-recommends
+
 # Correct ownership
 RUN chown -R 6969:6969 /jakeybot
 
