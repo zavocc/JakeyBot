@@ -1,4 +1,5 @@
-from models.tasks.text_model_utils import get_text_models_async, get_text_models_generator
+from models.core import get_remix_styles_generator, set_assistant_type
+from models.tasks.text_model_utils import get_text_models_async
 from core.exceptions import CustomErrorMessage, PollOffTopicRefusal
 from discord.ext import commands
 from discord import Member, DiscordException
@@ -162,7 +163,7 @@ class GenerativeAIFunUtils(commands.Cog):
     @discord.option(
         "style",
         description="Style of avatar",
-        #choices=ModelsList.get_remix_styles(),
+        choices=get_remix_styles_generator(),
         required=True
     )
     @discord.option(
@@ -253,7 +254,9 @@ class GenerativeAIFunUtils(commands.Cog):
     ###############################################
     # Polls
     ###############################################
-    polls = discord.commands.SlashCommandGroup(name="polls", description="Create polls using AI", contexts={discord.InteractionContextType.guild})
+    polls = discord.commands.SlashCommandGroup(name="polls", 
+                                               description="Create polls using AI", 
+                                               contexts={discord.InteractionContextType.guild})
 
     @polls.command()
     @discord.option(
@@ -261,94 +264,116 @@ class GenerativeAIFunUtils(commands.Cog):
         description="What prompt should be like, use natural language to steer number of answers or type of poll",
         required=True
     )
-    @discord.option(
-        "attachment",
-        description="Attachment to be referenced for poll",
-        required=False
-    )
-    async def create(self, ctx: discord.ApplicationContext, prompt: str, attachment: discord.Attachment = None):
+    async def create(self, ctx: discord.ApplicationContext, prompt: str):
         """Create polls using AI"""
         await ctx.response.defer(ephemeral=False)
 
-        # Prompt feed which contains the messages
-        _prompt_feed = [
+        # Fetch default model
+        _default_model_config = await get_text_models_async()
+
+        # Check if we can use OpenAI or Google format
+        if _default_model_config["sdk"] == "openai":
+            _SYM = "content"
+        else:
+            _SYM = "parts"
+
+        # Base Schema
+        _SCHEMA = {
+            "type": "object",
+            "properties": {
+                "poll_description": {
+                    "type": "string"
+                },
+                "allow_multiselect": {
+                    "type": "boolean"
+                },
+                "poll_answers": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "text": {
+                                "type": "string"
+                            },
+                            "emoji": {
+                                "type": "string"
+                            }
+                        },
+                        "required": ["text", "emoji"]
+                    }
+                },
+                "poll_duration_in_hours": {
+                    "type": "integer"
+                },
+                "deny_poll_creation_throw_err_offtopic": {
+                    "type": "boolean"
+                }
+            },
+            "required": ["poll_description", "allow_multiselect", "poll_answers", "poll_duration_in_hours", "deny_poll_creation_throw_err_offtopic"]
+        }
+
+
+        # Prompt for poll generation
+        _prompt = [
             {
                 "role": "user",
-                "parts":[
+                _SYM:[
                     {
-                        "text": inspect.cleandoc(f"""
-                        Generate a poll based on the following prompt:
-                        {prompt}
-                        """)
+                        "text": f"Generate a poll based on the following prompt: {prompt}"
                     }
                 ]
             }
         ]
 
+        # Check if we use OpenAI to add "type": "text"
+        if _default_model_config["sdk"] == "openai":
+            _prompt[0][_SYM][0]["type"] = "text"
+
         # Init completions
-        #_completions = Completions(model_name=self._default_text_model, discord_ctx=ctx, discord_bot=self.bot)
-        _completions = None
+        _completions = getattr(importlib.import_module(f"models.tasks.text.{_default_model_config['sdk']}"), "completion")
 
-        # Attach files
-        if attachment:
-            await _completions.input_files(attachment=attachment)
+        _system_prompt = await set_assistant_type("discord_polls_creator_prompt", type=1)
+        # Update the params to use the schema
+        if _default_model_config["sdk"] == "openai":
+            # Add additionalProperties to false in _SCHEMA
+            _SCHEMA["additionalProperties"] = False
+            _SCHEMA["properties"]["poll_answers"]["items"]["additionalProperties"] = False
 
-            # Check for _completions._file_data
-            if hasattr(_completions, "_file_data"):
-                _prompt_feed.append(_completions._file_data)
-        
-        #_system_prompt = await HelperFunctions.set_assistant_type("discord_polls_creator_prompt", type=1)
-        _system_prompt = None
-        # Configured controlled response generation
-        _completions._genai_params.update({
-            "response_schema": {
-                "type": "object",
-                "properties": {
-                    "poll_description": {
-                        "type": "STRING"
-                    },
-                    "allow_multiselect": {
-                        "type": "BOOLEAN"
-                    },
-                    "poll_answers": {
-                        "type": "ARRAY",
-                        "items": {
-                            "type": "OBJECT",
-                            "properties": {
-                                "text": {
-                                    "type": "STRING"
-                                },
-                                "emoji": {
-                                    "type": "STRING"
-                                }
-                            },
-                            "required": ["text", "emoji"]
-                        }
-                    },
-                    "poll_duration_in_hours": {
-                        "type": "INTEGER"
-                    },
-                    "deny_poll_creation_throw_err_offtopic": {
-                        "type": "BOOLEAN"
+            _default_model_config["model_specific_params"].update({
+                "response_format": {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "polls_create",
+                        "strict": True,
+                        "schema": _SCHEMA
                     }
-                },
-                "required": ["poll_description", "allow_multiselect", "poll_answers", "deny_poll_creation_throw_err_offtopic"]
-            },
-            "response_mime_type": "application/json"
-        })
+                }
+            })
+        else:
+            _default_model_config["model_specific_params"].update({
+                "response_schema": _SCHEMA,
+                "response_mime_type": "application/json"
+            })
 
         # Poll results
-        _results = json.loads(await _completions.completion(_prompt_feed, system_instruction=_system_prompt))
+        _results = json.loads(await _completions(
+            prompt=_prompt,
+            model_name=_default_model_config["model_id"],
+            system_instruction=_system_prompt,
+            client_session=getattr(self.bot, _default_model_config["client_name"], None),
+            return_text=True,
+            **_default_model_config["model_specific_params"]
+        ))
 
         # Check if we can create a poll
-        if _results["deny_poll_creation_throw_err_offtopic"]:
+        if _results.get("deny_poll_creation_throw_err_offtopic"):
             raise PollOffTopicRefusal
 
         # Create, send, and parse poll
         _poll = discord.Poll(
             question=_results["poll_description"],
             allow_multiselect=_results["allow_multiselect"],
-            duration=_results.get("poll_duration_in_hours", 24)
+            duration=_results["poll_duration_in_hours"]
         )
 
         # Add answers and must limit upto 10

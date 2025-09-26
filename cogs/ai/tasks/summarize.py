@@ -188,6 +188,7 @@ class AISummaries(commands.Cog):
         if _default_model_config["sdk"] == "openai":
             # Add additionalProperties to false in _SCHEMA
             _SCHEMA["additionalProperties"] = False
+            _SCHEMA["properties"]["links"]["items"]["additionalProperties"] = False
 
             _default_model_config["model_specific_params"].update({
                 "response_format": {
