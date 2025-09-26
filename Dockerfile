@@ -9,6 +9,7 @@ RUN useradd -u 6969 --home-dir /jakeybot jakey
 COPY . .
 
 # Install clang compiler
+RUN apt-get update
 RUN apt-get install clang --no-install-recommends
 
 # Correct ownership
