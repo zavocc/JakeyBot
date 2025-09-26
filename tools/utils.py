@@ -43,7 +43,7 @@ async def fetch_tool_schema(tool_name: str, tool_type: Literal['openai', 'google
 # Fetch tool name
 async def fetch_actual_tool_name(tool_name: str) -> str:
     # Check if tool manifest exists
-    if not aiofiles.os.path.exists(f"tools/apis/{tool_name}/manifest.yaml"):
+    if not await aiofiles.os.path.exists(f"tools/apis/{tool_name}/manifest.yaml"):
         raise CustomErrorMessage("⚠️ The agent you selected is currently unavailable, please choose another agent using `/agent` command")
     
     # Open the YAML

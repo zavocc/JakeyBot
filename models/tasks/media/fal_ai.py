@@ -5,10 +5,7 @@ import fal_client
 
 # This method outputs bytes
 async def run_image(
-    prompt: str,
     model_name: str,
-    image_urls: list = None,
-    negative_prompt: str = None,
     aiohttp_session: aiohttp.ClientSession = None,
     send_url_only: bool = False,
     **additional_client_args
@@ -24,19 +21,8 @@ async def run_image(
             raise ValueError("FAL_KEY is not set! Cannot proceed generating images")
         
         # Construct params
-        _params = {
-            "prompt": prompt
-        }
+        _params = {}
         _endpoint = f"fal-ai/{model_name}"
-
-        # Check if we have reference images
-        if image_urls:
-            _params["image_urls"] = image_urls
-            _endpoint = f"fal-ai/{model_name}/edit"
-
-        if negative_prompt:
-             _params["negative_prompt"] = negative_prompt
-
 
         # Additional client args
         if additional_client_args:

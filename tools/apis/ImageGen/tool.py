@@ -24,33 +24,34 @@ class Tools:
             _aiohttp_client_session = aiohttp.ClientSession()
 
         # Initialize _params with default empty dict
-        _params = {}
+        _params = {
+            "prompt": prompt
+        }
 
         # Update parameters for SeeDream 4
         if model == "imagen4/preview/ultra":
             logging.info("Using Imagen 4 model for generation and passing negative prompt")
-            negative_prompt = negative_prompt
-            _params = {
+            _params.update({
                 "aspect_ratio": aspect_ratio,
                 "resolution": resolution
-            }
+            })
+
+            if negative_prompt:
+                _params["negative_prompt"] = negative_prompt
         elif model == "bytedance/seedream/v4/text-to-image":
-            logging.info("Using Seedream 4 model for generation, setting width and height to 4096 and disabling negative prompt")
-            negative_prompt = None
-            _params = {
+            logging.info("Using Seedream 4 model for generation, setting width and height to 4K and disabling negative prompt")
+            _params.update({
                 "enable_safety_checker": enable_safety_checker,
                 "image_size": {
                     "width": 3840,
                     "height": 2160
                 }
-            }
+            })
 
         # Generate image
         _discordImageURLs = []
         _imagesInBytes = await run_image(
-            prompt=prompt,
             model_name=model,
-            negative_prompt=negative_prompt,
             aiohttp_session=_aiohttp_client_session,
             **_params
         )
@@ -100,26 +101,26 @@ class Tools:
             logging.info("No aiohttp instance found in discord bot subclass, creating a new one for Image Editing tool")
             _aiohttp_client_session = aiohttp.ClientSession()
         
+        # Construct params
+        _additional_params = {"prompt": prompt, "image_urls": image_url}
+
         # Output in 4k for seedream 
-        if model == "bytedance/seedream/v4":
-            logging.info("Using Seedream 4 model for editing, setting width and height to 4096")
-            _additional_params = {
+        if model == "bytedance/seedream/v4/edit":
+            logging.info("Using Seedream 4 model for editing, setting width and height to 4K")
+            _additional_params.update({
                 "enable_safety_checker": enable_safety_checker,
                 "image_size": {
                     "width": 3840,
                     "height": 2160
                 }
-            }
+            })
         else:
             logging.info("Using Gemini 2.5 Flash model for editing")
-            _additional_params = {}
 
         # Generate image
         _discordImageURLs = []
         _imagesInBytes = await run_image(
-            prompt=prompt,
             model_name=model,
-            image_urls=image_url,
             aiohttp_session=_aiohttp_client_session,
             **_additional_params
         )

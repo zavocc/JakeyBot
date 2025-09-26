@@ -56,8 +56,8 @@ tool_list:
         model:
           type: string
           enum:
-            - gemini-25-flash-image
-            - bytedance/seedream/v4
+            - gemini-25-flash-image/edit
+            - bytedance/seedream/v4/edit
           description: The model to use for image editing. It's recommended to use Gemini 2.5 Flash for precise and concistency lock edits like photo restoration, while Seedream 4 for quality 4K edits, upscales, and remasters but may result in drift.
       required:
         - prompt
