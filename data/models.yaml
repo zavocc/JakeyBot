@@ -16,15 +16,15 @@
 - model_alias: x-ai::grok-4-fast
   model_human_name: Grok 4 Fast (High)
   model_description: SOTA-efficient fast reasoning model
-  sdk: openai
-  model_id: x-ai/grok-4-fast:free-high
+  sdk: litellm
+  model_id: openrouter/x-ai/grok-4-fast:free-high
   has_reasoning: true
-  reasoning_type: openai
+  reasoning_type: openrouter-effort
   enable_tools: true
   enable_files: true
   enable_threads: true
-  client_name: openai_client_openrouter
   thread_name: xai
+
 
 - model_alias: gemini::gemini-2.5-pro
   model_human_name: Gemini 2.5 Pro

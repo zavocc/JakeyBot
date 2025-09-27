@@ -1,15 +1,15 @@
-from .utils import OpenAIUtils
+from .utils import LiteLLMUtils
 from core.database import History as typehint_History
 from core.exceptions import CustomErrorMessage
 from models.validation import ModelParamsOpenAIDefaults as typehint_ModelParams
 from models.validation import ModelProps as typehint_ModelProps
 from os import environ
 import discord as typehint_Discord
+import litellm
 import logging
 import models.core
-import openai
 
-class ChatSession(OpenAIUtils):
+class ChatSession(LiteLLMUtils):
     def __init__(self, 
                  user_id: int, 
                  model_props: typehint_ModelProps,
@@ -20,21 +20,12 @@ class ChatSession(OpenAIUtils):
         # Discord bot object - needed for interactions with current state of Discord API
         self.discord_bot: typehint_Discord.Bot = discord_bot or None
 
-        # For sending message
+        # For sending messages
         self.discord_context: typehint_Discord.ApplicationContext = discord_context or None
 
-        # OpenAI Client, for efficiency we can reuse the same client instance
-        # Check if its a legitimate client SDK from openai
-        # Otherwise we create a new one
-        if client_name and type(getattr(discord_bot, client_name, None)) == openai.AsyncClient:
-            if not discord_bot and not isinstance(discord_bot, typehint_Discord.Bot):
-                raise ValueError("client_name is provided but discord_bot is None and is not a valid discord.Bot instance")
-
-            logging.info("Reusing existing OpenAI client from discord.Bot subclass: %s", client_name)
-            self.openai_client: openai.AsyncClient = getattr(discord_bot, client_name)
-        else:
-            logging.info("Creating new OpenAI client instance for ChatSessionOpenAI")
-            self.openai_client: openai.AsyncClient = openai.AsyncClient(api_key=environ.get("OPENAI_API_KEY"))
+        # LiteLLM doesn't support client_name
+        if client_name:
+            logging.warning("LiteLLM does not support client_name, ignoring the provided value")
 
         # Model properties
         try:
@@ -127,7 +118,9 @@ class ChatSession(OpenAIUtils):
         if not self.model_props.model_id:
             raise ValueError("Model is required, chose nothing")
         
-        _response = await self.openai_client.chat.completions.create(
+        # Drop unnecessary params
+        litellm.drop_params = True
+        _response = await litellm.acompletion(
             model=self.model_props.model_id,
             messages=chat_history,
             **self.model_params
@@ -150,7 +143,7 @@ class ChatSession(OpenAIUtils):
                 chat_history.extend(_tool_parts)
 
                 # Run the response the second time
-                _response = await self.openai_client.chat.completions.create(
+                _response = await litellm.acompletion(
                     model=self.model_props.model_id,
                     messages=chat_history,
                     **self.model_params

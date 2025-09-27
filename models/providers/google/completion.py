@@ -12,7 +12,7 @@ import google.genai.errors as google_genai_errors
 import google.genai.types as google_genai_types
 import models.core
 
-class ChatSessionGoogle(GoogleUtils):
+class ChatSession(GoogleUtils):
     def __init__(self, 
                  user_id: int, 
                  model_props: typehint_ModelProps,

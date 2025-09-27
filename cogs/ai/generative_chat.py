@@ -5,11 +5,11 @@ from models.core import set_assistant_type
 from models.chat_utils import fetch_model, load_history, save_history
 
 # TODO: use importlib
-from models.providers.google.completion import ChatSessionGoogle
-from models.providers.openai.completion import ChatSessionOpenAI
+from models.providers.openai.completion import ChatSession as CSOpenAITypeHint
 
 from os import environ
 import discord
+import importlib
 import inspect
 import logging
 import re
@@ -29,27 +29,14 @@ class BaseChat():
     async def _ask(self, prompt: Message):
         # Set default model
         _model_props = await fetch_model(model_alias=(await self.DBConn.get_key(guild_id=prompt.author.id, key="default_model")) or environ.get("DEFAULT_MODEL", "openai::gpt-4.1-mini"))
-        
-        # Check what sdk to call
-        # TODO: add more checks, for now we lock in to OpenAI and Google or we use importlib and type hints
-        if _model_props.sdk == "openai":
-            _chat_session = ChatSessionOpenAI(
-                user_id=prompt.author.id,
-                model_props=_model_props,
-                discord_bot=self.bot,
-                discord_context=prompt,
-                db_conn=self.DBConn,
-                client_name=_model_props.client_name
-            )
-        elif _model_props.sdk == "google":
-            _chat_session = ChatSessionGoogle(
-                user_id=prompt.author.id,
-                model_props=_model_props,
-                discord_bot=self.bot,
-                discord_context=prompt,
-                db_conn=self.DBConn,
-                client_name=_model_props.client_name
-            )
+        _chat_session: CSOpenAITypeHint = importlib.import_module(f"models.providers.{_model_props.sdk}.completion").ChatSession(
+            user_id=prompt.author.id,
+            model_props=_model_props,
+            discord_bot=self.bot,
+            discord_context=prompt,
+            db_conn=self.DBConn,
+            client_name=_model_props.client_name
+        )
 
         # Check if "thread_name" is set in model props so we can separate chat threads
         if _model_props.thread_name:

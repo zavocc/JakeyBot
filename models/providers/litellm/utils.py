@@ -5,7 +5,7 @@ import discord as typehint_Discord
 import json
 import logging
 
-class OpenAIUtils:
+class LiteLLMUtils:
     # Normalize reasoning
     def parse_reasoning(self, model_id: str, reasoning_type: Literal["openai", "openrouter-int", "anthropic"]) -> dict:
         _constructed_params = {
@@ -13,6 +13,7 @@ class OpenAIUtils:
         }
 
         # If the model reasoning uses OpenAI-style reasoning syntax
+        # NOTE: LitLLM is strict about this so for openrouter, we use "openrouter-int"
         if reasoning_type == "openai":
             # if model ID has "-minimal" at the end
             if model_id.endswith("-minimal"):
@@ -47,25 +48,43 @@ class OpenAIUtils:
             # Log
             logging.info("Using OpenRouter-style reasoning with effort value %d", _constructed_params["extra_body"]["reasoning"]["max_tokens"])
 
-        # This is specific for Anthropic hosted models
-        elif reasoning_type == "anthropic":
+        elif reasoning_type == "openrouter-effort":
             # Set the default to low
-            _constructed_params["extra_body"]["thinking"] = {"type": "enabled", "budget_tokens": 4096}
+            _constructed_params["extra_body"]["reasoning"] = {"enabled": True, "effort": "low"}
 
             # Check for suffixes
             if model_id.endswith("-minimal"):
-                _constructed_params["extra_body"]["thinking"]["budget_tokens"] = 128
+                _constructed_params["extra_body"]["reasoning"]["effort"] = "minimal"
             elif model_id.endswith("-medium"):
-                _constructed_params["extra_body"]["thinking"]["budget_tokens"] = 8000
+                _constructed_params["extra_body"]["reasoning"]["effort"] = "medium"
             elif model_id.endswith("-high"):
-                _constructed_params["extra_body"]["thinking"]["budget_tokens"] = 16000
+                _constructed_params["extra_body"]["reasoning"]["effort"] = "high"
 
             # Log
-            logging.info("Using Anthropic-style reasoning with budget_tokens value %d", _constructed_params["extra_body"]["thinking"]["budget_tokens"])
+            logging.info("Using OpenRouter-style reasoning with effort value %s", _constructed_params["extra_body"]["reasoning"]["effort"])
+
+        # This is specific for Anthropic hosted models
+        elif reasoning_type == "anthropic":
+            # Set the default to low
+            _constructed_params["thinking"] = {"type": "enabled", "budget_tokens": 4096}
+
+            # Check for suffixes
+            if model_id.endswith("-minimal"):
+                _constructed_params["thinking"]["budget_tokens"] = 128
+            elif model_id.endswith("-medium"):
+                _constructed_params["thinking"]["budget_tokens"] = 8000
+            elif model_id.endswith("-high"):
+                _constructed_params["thinking"]["budget_tokens"] = 16000
+
+            # Log
+            logging.info("Using Anthropic-style reasoning with budget_tokens value %d", _constructed_params["thinking"]["budget_tokens"])
 
         else:
             logging.error("Unknown reasoning type specified: %s", reasoning_type)
             raise CustomErrorMessage(f"⚠️ An error has occurred, reasoning effort type {reasoning_type} is not supported for this provider.")
+
+
+
 
         return _constructed_params
 
