@@ -25,7 +25,6 @@
   enable_threads: true
   thread_name: xai
 
-
 - model_alias: gemini::gemini-2.5-pro
   model_human_name: Gemini 2.5 Pro
   model_description: Reasoning, math, and code.
@@ -107,3 +106,25 @@
   enable_files: true
   enable_threads: true
   client_name: openai_client
+
+- model_alias: azure_foundry.deepseek::Deepseek-V3-0324
+  model_human_name: DeepSeek V3.1
+  model_description: Designed for chat uses cases
+  sdk: litellm
+  model_id: azure_ai/DeepSeek-V3.1
+  has_reasoning: false
+  enable_tools: true
+  enable_files: false
+  enable_threads: true
+  thread_name: deepseek
+
+- model_alias: azure_foundry.deepseek::Deepseek-R1-0528
+  model_human_name: DeepSeek R1
+  model_description: Reasoning, maths, and code hosted by Azure.
+  sdk: litellm
+  model_id: azure_ai/DeepSeek-R1-0528
+  has_reasoning: true
+  enable_tools: false
+  enable_files: false
+  enable_threads: true
+  thread_name: deepseek
