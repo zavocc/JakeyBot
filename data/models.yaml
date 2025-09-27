@@ -107,6 +107,7 @@
   enable_threads: true
   client_name: openai_client
 
+# Azure AI Foundry Inference SDK does not support reasoning effort param so reasoning_type is ignored by drop_params attribute in LiteLLM
 - model_alias: azure_foundry.deepseek::Deepseek-V3-0324
   model_human_name: DeepSeek V3.1
   model_description: Designed for chat uses cases
