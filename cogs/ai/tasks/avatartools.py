@@ -101,7 +101,9 @@ class AvatarTools(commands.Cog):
                     # Contents
                     _contents = [
                         {
-                            "text": _strprompt,
+                            "text": _strprompt
+                        },
+                        {
                             "inlineData": {
                                 "mimeType": _mime_type,
                                 "data": (await asyncio.to_thread(base64.b64encode, _filedata)).decode("utf-8")
