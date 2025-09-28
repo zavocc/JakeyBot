@@ -63,7 +63,7 @@ class AISummaries(commands.Cog):
         choices=get_text_models_generator(),
         default=None
     )
-    @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.cooldown(1, 50, commands.BucketType.user)
     async def summarize(self, ctx, steer: str, before_date: str, after_date: str, around_date: str, max_references: int, limit: int, model: str):
         """Summarize or catch up latest messages based on the current channel"""
         await ctx.response.defer(ephemeral=True)

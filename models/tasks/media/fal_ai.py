@@ -6,15 +6,13 @@ import fal_client
 # This method outputs bytes
 async def run_image(
     model_name: str,
-    aiohttp_session: aiohttp.ClientSession = None,
+    aiohttp_session: aiohttp.ClientSession,
     send_url_only: bool = False,
     **additional_client_args
 ) -> list :
         # Check if we have aiohttp session supplied or use the default one
         if aiohttp_session:
             _aiohttp_session = aiohttp_session
-        else:
-            _aiohttp_session = aiohttp.ClientSession()
     
         # check if FAL_KEY is set
         if not environ.get("FAL_KEY"):
@@ -59,17 +57,13 @@ async def run_image(
 
 async def run_audio(
     model_name: str,
-    aiohttp_session: aiohttp.ClientSession = None,
+    aiohttp_session: aiohttp.ClientSession,
     send_url_only: bool = False,
     **additional_client_args
 ) -> Union[list, str]:
         # Check if we have aiohttp session supplied or use the default one
         if aiohttp_session:
             _aiohttp_session = aiohttp_session
-        else:
-            if not send_url_only:
-                 # We need aiohttp session to download the audio
-                _aiohttp_session = aiohttp.ClientSession()
     
         # check if FAL_KEY is set
         if not environ.get("FAL_KEY"):

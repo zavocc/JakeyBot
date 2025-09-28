@@ -20,8 +20,9 @@ class Tools:
             logging.info("Using existing aiohttp instance from discord bot subclass for Audio Generation tool")
             _aiohttp_client_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
         else:
-            logging.info("No aiohttp instance found in discord bot subclass, creating a new one for Audio Generation tool")
-            _aiohttp_client_session = aiohttp.ClientSession()
+            # Throw exception since we don't have a session
+            logging.warning("No aiohttp_instance found in discord bot subclass, aborting")
+            raise Exception("HTTP Client has not been initialized properly, please try again later.")
 
         # Generate audio
         _discordAudioURLs = []
@@ -103,8 +104,9 @@ class Tools:
             logging.info("Using existing aiohttp instance from discord bot subclass for Podcast Generation tool")
             _aiohttp_client_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
         else:
-            logging.info("No aiohttp instance found in discord bot subclass, creating a new one for Podcast Generation tool")
-            _aiohttp_client_session = aiohttp.ClientSession()
+            # Throw exception since we don't have a session
+            logging.warning("No aiohttp_instance found in discord bot subclass, aborting")
+            raise Exception("HTTP Client has not been initialized properly, please try again later.")
 
         # Construct the dialogue script
         _structured_script = ""

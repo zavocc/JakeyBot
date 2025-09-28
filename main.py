@@ -4,6 +4,7 @@ from inspect import cleandoc
 from os import chdir, mkdir, environ
 from pathlib import Path
 import aiofiles.os
+import aiohttp
 import discord
 import dotenv
 import logging
@@ -50,9 +51,13 @@ class InitBot(SubClassBotPlugServices):
             environ["TEMP_DIR"] = "temp"
             mkdir(environ.get("TEMP_DIR"))
 
-        # Initialize services
+        # Initialize SDK clients
         self.loop.create_task(self.start_services())
         logging.info("Services initialized successfully")
+
+        # HTTP Client
+        self.aiohttp_instance = aiohttp.ClientSession(loop=self.loop)
+        logging.info("HTTP client session initialized successfully")
 
 
     def _lock_socket_instance(self, port):

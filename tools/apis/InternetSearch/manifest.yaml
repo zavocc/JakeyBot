@@ -69,3 +69,66 @@ tool_list:
           description: The number of results to fetch
       required:
         - query
+
+  # Get Runtimes
+  - name: code_execution_list_runtimes
+    description: List available runtimes for code execution.
+    parameters:
+      type: object
+      properties:
+        language:
+          type: string
+          description: The programming language to filter runtimes by
+      required:
+        - language
+
+  # Code Execution
+  - name: code_execution
+    description: Run code in a sandboxed environment powered by Piston. Before you begin, use code_execution_list_runtimes tool to get runtime version first
+    parameters:
+      type: object
+      properties:
+        language:
+          type: string
+          enum:
+            - "awk"
+            - "bash"
+            - "c"
+            - "c++"
+            - "csharp"
+            - "js"
+            - "powershell"
+            - "python"
+            - "rust"
+            - "swift"
+          description: The programming language to use
+        version:
+          type: string
+          description: The version of the runtime or interpreter to use.
+        files:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: The name of the file
+              content:
+                type: string
+                description: The content of the file
+            required:
+              - name
+              - content
+          description: The list of files to execute
+        stdin:
+          type: string
+          description: The standard input to provide to the program
+        args:
+          type: array
+          items:
+            type: string
+          description: The list of arguments to provide to the program
+      required:
+        - language
+        - version
+        - files

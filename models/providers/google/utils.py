@@ -20,8 +20,9 @@ class GoogleUtils:
             logging.info("Found aiohttp_instance in discord bot, using that for downloading the file")
             _aiohttp_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
         else:
-            logging.info("aiohttp_instance not found in discord bot, creating a temporary aiohttp client session")
-            _aiohttp_session = aiohttp.ClientSession()
+            # Raise exception since we don't have a session
+            logging.warning("No aiohttp_instance found in discord bot, aborting")
+            raise CustomErrorMessage("⚠️ An error has occurred while processing the file, please try again later.")
 
         # Grab filename
         _filename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(518301839, 6582482111)}.{attachment.filename}"

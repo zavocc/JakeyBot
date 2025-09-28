@@ -107,8 +107,9 @@ class ChatSession(LiteLLMUtils):
 
         # Remove others found in model_params
         for _keys in self.model_params.keys():
-            logging.info("Removing key from additional_params to avoid conflict: %s", _keys)
-            _merged_params.pop(_keys, None)
+            if _keys in _merged_params:
+                logging.info("Removing key from additional_params to avoid conflict: %s", _keys)
+                _merged_params.pop(_keys, None)
 
         # Update with model defaults
         _merged_params.update(self.model_params)

@@ -1,11 +1,8 @@
 from discord.ext import bridge
 from google import genai
 from os import environ
-import aiohttp
 import logging
 import openai
-
-# TODO: Change from initbot.py to subclassbot.py and class name to SubClassBotServicesPlug
 
 # List of services to be started, separated from main.py
 # for cleanliness and modularity
@@ -18,27 +15,9 @@ class SubClassBotPlugServices(bridge.Bot):
         self.gemini_api_client = genai.Client(api_key=environ.get("GEMINI_API_KEY"))
         logging.info("Gemini API client initialized successfully")
 
-        # OpenAI client for openai models
-        # TODO: To be deprecated in the future to move to declarative yaml syntax
-        _base_url = environ.get("OPENAI_API_ENDPOINT")
-
-        # Check if we need to use default_query param for Azure OpenAI
-        # Needed for Azure OpenAI
-        if environ.get("OPENAI_USE_AZURE_OPENAI") and _base_url:
-            _default_query = {"api-version": "preview"}
-            logging.info("Using Azure OpenAI endpoint for OpenAI models... Using nextgen API")
-        else:
-            _default_query = None
-
         self.openai_client = openai.AsyncClient(
             api_key=environ.get("OPENAI_API_KEY"),
-            base_url=_base_url,
-            default_query=_default_query
         )
-        if _base_url:
-            logging.info("OpenAI client initialized successfully with custom endpoint: %s", _base_url)
-        else:
-            logging.info("OpenAI client initialized successfully with default endpoint")
 
         # OpenAI client for OpenRouter
         self.openai_client_openrouter = openai.AsyncClient(
@@ -53,11 +32,6 @@ class SubClassBotPlugServices(bridge.Bot):
             base_url="https://api.groq.com/openai/v1"
         )
         logging.info("OpenAI client for Groq initialized successfully")
-
-
-        # Everything else (mostly GET requests)
-        self.aiohttp_instance = aiohttp.ClientSession(loop=self.loop)
-        logging.info("aiohttp client session initialized successfully")
 
     async def stop_services(self):
         # Close aiohttp client sessions

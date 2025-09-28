@@ -36,6 +36,7 @@ class AvatarTools(commands.Cog):
         description="Describe the avatar",
         required=False
     )
+    @commands.cooldown(1, 25, commands.BucketType.user)
     async def show(self, ctx, user: Member = None, describe: bool = False):
         """Get user avatar"""
         await ctx.response.defer(ephemeral=True)
@@ -170,6 +171,7 @@ class AvatarTools(commands.Cog):
         description="A user to get avatar from",
         required=False
     )
+    @commands.cooldown(1, 45, commands.BucketType.user)
     async def remix(self, ctx: discord.ApplicationContext, style: str, user: Member = None):
         """Remix user avatar powered by Nano banana"""
         await ctx.response.defer(ephemeral=True)

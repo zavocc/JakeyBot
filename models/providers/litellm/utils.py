@@ -39,7 +39,6 @@ class LiteLLMUtils:
     async def load_tools(self):
         _tool_name = await self.db_conn.get_key(self.user_id, "tool_use")
 
-
         # For models to read the available tools to be executed
         self.tool_schema: list = await fetch_tool_schema(_tool_name, tool_type="openai")
 

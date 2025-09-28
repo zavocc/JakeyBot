@@ -20,8 +20,9 @@ class Tools:
             logging.info("Using existing aiohttp instance from discord bot subclass for Image Generation tool")
             _aiohttp_client_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
         else:
-            logging.info("No aiohttp instance found in discord bot subclass, creating a new one for Image Generation tool")
-            _aiohttp_client_session = aiohttp.ClientSession()
+            # Throw exception since we don't have a session
+            logging.warning("No aiohttp_instance found in discord bot subclass, aborting")
+            raise Exception("HTTP Client has not been initialized properly, please try again later.")
 
         # Initialize _params with default empty dict
         _params = {
@@ -98,9 +99,9 @@ class Tools:
             logging.info("Using existing aiohttp instance from discord bot subclass for Image Editing tool")
             _aiohttp_client_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
         else:
-            logging.info("No aiohttp instance found in discord bot subclass, creating a new one for Image Editing tool")
-            _aiohttp_client_session = aiohttp.ClientSession()
-        
+            logging.warning("No aiohttp_instance found in discord bot subclass, aborting")
+            raise Exception("HTTP Client has not been initialized properly, please try again later.")
+
         # Construct params
         _additional_params = {"prompt": prompt, "image_urls": image_url}
 
