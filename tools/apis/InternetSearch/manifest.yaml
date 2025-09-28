@@ -84,7 +84,7 @@ tool_list:
 
   # Code Execution
   - name: code_execution
-    description: Run code in a sandboxed environment powered by Piston. Before you begin, use code_execution_list_runtimes tool to get runtime version first
+    description: Run code in a sandboxed environment powered by Piston.
     parameters:
       type: object
       properties:
@@ -104,7 +104,7 @@ tool_list:
           description: The programming language to use
         version:
           type: string
-          description: The version of the runtime or interpreter to use.
+          description: The version of the runtime or interpreter to use. Run code_execution_list_runtimes tool first to determine runtime version
         files:
           type: array
           items:
@@ -119,7 +119,7 @@ tool_list:
             required:
               - name
               - content
-          description: The list of files to execute
+          description: The list of files and code. First array index is considered to be main entrypoint of program execution
         stdin:
           type: string
           description: The standard input to provide to the program
