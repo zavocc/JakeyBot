@@ -15,21 +15,20 @@ class ModelProps(BaseModel):
     model_human_name: str = Field(..., description="Human-friendly model name")
     model_description: str = Field(..., description="Model description")
     model_id: str = Field(..., description="Model identifier")
-    has_reasoning: bool = Field(..., description="Determine if the model is optimized for reasoning")
     sdk: str = Field(..., description="Model SDK which will be used to call the model")
+    additional_params: dict = Field(default={}, description="Additional config parameters for the model")
     client_name: str = Field(default=None, description="SDK Instance name from discord.Bot subclass")
     default: bool = Field(default=False, description="Set the model as default chat model")
     disabled: bool = Field(default=False, description="Hide the model from being shown in selector")
     enable_tools: bool = Field(default=True, description="Enable tools")
     enable_files: bool = Field(default=True, description="Enable files (e.g. Images)")
     enable_threads: bool = Field(default=True, description="Enable chat history")
-    enable_system_instructions: bool = Field(default=True, description="Enable system instructions")
+    enable_system_instruction: bool = Field(default=True, description="Enable system instructions")
     thread_name: str = Field(default=None, description="Use the same SDK but use a different thread name for chat separation")
-    reasoning_type: str = Field(default="openai", description="Reasoning type")
 
 class ModelParamsOpenAIDefaults(BaseModel):
     temperature: int = Field(default=1)
-    max_tokens: int = Field(default=8192)
+    max_tokens: int = Field(default=16000)
 
 class GeminiSafetySetting(BaseModel):
     category: Literal[

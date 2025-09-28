@@ -39,7 +39,7 @@ tool_list:
           description: A list of text to exclude from the search results
         showSummary:
           type: boolean
-          description: Show summary in the search results. Disable this if the user explicitly asks to only fetch the results without any summary or highlights to also save costs and time
+          description: Show summary in the search results. Only use this for quick insights, otherwise do not use this for faster search fetching only or full browsing using url_browse tool
       required:
         - query
   

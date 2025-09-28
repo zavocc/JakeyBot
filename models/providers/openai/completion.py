@@ -48,7 +48,7 @@ class ChatSession(OpenAIUtils):
             logging.error("Invalid model_props provided: %s", e)
             raise ValueError(f"Invalid model_props: {e}")
 
-        # Model config
+        # Model params
         _model_params: typehint_ModelParams = typehint_ModelParams()
         self.model_params: dict = _model_params.model_dump()
 
@@ -60,16 +60,10 @@ class ChatSession(OpenAIUtils):
         
     # Chat
     async def send_message(self, prompt: str, chat_history: list = None, system_instructions: str = None):
-        # Props used:
-        # model_id -> required, str
-        # enable_tools -> true or false
-        # has_reasoning -> required, true or false
-        # reasoning_type -> simple or advanced
-
         # Load chat history and system instructions
         if chat_history is None or type(chat_history) != list:
             chat_history = []
-            if self.model_props.enable_system_instructions and system_instructions:
+            if self.model_props.enable_system_instruction and system_instructions:
                 chat_history.append({
                     "role": "system",
                     "content": system_instructions
@@ -96,28 +90,6 @@ class ChatSession(OpenAIUtils):
         # Add the prepared prompt to chat history
         chat_history.append(_prep_prompt)
 
-        # Normalize reasoning
-        if self.model_props.has_reasoning:
-            # Parse reasoning and get constructed params
-            _reasoning_params = self.parse_reasoning(self.model_props.model_id, self.model_props.reasoning_type)
-            
-            # Update model_params with reasoning parameters
-            self.model_params.update(_reasoning_params)
-            self.model_params.pop("max_tokens", None) # Remove max tokens if present
-            
-            # Strip any suffixes "-minimal", "-low", "-medium", "-high"
-            self.model_props.model_id = self.model_props.model_id.replace("-minimal", "").replace("-low", "").replace("-medium", "").replace("-high", "")
-        # For reasoning disabled
-        else:
-            # If the model ID has any suffix but reasoning is disabled, raise error
-            if any(self.model_props.model_id.endswith(_rsning_suffix) for _rsning_suffix in ["-minimal", "-low", "-medium", "-high"]):
-                logging.error("Model ID has reasoning suffix but reasoning disabled: %s", self.model_props.model_id)
-                raise CustomErrorMessage("⚠️ The selected model requires reasoning to be enabled. But it has not been configured, please select other models.")
-            
-            logging.info("Reasoning is disabled, setting reasoning_effort to null")
-            # Disable reasoning effort
-            self.model_params["reasoning_effort"] = None
-
         # Check for tools
         if self.model_props.enable_tools:
             await self.load_tools()
@@ -127,10 +99,40 @@ class ChatSession(OpenAIUtils):
         if not self.model_props.model_id:
             raise ValueError("Model is required, chose nothing")
         
+        # Additional model params
+        # Log
+        if self.model_props.additional_params:
+            logging.info("Merging additional_params into model_params: %s", self.model_props.additional_params)
+
+        # Reverse merge 
+        _merged_params = self.model_props.additional_params.copy() if self.model_props.additional_params else {}
+
+        # Remove model and messages if they exist in additional_params to avoid conflicts
+        logging.info("Removing conflicting keys from additional_params if present")
+        # Remove core conflicting keys
+        _merged_params.pop("model", None)
+        _merged_params.pop("messages", None)
+        _merged_params.pop("tools", None)
+
+        # Check if reasoning_effort exists as max_tokens cannot coexist and must be max_completion_tokens instead
+        if "reasoning_effort" in _merged_params:
+            logging.info("reasoning_effort found in additional_params, converting from max_tokens to max_completion_tokens")
+            _merged_params["max_completion_tokens"] = self.model_params.pop("max_tokens", 16000)
+
+        # Remove others found in model_params
+        for _keys in self.model_params.keys():
+            logging.info("Removing key from additional_params to avoid conflict: %s", _keys)
+            _merged_params.pop(_keys, None)
+
+        # Update with model defaults
+        _merged_params.update(self.model_params)
+        logging.info("Final merged model parameters: %s", _merged_params)
+        
+        # Generate responses
         _response = await self.openai_client.chat.completions.create(
             model=self.model_props.model_id,
             messages=chat_history,
-            **self.model_params
+            **_merged_params
         )
 
         # Check for tool calls
@@ -153,7 +155,7 @@ class ChatSession(OpenAIUtils):
                 _response = await self.openai_client.chat.completions.create(
                     model=self.model_props.model_id,
                     messages=chat_history,
-                    **self.model_params
+                    **_merged_params
                 )
 
             # Check if we need to run tools again, this block will stop the loop and send the response

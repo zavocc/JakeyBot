@@ -51,7 +51,7 @@ class ChatSession(GoogleUtils):
             logging.error("Invalid model_props provided: %s", e)
             raise ValueError(f"Invalid model_props: {e}")
 
-        # Model config
+        # Model params
         _model_params: typehint_ModelParams = typehint_ModelParams()
         self.model_params: dict = _model_params.model_dump()
 
@@ -63,18 +63,12 @@ class ChatSession(GoogleUtils):
         
     # Chat
     async def send_message(self, prompt: str, chat_history: list = None, system_instructions: str = None):
-        # Props used:
-        # model_id -> required, str
-        # enable_tools -> true or false
-        # has_reasoning -> required, true or false
-        # reasoning_type -> simple or advanced
-
         # Load chat history and system instructions
         if chat_history is None or type(chat_history) != list:
             chat_history = []
 
         # If system instructions is disabled
-        if not self.model_props.enable_system_instructions:
+        if not self.model_props.enable_system_instruction:
             system_instructions = None
 
         # Format the prompt
@@ -96,34 +90,6 @@ class ChatSession(GoogleUtils):
         # Add the prepared prompt to chat history
         chat_history.append(_prep_prompt)
 
-        # Normalize reasoning
-        if self.model_props.has_reasoning:
-            # Parse reasoning and get constructed params
-            _reasoning_params = self.parse_reasoning(self.model_props.model_id)
-            
-            # Update model_params with reasoning parameters
-            self.model_params.update(_reasoning_params)
-            
-            # Strip any suffixes "-minimal", "-low", "-medium", "-high"
-            self.model_props.model_id = self.model_props.model_id.replace("-minimal", "").replace("-low", "").replace("-medium", "").replace("-high", "")
-        # For reasoning disabled
-        else:
-            # If the model ID has any suffix but reasoning is disabled, raise error
-            if any(self.model_props.model_id.endswith(_rsning_suffix) for _rsning_suffix in ["-minimal", "-low", "-medium", "-high"]):
-                logging.error("Model ID has reasoning suffix but reasoning disabled: %s", self.model_props.model_id)
-                raise CustomErrorMessage("⚠️ The selected model requires reasoning to be enabled. But it has not been configured, please select other models.")
-            
-            logging.info("Reasoning is disabled, setting thinking_budget to null")
-            # Disable reasoning
-            # NOTE: This parameter, if set for non reasoning models like 2.0 Flash, then it will error out
-            # So for now we support Gemini 2.5 and beyond reasoning models only
-            # Either we may need to add new suffix -nonreasoning and let this parameter be None instead if has_reasoning is disabled
-            # But it will cause reasoning models to implicitly enable reasoning if this set to None, might also be the same for OpenAI models
-            self.model_params["thinkingConfig"] = {
-                "thinking_budget": 0
-            }
-
-
         # Check for tools
         if self.model_props.enable_tools:
             await self.load_tools()
@@ -133,14 +99,36 @@ class ChatSession(GoogleUtils):
         if not self.model_props.model_id:
             raise ValueError("Model is required, chose nothing")
         
+        # Additional model params
+        # Log
+        if self.model_props.additional_params:
+            logging.info("Merging additional_params into model_params: %s", self.model_props.additional_params)
+
+        # Reverse merge 
+        _merged_params = self.model_props.additional_params.copy() if self.model_props.additional_params else {}
+
+        # Remove model and messages if they exist in additional_params to avoid conflicts
+        logging.info("Removing conflicting keys from additional_params if present")
+        # Remove core conflicting keys
+        _merged_params.pop("system_instruction", None)
+        _merged_params.pop("tools", None)
+
+        # Remove others found in model_params
+        for _keys in self.model_params.keys():
+            logging.info("Removing key from additional_params to avoid conflict: %s", _keys)
+            _merged_params.pop(_keys, None)
+
+        # Update with model defaults
+        _merged_params.update(self.model_params)
+        
         # Generate
         try:
             _response: google_genai_types.GenerateContentResponse = await self.google_genai_client.aio.models.generate_content(
                 model=self.model_props.model_id,
                 contents=chat_history,
                 config={
-                    **self.model_params,
-                    "system_instruction": system_instructions or None
+                    "system_instruction": system_instructions or None,
+                    **_merged_params
                 }
             )
         except google_genai_errors.ClientError as e:
@@ -153,7 +141,6 @@ class ChatSession(GoogleUtils):
                     if _part.get("file_data"):
                         _part["file_data"] = None
                         _part["text"] = "[<system_notice>File attachment processed but expired from history. DO NOT make stuff up about it! Ask the user to reattach for more details</system_notice>]"
-
 
             # Send message
             await self.discord_context.channel.send("Something went wrong, please send me a message again.")

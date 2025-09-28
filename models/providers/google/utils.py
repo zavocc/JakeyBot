@@ -10,28 +10,6 @@ import logging
 import random
 
 class GoogleUtils:
-    #typehint
-    #import google.genai as google_genai
-    #google_genai_client: google_genai.Client = None
-
-    # Normalize reasoning
-    def parse_reasoning(self, model_id: str) -> dict:
-        _constructed_params = {
-            "thinkingConfig": {},
-        }
-
-        # if model ID has "-minimal" at the end
-        if model_id.endswith("-minimal"):
-            _constructed_params["thinkingConfig"]["thinking_budget"] = 128
-        elif model_id.endswith("-medium"):
-            _constructed_params["thinkingConfig"]["thinking_budget"] = 12000
-        elif model_id.endswith("-high"):
-            _constructed_params["thinkingConfig"]["thinking_budget"] = 24000
-        else:
-            _constructed_params["thinkingConfig"]["thinking_budget"] = 6000
-
-        return _constructed_params
-
     # Handle multimodal
     async def upload_files(self, attachment: typehint_Discord.Attachment, extra_metadata: str = None):
         if not hasattr(self, "uploaded_files"):
