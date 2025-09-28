@@ -1,6 +1,5 @@
 from os import environ
 import aiohttp
-import asyncio
 import discord
 import io
 import logging
@@ -88,7 +87,6 @@ class Tools:
                 "title": _results.get("title"),
                 "url": _results["url"],
                 "summary": _results.get("summary"),
-                "highlights": _results.get("highlights"),
                 "publishedDate": _results.get("publishedDate"),
             })
 
