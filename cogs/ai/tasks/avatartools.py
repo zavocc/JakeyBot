@@ -82,7 +82,7 @@ class AvatarTools(commands.Cog):
                     ]
                 else:
                     # We download the file instead
-                    # Maximum file size is 3MB so check it
+                    # Maximum file size is 1.5MB so check it
                     async with self.bot.aiohttp_instance.head(avatar_url) as _response:
                         if int(_response.headers.get("Content-Length")) > 1500000:
                             raise Exception("Max file size reached")
@@ -107,7 +107,7 @@ class AvatarTools(commands.Cog):
                         {
                             "inlineData": {
                                 "mimeType": _mime_type,
-                                "data": (await asyncio.to_thread(base64.b64encode, _filedata)).decode("utf-8")
+                                "data": base64.b64encode(_filedata).decode("utf-8")
                             }
                         }
                     ]
@@ -154,7 +154,11 @@ class AvatarTools(commands.Cog):
 
     @show.error
     async def on_application_command_error(self, ctx: commands.Context, error: DiscordException):
-        await ctx.respond("❌ Something went wrong, please try again later.")
+        # Check for cooldown
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.respond(f"⌛ Woah there! Too fast? Try again in **{int(error.retry_after)}** seconds.", ephemeral=True)
+
+        await ctx.respond("❌ Something went wrong, please try again later.", ephemeral=True)
         logging.error("An error has occurred while executing avatar command, reason: ", exc_info=True)
 
 
@@ -217,9 +221,11 @@ class AvatarTools(commands.Cog):
         _error = getattr(error, "original", error)
 
         if isinstance(_error, CustomErrorMessage):
-            await ctx.respond(f"❌ {_error}")
+            await ctx.respond(f"❌ {_error}", ephemeral=True)
+        elif isinstance(error, commands.CommandOnCooldown):
+            await ctx.respond(f"⌛ Woah there! Too fast? Try again in **{int(error.retry_after)}** seconds.", ephemeral=True)
         else:
-            await ctx.respond("❌ Something went wrong, please try again later.")
+            await ctx.respond("❌ Something went wrong, please try again later.", ephemeral=True)
         
         logging.error("An error has occurred while executing remix command, reason: ", exc_info=True)
 
