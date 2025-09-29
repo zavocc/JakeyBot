@@ -21,22 +21,22 @@ tool_list:
           type: array
           items:
             type: string
-          description: A list of domains to include in the search results
+          description: A list of domains to include in the search results, do not mix with excludeDomains
         excludeDomains:
           type: array
           items:
             type: string
-          description: A list of domains to exclude from the search results
+          description: A list of domains to exclude from the search results, do not mix with includeDomains. It's recommended to use this for same query for variety of sources
         includeText:
           type: array
           items:
             type: string
-          description: A list of text to include in the search results
+          description: A list of text to include in the search results, do not mix with excludeText
         excludeText:
           type: array
           items:
             type: string
-          description: A list of text to exclude from the search results
+          description: A list of text to exclude from the search results, do not mix with includeText
         showSummary:
           type: boolean
           description: Show summary in the search results. Only use this for quick insights, otherwise do not use this for faster search fetching only or full browsing using url_browse tool
@@ -84,7 +84,7 @@ tool_list:
 
   # Code Execution
   - name: code_execution
-    description: Run code in a sandboxed environment powered by Piston.
+    description: Run code in a sandboxed environment powered by Piston. Use this for tasks like running code snippets, live debugging, or mathematical calculations.
     parameters:
       type: object
       properties:

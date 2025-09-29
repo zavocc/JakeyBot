@@ -287,7 +287,7 @@ class Tools:
         _endpoint = "https://emkc.org/api/v2/piston/execute"
 
         # Send the code and file
-        await self.discord_ctx.channel.send(f"Executing code, using version: **{version}** in language: **{language}**")
+        await self.discord_ctx.channel.send(f"▶️ Executing code, using version: **{version}** in language: **{language}**")
         for _file in files:
             # Use BytesIO directly (no thread offload needed)
             _buffer = io.BytesIO(_file["content"].encode("utf-8"))
@@ -307,6 +307,13 @@ class Tools:
 
             try:
                 _data = await _response.json()
+
+                # Send the output, truncate upto 1500 characters
+                if _data.get("run", {}).get("output"):
+                    _output = _data["run"]["output"]
+                    if len(_output) > 1450:
+                        _output = _output[:1450] + "\n...[truncated]"
+                    await self.discord_ctx.channel.send(f"✅ **Code Output:**\n```{_output}\n```")
             except ValueError:
                 logging.error(f"Invalid JSON response: {_textResult}")
                 raise Exception(f"Invalid response from code execution engine: {_textResult}")
@@ -315,4 +322,7 @@ class Tools:
             if not _data:
                 raise Exception("No response from code execution engine")
          
+        # Add guidelines to _data
+        _data["guidelines"] = "When providing code execution results, always provide summaries of the code output as first 1300 characters of code is shown in Discord UI"
+
         return _data
