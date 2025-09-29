@@ -323,6 +323,6 @@ class Tools:
                 raise Exception("No response from code execution engine")
          
         # Add guidelines to _data
-        _data["guidelines"] = "When providing code execution results, always provide summaries of the code output as first 1300 characters of code is shown in Discord UI"
+        _data["guidelines"] = "When providing code execution results, always provide summaries of the code output as first 1300 characters of code is shown in Discord UI. The source code is already sent to Discord chat UI as a file no need to repeat it again in the output."
 
         return _data
