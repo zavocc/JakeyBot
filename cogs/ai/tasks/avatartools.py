@@ -143,7 +143,7 @@ class AvatarTools(commands.Cog):
 
         # Embed
         _embed = discord.Embed(
-            title=f"{user.name}'s Avatar",
+            title=f"{_xuser.name}'s Avatar",
             description=_description,
             color=discord.Color.random()
         )
@@ -157,6 +157,7 @@ class AvatarTools(commands.Cog):
         # Check for cooldown
         if isinstance(error, commands.CommandOnCooldown):
             await ctx.respond(f"⌛ Woah there! Too fast? Try again in **{int(error.retry_after)}** seconds.", ephemeral=True)
+            return
 
         await ctx.respond("❌ Something went wrong, please try again later.", ephemeral=True)
         logging.error("An error has occurred while executing avatar command, reason: ", exc_info=True)
