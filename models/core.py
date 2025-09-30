@@ -1,4 +1,3 @@
-from models.validation import TextTaskModelProps
 from typing import Union
 import aiofiles
 import discord
@@ -8,8 +7,9 @@ import os
 import yaml
 
 ############################################
-# ASYNC FUNCTIONS
+# ASYNC UTILITY FUNCTIONS
 ############################################
+# Sends the AI response based on the length of the message
 async def send_ai_response(ctx: Union[discord.ApplicationContext, discord.Message], prompt: str, response: str, method_send, strip: bool = True) -> None:
     """Optimized method to send message based on the length of the message"""
     # Check if we can strip the message
@@ -38,20 +38,7 @@ async def send_ai_response(ctx: Union[discord.ApplicationContext, discord.Messag
     else:
         await method_send(response)
 
-async def get_remix_styles_async(style: str = "I'm feeling lucky"):
-    # Load the tools list from YAML file
-    async with aiofiles.open("data/prompts/remix.yaml", "r") as remix_styles:
-        _remix_prompts = yaml.safe_load(await remix_styles.read())
-
-    # Return when matching style is found
-    # - image_style:
-    #   preprompt:
-    # This is the syntax of yaml so we need to iterate through the list until we find the matching style
-    for styles in _remix_prompts:
-        if styles["image_style"] == style:
-            return styles["preprompt"]
-
-
+# Sets system prompt
 async def set_assistant_type(assistant_name: str, type: int = 0):
     # 0 - chat_assistants
     # 1 - utility_assistants
@@ -82,6 +69,21 @@ async def set_assistant_type(assistant_name: str, type: int = 0):
     else:
         return _assistants_mode[assistant_name].strip()
 
+# For /avatar remix command
+async def get_remix_styles_async(style: str = "I'm feeling lucky"):
+    # Load the tools list from YAML file
+    async with aiofiles.open("data/prompts/remix.yaml", "r") as remix_styles:
+        _remix_prompts = yaml.safe_load(await remix_styles.read())
+
+    # Return when matching style is found
+    # - image_style:
+    #   preprompt:
+    # This is the syntax of yaml so we need to iterate through the list until we find the matching style
+    for styles in _remix_prompts:
+        if styles["image_style"] == style:
+            return styles["preprompt"]
+
+# For getting default chat model for async contexts
 async def get_default_chat_model_async():
     # Load the models list from YAML file
     async with aiofiles.open("data/models.yaml", "r") as models:
@@ -96,9 +98,35 @@ async def get_default_chat_model_async():
     # If no default model is found, raise an error
     raise ValueError("No default model found in models.yaml. Please set at least one model with 'default: true'")
 
+
+# Autocomplete to fetch available models in data/models.yaml
+async def get_chat_models_autocomplete(ctx: discord.AutocompleteContext):
+    # ctx use is unused but required for autocomplete functions
+    # so
+    # TODO: add features like allowlist
+    # https://docs.pycord.dev/en/v2.6.1/api/application_commands.html#discord.AutocompleteContext
+    if not ctx:
+        pass
+
+    # Load the models list from YAML file
+    async with aiofiles.open("data/models.yaml", "r") as models:
+        _internal_model_data = yaml.safe_load(await models.read())
+
+    # We pop disabled models
+    _internal_model_data = [_model for _model in _internal_model_data if not _model.get("disabled", False)]
+
+    # Return the list of models
+    # Use list comprehension to build discord.OptionChoice list
+    return [
+        discord.OptionChoice(f"{_model['model_human_name']} - {_model['model_description']}", _model["model_alias"])
+        for _model in _internal_model_data
+    ]
+
 ############################################
-# SYNC FUNCTIONS
+# SYNC UTILITY FUNCTIONS
 ############################################
+# For getting default chat model for sync contexts, e.g. database.py History init constructor to set default model when chat history is reset
+# NOTE: This can only be used once, for example, initializing History class from database.py to only get default model
 def get_default_chat_model():
     # Load the models list from YAML file
     with open("data/models.yaml", "r") as models:
@@ -112,20 +140,8 @@ def get_default_chat_model():
     
     # If no default model is found, raise an error
     raise ValueError("No default model found in models.yaml. Please set at least one model with 'default: true'")
-
-def get_chat_models_generator():
-    # Load the models list from YAML file
-    with open("data/models.yaml", "r") as models:
-        _internal_model_data = yaml.safe_load(models)
-
-    # Iterate through the models and yield each as a discord.OptionChoice
-    for model in _internal_model_data:
-        # Check if the model dict has disabled key
-        if model.get("disabled") is not None and model.get("disabled") == True:
-            continue
-
-        yield discord.OptionChoice(f"{model['model_human_name']} - {model['model_description']}", model["model_alias"])
-    
+ 
+# For fetching available tools used in /agent command in cogs/ai/chat.py
 def get_tools_list_generator():
     _toolsPath = "tools/apis"
 
@@ -157,7 +173,7 @@ def get_tools_list_generator():
         # Yield as discord.OptionChoice
         yield discord.OptionChoice(_manifest_data["tool_name"], _tool_names)
 
-
+# For /avatar remix command generator
 def get_remix_styles_generator():
     # Load the tools list from YAML file
     with open("data/prompts/remix.yaml", "r") as remix_styles:

@@ -69,8 +69,8 @@ class Chat(commands.Cog):
     @discord.option(
         "model",
         description="Choose default model for the conversation",
-        choices=models.core.get_chat_models_generator(),
-        required=True,
+        autocomplete=discord.utils.basic_autocomplete(models.core.get_chat_models_autocomplete),
+        required=True
     )
     async def set(self, ctx, model: str):
         """Set the default model whenever you mention me!"""
