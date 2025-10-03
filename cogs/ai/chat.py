@@ -140,7 +140,7 @@ class Chat(commands.Cog):
     )
     @discord.option(
         "reset_prefs",
-        description="Clear the context history including the default model and feature settings",
+        description="Clear the context history including the default model and agent settings",
     )
     async def sweep(self, ctx, reset_prefs: bool = False):
         """Clear the context history of the conversation"""
@@ -156,7 +156,7 @@ class Chat(commands.Cog):
                 return
 
         # Save current settings before clearing history
-        _feature = await self.DBConn.get_key(guild_id=ctx.author.id, key="tool_use")
+        _agent = await self.DBConn.get_key(guild_id=ctx.author.id, key="tool_use")
         _model = await self.DBConn.get_key(guild_id=ctx.author.id, key="default_model")
         _openrouter_model = await self.DBConn.get_key(guild_id=ctx.author.id, key="default_openrouter_model")
 
@@ -165,12 +165,12 @@ class Chat(commands.Cog):
 
         if not reset_prefs:
             # Restore settings if not resetting preferences
-            await self.DBConn.set_key(guild_id=ctx.author.id, key="tool_use", value=_feature)
+            await self.DBConn.set_key(guild_id=ctx.author.id, key="tool_use", value=_agent)
             await self.DBConn.set_key(guild_id=ctx.author.id, key="default_model", value=_model)
             await self.DBConn.set_key(guild_id=ctx.author.id, key="default_openrouter_model", value=_openrouter_model)
             await ctx.respond("✅ Chat history reset!")
         else:
-            await ctx.respond("✅ Chat history reset, model and feature settings are cleared!")
+            await ctx.respond("✅ Chat history reset, model and agent settings are cleared!")
 
 
 
@@ -221,15 +221,15 @@ class Chat(commands.Cog):
             await self.DBConn.set_key(guild_id=ctx.author.id, key="default_openrouter_model", value=_openrouter_model)
 
             if name is None:
-                await ctx.respond("✅ Features disabled and chat is reset to reflect the changes")
+                await ctx.respond("✅ Agents disabled and chat is reset to reflect the changes")
             else:
                 # Return with actual tool name
                 _actual_human_agent_name = await fetch_actual_tool_name(name)
 
                 if not _current_agent:
-                    await ctx.respond(f"✅ Feature **{_actual_human_agent_name}** enabled successfully")
+                    await ctx.respond(f"✅ Agent **{_actual_human_agent_name}** enabled successfully")
                 else:
-                    await ctx.respond(f"✅ Feature **{_actual_human_agent_name}** enabled successfully and chat is reset to reflect the changes")
+                    await ctx.respond(f"✅ Agent **{_actual_human_agent_name}** enabled successfully and chat is reset to reflect the changes")
 
     # Global error handler for the Cog
     async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):

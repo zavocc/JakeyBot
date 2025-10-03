@@ -102,7 +102,7 @@ Jakey provides slash commands such as:
 - `/avatar remix` - Restyle user's avatar powered by Nano Banana
 - `/avatar show` - Show and optionally describe user's avatar
 - `/sweep` - Clear the conversation
-- `/feature` - Extend Jakey skills by activating chat tools! (Clears conversation when feature are set, only supports Gemini models)
+- `/feature` - Extend Jakey skills by activating chat tools!
 - `/model set` to list available models.
 - `/openrouter` - Access additional models from OpenRouter (`/model set:openrouter` must be set)
 - `/summarize` - Summarize the current text channel or thread and gather insights into a single summary thanks to Gemini 2.0 Flash's long context it can understand conversations even from the past decade!

@@ -112,9 +112,6 @@ async def get_chat_models_autocomplete(ctx: discord.AutocompleteContext):
     async with aiofiles.open("data/models.yaml", "r") as models:
         _internal_model_data = yaml.safe_load(await models.read())
 
-    # We pop disabled models
-    _internal_model_data = [_model for _model in _internal_model_data if not _model.get("disabled", False)]
-
     # Return the list of models
     # Use list comprehension to build discord.OptionChoice list
     return [
