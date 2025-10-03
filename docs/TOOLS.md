@@ -71,7 +71,7 @@ class Tools:
     # When defining methods or functions, it must have tool_ prefix followed by the tool function name as defined in schema. The method must be async and returns string, dict, array, or number! 
     # 
     # For non text content needed to be sent in Discord UI. Use the `self.discord_ctx.channel.send(file=discord.File())` function
-    async def multiply(multiplicand, multiplier):
+    async def multiply(self, multiplicand, multiplier):
       return multiplicand * multiplier
 ```
 
