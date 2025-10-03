@@ -134,18 +134,21 @@ class ChatSession(GoogleUtils):
             )
         except google_genai_errors.ClientError as e:
             # Attempt to clear all file URLs since they may be expired
-            logging.error("Uh oh something went wrong while generating content, files may be expired, clearing files and raising error: %s", e)
+            if "do not have permission" in e.message:
+                logging.error("Uh oh something went wrong while generating content, files may be expired, clearing files and raising error: %s", e)
+                for _chat_turns in chat_history:
+                    for _part in _chat_turns["parts"]:
+                        # Check if we have file_data key then we just set it as None and set the text to "Expired"
+                        if _part.get("file_data"):
+                            _part["file_data"] = None
+                            _part["text"] = "[<system_notice>File attachment processed but expired from history. DO NOT make stuff up about it! Ask the user to reattach for more details</system_notice>]"
 
-            for _chat_turns in chat_history:
-                for _part in _chat_turns["parts"]:
-                    # Check if we have file_data key then we just set it as None and set the text to "Expired"
-                    if _part.get("file_data"):
-                        _part["file_data"] = None
-                        _part["text"] = "[<system_notice>File attachment processed but expired from history. DO NOT make stuff up about it! Ask the user to reattach for more details</system_notice>]"
-
-            # Send message
-            await self.discord_context.channel.send("Something went wrong, please send me a message again.")
-            return chat_history
+                # Send message
+                await self.discord_context.channel.send("Something went wrong, please send me a message again.")
+                return chat_history
+            else:
+                logging.error("Uh oh something went wrong while generating content: %s", e)
+                raise e
 
         # TODO: Add validation if the file expires from server
         # Either throw exception, reinit chat thread and throw exception, or rerun response with reinit chat thread
