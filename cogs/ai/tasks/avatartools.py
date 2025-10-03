@@ -1,6 +1,6 @@
 from core.exceptions import CustomErrorMessage
 from models.core import get_remix_styles_generator, get_remix_styles_async
-from models.tasks.text_model_utils import get_text_models_async
+from models.tasks.text_model_utils import fetch_text_model_config_async
 from models.tasks.media.fal_ai import run_image
 from discord.ext import commands
 from discord import Member, DiscordException
@@ -53,7 +53,7 @@ class AvatarTools(commands.Cog):
                 
                 # Generate description
                 # Fetch default model
-                _default_model_config = await get_text_models_async()
+                _default_model_config = await fetch_text_model_config_async()
                 _completionImport = importlib.import_module(f"models.tasks.text.{_default_model_config['sdk']}")
                 _completions = getattr(_completionImport, "completion")
 

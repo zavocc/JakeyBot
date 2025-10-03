@@ -1,6 +1,6 @@
 from discord.ext import commands
 from models.core import set_assistant_type
-from models.tasks.text_model_utils import get_text_models_async
+from models.tasks.text_model_utils import fetch_text_model_config_async
 from os import environ
 import discord
 import importlib
@@ -31,7 +31,7 @@ class MessageActions(commands.Cog):
         
         # Generative model settings
         # Get default model
-        _default_model_config = await get_text_models_async()
+        _default_model_config = await fetch_text_model_config_async()
 
         # Init completions
         _completions = getattr(importlib.import_module(f"models.tasks.text.{_default_model_config['sdk']}"), "completion")
@@ -84,7 +84,7 @@ class MessageActions(commands.Cog):
 
         # Generative model settings
         # Fetch default model
-        _default_model_config = await get_text_models_async()
+        _default_model_config = await fetch_text_model_config_async()
 
         _completions = getattr(importlib.import_module(f"models.tasks.text.{_default_model_config['sdk']}"), "completion")
         _system_prompt = await set_assistant_type("message_summarizer_prompt", type=1)
@@ -165,7 +165,7 @@ class MessageActions(commands.Cog):
 
         # Generative model settings
         # Get default model
-        _default_model_config = await get_text_models_async()
+        _default_model_config = await fetch_text_model_config_async()
 
         # Init completions
         _completions = getattr(importlib.import_module(f"models.tasks.text.{_default_model_config['sdk']}"), "completion")

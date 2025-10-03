@@ -1,6 +1,6 @@
 from core.exceptions import PollOffTopicRefusal
 from models.core import set_assistant_type
-from models.tasks.text_model_utils import get_text_models_async
+from models.tasks.text_model_utils import fetch_text_model_config_async
 from discord.ext import commands
 from discord import DiscordException
 from os import environ
@@ -32,7 +32,7 @@ class GenerativeAIFunUtils(commands.Cog):
         await ctx.response.defer(ephemeral=False)
 
         # Fetch default model
-        _default_model_config = await get_text_models_async()
+        _default_model_config = await fetch_text_model_config_async()
 
         # Check if we can use OpenAI or Google format
         if _default_model_config["sdk"] == "openai":

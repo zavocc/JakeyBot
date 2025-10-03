@@ -4,7 +4,7 @@ import discord
 import logging
 import yaml
 
-async def get_text_models_async(override_model_id: str = None) -> dict:
+async def fetch_text_model_config_async(override_model_id: str = None) -> dict:
     # Load models list
     async with aiofiles.open("data/text_models.yaml", "r") as _textmodels:
         _text_models_list = yaml.safe_load(await _textmodels.read())
@@ -34,11 +34,21 @@ async def get_text_models_async(override_model_id: str = None) -> dict:
     return TextTaskModelProps(**_accessFirstDefaultModel).model_dump()
 
         
-def get_text_models_generator():
-    # Load the models list from YAML file
-    with open("data/text_models.yaml", "r") as models:
-        _internal_model_data = yaml.safe_load(models)
+async def get_text_models_async_autocomplete(ctx: discord.AutocompleteContext):
+    # ctx use is unused but required for autocomplete functions
+    # so
+    # TODO: add features like allowlist
+    # https://docs.pycord.dev/en/v2.6.1/api/application_commands.html#discord.AutocompleteContext
+    if not ctx:
+        pass
 
-    # Iterate through the models and yield each as a discord.OptionChoice
-    for model in _internal_model_data:
-        yield discord.OptionChoice(model.get("model_human_name", "model_id"), model['model_id'])
+    # Load the models list from YAML file
+    async with aiofiles.open("data/text_models.yaml", "r") as models:
+        _internal_model_data = yaml.safe_load(await models.read())
+
+    # Return the list of models
+    # Use list comprehension to build discord.OptionChoice list
+    return [
+        discord.OptionChoice(_model.get("model_human_name", "model_id"), _model["model_id"])
+        for _model in _internal_model_data
+    ]

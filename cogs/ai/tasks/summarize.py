@@ -1,5 +1,4 @@
 from models.core import set_assistant_type
-from models.tasks.text_model_utils import get_text_models_async, get_text_models_generator
 from discord.ext import commands
 from os import environ
 import aiofiles
@@ -9,6 +8,7 @@ import inspect
 import importlib
 import json
 import logging
+import models.tasks.text_model_utils
 import random
 
 class AISummaries(commands.Cog):
@@ -60,7 +60,7 @@ class AISummaries(commands.Cog):
     @discord.option(
         "model",
         description="Select model to be used for summarization",
-        choices=get_text_models_generator(),
+        autocomplete=discord.utils.basic_autocomplete(models.tasks.text_model_utils.get_text_models_async_autocomplete),
         default=None
     )
     @commands.cooldown(1, 50, commands.BucketType.user)
@@ -82,7 +82,7 @@ class AISummaries(commands.Cog):
             around_date = datetime.datetime.strptime(around_date, '%m/%d/%Y')
 
         # Fetch default model
-        _default_model_config = await get_text_models_async(override_model_id=model)
+        _default_model_config = await models.tasks.text_model_utils.fetch_text_model_config_async(override_model_id=model)
 
         # Check if we can use OpenAI or Google format
         if _default_model_config["sdk"] == "openai":
