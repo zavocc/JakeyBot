@@ -86,3 +86,4 @@ Please set `/agent name:Disabled` to disable the model from ever calling any too
 
 ## Limitations
 - You cannot activate multiple agents. And switching agents requires chat history to be cleared.
+- MCPs are currently not supported as the way how MCP works and how Jakey handles tools is it needs to have a client connection open throughout the execution lifecycle (if using `mcp` python package from anthropic to create a client) and lot of parsing needed for some SDKs that may handle MCP tools differently. An experimental `mcp-experimental` branch that uses FastMCP with remote tools support shows progress but doesn't work correctly in the Gemini SDK if not using context managers (as the code from `tools` module is imported but the FastMCP does not properly support non-context manager connection especially for Gemini SDK). The FastMCP connection is also not subclassed as agent preferences is isolated per Discord user.
