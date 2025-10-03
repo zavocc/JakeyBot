@@ -49,13 +49,20 @@ For demo version, you can add this bot and see the required permissions and capa
 Keep in mind that data training policy varies between model, if you need guaranteed data loss prevention, you need to provide your own endpoints.
 
 ## Installation
-The best way to get started is through Docker method... You can directly pull the image from my Docker 🐳 Hub repository and simply run the bot below:
-```
-~ $ docker pull zavocc/jakey:sugilite
-~ $ docker run -it --env-file dev.env --rm zavocc/jakey:sugilite
+The best way to get started is through Docker method... You can directly pull the image from my Docker 🐳 Hub repository and simply run the bot below to pull the stable image.
+```sh
+~ $ docker pull zavocc/jakey:1.0
+~ $ docker run -it --env-file dev.env --rm zavocc/jakey:1.0
+# or by bind mounting dev.env (recommended)
+# docker run --mount type=bind,source=dev.env,target=/jakeybot/dev.env --rm zavocc/jakey:1.0
 ```
 
+If you want to use fresh from `master` commit builds of Jakey Docker image, pull using `zavocc/jakey:autobot` image  tag before hitting to stable version as minor revision.
+
 NOTE: You need to provide [the dev.env file](#configuring) as explained below
+
+> [!WARNING]
+> Running JakeyBot on Windows using native `python.exe` is currently unsupported due to issues like emoji character encoding issues, and file paths used. As well as dependencies required that may not be fully covered under requirements.txt that requires other dependencies for the Win32 platform. We recommend using WSL2 or the Docker image with preconfigured environment.
 
 <details>
   <summary>Manual installation</summary>

@@ -16,20 +16,20 @@ for chat history and other settings, this may be required.
 ## Generative AI features
 - `GEMINI_API_KEY` - Set the Gemini API token, get one at [Google AI Studio](https://aistudio.google.com/app/apikey). If left blank, generative features powered by Gemini will be disabled.
 - `OPENAI_API_KEY` - Set the OpenAI API key, obtain one from [OpenAI Platform](https://platform.openai.com/api-keys)
-  - `OPENAI_API_ENDPOINT` - Sets the base URL if you use GPT-4o models outside of OpenAI platform (e.g. GitHub models marketplace)
-    - Setting to non-openai endpoints that doesn't have GPT-4o and GPT-4o mini would not work.
-- `ANTHROPIC_API_KEY` - Set the Anthropic API keys for Claude models. Obtain one from [the console](https://console.anthropic.com/settings/keys)
-- `MISTRAL_API_KEY` - Set the Mistral API keys for Mistral models. Obtain one from [La Platforme](https://console.mistral.ai/api-keys/)
-- `XAI_API_KEY` - Used to access XAI Grok 2 models. [Get an API key from XAI console](https://console.x.ai)
 - `GROQ_API_KEY` - Used to access models from Groq such as Deepseek R1 distilled and LLaMA models [Groq Cloud Console](https://console.groq.com/keys)
 - `OPENROUTER_API_KEY` - Set an OpenRouter API key to access models within `/openrouter` command and when the model `openrouter` is set.
-- `HF_TOKEN` - HuggingFace inference token for accessing HuggingFace serverless-supported models
+
+If you're using LiteLLM-based SDK models [as per models.yaml spec with `sdk: litellm` set](/models/validation.py#L18-L19), you can put more environment variables here to set additional API keys
+
+
+## Generative Media
+Since we use Fal.AI as our primary media provider, set an API key to activate generative features.
+
+`FAL_KEY`
 
 ## API and Search tools
-To use Google Search, Bing Search, and YouTube tools, you must set the following values:
-- `CSE_SEARCH_ENGINE_CXID` - Google Custom Search Engine ID (REQUIRED) [Visit your search engines and copy your Search Engine ID](https://programmablesearchengine.google.com/controlpanel/all)
-- `CSC_GCP_API_KEY` - Google Cloud Platform API key for Custom Search. [Enable this API for free](https://console.cloud.google.com/apis/library/customsearch.googleapis.com) and [Configure API keys with Custom Search APIs](https://console.cloud.google.com/apis/credentials)
-- `BING_SUBSCRIPTION_KEY` - Bing Search API subscription key [Get free F1 key](https://www.microsoft.com/en-us/bing/apis/bing-web-search-api)
+To use Exa and YouTube search, you must set the following environment variables:
+- `EXA_API_KEY` - Exa API Key, refer to [here](https://docs.exa.ai/websets/api/get-started)
 - `YOUTUBE_DATA_v3_API_KEY` - YouTube Data API key. [Enable this API](https://console.cloud.google.com/apis/api/youtube.googleapis.com)
 - `GITHUB_TOKEN` - Get one at https://github.com/settings/personal-access-tokens with public access, used for GitHub file tool.
 
