@@ -21,6 +21,8 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     environment: Docker
+    # Only run if push/workflow_dispatch OR pull_request from same repo (not fork)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
