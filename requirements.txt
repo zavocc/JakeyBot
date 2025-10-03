@@ -1,12 +1,11 @@
-aiofiles >= 24.1.0
-google-genai >= 1.3.0
-litellm >= 1.59.12
-motor >= 3.5.1
-openai >= 1.82.0
-py-cord >= 2.6.0
-pymongo >= 4.8.0
-python-dotenv >= 1.0.0
-PyYAML >= 6.0.1
-
-# File uploads, change if you use different solution
-azure-storage-blob
+aiofiles
+fal-client
+filetype # https://docs.python.org/3/library/imghdr.html
+google-genai
+litellm
+motor
+openai
+py-cord
+pymongo
+python-dotenv
+PyYAML

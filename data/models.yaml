@@ -1,86 +1,146 @@
-# Syntax
-# provider::model_name
+# NOTE: to use different chat thread using same sdk, pass thread_name
+# Model alias can be any unique string without spaces
 
-##############################################
-# Moonshot AI models
-##############################################
-- model: kimi::kimi-k2-instruct
-  name: Kimi K2 (Groq)
-  description: Moonshot open model comparable with frontier models and tool use hosted
+- model_alias: kimi::kimi-k2-instruct
+  model_human_name: Kimi K2
+  model_description: Agentic open intelligence
+  sdk: openai
+  model_id: moonshotai/kimi-k2-instruct-0905
+  enable_tools: true
+  enable_files: false
+  enable_threads: true
+  client_name: openai_client_groq
+  thread_name: moonshotai
 
-############################################
-# Google Models
-############################################
-- model: gemini::gemini-2.5-pro
-  name: Gemini 2.5 Pro
-  description: Google's reasoning model for complex tasks
-- model: gemini::gemini-2.5-flash
-  name: Gemini 2.5 Flash Thinking
-  description: Workhorse thinking model for everyday and advanced tasks
-- model: gemini::gemini-2.5-flash-nonthinking
-  name: Gemini 2.5 Flash  
-  description: Best for everyday and advanced tasks without thinking
-- model: gemini::gemini-2.0-flash-001
-  name: Gemini 2.0 Flash
-  description: Best for everyday and advanced tasks
-- model: google::gemma-3-27b-it
-  name: Gemma 3 (27B)
-  description: Google's latest open model
+- model_alias: x-ai::grok-4-fast
+  model_human_name: Grok 4 Fast (High)
+  model_description: SOTA-efficient fast reasoning model
+  sdk: litellm
+  model_id: openrouter/x-ai/grok-4-fast:free
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+  thread_name: xai
+  additional_params:
+    extra_body:
+      reasoning:
+        enabled: true
+        effort: high
+    extra_headers:
+      HTTP-Referer: https://github.com/zavocc/JakeyBot
+      X-Title: Jakey AI - Discord Bot
 
-############################################
-# OpenAI models
-############################################
-- model: openai::gpt-5
-  name: OpenAI GPT-5
-  description: OpenAI's latest model for every tasks
-- model: openai::gpt-5-mini
-  name: OpenAI GPT-5 Mini
-  description: A smaller version of GPT-5 for quick tasks
-- model: openai::gpt-5-mini-high
-  name: OpenAI GPT-5 Mini High
-  description: Slow but provides quality responses
-- model: openai::o4-mini
-  name: OpenAI O4 Mini
-  description: OpenAI's latest and fast reasoning model
-- model: openai::o4-mini-high
-  name: OpenAI O4 Mini High
-  description: Slow but provides quality responses
+- model_alias: gemini::gemini-2.5-pro
+  model_human_name: Gemini 2.5 Pro
+  model_description: Reasoning, math, and code.
+  sdk: google
+  model_id: gemini-2.5-pro
+  has_reasoning: true
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+  client_name: gemini_api_client
+  thread_name: gemini
+  additional_params:
+    thinkingConfig:
+      thinking_budget: 4096
 
+- model_alias: gemini::gemini-2.5-flash
+  model_human_name: Gemini 2.5 Flash Thinking
+  model_description: Balanced reasoning model with speed
+  sdk: google
+  model_id: gemini-2.5-flash-preview-09-2025
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+  enable_system_instruction: true
+  client_name: gemini_api_client
+  thread_name: gemini
+  additional_params:
+    system_instruction: You are a helpful assistant that always thinks step by step.
+    thinkingConfig:
+      thinking_budget: 4096
 
-############################################
-# Claude models
-############################################
-# Claude models
-- model: claude::claude-sonnet-4-20250514
-  name: Claude 4 Sonnet
-  description: State of the art for coding tasks
-- model: claude::claude-3-7-sonnet-20250219
-  name: Claude 3.7 Sonnet
-  description: Anthropic's most intelligent hybrid reasoning model
-- model: claude::claude-3-5-sonnet-20241022
-  name: Claude 3.5 Sonnet v2
-  description: Top notch intelligence with greater accuracy for coding and other tasks
+- model_alias: gemini::gemini-2.5-flash-nonthinking
+  model_human_name: Gemini 2.5 Flash Instant
+  model_description: Instant answers for fast all-around help
+  sdk: google
+  model_id: gemini-2.5-flash-preview-09-2025
+  has_reasoning: false
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+  client_name: gemini_api_client
+  thread_name: gemini
+  default: true
+  additional_params:
+    thinkingConfig:
+      thinking_budget: 0
 
-##############################################
-# DeepSeek models from Azure AI Foundry
-##############################################
-- model: azure_foundry.deepseek::Deepseek-V3-0324
-  name: DeepSeek V3
-  description: DeepSeek latest non-reasoning model hosted on Azure
-- model: azure_foundry.deepseek::Deepseek-R1-0528
-  name: DeepSeek R1
-  description: DeepSeek latest reasoning model hosted on Azure
+- model_alias: gemini::gemini-2.0-flash-001
+  model_human_name: Gemini 2.5 Flash Lite Thinking
+  model_description: Ultra fast thinking model
+  sdk: google
+  model_id: gemini-2.5-flash-lite-preview-09-2025
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+  client_name: gemini_api_client
+  thread_name: gemini
+  additional_params:
+    thinkingConfig:
+      thinking_budget: 4096
 
-############################################
-# X.AI
-############################################
-- model: xai::grok-3-latest
-  name: Grok 3
-  description: xAI's Grok model for creative tasks
+- model_alias: openai::gpt-5
+  model_human_name: OpenAI GPT-5
+  model_description: OpenAI's latest reasoning model
+  sdk: openai
+  model_id: gpt-5
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+  client_name: openai_client
+  additional_params:
+    reasoning_effort: medium
 
-############################################
-# More models on OpenRouter
-#########################################s###
-- model: openrouter::openrouter
-  name: OpenRouter
-  description: Use OpenRouter models, see the openrouter command.
+- model_alias: openai::gpt-5-mini
+  model_human_name: OpenAI GPT-5 Mini
+  model_description: Fast and intelligent thinking model
+  sdk: openai
+  model_id: gpt-5-mini
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+  client_name: openai_client
+  additional_params:
+    reasoning_effort: medium
+
+- model_alias: openai::gpt-4.1
+  model_human_name: OpenAI GPT-4.1
+  model_description: Smartest non-reasoning model
+  sdk: openai
+  model_id: gpt-4.1
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+  client_name: openai_client
+
+- model_alias: azure_foundry.deepseek::Deepseek-V3-0324
+  model_human_name: DeepSeek V3.1
+  model_description: Designed for chat uses cases
+  sdk: litellm
+  model_id: azure_ai/DeepSeek-V3.1
+  enable_tools: true
+  enable_files: false
+  enable_threads: true
+  thread_name: deepseek
+
+- model_alias: azure_foundry.deepseek::Deepseek-R1-0528
+  model_human_name: DeepSeek R1
+  model_description: Reasoning, maths, and code hosted by Azure.
+  sdk: litellm
+  model_id: azure_ai/DeepSeek-R1-0528
+  enable_tools: false
+  enable_files: false
+  enable_threads: true
+  thread_name: deepseek

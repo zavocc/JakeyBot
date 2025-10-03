@@ -1,0 +1,64 @@
+tool_name: Image Generation and Editing
+tool_list:
+  - name: image_generator
+    description: Generate high quality image using Imagen 4 Ultra and Seedream 4.
+    parameters:
+      type: object
+      properties:
+        prompt:
+          type: string
+          description: The prompt to generate the image.
+        aspect_ratio:
+          type: string
+          enum:
+            - "1:1"
+            - "9:16"
+            - "16:9"
+            - "4:3"
+            - "3:4"
+          description: The aspect ratio of the generated image. This will be ignored for Seedream 4 which always outputs in 4096x2160 (16:9).
+        resolution:
+          type: string
+          enum:
+            - 1K
+            - 2K
+          description: Using native resolution which quality to output for the generated image. This will be ignored for Seedream 4 which always outputs in 4K.
+        negative_prompt:
+          type: string
+          description: The negative prompt to avoid certain elements in the generated image. This is only supported for Imagen 4.
+        enable_safety_checker:
+          type: boolean
+          description: Disables safety checker, only for Seedream 4 model.
+        model:
+          type: string
+          enum:
+            - imagen4/preview/ultra
+            - bytedance/seedream/v4/text-to-image
+          description: The model to use for image generation. For diverse styles choose Imagen 4, for 4K quality choose Seedream 4.
+      required:
+        - prompt
+  - name: image_editor
+    description: Create or edit images using text and image prompts using Gemini 2.5 Flash and Seedream 4.
+    parameters:
+      type: object
+      properties:
+        prompt:
+          type: string
+          description: The prompt to generate or edit the image.
+        image_url:
+          type: array
+          items:
+            type: string
+          description: The URL of the image to edit. It's recommended to keep the image in order from attached images for consistent experience.
+        enable_safety_checker:
+          type: boolean
+          description: Disables safety checker, only for Seedream 4 model.
+        model:
+          type: string
+          enum:
+            - gemini-25-flash-image/edit
+            - bytedance/seedream/v4/edit
+          description: The model to use for image editing. It's recommended to use Gemini 2.5 Flash for precise and concistency lock edits like photo restoration, while Seedream 4 for quality 4K edits, upscales, and remasters but may result in drift.
+      required:
+        - prompt
+        - image_url

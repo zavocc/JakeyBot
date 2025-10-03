@@ -1,18 +1,16 @@
+- image_style: Figurine
+  preprompt: 1/7 scale commercialized figurine of the characters in the picture, in a realistic style, in a real environment. The figurine is placed on a computer desk. The figurine has a round transparent acrylic base, with no text on the base. The content on the computer screen is a 3D modeling process of this figurine. Next to the computer screen is a toy packaging box, designed in a style reminiscent of high-quality collectible figures, printed with original artwork. The packaging features two-dimensional flat illustrations.
+- image_style: Funko pop
+  preprompt: A funko pop figure with packaging and a name and number based on vibes
 - image_style: Cyberpunk
   preprompt: Cyberpunk style
 - image_style: Watercolor
   preprompt: Watercolor art with wet smudged and soft ligher bright colors all over the image paper-like texture
 - image_style: 3D
   preprompt: 3D rendered artstyle with lightning, depth, and shadows. Best for 2D images to be converted into 3D
-- image_style: Cartoon
-  preprompt: Cartoon or animation style in 2D based on the vibes and realism, can be modern or classic style depending on the mood. Best if the image is photorealistic or 3D/CGI animation.
-- image_style: Pixel
-  preprompt: Blocky video game 2D pixel art with retro vibes, make sure that it is fully 100% pixelated 2D retro
-- image_style: Fifties
-  preprompt: 50s monochromatic version of the image, remove all colors but retain the image details
-- image_style: Sketch
-  preprompt: Sketched art, recolor the image with sketch-like light colors based on image's color if exists, and natural pencil strokes of the outlines in the image
+- image_style: 2000s
+  preprompt: Photograph of the subject in this image as if they were living in the 2000s. The photograph should capture the distinct fashion, hairstyles, and overall atmosphere of that time period. Ensure the final image is a clear photograph that looks authentic to the era.
+- image_style: Charcoal Pencil Sketch
+  preprompt: Charcoal pencil sketched art, with minimal to zero colors, with shading, subtle scribbles, and grey scribble background
 - image_style: Outline
   preprompt: Outline version of the image on a black-on-white format. Ensure the outline is black and background is white, make sure the overall design of the image is intact
-- image_style: I'm feeling lucky
-  preprompt: Random artstyle based on vibes

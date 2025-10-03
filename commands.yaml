@@ -1,8 +1,8 @@
 # A list of commands to be initialized from cogs directory
-- ai.chat
-- ai.gemini.fun
-- ai.gemini.message_actions
-- ai.gemini.oneoff
-- ai.gemini.summarize
 - admin
+- ai.chat
+- ai.tasks.avatartools
+- ai.tasks.fun
+- ai.tasks.message_actions
+- ai.tasks.summarize
 - misc

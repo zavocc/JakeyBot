@@ -1,9 +1,10 @@
-from core.services.initbot import ServicesInitBot
+from core.startup import SubClassBotPlugServices
 from discord.ext import commands
 from inspect import cleandoc
 from os import chdir, mkdir, environ
 from pathlib import Path
 import aiofiles.os
+import aiohttp
 import discord
 import dotenv
 import logging
@@ -32,7 +33,7 @@ intents.message_content = True
 intents.members = True
 
 # Subclass this bot
-class InitBot(ServicesInitBot):
+class InitBot(SubClassBotPlugServices):
     def __init__(self, *args, **kwargs):
         # Create socket instance and bind socket to 45769
         self._lock_socket_instance(45769)
@@ -50,9 +51,13 @@ class InitBot(ServicesInitBot):
             environ["TEMP_DIR"] = "temp"
             mkdir(environ.get("TEMP_DIR"))
 
-        # Initialize services
+        # Initialize SDK clients
         self.loop.create_task(self.start_services())
         logging.info("Services initialized successfully")
+
+        # HTTP Client
+        self.aiohttp_instance = aiohttp.ClientSession(loop=self.loop)
+        logging.info("HTTP client session initialized successfully")
 
 
     def _lock_socket_instance(self, port):
@@ -89,7 +94,7 @@ bot = InitBot(command_prefix=environ.get("BOT_PREFIX", "$"), intents = intents)
 async def on_ready():
     await bot.change_presence(activity=discord.Game(f"Preparing the bot for it's first use..."))
     #https://stackoverflow.com/a/65780398 - for multiple statuses
-    await bot.change_presence(activity=discord.Game(f"/ask me anything or {bot.command_prefix}help"))
+    await bot.change_presence(activity=discord.Game(f"@ me to get started!"))
     logging.info("%s is ready and online!", bot.user)
 
 ###############################################

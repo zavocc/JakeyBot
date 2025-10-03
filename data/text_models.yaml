@@ -1,0 +1,36 @@
+# A list of models to be used for defaults in models.core function name get_default_textgen_model_async
+# First model with default: true will be the default model used
+
+- model_id: gemini-2.5-flash-preview-09-2025
+  model_human_name: Gemini 2.5 Flash
+  sdk: google
+  model_specific_params:
+    temperature: 1
+    max_output_tokens: 8192
+    thinkingConfig:
+      thinking_budget: 0
+  client_name: gemini_api_client
+  default: true
+
+- model_id: gpt-5-mini
+  model_human_name: GPT-5 Mini Thinking
+  sdk: openai
+  model_specific_params:
+    temperature: 1
+    max_completion_tokens: 8192
+    reasoning_effort: minimal
+  default: false
+  client_name: openai_client
+
+- model_id: x-ai/grok-4-fast:free
+  model_human_name: Grok 4 Fast
+  sdk: openai
+  model_specific_params:
+    temperature: 1
+    max_tokens: 8192
+    extra_body:
+      reasoning:
+        enabled: false
+  default: false
+  client_name: openai_client_openrouter
+

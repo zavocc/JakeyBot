@@ -1,10 +1,13 @@
-from core.ai.core import ModelsList
 from core.exceptions import *
-from core.services.helperfunctions import HelperFunctions
-from core.ai.history import History as typehint_History
+from core.database import History as typehint_History
 from discord import Message
+from models.core import set_assistant_type
+from models.chat_utils import fetch_model, load_history, save_history
+
+# TODO: use importlib
+from models.providers.openai.completion import ChatSession as CSOpenAITypeHint
+
 from os import environ
-import aimodels._template_ as typehint_AIModelTemplate
 import discord
 import importlib
 import inspect
@@ -24,97 +27,97 @@ class BaseChat():
     # Events-based chat
     ###############################################
     async def _ask(self, prompt: Message):
-        # Check if SHARED_CHAT_HISTORY is enabled
-        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
-            guild_id = prompt.guild.id if prompt.guild else prompt.author.id # Always fallback to ctx.author.id for DMs since ctx.guild is None
-        else:
-            guild_id = prompt.author.id
-
         # Set default model
-        _model = await self.DBConn.get_default_model(guild_id=guild_id)
-        if _model is None:
-            logging.info("No default model found, using default model")
-            _model = await self.DBConn.get_default_model(guild_id=guild_id)
+        _model_props = await fetch_model(model_alias=(await self.DBConn.get_key(guild_id=prompt.author.id, key="default_model")) or environ.get("DEFAULT_MODEL", "openai::gpt-4.1-mini"))
+        _chat_session: CSOpenAITypeHint = importlib.import_module(f"models.providers.{_model_props.sdk}.completion").ChatSession(
+            user_id=prompt.author.id,
+            model_props=_model_props,
+            discord_bot=self.bot,
+            discord_context=prompt,
+            db_conn=self.DBConn,
+            client_name=_model_props.client_name
+        )
 
-        _model_provider = _model.split("::")[0]
-        _model_name = _model.split("::")[-1]
-        if "/model:" in prompt.content:
-            _modelUsed = await prompt.channel.send(f"🔍 Using specific model")
-            async for _model_selection in ModelsList.get_models_list_async():
-                _model_provider = _model_selection.split("::")[0]
-                _model_name = _model_selection.split("::")[-1]
+        # Check if "thread_name" is set in model props so we can separate chat threads
+        if _model_props.thread_name:
+            _thread_name = _model_props.thread_name
+        else:
+            _thread_name = _model_props.sdk
 
-                # In this regex, we are using \s at the end since when using gpt-4o-mini, it will match with gpt-4o at first
-                # So, we are using \s|$ to match the end of the string and the suffix gets matched or if it's placed at the end of the string
-                if re.search(rf"\/model:{_model_name}(\s|$)", prompt.content):
-                    await _modelUsed.edit(content=f"🔍 Using model: **{_model_name}**")
-                    break
+        # Check if we need to load history by checking enable_threads prop
+        if _model_props.enable_threads:
+            _chat_history = await load_history(user_id=prompt.author.id, thread_name=_thread_name, db_conn=self.DBConn)
+
+            # Check for /chat:ephemeral only if enable_threads is true
+            if not "/chat:ephemeral" in prompt.content:
+                _append_history = True
             else:
-                _model_provider = _model.split("::")[0]
-                _model_name = _model.split("::")[-1]
-                await _modelUsed.edit(content=f"🔍 Using model: **{_model_name}**")
-    
-        # Check for /chat:ephemeral
-        _append_history = True
-        if "/chat:ephemeral" in prompt.content:
-            await prompt.channel.send("🔒 This conversation is not saved and Jakey won't remember this")
+                await prompt.channel.send("🔒 This conversation is not saved and Jakey won't remember this")
+                _append_history = False  
+        else:
+            await prompt.channel.send("> -# ⚠️ This model doesn't support threads and therefore this interaction won't remember the previous and won't be saved.")
+            _chat_history = None
             _append_history = False
 
+        # Check to show stats
         if "/chat:info" in prompt.content:
             _show_info = True
         else:
             _show_info = False
-      
-        try:
-            _infer: typehint_AIModelTemplate.Completions = importlib.import_module(f"aimodels.{_model_provider}").Completions(
-                model_name=_model_name,
-                discord_ctx=prompt,
-                discord_bot=self.bot,
-                guild_id=guild_id)
-        except ModuleNotFoundError:
-            raise CustomErrorMessage("⚠️ The model you've chosen is not available at the moment, please choose another model")
-        _infer._discord_method_send = prompt.channel.send
 
-        ###############################################
         # File attachment processing
-        ###############################################
-        if len(prompt.attachments) > 1:
-            await prompt.reply("🚫 I can only process one file at a time")
-            return
-        
-        if prompt.attachments:
-            if not hasattr(_infer, "input_files"):
-                raise CustomErrorMessage(f"🚫 The model **{_model_name}** cannot process file attachments, please try another model")
+        async with prompt.channel.typing():
+            if prompt.attachments:
+                if _model_props.enable_files:
+                    _uploadedFilesCount = 0
+                    _processFileInterstitial = await prompt.channel.send("⬆️ Please wait...")
+                    for _attachment in prompt.attachments:
+                        # Check for alt text
+                        _extraMetadata = inspect.cleandoc(
+                            f"""
+                            <meta>
+                            this is system-inserted additional metadata (for additional context about this file, but focus on the file contents itself)
+                            filename: {_attachment.filename}
+                            alt: {_attachment.description if _attachment.description else None}
+                            url: {_attachment.url}
+                            </meta>
+                            """)
+                        await _chat_session.upload_files(attachment=_attachment, extra_metadata=_extraMetadata)
+                        
+                        # Update status
+                        _uploadedFilesCount += 1
+                        await _processFileInterstitial.edit(f"✅ Added: **{_uploadedFilesCount}** file(s)...")
+                else:
+                    raise CustomErrorMessage("⚠️ This model doesn't support file attachments, please choose another model to continue")
 
-            _processFileInterstitial = await prompt.channel.send(f"📄 Processing the file: **{prompt.attachments[0].filename}**")
-            await _infer.input_files(attachment=prompt.attachments[0])
-            await _processFileInterstitial.edit(f"✅ Used: **{prompt.attachments[0].filename}**")
-
-        ###############################################
         # Answer generation
-        ###############################################
         # Through capturing group, we can remove the mention and the model selection from the prompt at both in the middle and at the end
-        _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/model:{_model_name}(\s|$)|\/chat:ephemeral(\s|$)|\/chat:info(\s|$))", "", prompt.content).strip()
-        _system_prompt = await HelperFunctions.set_assistant_type("jakey_system_prompt", type=0)
+        _final_prompt = re.sub(rf"(<@{self.bot.user.id}>(\s|$)|\/chat:ephemeral(\s|$)|\/chat:info(\s|$))", "", prompt.content).strip()
+        _system_prompt = await set_assistant_type("jakey_system_prompt", type=0)
 
         # Generate the response and simulate the typing
         async with prompt.channel.typing():
-            _result = await _infer.chat_completion(prompt=_final_prompt, db_conn=self.DBConn, system_instruction=_system_prompt)
+            _result = await _chat_session.send_message(
+                prompt=_final_prompt,
+                chat_history=_chat_history,
+                system_instructions=_system_prompt
+            )
 
-        # Check if result says "OK"
-        if _result["response"] == "OK" and _show_info:
+        if _show_info:
             await prompt.channel.send(
                 embed=discord.Embed(
-                    description=f"Answered by **{_model_name}** by **{_model_provider}** {"(this response isn't saved)" if not _append_history else ''}",
+                    description=f"Answered by **{_model_props.model_human_name}** {"(this response isn't saved)" if not _append_history else ''}",
                 )
             )
 
         # Save to chat history
         if _append_history:
-            if not hasattr(_infer, "save_to_history"):
-                await prompt.channel.send("⚠️ This model doesn't allow saving the conversation")
-            else:
-                await _infer.save_to_history(db_conn=self.DBConn, chat_thread=_result["chat_thread"])
+            await save_history(
+                user_id=prompt.author.id,
+                thread_name=_thread_name,
+                chat_thread=_result,
+                db_conn=self.DBConn
+            )
 
     async def on_message(self, message: Message):
         # Ignore messages from the bot itself
@@ -131,8 +134,11 @@ class BaseChat():
                     if self.bot.get_command(_command):
                         return
                     
+            # User ID
+            _userID = message.author.id
+
             # Check if the user is in the pending list
-            if message.author.id in self.pending_ids:
+            if _userID in self.pending_ids:
                 await message.reply("⚠️ I'm still processing your previous request, please wait for a moment...")
                 return
             
@@ -144,19 +150,6 @@ class BaseChat():
             
             # Remove the mention from the prompt
             message.content = re.sub(f"<@{self.bot.user.id}>", '', message.content).strip()
-
-            # Check for image attachments, if exists, put the URL in the prompt
-            # TODO: put it on a constant and make have _ask() function to have attachments= named param
-            if message.attachments:
-                _alttext = message.attachments[0].description if message.attachments[0].description else "No alt text provided"
-                message.content = inspect.cleandoc(f"""<extra_metadata>
-                    <attachment url="{message.attachments[0].url}" />
-                    <alt>
-                        {_alttext}
-                    </alt>
-                </extra_metadata>
-
-                {message.content}""")
 
             # If the bot is mentioned through reply with mentions, also add its previous message as context
             # So that the bot will reply to that query without quoting the message providing relevant response
@@ -181,37 +174,37 @@ class BaseChat():
             # Maybe this can be separated into another function
             try:
                 # Add the user to the pending list
-                self.pending_ids.append(message.author.id)
+                self.pending_ids.append(_userID)
 
                 # Add reaction to the message to acknowledge the message
                 await message.add_reaction("⌛")
+
                 await self._ask(message)
             except Exception as _error:
-                #if isinstance(_error, genai_errors.ClientError) or isinstance(_error, genai_errors.ServerError):
-                #    await message.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: **{_error.message}**")
-                if isinstance(_error, HistoryDatabaseError):
-                    await message.reply(f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**")
-                elif isinstance(_error, ModelAPIKeyUnset):
-                    await message.reply(f"⛔ The model you've chosen is not available at the moment, please choose another model, reason: **{_error.message}**")
                 # Check if the error is about empty message
-                elif isinstance(_error, discord.errors.HTTPException) and "Cannot send an empty message" in str(_error):
+                if isinstance(_error, discord.errors.HTTPException) and "Cannot send an empty message" in str(_error):
                     await message.reply("⚠️ I recieved an empty response, please rephrase your question or change another model")
                 elif isinstance(_error, CustomErrorMessage):
-                    await message.reply(f"{_error.message}")
+                    await message.reply(_error.message)
                 else:
-                    # Check if the error has message attribute
-                    #if hasattr(_error, "message"):
-                    #    await message.reply(f"❌ Sorry, I couldn't answer your question at the moment, please try again later or change another model. What exactly happened: **{_error.message}**")
-                    #else:
-                    await message.reply(f"🚫 Sorry, I couldn't answer your question at the moment, please try again later or change another model. What exactly happened: **{type(_error).__name__}**")
+                    await message.reply(f"🚫 A problem occured while generating response, please try again later or change another model.\n> -# What went wrong: ***`{type(_error).__name__}`***")
 
                 # Log the error
                 logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)
             finally:
                 # Remove the reaction
-                await message.remove_reaction("⌛", self.bot.user)
+                if isinstance(message, discord.Message):
+                    try:
+                        await message.remove_reaction("⌛", self.bot.user)
+                    except discord.NotFound:
+                        # Message was deleted, so we can't remove the reaction
+                        pass
+                    except discord.HTTPException:
+                        # Other HTTP errors (like missing permissions)
+                        pass
 
                 # Remove the user from the pending list
-                self.pending_ids.remove(message.author.id)
+                if _userID in self.pending_ids:
+                    self.pending_ids.remove(_userID)
 
-    
+

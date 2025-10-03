@@ -1,0 +1,134 @@
+tool_name: Web Search
+tool_list: 
+  - name: web_search
+    description: Search the web to inform response, use semantic or keyword based search.
+    parameters:
+      type: object
+      properties:
+        query:
+          type: string
+          description: The query to search for
+        searchType:
+          type: string
+          enum:
+            - neural
+            - keyword
+          description: The type of search to perform, use keyword to include keywords in the search query, neural for specific searches. If not set, the service will automatically determine the type of search to perform
+        numResults:
+          type: integer
+          description: The number of results to fetch, it's recommended to set from 1-3 for simple queries, 4-6 for queries require more corroborating sources, and 7 or more for complex queries
+        includeDomains:
+          type: array
+          items:
+            type: string
+          description: A list of domains to include in the search results, do not mix with excludeDomains
+        excludeDomains:
+          type: array
+          items:
+            type: string
+          description: A list of domains to exclude from the search results, do not mix with includeDomains. It's recommended to use this for same query for variety of sources
+        includeText:
+          type: array
+          items:
+            type: string
+          description: A list of text to include in the search results, do not mix with excludeText
+        excludeText:
+          type: array
+          items:
+            type: string
+          description: A list of text to exclude from the search results, do not mix with includeText
+        showSummary:
+          type: boolean
+          description: Show summary in the search results. Only use this for quick insights, otherwise do not use this for faster search fetching only or full browsing using url_browse tool
+      required:
+        - query
+  
+  # Browse
+  - name: url_browse
+    description: Reads the content of the webpage at the specified URL.
+    parameters:
+      type: object
+      properties:
+        url:
+          type: string
+          description: The URL of the webpage to read
+      required:
+        - url
+    
+  # YouTube Search
+  - name: youtube_video_search
+    description: Search for YouTube videos.
+    parameters:
+      type: object
+      properties:
+        query:
+          type: string
+          description: The query to search for
+        n_results:
+          type: integer
+          description: The number of results to fetch
+      required:
+        - query
+
+  # Get Runtimes
+  - name: code_execution_list_runtimes
+    description: List available runtimes for code execution.
+    parameters:
+      type: object
+      properties:
+        language:
+          type: string
+          description: The programming language to filter runtimes by
+      required:
+        - language
+
+  # Code Execution
+  - name: code_execution
+    description: Run code in a sandboxed environment powered by Piston. Use this for tasks like running code snippets, live debugging, or mathematical calculations.
+    parameters:
+      type: object
+      properties:
+        language:
+          type: string
+          enum:
+            - "awk"
+            - "bash"
+            - "c"
+            - "c++"
+            - "csharp"
+            - "js"
+            - "powershell"
+            - "python"
+            - "rust"
+            - "swift"
+          description: The programming language to use
+        version:
+          type: string
+          description: The version of the runtime or interpreter to use. Run code_execution_list_runtimes tool first to determine runtime version
+        files:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: The name of the file
+              content:
+                type: string
+                description: The content of the file
+            required:
+              - name
+              - content
+          description: The list of files and code. First array index is considered to be main entrypoint of program execution
+        stdin:
+          type: string
+          description: The standard input to provide to the program
+        args:
+          type: array
+          items:
+            type: string
+          description: The list of arguments to provide to the program
+      required:
+        - language
+        - version
+        - files

@@ -5,7 +5,6 @@
   - [Required permissions for Discord bot](#required-permissions-for-discord-bot)
   - [Installation](#installation)
   - [Configuring](#configuring)
-  - [Music features](#music-features)
 - [Get Started](#get-started)
   - [Chat](#chat)
     - [Chat Variables](#chat-variables)
@@ -15,25 +14,23 @@
 
 
 # Jakey Bot
-Jakey Bot is a multi-model AI and music bot with personality, designed to give you access to popular AI chatbots from Google Gemini, OpenAI, Anthropic, Mistral, LLaMA, OpenRouter right within Discord! 
+Jakey Bot is a multi-model AI and music bot with personality, designed to give you access to popular AI chatbots from Google Gemini, OpenAI, Anthropic, MoonShot AI, Z.AI, DeepSeek, OpenRouter right within Discord! 
 
 ![Jakey Bot Banner](./assets/banner.png)
 
-This bot uses models from Google, OpenAI, Anthropic, Mistral, or use [OpenRouter](https://openrouter.ai) for unified access to some models using LiteLLM! Combined with best Python and Discord APIs to create a helpful AI assistants
 
 ## Platform availability
 Jakey AI is available as Discord Bot. Other platforms is coming soon!
 
 ## Features
-- Access to the top AI flagship models right within Discord!
+- Access to the top AI flagship models right within Discord! Both open and proprietary weights.
 - Summarize text channels and messages
 - Multimodality support and summarize file attachments!
 - Browse, run python code, edit images right within chat
-- Create and conversationally edit images using Gemini 2.0 Flash Image generation
+- Remix user's avatar
 
 Other non-AI extras include:
 - Mimic other users
-
 
 # Installation and setup
 ## Required permissions for Discord bot
@@ -47,17 +44,25 @@ Other non-AI extras include:
 - View Channels
 - Add Reactions
 
-
 For demo version, you can add this bot and see the required permissions and capabilities: https://discord.com/oauth2/authorize?client_id=1051409808877699072&permissions=563330095107136&integration_type=0&scope=bot
 
+Keep in mind that data training policy varies between model, if you need guaranteed data loss prevention, you need to provide your own endpoints and hosting your bot yourselves. The demo version should not be used as daily driver as we rotate models periodically.
+
 ## Installation
-The best way to get started is through Docker method... You can directly pull the image from my Docker 🐳 Hub repository and simply run the bot below:
-```
-~ $ docker pull zavocc/jakey:sugilite
-~ $ docker run -it --env-file dev.env --rm zavocc/jakey:sugilite
+The best way to get started is through Docker method... You can directly pull the image from my Docker 🐳 Hub repository and simply run the bot below to pull the stable image.
+```sh
+~ $ docker pull zavocc/jakey:1.0
+~ $ docker run -it --env-file dev.env --rm zavocc/jakey:1.0
+# or by bind mounting dev.env (recommended)
+# docker run --mount type=bind,source=dev.env,target=/jakeybot/dev.env --rm zavocc/jakey:1.0
 ```
 
+If you want to use fresh from `master` commit builds of Jakey Docker image, pull using `zavocc/jakey:autobot` image  tag before hitting to stable version as minor revision.
+
 NOTE: You need to provide [the dev.env file](#configuring) as explained below
+
+> [!WARNING]
+> Running JakeyBot on Windows using native `python.exe` is currently unsupported due to issues like emoji character encoding issues, and file paths used. As well as dependencies required that may not be fully covered under requirements.txt that requires other dependencies for the Win32 platform. We recommend using WSL2 or the Docker image with preconfigured environment.
 
 <details>
   <summary>Manual installation</summary>
@@ -74,11 +79,6 @@ NOTE: You need to provide [the dev.env file](#configuring) as explained below
   Install dependencies as needed
   ```
   pip3 install -r requirements.txt
-
-  # This is optional
-  pip3 install gradio_client
-  pip3 uninstall py-cord discord.py
-  pip3 install py-cord
   ```
 </details>
 
@@ -89,11 +89,8 @@ You will need to provide Discord bot token from the developers portal.
 
 Please see [CONFIG.md](./docs/CONFIG.md) for more information about configuration.
 
-## Music features
-THIS FEATURE IS ON HOLD!
-
 # Get Started
-Get started by asking Jakey `/ask prompt:Who are you and how can I get started` or **@Jakey what can you do?**
+Get started by asking Jakey **@Jakey what can you do?**
 
 ## Chat
 Once you added or installed Jakey to your server or yourself, you can mention @Jakey along with your prompt or directly message Jakey in DMs. If you use Gemini model, you can prompt files such as images, audio, video, and visual PDFs too!
@@ -102,32 +99,23 @@ Once you added or installed Jakey to your server or yourself, you can mention @J
 When you enter a prompt to Jakey... you can use chat variables which are substrings to detect which action to perform before sending the request to LLM
 
 - `prompt /chat:ephemeral` - Do not append the last message turn to chat history while having its previous memory
-- `prompt /model:model-name` - Set model for the response on demand. (See `/model list` to choose available model names)
 - `prompt /chat:info` - Show model used in the conversation.
 
-For claude-specific models, you can also use the `/cache:true` prompt variable to cache your inputs and save costs... Good for attaching PDF files.
-
 ## Model used
-The default model used for chat experience is Gemini 2.5 Flash Thinking, including other experiences like message summarization. However, you can switch to different chat models as you choice offered by OpenAI, Anthropic, xAI, DeepSeek, and LLaMA and custom models with OpenRouter.
-
-You can also sticky set the model using `/model set` command, or list models using `/model list` command. \
-If you decide touse OpenRouter model, you will need to configure `/openrouter` command first by setting the model names through https://openrouter.ai/models
-
-When you set a model, you are switching chat threads to that model associated for that provider... So switching to GPT-4o model would have its own chat thread and files, but you can always switch back to previous provider with it's memory. Note that switching models for OpenRouter would result in chat thread being cleared to ensure consistency 
-
-If you decide to use other models please see [Models comparison](https://github.com/zavocc/JakeyBot/wiki/Supported-Models) and [the LLM arena by livebench](https://livebench.ai/) to understand your models use cases.
+The default model used is based on [models.yaml](./data/models.yaml) for chat and [text_models.yaml](./data/text_models.yaml) for text based tasks. You can customize default model based on your needs.
 
 # Commands
 Jakey provides slash commands such as:
-- `/ask` - Ask Jakey quick questions.
+- `/avatar remix` - Restyle user's avatar powered by Nano Banana
+- `/avatar show` - Show and optionally describe user's avatar
 - `/sweep` - Clear the conversation
-- `/feature` - Extend Jakey skills by activating chat tools! (Clears conversation when feature are set, only supports Gemini models)
-- `/model set` and `/model list` to list available models.
+- `/feature` - Extend Jakey skills by activating chat tools!
+- `/model set` to list available models.
 - `/openrouter` - Access additional models from OpenRouter (`/model set:openrouter` must be set)
-- `/summarize` - Summarize the current text channel or thread and gather insights into a single summary thanks to Gemini 2.0 Flash's long context it can understand conversations even from the past decade!
+- `/summarize` - Summarize the current text channel or thread and gather insights into a single structured summary.
 - `/mimic` - Mimics other users using webhook
 
-Jakey also has message actions or apps which is used to take action on a selected message. Such as explain, rephrase, or suggest messages using Gemini 2.0 Flash.
+Jakey also has message actions or apps which is used to take action on a selected message. Such as explain, rephrase, or suggest messages.
 
 ![apps](./assets/apps.png)
 

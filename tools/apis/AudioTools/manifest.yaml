@@ -1,0 +1,78 @@
+tool_name: Audio Tools
+tool_list:
+  - name: text_to_speech
+    description: Generate audio from text using expressive voices with Elevenlabs v3
+    parameters:
+      type: object
+      properties:
+        text:
+          type: string
+        voice:
+          type: string
+          enum:
+            - Alice
+            - Matilda
+            - Will
+            - Jessica
+            - Eric
+            - Chris
+            - Brian
+            - Daniel
+            - Lily
+            - Bill
+            - Aria
+            - Roger
+            - Sarah
+            - Laura
+            - Charlie
+            - George
+            - Callum
+            - River
+            - Liam
+            - Charlotte
+        style: 
+          type: number
+          description: Style exaggeration from 0.0 to 1.0, where 0.0 is no style and 1.0 is maximum style
+      required:
+        - text
+  - name: music_generator
+    description: Generate music from text prompts upto 190 seconds, without vocals, powered by Stable Audio 2.5
+    parameters:
+      type: object
+      properties:
+        prompt:
+          type: string
+          description: Describe how the music shall be composed, specify instruments, vibe, genre, mood, etc. For example 'A beautiful piano arpeggio grows into a grand orchestral climax'
+        duration:
+          type: integer
+          description: Duration of the audio in seconds. Maximum is 190 seconds, default is 60 seconds.
+      required:
+        - prompt
+  - name: podcastgen
+    description: Generate long comprehensive audio podcasts from given prompts of a subject matter.
+    parameters:
+      type: object
+      properties:
+        dialogues:
+          type: array
+          items:
+            type: object
+            properties:
+              speaker_type:
+                type: string
+                enum:
+                  - Speaker 0
+                  - Speaker 1
+                description: Select which host to use for dialogue, this is used to ensure smooth podcast generation. Host one is male, and host two is female
+              dialogue:
+                type: string
+                description: The dialogue for the host to speak
+            required:
+              - speaker_type
+              - dialogue
+          description: This parameter is used as a syntax to construct a flow of a podcast. It's recommended to have 15-20 dialogues min
+        enable_background_music:
+          type: boolean
+          description: Whether to enable background music for the podcast
+      required:
+        - dialogues
