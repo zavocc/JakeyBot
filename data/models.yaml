@@ -13,10 +13,10 @@
   thread_name: moonshotai
 
 - model_alias: x-ai::grok-4-fast
-  model_human_name: Grok 4 Fast (High)
+  model_human_name: Grok 4 Fast
   model_description: SOTA-efficient fast reasoning model
   sdk: litellm
-  model_id: openrouter/x-ai/grok-4-fast:free
+  model_id: openrouter/x-ai/grok-4-fast
   enable_tools: true
   enable_files: true
   enable_threads: true
