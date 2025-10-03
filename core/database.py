@@ -18,6 +18,7 @@ class History:
         # Create a new database if it doesn't exist, access chat_history database
         self._db = self._db_conn[environ.get("MONGO_DB_NAME", "jakey_prod_db")]
         self._collection = self._db[environ.get("MONGO_DB_COLLECTION_NAME", "jakey_prod_db_collection")]
+        self._checkpoint_collection = self._db["checkpoints"]
         logging.info("Connected to the database %s and collection %s", self._db.name, self._collection.name)
 
         # Create task for indexing the collection
@@ -26,6 +27,8 @@ class History:
     # Setup indexes for the collection
     async def _init_indexes(self):
         await self._collection.create_index([("guild_id", 1)], name="guild_id_index", background=True, unique=True)
+        await self._checkpoint_collection.create_index([("guild_id", 1)], name="guild_id_index", background=True)
+        await self._checkpoint_collection.create_index([("guild_id", 1), ("name", 1)], name="guild_id_name_index", background=True, unique=True)
         logging.info("Created index for guild_id")
 
     # Type validation for guild_id
@@ -103,3 +106,60 @@ class History:
         guild_id = self._normalize_guild_id(guild_id)
         await self._collection.delete_one({"guild_id": guild_id})
 
+####################################################################################
+# Checkpoint Management
+####################################################################################
+    # Create a new checkpoint
+    async def create_checkpoint(self, guild_id: int, name: str) -> None:
+        guild_id = self._normalize_guild_id(guild_id)
+
+        # Get the user's current data
+        user_data = await self._ensure_document(guild_id)
+
+        # Create the checkpoint document
+        checkpoint_data = {
+            "guild_id": guild_id,
+            "name": name,
+            "created_at": discord.utils.utcnow(),
+            "data": user_data
+        }
+
+        # Insert the checkpoint into the checkpoint collection
+        try:
+            await self._checkpoint_collection.insert_one(checkpoint_data)
+        except Exception as e:
+            logging.error(f"Error creating checkpoint: {e}")
+            raise HistoryDatabaseError(f"A checkpoint with the name '{name}' already exists.")
+
+    # Restore a checkpoint
+    async def restore_checkpoint(self, guild_id: int, name: str) -> None:
+        guild_id = self._normalize_guild_id(guild_id)
+
+        # Find the checkpoint
+        checkpoint = await self._checkpoint_collection.find_one({"guild_id": guild_id, "name": name})
+        if not checkpoint:
+            raise HistoryDatabaseError(f"Checkpoint '{name}' not found.")
+
+        # Get the data from the checkpoint
+        user_data = checkpoint["data"]
+
+        # Remove the original _id to avoid conflicts
+        if "_id" in user_data:
+            del user_data["_id"]
+
+        # Restore the user's data, keeping the guild_id consistent
+        await self._collection.replace_one({"guild_id": guild_id}, user_data, upsert=True)
+
+    # List all checkpoints for a user
+    async def list_checkpoints(self, guild_id: int):
+        guild_id = self._normalize_guild_id(guild_id)
+
+        checkpoints = self._checkpoint_collection.find({"guild_id": guild_id})
+        return await checkpoints.to_list(length=None)
+
+    # Delete a checkpoint
+    async def delete_checkpoint(self, guild_id: int, name: str) -> bool:
+        guild_id = self._normalize_guild_id(guild_id)
+
+        result = await self._checkpoint_collection.delete_one({"guild_id": guild_id, "name": name})
+        return result.deleted_count > 0

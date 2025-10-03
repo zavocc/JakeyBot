@@ -56,6 +56,127 @@ class Chat(commands.Cog):
         await self._ask_event.on_message(message)
 
     #######################################################
+    # Checkpoint Slash Command Group
+    checkpoint = SlashCommandGroup(name="checkpoint", description="Manage user data checkpoints")
+
+    #######################################################
+    # Slash Command: checkpoint save
+    #######################################################
+    @checkpoint.command(
+        name="save",
+        description="Save the current user data as a checkpoint.",
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
+    )
+    @discord.option("name", description="The name for the checkpoint.", required=True)
+    async def save(self, ctx, name: str):
+        await ctx.response.defer(ephemeral=True)
+        try:
+            await self.DBConn.create_checkpoint(guild_id=ctx.author.id, name=name)
+            await ctx.respond(f"✅ Checkpoint '{name}' saved successfully.")
+        except HistoryDatabaseError as e:
+            await ctx.respond(f"❌ {e}")
+        except Exception as e:
+            logging.error(f"Error saving checkpoint: {e}")
+            await ctx.respond("❌ An error occurred while saving the checkpoint.")
+
+    #######################################################
+    # Slash Command: checkpoint list
+    #######################################################
+    @checkpoint.command(
+        name="list",
+        description="List all saved checkpoints.",
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
+    )
+    async def list_checkpoints(self, ctx):
+        await ctx.response.defer(ephemeral=True)
+        try:
+            checkpoints = await self.DBConn.list_checkpoints(guild_id=ctx.author.id)
+            if not checkpoints:
+                await ctx.respond("No checkpoints found.")
+                return
+
+            embed = discord.Embed(title="Saved Checkpoints", color=discord.Color.blue())
+            for cp in checkpoints:
+                embed.add_field(name=cp['name'], value=f"Created: {cp['created_at'].strftime('%Y-%m-%d %H:%M:%S UTC')}", inline=False)
+            await ctx.respond(embed=embed)
+        except Exception as e:
+            logging.error(f"Error listing checkpoints: {e}")
+            await ctx.respond("❌ An error occurred while listing checkpoints.")
+
+    #######################################################
+    # Autocomplete for checkpoint names
+    #######################################################
+    async def _checkpoint_autocomplete(self, ctx: discord.AutocompleteContext):
+        checkpoints = await self.DBConn.list_checkpoints(guild_id=ctx.interaction.user.id)
+        return [cp['name'] for cp in checkpoints if cp['name'].lower().startswith(ctx.value.lower())]
+
+    #######################################################
+    # Slash Command: checkpoint restore
+    #######################################################
+    @checkpoint.command(
+        name="restore",
+        description="Restore user data from a checkpoint.",
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
+    )
+    @discord.option("name", description="The name of the checkpoint to restore.", required=True, autocomplete=discord.utils.basic_autocomplete(_checkpoint_autocomplete))
+    async def restore(self, ctx, name: str):
+        await ctx.response.defer(ephemeral=True)
+        try:
+            await self.DBConn.restore_checkpoint(guild_id=ctx.author.id, name=name)
+            await ctx.respond(f"✅ Checkpoint '{name}' restored successfully.")
+        except HistoryDatabaseError as e:
+            await ctx.respond(f"❌ {e}")
+        except Exception as e:
+            logging.error(f"Error restoring checkpoint: {e}")
+            await ctx.respond("❌ An error occurred while restoring the checkpoint.")
+
+    #######################################################
+    # Slash Command: checkpoint delete
+    #######################################################
+    @checkpoint.command(
+        name="delete",
+        description="Delete a checkpoint.",
+        contexts={discord.InteractionContextType.guild, discord.InteractionContextType.bot_dm},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
+    )
+    @discord.option("name", description="The name of the checkpoint to delete.", required=True, autocomplete=discord.utils.basic_autocomplete(_checkpoint_autocomplete))
+    async def delete(self, ctx, name: str):
+        await ctx.response.defer(ephemeral=True)
+
+        view = discord.ui.View()
+        confirm_button = discord.ui.Button(label="Confirm Delete", style=discord.ButtonStyle.danger, custom_id="confirm_delete")
+        cancel_button = discord.ui.Button(label="Cancel", style=discord.ButtonStyle.secondary, custom_id="cancel_delete")
+
+        async def confirm_callback(interaction):
+            if interaction.user.id != ctx.author.id:
+                await interaction.response.send_message("You are not authorized to perform this action.", ephemeral=True)
+                return
+            try:
+                success = await self.DBConn.delete_checkpoint(guild_id=ctx.author.id, name=name)
+                if success:
+                    await interaction.response.edit_message(content=f"✅ Checkpoint '{name}' deleted successfully.", view=None)
+                else:
+                    await interaction.response.edit_message(content=f"❌ Checkpoint '{name}' not found.", view=None)
+            except Exception as e:
+                logging.error(f"Error deleting checkpoint: {e}")
+                await interaction.response.edit_message(content="❌ An error occurred while deleting the checkpoint.", view=None)
+
+        async def cancel_callback(interaction):
+            if interaction.user.id != ctx.author.id:
+                await interaction.response.send_message("You are not authorized to perform this action.", ephemeral=True)
+                return
+            await interaction.response.edit_message(content="Cancelled checkpoint deletion.", view=None)
+
+        confirm_button.callback = confirm_callback
+        cancel_button.callback = cancel_callback
+        view.add_item(confirm_button)
+        view.add_item(cancel_button)
+
+        await ctx.respond(f"Are you sure you want to delete the checkpoint '{name}'?", view=view, ephemeral=True)
+    #######################################################
     # Model Slash Command Group
     model = SlashCommandGroup(name="model", description="Configure default models for the conversation")
 
