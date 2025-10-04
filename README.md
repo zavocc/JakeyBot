@@ -14,7 +14,7 @@
 
 
 # Jakey Bot
-Jakey Bot is a multi-model AI and music bot with personality, designed to give you access to popular AI chatbots from Google Gemini, OpenAI, Anthropic, MoonShot AI, Z.AI, DeepSeek, OpenRouter right within Discord! 
+Jakey Bot is a multi-model AI and music bot with personality, designed to give you access to popular AI models from Google Gemini, OpenAI, Anthropic, MoonShot AI, Z.AI, DeepSeek, OpenRouter right within Discord! 
 
 ![Jakey Bot Banner](./assets/banner.png)
 
@@ -83,7 +83,7 @@ NOTE: You need to provide [the dev.env file](#configuring) as explained below
 </details>
 
 ## Configuring
-After you install the required dependencies, configure your bot first by heading over to [dev.env.template](./dev.env.template) and save it as `dev.env` in the gitroot directory
+After you install the required dependencies, configure your bot first by heading over to [dev.env.template](./dev.env.template) and save it as `dev.env` in the git repo root directory
 
 You will need to provide Discord bot token from the developers portal.
 
@@ -109,7 +109,7 @@ Jakey provides slash commands such as:
 - `/avatar remix` - Restyle user's avatar powered by Nano Banana
 - `/avatar show` - Show and optionally describe user's avatar
 - `/sweep` - Clear the conversation
-- `/feature` - Extend Jakey skills by activating chat tools!
+- `/agent` - Extend Jakey skills by activating chat tools!
 - `/model set` to list available models.
 - `/openrouter` - Access additional models from OpenRouter (`/model set:openrouter` must be set)
 - `/summarize` - Summarize the current text channel or thread and gather insights into a single structured summary.
