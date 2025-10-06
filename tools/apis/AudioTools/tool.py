@@ -34,25 +34,22 @@ class Tools:
             style=style
         )
 
-        # Send the audio and add each of the discord message to the list so we can add it as context later
-        for _index, _audios in enumerate(_audiosInBytes):
-            # Check the audio type
-            _magicType = filetype.guess(_audios)
-            if _magicType.mime == "audio/mpeg":
-                _formatExtension = "mp3"
-            elif _magicType.mime == "audio/wav":
-                _formatExtension = "wav"
-            elif _magicType.mime == "audio/ogg":
-                _formatExtension = "ogg"
-            else:
-                _formatExtension = "bin"
+        # Check the audio type
+        _magicType = filetype.guess(_audiosInBytes)
+        if _magicType.mime == "audio/mpeg":
+            _formatExtension = "mp3"
+        elif _magicType.mime == "audio/wav":
+            _formatExtension = "wav"
+        elif _magicType.mime == "audio/ogg":
+            _formatExtension = "ogg"
+        else:
+            _formatExtension = "bin"
 
-            # Filename
-            _fileName = f"generated_speech_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}{_index}.{_formatExtension}"
+        # Filename
+        _fileName = f"generated_speech_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.{_formatExtension}"
 
-            _sentAud = await self.discord_ctx.channel.send(file=discord.File(io.BytesIO(_audios), filename=_fileName))
-            _discordAudioURLs.append(_sentAud.attachments[0].url)
-
+        _sentAud = await self.discord_ctx.channel.send(file=discord.File(io.BytesIO(_audiosInBytes), filename=_fileName))
+        _discordAudioURLs.append(_sentAud.attachments[0].url)
 
         # Delete the _audiosInBytes to save memory
         del _audiosInBytes
@@ -130,24 +127,22 @@ class Tools:
         )
 
         # Send the audio and add each of the discord message to the list so we can add it as context later
-        for _index, _audios in enumerate(_audiosInBytes):
-            # Check the audio type
-            _magicType = filetype.guess(_audios)
-            if _magicType.mime == "audio/mpeg":
-                _formatExtension = "mp3"
-            elif _magicType.mime == "audio/wav":
-                _formatExtension = "wav"
-            elif _magicType.mime == "audio/ogg":
-                _formatExtension = "ogg"
-            else:
-                _formatExtension = "bin"
+        # Check the audio type
+        _magicType = filetype.guess(_audiosInBytes)
+        if _magicType.mime == "audio/mpeg":
+            _formatExtension = "mp3"
+        elif _magicType.mime == "audio/wav":
+            _formatExtension = "wav"
+        elif _magicType.mime == "audio/ogg":
+            _formatExtension = "ogg"
+        else:
+            _formatExtension = "bin"
 
-            # Filename
-            _fileName = f"generated_speech_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}{_index}.{_formatExtension}"
+        # Filename
+        _fileName = f"generated_podcast_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.{_formatExtension}"
 
-            _sentAud = await self.discord_ctx.channel.send(file=discord.File(io.BytesIO(_audios), filename=_fileName))
-            _discordAudioURLs.append(_sentAud.attachments[0].url)
-
+        _sentAud = await self.discord_ctx.channel.send(file=discord.File(io.BytesIO(_audiosInBytes), filename=_fileName))
+        _discordAudioURLs.append(_sentAud.attachments[0].url)
 
         # Delete the _audiosInBytes to save memory
         del _audiosInBytes

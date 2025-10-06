@@ -6,12 +6,14 @@ import fal_client
 # This method outputs bytes
 async def run_image(
     model_name: str,
-    aiohttp_session: aiohttp.ClientSession,
+    aiohttp_session: aiohttp.ClientSession = None,
     send_url_only: bool = False,
     **additional_client_args
-) -> list :
+) -> Union[list[bytes], list[str]]:
         # Check if we have aiohttp session supplied or use the default one
-        if aiohttp_session:
+        if not send_url_only:
+            if not aiohttp_session:
+                raise ValueError("aiohttp_session must be provided if send_url_only is False")
             _aiohttp_session = aiohttp_session
     
         # check if FAL_KEY is set
@@ -57,12 +59,14 @@ async def run_image(
 
 async def run_audio(
     model_name: str,
-    aiohttp_session: aiohttp.ClientSession,
+    aiohttp_session: aiohttp.ClientSession = None,
     send_url_only: bool = False,
     **additional_client_args
-) -> Union[list, str]:
+) -> Union[bytes, str]:
         # Check if we have aiohttp session supplied or use the default one
-        if aiohttp_session:
+        if not send_url_only:
+            if not aiohttp_session:
+                raise ValueError("aiohttp_session must be provided if send_url_only is False")
             _aiohttp_session = aiohttp_session
     
         # check if FAL_KEY is set
@@ -87,8 +91,7 @@ async def run_audio(
         _result = await _status.get()
 
         # audio in bytes
-        _audios_in_bytes = []
-
+        _audios_in_bytes = None
 
         if send_url_only:
             return _result["audio"]["url"]
@@ -99,7 +102,7 @@ async def run_audio(
                     _audio_data = await response.read()
                     
                     # Send the audio
-                    _audios_in_bytes.append(_audio_data)
+                    _audios_in_bytes = _audio_data
                 else:
                     raise ValueError(f"Failed to download audio from {_result['audio']['url']}, status code: {response.status}")
 
