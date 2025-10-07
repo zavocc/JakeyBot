@@ -9,6 +9,7 @@ from tools.utils import fetch_actual_tool_name
 import discord
 import logging
 import models.core
+import re
 
 class Chat(commands.Cog):
     def __init__(self, bot):
@@ -46,6 +47,17 @@ class Chat(commands.Cog):
         if message.author.bot:
             return
         
+        # Only rate-limit and handle messages sent via DM or when the bot is explicitly mentioned
+        _is_direct_or_mentioned = message.guild is None or self.bot.user.mentioned_in(message)
+        if not _is_direct_or_mentioned:
+            return
+
+        # Ignore mention-only messages (handled by global on_message)
+        if message.guild is not None and self.bot.user.mentioned_in(message):
+            _clean_content = re.sub(f"<@{self.bot.user.id}>", "", message.content).strip()
+            if not message.attachments and not _clean_content:
+                return
+
         # Check cooldown
         _ubucket = self._cooldown.get_bucket(message)
         _rl_float_rate = _ubucket.update_rate_limit()
