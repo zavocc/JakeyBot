@@ -1,0 +1,24 @@
+tool_name: Video Tools
+tool_list:
+  - name: video_generator
+    description: Generate video from text with sounds, powered by Sora 2
+    parameters:
+      type: object
+      properties:
+        prompt:
+          type: string
+          description: Describe the video to generate.
+        duration:
+          type: string
+          enum:
+            - "4"
+            - "8"
+            - "12"
+        aspect_ratio:
+          type: string
+          description: Aspect ratio of the generated video
+          enum:
+            - "16:9"
+            - "9:16"
+      required:
+        - prompt
