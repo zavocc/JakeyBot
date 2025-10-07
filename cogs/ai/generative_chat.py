@@ -120,10 +120,7 @@ class BaseChat():
             )
 
     async def on_message(self, message: Message):
-        # Ignore messages from the bot itself
-        if message.author.id == self.bot.user.id:
-            return
-
+        # This guard is placed here since the inference process is ran through this conditional block.
         # Must be mentioned and check if it's not starts with prefix or slash command
         if message.guild is None or self.bot.user.mentioned_in(message):
             # Ensure it must not be triggered by command prefix or slash command

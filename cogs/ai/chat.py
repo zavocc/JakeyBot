@@ -47,6 +47,10 @@ class Chat(commands.Cog):
         if message.author.bot:
             return
         
+        # Ignore messages from the bot itself
+        if message.author.id == self.bot.user.id:
+            return
+        
         # Only rate-limit and handle messages sent via DM or when the bot is explicitly mentioned
         _is_direct_or_mentioned = message.guild is None or self.bot.user.mentioned_in(message)
         if not _is_direct_or_mentioned:
