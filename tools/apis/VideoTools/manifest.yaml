@@ -8,6 +8,9 @@ tool_list:
         prompt:
           type: string
           description: Describe the video to generate.
+        url_context:
+          type: string
+          description: Optional image URL to generate video from
         duration:
           type: string
           enum:

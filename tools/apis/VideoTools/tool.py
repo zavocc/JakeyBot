@@ -10,6 +10,7 @@ class Tools:
     async def tool_video_generator(
         self,
         prompt: str,
+        url_context: str = None,
         duration: str = "8",
         aspect_ratio: str = "16:9",
     ):
@@ -22,14 +23,24 @@ class Tools:
         # Interstitial
         _messageInterstitial = await self.discord_ctx.channel.send("📹 **Sora 2** is now generating your video... please check back later and you'll be notified once it's ready.")
 
+        _baseParams = {
+            "prompt": prompt,
+            "duration": int(duration),
+            "aspect_ratio": aspect_ratio,
+            "resolution": "720p",
+        }
+        # Check if we have URL context
+        if url_context:
+            _model_name = "sora-2/image-to-video"
+            _baseParams["image_url"] = url_context
+        else:
+            _model_name = "sora-2/text-to-video"
+
         # Generate video
         _videoURL = await run_video(
-            model_name="sora-2/text-to-video",
+            model_name=_model_name,
             send_url_only=True,
-            prompt=prompt,
-            duration=int(duration),
-            aspect_ratio=aspect_ratio,
-            resolution="720p",
+            **_baseParams
         )
 
         # Send the video
