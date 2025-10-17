@@ -1,6 +1,4 @@
 from models.tasks.media.fal_ai import run_video
-from os import environ
-
 
 # Function implementations
 class Tools:
@@ -15,13 +13,18 @@ class Tools:
         duration: str = "8",
         aspect_ratio: str = "16:9",
     ):
+        # THIS IS A BETA RESTRICTED TOOL, we only support bot owner for now
+        # Check if the author is the bot owner
+        if not (await self.discord_bot.is_owner(self.discord_ctx.author)):
+            raise PermissionError("Video generation tool is restricted to the bot owner only.")
+
         # Create video
         # Interstitial
         _messageInterstitial = await self.discord_ctx.channel.send("📹 **Sora 2** is now generating your video... please check back later and you'll be notified once it's ready.")
 
         # Generate video
         _videoURL = await run_video(
-            model_name="sora-2",
+            model_name="sora-2/text-to-video",
             send_url_only=True,
             prompt=prompt,
             duration=int(duration),
