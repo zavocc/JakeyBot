@@ -11,3 +11,4 @@ chat_history.db
 dev.env
 chroma.log
 emojis.yaml
+config.yaml

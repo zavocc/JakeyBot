@@ -1,9 +1,9 @@
+from core.config import config
 from core.exceptions import PollOffTopicRefusal
 from models.core import set_assistant_type
 from models.tasks.text_model_utils import fetch_text_model_config_async
 from discord.ext import commands
 from discord import DiscordException
-from os import environ
 import discord
 import importlib
 import json
@@ -12,7 +12,7 @@ import logging
 class GenerativeAIFunUtils(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Bot = bot
-        self.author = environ.get("BOT_NAME", "Jakey Bot")
+        self.author = config.bot_name
 
     ###############################################
     # Polls

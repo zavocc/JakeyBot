@@ -1,6 +1,6 @@
+from core.config import config
 from discord.ext import bridge
 from google import genai
-from os import environ
 import logging
 import openai
 
@@ -12,23 +12,23 @@ class SubClassBotPlugServices(bridge.Bot):
 
     async def start_services(self):
         # Gemini API Client
-        self.gemini_api_client = genai.Client(api_key=environ.get("GEMINI_API_KEY"))
+        self.gemini_api_client = genai.Client(api_key=config.get_api_key("gemini"))
         logging.info("Gemini API client initialized successfully")
 
         self.openai_client = openai.AsyncClient(
-            api_key=environ.get("OPENAI_API_KEY"),
+            api_key=config.get_api_key("openai"),
         )
 
         # OpenAI client for OpenRouter
         self.openai_client_openrouter = openai.AsyncClient(
-            api_key=environ.get("OPENROUTER_API_KEY"),
+            api_key=config.get_api_key("openrouter"),
             base_url="https://openrouter.ai/api/v1"
         )
         logging.info("OpenAI client for OpenRouter initialized successfully")
 
         # OpenAI client for Groq based models
         self.openai_client_groq = openai.AsyncClient(
-            api_key=environ.get("GROQ_API_KEY"),
+            api_key=config.get_api_key("groq"),
             base_url="https://api.groq.com/openai/v1"
         )
         logging.info("OpenAI client for Groq initialized successfully")

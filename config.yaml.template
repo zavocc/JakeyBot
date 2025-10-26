@@ -1,0 +1,67 @@
+# Jakey Bot Configuration Template
+# Refer to docs/CONFIG.md for more information about these settings.
+
+bot:
+  token: "INSERT_DISCORD_TOKEN"
+  name: "Jakey Bot"
+  prefix: "$"
+  system_user_id: 0
+  max_context_history: 10
+  shared_chat_history: False
+
+database:
+  mongodb:
+    url: "mongodb://connection_string"
+    name: "jakey_prod_db"
+    collection_name: "jakey_prod_db_collection"
+
+api_keys:
+  gemini: ""
+  openai: ""
+  anthropic: ""
+  mistral: ""
+  xai: ""
+  groq: ""
+  openrouter: ""
+  moonshot_kimi: ""
+  youtube_data_v3: ""
+  exa: ""
+  github_token: ""
+  bing_subscription_key: ""
+  azure_tts_key: ""
+  fal_key: ""
+  hf_token: ""
+  csc_gcp_api_key: ""
+
+azure:
+  ai:
+    flux_endpoint: ""
+    flux_key: ""
+    api_base: ""
+    api_key: ""
+  storage:
+    account_url: ""
+    connection_string: ""
+    container_name: ""
+  tts:
+    region: ""
+  subscription_id: ""
+  access_token: ""
+
+openrouter:
+  site_url: ""
+  app_name: ""
+
+lavalink:
+  uri: "http://localhost:2333"
+  password: "youshallnotpass"
+
+chroma:
+  http_host: "127.0.0.1"
+  http_port: 8000
+
+cse:
+  search_engine_cxid: ""
+
+admin:
+  temp_dir: "/tmp/discord_jakey_tmpfiles"

@@ -1,4 +1,4 @@
-from os import environ
+from core.config import config
 import aiohttp
 import discord
 import io
@@ -23,13 +23,14 @@ class Tools:
             raise Exception("HTTP Client has not been initialized properly, please try again later.")
 
         # Bing Subscription Key
-        if not environ.get("EXA_AI_KEY"):
+        exa_api_key = config.get_api_key("exa")
+        if not exa_api_key:
             raise ValueError("EXA_AI_KEY key not set")
         
         _header = {
             "accept": "application/json",
             "content-type": "application/json",
-            "x-api-key": environ.get("EXA_AI_KEY")
+            "x-api-key": exa_api_key
         }
         
         # Construct params with proper validation
@@ -153,7 +154,8 @@ class Tools:
             raise Exception("HTTP Client has not been initialized properly, please try again later.")
 
         # Check if we have YOUTUBE_DATA_v3_API_KEY is set
-        if not environ.get("YOUTUBE_DATA_v3_API_KEY"):
+        youtube_api_key = config.get_api_key("youtube_data_v3")
+        if not youtube_api_key:
             raise ValueError("YouTube Data v3 API key not set, please go to https://console.cloud.google.com/apis/library/youtube.googleapis.com and get an API key under Credentials in API & Services")
 
         _session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
@@ -167,7 +169,7 @@ class Tools:
             "maxResults": n_results,
             "q": query,
             "safeSearch": "strict",
-            "key": environ.get("YOUTUBE_DATA_v3_API_KEY")
+            "key": youtube_api_key
         }
 
         async with _session.get(_endpoint, params=_params) as _response:

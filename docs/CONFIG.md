@@ -1,37 +1,73 @@
 # Configuration
+
+This document defines the `config.yaml` variables used to configure the Discord bot. To get started, copy `config.yaml.template` file to `config.yaml`.
+
 ## Bot
-This document defines the `dev.env` variables used to configure the Discord bot. To get started, copy `dev.env.template` file to `dev.env`.
 
-- `TOKEN` - Set the Discord bot token, get one from [Discord Developer Portal](https://discord.com/developers/applications).
-- `BOT_NAME` - Set the name of your bot (defaults to "Jakey Bot")
-- `BOT_PREFIX` - Set the command prefix for the bot (defaults to "$")
-
+- `bot.token`: Set the Discord bot token, get one from [Discord Developer Portal](https://discord.com/developers/applications).
+- `bot.name`: Set the name of your bot (defaults to "Jakey Bot")
+- `bot.prefix`: Set the command prefix for the bot (defaults to "$")
+- `bot.system_user_id`: Your Discord user ID for owner-only commands.
+- `bot.max_context_history`: Maximum message history count.
+- `bot.shared_chat_history`: Enable shared chat history for guilds.
 
 ## Database
-for chat history and other settings, this may be required.
-- `MONGO_DB_URL` - Connection string for MongoDB database server (for storing chat history and other persistent data)
-- `MONGO_DB_NAME` - Name of the database (defaults to `jakey_prod_db`)
-- `MONGO_DB_COLLECTION_NAME` - Name of the collection within the database (defaults to `jakey_prod_db_collection`)
 
-## Generative AI features
-- `GEMINI_API_KEY` - Set the Gemini API token, get one at [Google AI Studio](https://aistudio.google.com/app/apikey). If left blank, generative features powered by Gemini will be disabled.
-- `OPENAI_API_KEY` - Set the OpenAI API key, obtain one from [OpenAI Platform](https://platform.openai.com/api-keys)
-- `GROQ_API_KEY` - Used to access models from Groq such as Deepseek R1 distilled and LLaMA models [Groq Cloud Console](https://console.groq.com/keys)
-- `OPENROUTER_API_KEY` - Set an OpenRouter API key to access models within `/openrouter` command and when the model `openrouter` is set.
+- `database.mongodb.url`: Connection string for MongoDB database server.
+- `database.mongodb.name`: Name of the database.
+- `database.mongodb.collection_name`: Name of the collection within the database.
 
-If you're using LiteLLM-based SDK models [as per models.yaml spec with `sdk: litellm` set](/models/validation.py#L18-L19), you can put more environment variables here to set additional API keys
+## API Keys
 
+- `api_keys.gemini`: Gemini API token from [Google AI Studio](https://aistudio.google.com/app/apikey).
+- `api_keys.openai`: OpenAI API key from [OpenAI Platform](https://platform.openai.com/api-keys).
+- `api_keys.anthropic`: Anthropic API key.
+- `api_keys.mistral`: Mistral API key.
+- `api_keys.xai`: XAI API key.
+- `api_keys.groq`: Groq API key from [Groq Cloud Console](https://console.groq.com/keys).
+- `api_keys.openrouter`: OpenRouter API key.
+- `api_keys.moonshot_kimi`: Moonshot Kimi API key.
+- `api_keys.youtube_data_v3`: YouTube Data API key. [Enable this API](https://console.cloud.google.com/apis/api/youtube.googleapis.com).
+- `api_keys.exa`: Exa API Key, refer to [here](https://docs.exa.ai/websets/api/get-started).
+- `api_keys.github_token`: GitHub token with public access from https://github.com/settings/personal-access-tokens.
+- `api_keys.bing_subscription_key`: Bing search API key.
+- `api_keys.azure_tts_key`: Azure TTS API key.
+- `api_keys.fal_key`: Fal.AI API key.
+- `api_keys.hf_token`: Hugging Face token.
+- `api_keys.csc_gcp_api_key`: Google Cloud Custom Search API Key.
 
-## Generative Media
-Since we use Fal.AI as our primary media provider, set an API key to activate generative features.
+## Azure
 
-`FAL_KEY`
+- `azure.ai.flux_endpoint`: Azure AI Flux endpoint.
+- `azure.ai.flux_key`: Azure AI Flux key.
+- `azure.ai.api_base`: Azure AI API base URL.
+- `azure.ai.api_key`: Azure AI API key.
+- `azure.storage.account_url`: Azure blob storage URL for file uploads.
+- `azure.storage.connection_string`: Azure storage connection string.
+- `azure.storage.container_name`: Azure storage container name.
+- `azure.tts.region`: Azure TTS region.
+- `azure.subscription_id`: Azure subscription ID.
+- `azure.access_token`: Azure access token.
 
-## API and Search tools
-To use Exa and YouTube search, you must set the following environment variables:
-- `EXA_API_KEY` - Exa API Key, refer to [here](https://docs.exa.ai/websets/api/get-started)
-- `YOUTUBE_DATA_v3_API_KEY` - YouTube Data API key. [Enable this API](https://console.cloud.google.com/apis/api/youtube.googleapis.com)
-- `GITHUB_TOKEN` - Get one at https://github.com/settings/personal-access-tokens with public access, used for GitHub file tool.
+## OpenRouter
+
+- `openrouter.site_url`: Your site URL for OpenRouter ranking.
+- `openrouter.app_name`: Your app name for OpenRouter ranking.
+
+## Lavalink
+
+- `lavalink.uri`: Lavalink server URI.
+- `lavalink.password`: Lavalink server password.
+
+## Chroma
+
+- `chroma.http_host`: Chroma DB host.
+- `chroma.http_port`: Chroma DB port.
+
+## Custom Search Engine
+
+- `cse.search_engine_cxid`: Custom Search Engine ID.
 
 ## Administrative
-- `TEMP_DIR` - Path to store temporary uploaded/downloaded attachments for multimodal use. Defaults to `temp/` in the cuurent directory if not set. Files are always deleted on every execution regardless if its successful or not, or when the bot is restared or shutdown.
+
+- `admin.temp_dir`: Path to store temporary files. Defaults to `temp/`.
