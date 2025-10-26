@@ -1,5 +1,5 @@
 from core.exceptions import HistoryDatabaseError
-from os import environ
+from core.config import get_config, get_mongo_db_name, get_mongo_collection_name
 from pymongo import ReturnDocument
 import discord as typehint_Discord
 import logging
@@ -15,9 +15,10 @@ class History:
         # Create new connection
         self._db_conn = motor.motor_asyncio.AsyncIOMotorClient(conn_string)
         
-        # Create a new database if it doesn't exist, access chat_history database
-        self._db = self._db_conn[environ.get("MONGO_DB_NAME", "jakey_prod_db")]
-        self._collection = self._db[environ.get("MONGO_DB_COLLECTION_NAME", "jakey_prod_db_collection")]
+                # Create a new database if it doesn't exist, access chat_history database
+        from core.config import get_mongo_db_name, get_mongo_collection_name
+        self._db = self._db_conn[get_mongo_db_name()]
+        self._collection = self._db[get_mongo_collection_name()]
         logging.info("Connected to the database %s and collection %s", self._db.name, self._collection.name)
 
         # Create task for indexing the collection

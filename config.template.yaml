@@ -1,0 +1,167 @@
+# JakeyBot Configuration Template
+# Copy this file to config.yaml and fill in your actual values
+# This file serves as a template with placeholder values
+
+# =============================================================================
+# BOT CONFIGURATION
+# =============================================================================
+bot:
+  name: "Jakey Bot"                    # Name of your Discord bot
+  prefix: "$"                          # Command prefix for the bot
+  token: "INSERT_DISCORD_TOKEN"        # Discord bot token (REQUIRED)
+
+# =============================================================================
+# DATABASE CONFIGURATION
+# =============================================================================
+database:
+  mongodb:
+    url: "mongodb://connection_string"      # MongoDB connection string
+    name: "jakey_prod_db_v2"                # Database name
+    collection_name: "jakey_prod_db_collection_v2"  # Collection name
+    shared_chat_history: false              # Enable shared chat history for guilds
+    max_context_history: 69                 # Maximum message history count
+
+# =============================================================================
+# AI PROVIDER API KEYS
+# =============================================================================
+ai_providers:
+  # Google AI (Gemini) - Get from https://aistudio.google.com/app/apikey
+  gemini:
+    api_key: ""  # Leave empty to disable Gemini features
+  
+  # OpenAI - Get from https://platform.openai.com/api-keys
+  openai:
+    api_key: ""  # Leave empty to disable OpenAI features
+  
+  # Anthropic - Get from Anthropic console
+  anthropic:
+    api_key: ""  # Leave empty to disable Anthropic features
+  
+  # Groq - Get from https://console.groq.com/keys
+  groq:
+    api_key: ""  # Leave empty to disable Groq features
+  
+  # OpenRouter - Get from OpenRouter
+  openrouter:
+    api_key: ""  # OpenRouter API key
+    site_url: "https://github.com/zavocc/JakeyBot"  # Optional ranking
+    app_name: "JakeyBot"
+  
+  # Mistral - Get from Mistral AI
+  mistral:
+    api_key: ""  # Leave empty to disable Mistral features
+  
+  # xAI (Grok) - Get from xAI
+  xai:
+    api_key: ""  # Leave empty to disable xAI features
+  
+  # Moonshot (Kimi) - Get from Moonshot
+  moonshot:
+    api_key: ""  # Leave empty to disable Moonshot features
+  
+  # Azure AI Foundry
+  azure_ai:
+    api_base: ""  # Azure AI Foundry endpoint
+    api_key: ""   # Azure AI Foundry key
+    
+    # Azure FLUX image generation
+    flux:
+      endpoint: ""  # Azure FLUX endpoint
+      key: ""       # Azure FLUX key
+
+# =============================================================================
+# TOOLS AND SERVICES
+# =============================================================================
+tools:
+  # Search and Web APIs
+  search:
+    bing_subscription_key: ""  # Bing search API key
+    exa_ai_key: ""             # Exa AI key (https://docs.exa.ai)
+    google_cse_cxid: ""        # Google Custom Search Engine CX ID
+    google_gcp_api_key: ""     # Google Cloud Platform API key
+  
+  # YouTube Data API - Enable at https://console.cloud.google.com/apis/api/youtube.googleapis.com
+  youtube:
+    api_key: ""  # YouTube Data v3 API key from GCP
+  
+  # GitHub - Get from https://github.com/settings/personal-access-tokens
+  github:
+    token: ""  # GitHub personal access token
+  
+  # Hugging Face - Get from https://huggingface.co/settings/tokens
+  huggingface:
+    token: ""  # Hugging Face API token
+
+# =============================================================================
+# ADDITIONAL SERVICES
+# =============================================================================
+services:
+  # Temporary file storage
+  temp_dir: "/tmp/discord_jakey_tmpfiles"  # Directory for temporary files
+  
+  # Azure Blob Storage for file uploads
+  azure_storage:
+    account_url: ""          # Azure storage account URL
+    connection_string: ""    # Azure storage connection string
+    container_name: ""       # Azure storage container name
+  
+  # Chroma vector database
+  chroma:
+    host: "127.0.0.1"  # Chroma server host
+    port: 6400         # Chroma server port
+  
+  # Azure Text-to-Speech
+  azure_tts:
+    region: "eastus"   # Azure TTS region
+    key: ""            # Azure TTS key
+  
+  # FAL.AI for generative media - Get from https://fal.ai
+  fal:
+    key: ""  # FAL.AI API key
+  
+  # Lavalink for music bot
+  lavalink:
+    uri: "http://lavalink.ipv4.oreshi.com:2333"           # Lavalink server URI
+    password: "mfkdlgmklmlenrfmklsdmnfkldnslkansdlknfdlksnflksdnkf"  # Lavalink password
+    identifier: "main"                                    # Lavalink identifier
+
+# =============================================================================
+# ADMINISTRATIVE SETTINGS
+# =============================================================================
+admin:
+  system_user_id: 0  # Discord user ID for owner-only commands (eval, shutdown, etc.)
+
+# =============================================================================
+# AZURE INTEGRATION
+# =============================================================================
+azure:
+  subscription_id: ""  # Azure subscription ID
+  access_token: ""     # Azure access token
+
+# =============================================================================
+# CONFIGURATION NOTES
+# =============================================================================
+# 
+# GETTING STARTED:
+# 1. Copy this file to config.yaml
+# 2. Replace "INSERT_DISCORD_TOKEN" with your actual Discord bot token
+# 3. Fill in the API keys for the services you want to use
+# 4. Configure database connection if using chat history
+#
+# REQUIRED SETTINGS:
+# - bot.token: Discord bot token (always required)
+#
+# OPTIONAL SETTINGS:
+# - Leave API keys empty to disable specific features
+# - All other settings have sensible defaults
+#
+# SECURITY:
+# - Never commit your actual config.yaml to version control
+# - Use config.template.yaml for templates
+# - Consider using environment variables for sensitive data
+#
+# MIGRATION FROM dev.env:
+# - Old dev.env variables are mapped to YAML sections
+# - The config system supports both YAML and environment variables
+# - YAML configuration takes precedence over environment variables
+#

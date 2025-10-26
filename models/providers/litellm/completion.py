@@ -1,10 +1,10 @@
 from .utils import LiteLLMUtils
 from core.database import History as typehint_History
-from core.exceptions import CustomErrorMessage
 from models.validation import ModelParamsOpenAIDefaults as typehint_ModelParams
 from models.validation import ModelProps as typehint_ModelProps
-from os import environ
+import base64
 import discord as typehint_Discord
+import io
 import litellm
 import logging
 import models.core
@@ -151,6 +151,21 @@ class ChatSession(LiteLLMUtils):
                 if _response.choices[0].message.content:
                     await models.core.send_ai_response(self.discord_context, prompt, _response.choices[0].message.content, self.discord_context.channel.send)
                 break
+
+        # Check if we can send images
+        if _response.choices[0].message.get("images"):
+            for _images in _response.choices[0].message.images:
+                # Send the base64 as bytes
+                # We need to parse and decode data:image/png;base64,
+                _base64_data = _images["image_url"]["url"].split(",", 1)[1]
+                _image_bytes = base64.b64decode(_base64_data)
+
+                # Send as Discord file
+                await self.discord_context.channel.send(file=typehint_Discord.File(io.BytesIO(_image_bytes), filename="generated_image.png"))
+
+                # Clean up
+                del _base64_data
+                del _image_bytes
 
         # Append to chat history
         chat_history.append(_response.choices[0].message.model_dump(exclude_defaults=True, exclude_none=True, exclude_unset=True))

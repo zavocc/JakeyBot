@@ -1,4 +1,4 @@
-from os import environ
+from core.config import get_api_key
 from typing import Union
 import aiohttp
 import fal_client
@@ -17,7 +17,8 @@ async def run_image(
             _aiohttp_session = aiohttp_session
     
         # check if FAL_KEY is set
-        if not environ.get("FAL_KEY"):
+        fal_key = get_api_key('fal')
+        if not fal_key:
             raise ValueError("FAL_KEY is not set! Cannot proceed generating images")
         
         # Construct params
@@ -70,7 +71,8 @@ async def run_audio(
             _aiohttp_session = aiohttp_session
     
         # check if FAL_KEY is set
-        if not environ.get("FAL_KEY"):
+        fal_key = get_api_key('fal')
+        if not fal_key:
             raise ValueError("FAL_KEY is not set! Cannot proceed generating audios")
         
         # Construct params
@@ -122,7 +124,8 @@ async def run_video(
             _aiohttp_session = aiohttp_session
     
         # check if FAL_KEY is set
-        if not environ.get("FAL_KEY"):
+        fal_key = get_api_key('fal')
+        if not fal_key:
             raise ValueError("FAL_KEY is not set! Cannot proceed generating audios")
         
         # Construct params
@@ -160,4 +163,3 @@ async def run_video(
 
             # Cleanup
             return _video_in_bytes
-        

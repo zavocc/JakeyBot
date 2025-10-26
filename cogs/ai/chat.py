@@ -4,7 +4,7 @@ from core.exceptions import *
 from discord.commands import SlashCommandGroup
 from discord.ext import commands
 from models.chat_utils import fetch_model
-from os import environ
+from core.config import get_bot_name, get_mongo_url
 from tools.utils import fetch_actual_tool_name
 import discord
 import logging
@@ -14,13 +14,13 @@ import re
 class Chat(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Bot = bot
-        self.author = environ.get("BOT_NAME", "Jakey Bot")
+        self.author = get_bot_name()
 
         # Initialize the MongoDB connection and History management
         try:
             self.DBConn: History = History(
                 bot=bot,
-                conn_string=environ.get("MONGO_DB_URL")
+                conn_string=get_mongo_url()
             )
         except Exception as e:
             raise e(f"Failed to connect to MongoDB: {e}...\n\nPlease set MONGO_DB_URL in dev.env")

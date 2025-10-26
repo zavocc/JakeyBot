@@ -3,7 +3,7 @@ from core.database import History as typehint_History
 from core.exceptions import CustomErrorMessage
 from models.validation import ModelParamsGeminiDefaults as typehint_ModelParams
 from models.validation import ModelProps as typehint_ModelProps
-from os import environ
+from core.config import get_api_key
 import discord
 import io
 import logging
@@ -37,7 +37,7 @@ class ChatSession(GoogleUtils):
             self.google_genai_client: google_genai.Client = getattr(discord_bot, client_name)
         else:
             logging.info("Creating new Google GenAI client instance for ChatSessionGoogle")
-            self.google_genai_client: google_genai.Client = google_genai.Client(api_key=environ.get("GEMINI_API_KEY"))
+            self.google_genai_client: google_genai.Client = google_genai.Client(api_key=get_api_key('gemini'))
 
         # Model properties
         try:

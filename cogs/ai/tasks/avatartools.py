@@ -4,7 +4,7 @@ from models.tasks.text_model_utils import fetch_text_model_config_async
 from models.tasks.media.fal_ai import run_image
 from discord.ext import commands
 from discord import Member, DiscordException
-from os import environ
+from core.config import get_bot_name
 import asyncio
 import base64
 import discord
@@ -14,7 +14,7 @@ import logging
 class AvatarTools(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Bot = bot
-        self.author = environ.get("BOT_NAME", "Jakey Bot")
+        self.author = get_bot_name()
 
     ###############################################
     # Avatar tools

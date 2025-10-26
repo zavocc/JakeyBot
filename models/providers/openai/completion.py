@@ -3,7 +3,7 @@ from core.database import History as typehint_History
 from core.exceptions import CustomErrorMessage
 from models.validation import ModelParamsOpenAIDefaults as typehint_ModelParams
 from models.validation import ModelProps as typehint_ModelProps
-from os import environ
+from core.config import get_api_key
 import discord as typehint_Discord
 import logging
 import models.core
@@ -34,7 +34,7 @@ class ChatSession(OpenAIUtils):
             self.openai_client: openai.AsyncClient = getattr(discord_bot, client_name)
         else:
             logging.info("Creating new OpenAI client instance for ChatSessionOpenAI")
-            self.openai_client: openai.AsyncClient = openai.AsyncClient(api_key=environ.get("OPENAI_API_KEY"))
+            self.openai_client: openai.AsyncClient = openai.AsyncClient(api_key=get_api_key('openai'))
 
         # Model properties
         try:
