@@ -1,3 +1,4 @@
+from core.config import config
 from core.exceptions import *
 from core.database import History as typehint_History
 from discord import Message
@@ -7,7 +8,6 @@ from models.chat_utils import fetch_model, load_history, save_history
 # TODO: use importlib
 from models.providers.openai.completion import ChatSession as CSOpenAITypeHint
 
-from os import environ
 import discord
 import importlib
 import inspect
@@ -28,7 +28,7 @@ class BaseChat():
     ###############################################
     async def _ask(self, prompt: Message):
         # Set default model
-        _model_props = await fetch_model(model_alias=(await self.DBConn.get_key(guild_id=prompt.author.id, key="default_model")) or environ.get("DEFAULT_MODEL", "openai::gpt-4.1-mini"))
+        _model_props = await fetch_model(model_alias=(await self.DBConn.get_key(guild_id=prompt.author.id, key="default_model")) or config.get("system.default_model", "openai::gpt-4.1-mini"))
         _chat_session: CSOpenAITypeHint = importlib.import_module(f"models.providers.{_model_props.sdk}.completion").ChatSession(
             user_id=prompt.author.id,
             model_props=_model_props,

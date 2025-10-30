@@ -1,5 +1,5 @@
+from core.config import config
 from google.genai import types as google_types
-from os import environ
 import google.genai as google_genai
 from typing import Union
 import logging
@@ -10,14 +10,14 @@ async def completion(prompt: Union[str, list, google_types.Content],
                      client_session: google_genai.Client = None,
                      return_text: bool = True,
                      **additional_params):
-    
+
     # Use provided client session or default
     if client_session:
         logging.info("Using provided Google GenAI client session.")
         _client = client_session
     else:
         logging.info("Using default Google GenAI client session.")
-        _client = google_genai.Client(api_key=environ.get("GEMINI_API_KEY"))
+        _client = google_genai.Client(api_key=config.get("api_keys.gemini_api_key"))
 
     # Construct parameters
     _gparams = {}

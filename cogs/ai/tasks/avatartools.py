@@ -1,10 +1,10 @@
+from core.config import config
 from core.exceptions import CustomErrorMessage
 from models.core import get_remix_styles_generator, get_remix_styles_async
 from models.tasks.text_model_utils import fetch_text_model_config_async
 from models.tasks.media.fal_ai import run_image
 from discord.ext import commands
 from discord import Member, DiscordException
-from os import environ
 import asyncio
 import base64
 import discord
@@ -14,7 +14,7 @@ import logging
 class AvatarTools(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Bot = bot
-        self.author = environ.get("BOT_NAME", "Jakey Bot")
+        self.author = config.get("discord.bot_name", "Jakey Bot")
 
     ###############################################
     # Avatar tools

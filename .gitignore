@@ -9,5 +9,6 @@ _wavelink/Lavalink.jar
 _wavelink/logs
 chat_history.db
 dev.env
+config.yaml
 chroma.log
 emojis.yaml

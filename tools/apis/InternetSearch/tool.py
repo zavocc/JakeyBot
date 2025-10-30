@@ -1,4 +1,4 @@
-from os import environ
+from core.config import config
 import aiohttp
 import discord
 import io
@@ -13,7 +13,7 @@ class Tools:
     async def tool_web_search(self, query: str = None, searchType: str = "auto", numResults: int = 5, includeDomains: list = None, excludeDomains: list = None, includeText: list = None, excludeText: list = None, showSummary: bool = False):
         if not query or not query.strip():
             raise ValueError("query parameter is required and cannot be empty")
-        
+
         if hasattr(self.discord_bot, "aiohttp_instance"):
             logging.info("Using existing aiohttp client session for post requests")
             _session = self.discord_bot.aiohttp_instance
@@ -22,14 +22,14 @@ class Tools:
             logging.warning("No aiohttp_instance found in discord bot subclass, aborting")
             raise Exception("HTTP Client has not been initialized properly, please try again later.")
 
-        # Bing Subscription Key
-        if not environ.get("EXA_AI_KEY"):
-            raise ValueError("EXA_AI_KEY key not set")
-        
+        # Exa API Key
+        if not config.get("tools.exa_api_key"):
+            raise ValueError("tools.exa_api_key not set in config.yaml")
+
         _header = {
             "accept": "application/json",
             "content-type": "application/json",
-            "x-api-key": environ.get("EXA_AI_KEY")
+            "x-api-key": config.get("tools.exa_api_key")
         }
         
         # Construct params with proper validation
@@ -153,8 +153,8 @@ class Tools:
             raise Exception("HTTP Client has not been initialized properly, please try again later.")
 
         # Check if we have YOUTUBE_DATA_v3_API_KEY is set
-        if not environ.get("YOUTUBE_DATA_v3_API_KEY"):
-            raise ValueError("YouTube Data v3 API key not set, please go to https://console.cloud.google.com/apis/library/youtube.googleapis.com and get an API key under Credentials in API & Services")
+        if not config.get("tools.youtube_data_v3_api_key"):
+            raise ValueError("YouTube Data v3 API key not set in config.yaml, please go to https://console.cloud.google.com/apis/library/youtube.googleapis.com and get an API key under Credentials in API & Services")
 
         _session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
 
@@ -167,7 +167,7 @@ class Tools:
             "maxResults": n_results,
             "q": query,
             "safeSearch": "strict",
-            "key": environ.get("YOUTUBE_DATA_v3_API_KEY")
+            "key": config.get("tools.youtube_data_v3_api_key")
         }
 
         async with _session.get(_endpoint, params=_params) as _response:

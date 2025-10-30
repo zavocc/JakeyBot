@@ -1,10 +1,10 @@
 from cogs.ai.generative_chat import BaseChat
+from core.config import config
 from core.database import History
 from core.exceptions import *
 from discord.commands import SlashCommandGroup
 from discord.ext import commands
 from models.chat_utils import fetch_model
-from os import environ
 from tools.utils import fetch_actual_tool_name
 import discord
 import logging
@@ -14,16 +14,16 @@ import re
 class Chat(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Bot = bot
-        self.author = environ.get("BOT_NAME", "Jakey Bot")
+        self.author = config.get("discord.bot_name", "Jakey Bot")
 
         # Initialize the MongoDB connection and History management
         try:
             self.DBConn: History = History(
                 bot=bot,
-                conn_string=environ.get("MONGO_DB_URL")
+                conn_string=config.get("mongodb.url")
             )
         except Exception as e:
-            raise e(f"Failed to connect to MongoDB: {e}...\n\nPlease set MONGO_DB_URL in dev.env")
+            raise e(f"Failed to connect to MongoDB: {e}...\n\nPlease set mongodb.url in config.yaml")
 
         # Configure cooldown
         self._cooldown = commands.CooldownMapping.from_cooldown(2, 25, commands.BucketType.user)

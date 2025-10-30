@@ -1,4 +1,4 @@
-from os import environ
+from core.config import config
 from typing import Union
 import aiohttp
 import fal_client
@@ -15,10 +15,10 @@ async def run_image(
             if not aiohttp_session:
                 raise ValueError("aiohttp_session must be provided if send_url_only is False")
             _aiohttp_session = aiohttp_session
-    
+
         # check if FAL_KEY is set
-        if not environ.get("FAL_KEY"):
-            raise ValueError("FAL_KEY is not set! Cannot proceed generating images")
+        if not config.get("api_keys.fal_key"):
+            raise ValueError("api_keys.fal_key is not set in config.yaml! Cannot proceed generating images")
         
         # Construct params
         _params = {}
@@ -70,8 +70,8 @@ async def run_audio(
             _aiohttp_session = aiohttp_session
     
         # check if FAL_KEY is set
-        if not environ.get("FAL_KEY"):
-            raise ValueError("FAL_KEY is not set! Cannot proceed generating audios")
+        if not config.get("api_keys.fal_key"):
+            raise ValueError("api_keys.fal_key is not set in config.yaml! Cannot proceed generating audios")
         
         # Construct params
         _params = {}

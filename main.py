@@ -1,12 +1,12 @@
+from core.config import config
 from core.startup import SubClassBotPlugServices
 from discord.ext import commands
 from inspect import cleandoc
-from os import chdir, mkdir, environ
+from os import chdir, mkdir
 from pathlib import Path
 import aiofiles.os
 import aiohttp
 import discord
-import dotenv
 import logging
 import re
 import socket
@@ -15,17 +15,13 @@ import yaml
 # Go to project root directory
 chdir(Path(__file__).parent.resolve())
 
-# Load environment variables
-dotenv.load_dotenv("dev.env")
-
 # Logging
-logging.basicConfig(format='%(levelname)s %(asctime)s [%(pathname)s:%(lineno)d - %(module)s.%(funcName)s()]: %(message)s', 
-                    datefmt='%m/%d/%Y %I:%M:%S %p', 
+logging.basicConfig(format='%(levelname)s %(asctime)s [%(pathname)s:%(lineno)d - %(module)s.%(funcName)s()]: %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p',
                     level=logging.INFO)
 
-# Check if TOKEN is set
-if "TOKEN" in environ and (environ.get("TOKEN") == "INSERT_DISCORD_TOKEN") or (environ.get("TOKEN") is None) or (environ.get("TOKEN") == ""):
-    raise Exception("Please insert a valid Discord bot token")
+# Load and validate configuration
+config.validate_required_config()
 
 # Intents
 intents = discord.Intents.default()
@@ -41,15 +37,12 @@ class InitBot(SubClassBotPlugServices):
         super().__init__(*args, **kwargs)
 
         # Prepare temporary directory
-        if environ.get("TEMP_DIR") is not None:
-            if Path(environ.get("TEMP_DIR")).exists():
-                for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
-                    file.unlink()
-            else:
-                mkdir(environ.get("TEMP_DIR"))
+        temp_dir = config.get("system.temp_dir", "temp")
+        if Path(temp_dir).exists():
+            for file in Path(temp_dir).iterdir():
+                file.unlink()
         else:
-            environ["TEMP_DIR"] = "temp"
-            mkdir(environ.get("TEMP_DIR"))
+            mkdir(temp_dir)
 
         # Initialize SDK clients
         self.loop.create_task(self.start_services())
@@ -76,8 +69,9 @@ class InitBot(SubClassBotPlugServices):
         logging.info("Services stopped successfully")
 
         # Remove temp files
-        if Path(environ.get("TEMP_DIR", "temp")).exists():
-            for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
+        temp_dir = config.get("system.temp_dir", "temp")
+        if Path(temp_dir).exists():
+            for file in Path(temp_dir).iterdir():
                 await aiofiles.os.remove(file)
             
         # Close socket
@@ -85,7 +79,7 @@ class InitBot(SubClassBotPlugServices):
 
         await super().close()
 
-bot = InitBot(command_prefix=environ.get("BOT_PREFIX", "$"), intents = intents)
+bot = InitBot(command_prefix=config.get("discord.bot_prefix", "$"), intents = intents)
 
 ###############################################
 # ON READY
@@ -182,4 +176,4 @@ class CustomHelp(commands.MinimalHelpCommand):
 
 bot.help_command = CustomHelp()
 
-bot.run(environ.get('TOKEN')) 
+bot.run(config.get('discord.token')) 

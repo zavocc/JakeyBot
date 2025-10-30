@@ -1,6 +1,6 @@
+from core.config import config
 from models.core import set_assistant_type
 from discord.ext import commands
-from os import environ
 import aiofiles
 import datetime
 import discord
@@ -14,7 +14,7 @@ import random
 class AISummaries(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.author = environ.get("BOT_NAME", "Jakey Bot")
+        self.author = config.get("discord.bot_name", "Jakey Bot")
 
    ###############################################
     # Summarize discord messages
@@ -230,7 +230,7 @@ class AISummaries(commands.Cog):
         # Send message in an embed format or in markdown file if it exceeds to 4096 characters
         if len(_summary["summary"]) > 4096:
             # Send the response as file
-            response_file = f"{environ.get('TEMP_DIR')}/response{random.randint(8000,9000)}.md"
+            response_file = f"{config.get('system.temp_dir', 'temp')}/response{random.randint(8000,9000)}.md"
             async with aiofiles.open(response_file, "a+") as f:
                 await f.write(_app_title + "\n----------\n")
                 await f.write(_summary["summary"])

@@ -1,4 +1,4 @@
-from os import environ
+from core.config import config
 import aiohttp
 import base64
 import html
@@ -70,14 +70,14 @@ class Tools:
             raise Exception("aiohttp client session for get requests not initialized, please check the bot configuration")
         
         # Check if we have GITHUB_TOKEN is set
-        if not environ.get("GITHUB_TOKEN"):
-            raise ValueError("GitHub API token not set, please go to https://github.com/settings/tokens?type=beta")
+        if not config.get("tools.github_token"):
+            raise ValueError("GitHub API token not set in config.yaml, please go to https://github.com/settings/tokens?type=beta")
 
         _session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
 
         # Headers
         _headers = {
-            "Authorization": f"Bearer {environ.get('GITHUB_TOKEN')}",
+            "Authorization": f"Bearer {config.get('tools.github_token')}",
             "Accept": "application/vnd.github.v3+raw",
             "X-GitHub-Api-Version": "2022-11-28"
         }
@@ -159,12 +159,12 @@ class Tools:
         _session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
 
         # Check if we have GITHUB_TOKEN is set
-        if not environ.get("GITHUB_TOKEN"):
-            raise ValueError("GitHub API token not set, please go to https://github.com/settings/tokens?type=beta")
+        if not config.get("tools.github_token"):
+            raise ValueError("GitHub API token not set in config.yaml, please go to https://github.com/settings/tokens?type=beta")
 
         # Headers
         _headers = {
-            "Authorization": f"Bearer {environ.get('GITHUB_TOKEN')}",
+            "Authorization": f"Bearer {config.get('tools.github_token')}",
             "Accept": "application/vnd.github.v3+raw",
             "X-GitHub-Api-Version": "2022-11-28"
         }

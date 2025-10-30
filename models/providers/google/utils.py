@@ -1,5 +1,5 @@
+from core.config import config
 from core.exceptions import CustomErrorMessage
-from os import environ
 from pathlib import Path
 from tools.utils import fetch_tool_schema, return_tool_object
 import discord as typehint_Discord
@@ -25,7 +25,7 @@ class GoogleUtils:
             raise CustomErrorMessage("⚠️ An error has occurred while processing the file, please try again later.")
 
         # Grab filename
-        _filename = f"{environ.get('TEMP_DIR')}/JAKEY.{random.randint(518301839, 6582482111)}.{attachment.filename}"
+        _filename = f"{config.get('system.temp_dir', 'temp')}/JAKEY.{random.randint(518301839, 6582482111)}.{attachment.filename}"
          # Sometimes mimetype has text/plain; charset=utf-8, we need to grab the first part
         _mimetype = attachment.content_type.split(";")[0]
         try:

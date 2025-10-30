@@ -1,6 +1,6 @@
+from core.config import config
 from discord.ext import commands
 from discord import Member, DiscordException
-from os import environ
 import discord
 import logging
 
@@ -8,7 +8,7 @@ class Misc(commands.Cog):
     """Use my other utilities here that can help make your server more active and entertaining"""
     def __init__(self, bot):
         self.bot = bot
-        self.author = environ.get("BOT_NAME", "Jakey Bot")
+        self.author = config.get("discord.bot_name", "Jakey Bot")
 
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild},

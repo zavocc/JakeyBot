@@ -1,4 +1,4 @@
-from os import environ
+from core.config import config
 from typing import Union
 import logging
 import openai
@@ -9,14 +9,14 @@ async def completion(prompt: Union[str, list],
                      client_session: openai.AsyncClient = None,
                      return_text: bool = True,
                      **additional_params):
-    
+
     # Use provided client session or default
     if client_session:
         logging.info("Using provided OpenAI client session.")
         _client = client_session
     else:
         logging.info("Using default OpenAI client session.")
-        _client = openai.AsyncClient(api_key=environ.get("OpenAI_API_KEY"))
+        _client = openai.AsyncClient(api_key=config.get("api_keys.openai_api_key"))
 
     # Construct parameters
     _oparams = {}

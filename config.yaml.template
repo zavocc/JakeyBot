@@ -1,0 +1,60 @@
+# JakeyBot Configuration Template
+# Refer to docs/CONFIG.md for more information
+
+# Discord Bot Configuration
+discord:
+  # Your Discord bot token (required)
+  token: INSERT_DISCORD_TOKEN
+  # Bot display name
+  bot_name: Jakey Bot
+  # Command prefix for prefix commands
+  bot_prefix: $
+
+# API Provider Keys
+# If you're using LiteLLM SDK, you can set API key variables here per provider
+api_keys:
+  # Google Gemini API Key
+  gemini_api_key: null
+  # OpenAI API Key
+  openai_api_key: null
+  # OpenRouter API Key
+  openrouter_api_key: null
+  # Groq API Key
+  groq_api_key: null
+  # For generative media
+  fal_key: null
+
+# Azure AI Configuration
+# Requires Azure AI deployment of DeepSeek and other foundry models for secure access, using LiteLLM SDK
+azure_ai:
+  api_base: null
+  api_key: null
+
+# OpenRouter Configuration (OPTIONAL)
+# Ranking this bot to OpenRouter
+openrouter:
+  site_url: https://github.com/zavocc/JakeyBot
+  app_name: JakeyBot
+
+# MongoDB Configuration
+# Set the MongoDB connection string for chat history
+mongodb:
+  url: mongodb://connection_string
+  database_name: jakey_prod_db
+  collection_name: jakey_prod_db_collection
+
+# System Configuration
+system:
+  # Temporary directory for file operations
+  temp_dir: /tmp/discord_jakey_tmpfiles
+  # Default model to use (optional)
+  default_model: null
+
+# Tool API Keys
+tools:
+  # YouTube Data API key - enable it through GCP APIs and Services
+  youtube_data_v3_api_key: null
+  # Web Search tool (Exa API)
+  exa_api_key: null
+  # For GitHub tool
+  github_token: null
