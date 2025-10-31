@@ -22,7 +22,7 @@
   default: false
   client_name: openai_client
 
-- model_id: x-ai/grok-4-fast:free
+- model_id: x-ai/grok-4-fast
   model_human_name: Grok 4 Fast
   sdk: openai
   model_specific_params:
