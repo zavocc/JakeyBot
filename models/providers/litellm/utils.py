@@ -1,6 +1,5 @@
 from core.exceptions import CustomErrorMessage
 from tools.utils import fetch_tool_schema, return_tool_object
-from typing_extensions import Literal
 import discord as typehint_Discord
 import json
 import logging
