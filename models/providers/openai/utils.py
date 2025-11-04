@@ -1,9 +1,14 @@
 from core.exceptions import CustomErrorMessage
+from models.chat_utils import upload_blob_storage
 from tools.utils import fetch_tool_schema, return_tool_object
-from typing_extensions import Literal
+from os import environ
+from pathlib import Path
+import aiofiles
+import aiofiles.os
 import discord as typehint_Discord
 import json
 import logging
+import random
 
 class OpenAIUtils:
     # Handle multimodal
@@ -16,11 +21,38 @@ class OpenAIUtils:
         if not hasattr(self, "uploaded_files"):
             self.uploaded_files = []
 
+        if hasattr(self.discord_bot, "aiohttp_instance"):
+            _aiohttp_session = self.discord_bot.aiohttp_instance
+        else:
+            logging.warning("No aiohttp_instance found in discord bot, aborting")
+            raise CustomErrorMessage("⚠️ An error has occurred while processing the file, please try again later.")
+
+        _tempdir = Path(environ.get("TEMP_DIR", "temp"))
+        _tempdir.mkdir(parents=True, exist_ok=True)
+        _filename = _tempdir / f"JAKEY.{random.randint(518301839, 6582482111)}.{attachment.filename}"
+
+        try:
+            async with _aiohttp_session.get(attachment.url, allow_redirects=True) as file_dl:
+                if file_dl.status >= 400:
+                    raise CustomErrorMessage("⚠️ Failed to download the attachment, please try again later.")
+
+                async with aiofiles.open(_filename, "wb") as filepath:
+                    async for _chunk in file_dl.content.iter_chunked(8192):
+                        await filepath.write(_chunk)
+
+            async with aiofiles.open(_filename, "rb") as filepath:
+                _file_bytes = await filepath.read()
+
+            _blob_url = await upload_blob_storage(_filename.name, _file_bytes)
+        finally:
+            if _filename.exists():
+                await aiofiles.os.remove(_filename)
+
         self.uploaded_files.append(
             {
                 "type": "image_url",
                 "image_url": {
-                    "url": attachment.url
+                    "url": _blob_url
                 }
             }
         )
