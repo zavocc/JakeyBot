@@ -1,6 +1,11 @@
 from core.exceptions import CustomErrorMessage
+from models.chat_utils import upload_files_blob
+from os import environ
 from tools.utils import fetch_tool_schema, return_tool_object
-from typing_extensions import Literal
+from pathlib import Path
+from uuid import uuid4
+import aiofiles
+import aiohttp
 import discord as typehint_Discord
 import json
 import logging
@@ -16,11 +21,53 @@ class LiteLLMUtils:
         if not hasattr(self, "uploaded_files"):
             self.uploaded_files = []
 
+        # Test if we have "self.discord_bot.aiohttp_instance"
+        if hasattr(self.discord_bot, "aiohttp_instance"):
+            logging.info("Found aiohttp_instance in discord bot, using that for downloading the file")
+            _aiohttp_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
+        else:
+            # Raise exception since we don't have a session
+            logging.warning("No aiohttp_instance found in discord bot, aborting")
+            raise CustomErrorMessage("⚠️ An error has occurred while processing the file, please try again later.")
+
+        # Grab filename
+        _filename = f"{environ.get('TEMP_DIR')}/JAKEY.{uuid4()}.{attachment.filename}"
+        try:
+            async with _aiohttp_session.get(attachment.url, allow_redirects=True) as file_dl:
+                # write to file with random number ID
+                async with aiofiles.open(_filename, "wb") as filepath:
+                    async for _chunk in file_dl.content.iter_chunked(8192):
+                        await filepath.write(_chunk)
+
+            # Upload the file to blob storage
+            _blob_url = await upload_files_blob(file_path=_filename, file_name=Path(_filename).name, blob_service_client=self.discord_bot.blob_service_client)
+        except Exception as e:
+            # Raise exception
+            raise e
+        finally:
+            # Remove the file if it exists ensuring no data persists even on failure
+            if Path(_filename).exists():
+                await aiofiles.os.remove(_filename)
+
+            # Close the temporary aiohttp session if we created one
+            if not hasattr(self.discord_bot, "aiohttp_instance"):
+                logging.info("Closing temporary aiohttp client session on models.providers.google.utils.GoogleUtils.upload_files")
+                await _aiohttp_session.close()
+
+        # Test if we have "self.discord_bot.aiohttp_instance"
+        if hasattr(self.discord_bot, "aiohttp_instance"):
+            logging.info("Found aiohttp_instance in discord bot, using that for downloading the file")
+            _aiohttp_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
+        else:
+            # Raise exception since we don't have a session
+            logging.warning("No aiohttp_instance found in discord bot, aborting")
+            raise CustomErrorMessage("⚠️ An error has occurred while processing the file, please try again later.")
+
         self.uploaded_files.append(
             {
                 "type": "image_url",
                 "image_url": {
-                    "url": attachment.url
+                    "url": _blob_url
                 }
             }
         )
