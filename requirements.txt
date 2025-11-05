@@ -1,4 +1,5 @@
 aiofiles
+azure-storage-blob
 fal-client
 filetype # https://docs.python.org/3/library/imghdr.html
 google-genai
