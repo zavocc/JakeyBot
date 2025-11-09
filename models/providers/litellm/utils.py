@@ -39,8 +39,13 @@ class LiteLLMUtils:
                     async for _chunk in file_dl.content.iter_chunked(8192):
                         await filepath.write(_chunk)
 
-            # Upload the file to blob storage
-            _blob_url = await upload_files_blob(file_path=_filename, file_name=Path(_filename).name, blob_service_client=self.discord_bot.blob_service_client)
+            # Upload the file using the configured storage plugin
+            _storage_client = getattr(self.discord_bot, "storage_client", None)
+            _blob_url = await upload_files_blob(
+                file_path=_filename,
+                file_name=Path(_filename).name,
+                blob_service_client=_storage_client
+            )
         except Exception as e:
             # Raise exception
             raise e

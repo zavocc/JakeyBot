@@ -1,10 +1,8 @@
 from .validation import ModelProps
-from azure.storage.blob.aio import BlobServiceClient
 from core.database import History
 from core.exceptions import CustomErrorMessage
-from os import environ
+from storage_plugins import get_storage_plugin
 import aiofiles
-import filetype
 import logging
 import yaml
 # Methods for generative_chat.py
@@ -39,27 +37,15 @@ async def save_history(user_id: int, thread_name: str, chat_thread: list, db_con
     await db_conn.set_key(user_id, f"chat_thread_{thread_name}", chat_thread)
 
 # Upload files to blob storage
-async def upload_files_blob(file_path: str, file_name: str, blob_service_client: BlobServiceClient = None):
-    # Check if we have a blob service client
-    if not blob_service_client:
-        _blob_service_client = BlobServiceClient.from_connection_string(environ.get("AZURE_STORAGE_CONNECTION_STRING"))
-    else:
-        _blob_service_client = blob_service_client
+async def upload_files_blob(file_path: str, file_name: str, blob_service_client=None):
+    storage_plugin = await get_storage_plugin()
+    client = blob_service_client or getattr(storage_plugin, "client", None)
 
-    # Upload the file
     try:
-        _blob_client = _blob_service_client.get_blob_client(container=environ.get("AZURE_STORAGE_CONTAINER_NAME"), blob=file_name)
-
-        async with aiofiles.open(file_path, "rb") as _file_data:
-            await _blob_client.upload_blob(_file_data, overwrite=False)
-
-        # Return the blob URL
-        return _blob_client.url
+        return await storage_plugin.upload(file_path=file_path, file_name=file_name, client=client)
+    except CustomErrorMessage:
+        raise
     except Exception as e:
-        logging.error("Error uploading file %s to blob storage, reason: %s", file_name, e)
+        logging.error("Error uploading file %s via storage plugin %s: %s", file_name, storage_plugin.name, e)
         raise CustomErrorMessage("⚠️ There was an error uploading your file, please try again later.")
-    finally:
-        if not blob_service_client:
-            logging.info("Closing one-off BlobServiceClient instance.")
-            await _blob_service_client.close()
     

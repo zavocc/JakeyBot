@@ -1,0 +1,5 @@
+storage_plugin:
+  plugin: storage_plugins.azure_blob.AzureBlobStoragePlugin
+  options:
+    connection_string_env: AZURE_STORAGE_CONNECTION_STRING
+    container_env: AZURE_STORAGE_CONTAINER_NAME
