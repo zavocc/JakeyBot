@@ -143,6 +143,10 @@ class ChatSession(OpenAIUtils):
                 # Append the chat history
                 chat_history.append(_response.choices[0].message.model_dump(exclude_defaults=True, exclude_none=True, exclude_unset=True))
 
+                # Output text response if needed
+                if _response.choices[0].message.content:
+                    await models.core.send_ai_response(self.discord_context, prompt, _response.choices[0].message.content, self.discord_context.channel.send)
+
                 # Tool calls
                 _tool_calls = _response.choices[0].message.tool_calls
 
