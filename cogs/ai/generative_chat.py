@@ -82,11 +82,11 @@ class BaseChat():
                             url: {_attachment.url}
                             </meta>
                             """)
-                        await _chat_session.upload_files(attachment=_attachment, extra_metadata=_extraMetadata)
+                        await _chat_session.upload_files(attachment=_attachment, extra_metadata=_extraMetadata, use_openrouter_features=_model_props.use_openrouter_features)
                         
                         # Update status
                         _uploadedFilesCount += 1
-                        await _processFileInterstitial.edit(f"✅ Added: **{_uploadedFilesCount}** file(s)...")
+                        await _processFileInterstitial.edit(f">- ✅ Added: **{_uploadedFilesCount}** file(s)...")
                 else:
                     raise CustomErrorMessage("⚠️ This model doesn't support file attachments, please choose another model to continue")
 

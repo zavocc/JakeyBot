@@ -6,23 +6,48 @@ import logging
 
 class LiteLLMUtils:
     # Handle multimodal
-    # Remove one per image restrictions so we'll just
-    async def upload_files(self, attachment: typehint_Discord.Attachment, extra_metadata: str = None):
+    async def upload_files(self, attachment: typehint_Discord.Attachment, extra_metadata: str = None, use_openrouter_features: bool = False):
         # Check if the attachment is an image
-        if not attachment.content_type.startswith("image"):
-            raise CustomErrorMessage("⚠️ This model only supports image attachments")
+        if use_openrouter_features:
+            # Check if the mime type is either image, video, or PDF
+            if not any(attachment.content_type.startswith(_prefix) for _prefix in ["image", "video", "application/pdf"]):
+                raise CustomErrorMessage("⚠️ This model only supports image, video, or PDF attachments")
+        else:
+            if not attachment.content_type.startswith("image"):
+                raise CustomErrorMessage("⚠️ This model only supports image attachments")
 
         if not hasattr(self, "uploaded_files"):
             self.uploaded_files = []
 
-        self.uploaded_files.append(
-            {
-                "type": "image_url",
-                "image_url": {
-                    "url": attachment.url
+        # Check if it's image, video, or PDF
+        if attachment.content_type.startswith("image"):
+            self.uploaded_files.append(
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": attachment.url
+                    }
                 }
-            }
-        )
+            )
+        elif attachment.content_type.startswith("video"):
+            self.uploaded_files.append(
+                {
+                    "type": "input_video",
+                    "video_url": {
+                        "url": attachment.url
+                    }
+                }
+            )
+        elif attachment.content_type == "application/pdf":
+            self.uploaded_files.append(
+                {
+                    "type": "file",
+                    "file": {
+                        "filename": attachment.filename,
+                        "file_data": attachment.url
+                    }
+                }
+            )
 
         # Check for extra metadata
         if extra_metadata:

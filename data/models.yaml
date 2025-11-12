@@ -29,6 +29,23 @@
     extra_headers:
       HTTP-Referer: https://github.com/zavocc/JakeyBot
       X-Title: Jakey AI - Discord Bot
+  use_openrouter_features: true
+
+- model_alias: videoinputtest
+  model_human_name: Nemotron Nano 12B 2 VL
+  model_description: is a 12-billion-parameter open multimodal reasoning model.
+  sdk: openai
+  model_id: nvidia/nemotron-nano-12b-v2-vl:free
+  enable_tools: true
+  enable_files: true
+  enable_threads: true
+  thread_name: nvidia
+  additional_params:
+    extra_headers:
+      HTTP-Referer: https://github.com/zavocc/JakeyBot
+      X-Title: Jakey AI - Discord Bot
+  use_openrouter_features: true
+  client_name: openai_client_openrouter
 
 - model_alias: gemini::gemini-2.5-pro
   model_human_name: Gemini 2.5 Pro

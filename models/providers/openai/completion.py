@@ -133,6 +133,7 @@ class ChatSession(OpenAIUtils):
         _response = await self.openai_client.chat.completions.create(
             model=self.model_props.model_id,
             messages=chat_history,
+            input_modalities=['text', 'video'],
             **_merged_params
         )
 

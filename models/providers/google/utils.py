@@ -11,7 +11,11 @@ import logging
 
 class GoogleUtils:
     # Handle multimodal
-    async def upload_files(self, attachment: typehint_Discord.Attachment, extra_metadata: str = None):
+    async def upload_files(self, attachment: typehint_Discord.Attachment, extra_metadata: str = None, use_openrouter_features: bool = False):
+         # This SDK does not support OpenRouter features.
+        if use_openrouter_features:
+            raise ValueError("OpenRouter features are not supported for Google SDK.")
+
         if not hasattr(self, "uploaded_files"):
             self.uploaded_files = []
 

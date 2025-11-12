@@ -24,6 +24,7 @@ class ModelProps(BaseModel):
     enable_threads: bool = Field(default=True, description="Enable chat history")
     enable_system_instruction: bool = Field(default=True, description="Enable system instructions")
     thread_name: str = Field(default=None, description="Use the same SDK but use a different thread name for chat separation")
+    use_openrouter_features: bool = Field(default=False, description="Use OpenRouter specific features such as PDF processing and video inputs for all models. Available only for LiteLLM and OpenAI SDK and OpenRouter endpoints.")
 
 class ModelParamsOpenAIDefaults(BaseModel):
     temperature: int = Field(default=1)
