@@ -70,6 +70,22 @@ tool_list:
       required:
         - query
 
+  # YouTube video watcher
+  - name: youtube_video_watcher
+    description: Watch YouTube videos and get insights.
+    parameters:
+      type: object
+      properties:
+        video_id:
+          type: string
+          description: The ID of the YouTube video to watch, note that users should only be asked for URL based on prompt or the ongoing context of the conversation.
+        question:
+          type: string
+          description: A prompt for VQA model to answer questions about the video content
+      required:
+        - video_id
+        - question
+
   # Get Runtimes
   - name: code_execution_list_runtimes
     description: List available runtimes for code execution.
