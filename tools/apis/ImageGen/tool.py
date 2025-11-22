@@ -152,6 +152,84 @@ class Tools:
             "status": "Image generated successfully"
         }
     
+    async def tool_nb_pro_image_gen(self, prompt: str, image_url: list = None, aspect_ratio: str = "16:9", resolution: str = "2K"):
+        # Create image
+        _message_curent = await self.discord_ctx.channel.send(f"🍌 Generating image using Nano Banana Pro with prompt **{prompt}**")
+
+        if hasattr(self.discord_bot, "aiohttp_instance"):
+            logging.info("Using existing aiohttp instance from discord bot subclass for Image Generation tool")
+            _aiohttp_client_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
+        else:
+            # Throw exception since we don't have a session
+            logging.warning("No aiohttp_instance found in discord bot subclass, aborting")
+            raise Exception("HTTP Client has not been initialized properly, please try again later.")
+
+        # Initialize _params with default empty dict
+        _params = {
+            "prompt": prompt
+        }
+
+        logging.info("Using Nano Banana Pro model for generation")
+        _params.update({
+            "aspect_ratio": aspect_ratio,
+            "num_images": 1,
+            "output_format": "png",
+            "resolution": resolution,
+        })
+
+        # Check if image_url is provided
+        if image_url:
+            _model_endpoint = "nano-banana-pro/edit"
+            _params["image_urls"] = image_url
+        else:
+            _model_endpoint = "nano-banana-pro"
+
+        # Generate image
+        _discordImageURLs = []
+
+        # If 4k was set, we use embeds
+        if resolution == "4K":
+            _useEmbeds = True
+        else:
+            _useEmbeds = False
+        _imagesInBytes = await run_image(
+            model_name=_model_endpoint,
+            aiohttp_session=_aiohttp_client_session,
+            send_url_only=_useEmbeds,
+            **_params
+        )
+
+        # Send the image and add each of the discord message to the list so we can add it as context later
+        for _images in _imagesInBytes:
+            # Filename
+            _fileName = f"image_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_nbpro.png"
+
+            if _useEmbeds:
+                # Upload to discord as embed
+                _embed = discord.Embed(title="🍌 Generated Nano Banana Pro Image.", color=discord.Colour.yellow())
+                _embed.set_footer(text="Powered by Nano Banana Pro (also known as Gemini 3 Pro Image)")
+                _embed.set_image(url=_images)
+                await self.discord_ctx.channel.send(embed=_embed)
+                _discordImageURLs.append(_images)
+
+            else:
+                _sentImg = await self.discord_ctx.channel.send(file=discord.File(io.BytesIO(_images), filename=_fileName))
+                _discordImageURLs.append(_sentImg.attachments[0].url)
+            
+
+        # Delete the _imagesInBytes to save memory
+        del _imagesInBytes
+
+        # Delete status
+        await _message_curent.delete()
+
+         # Cleanup
+        return {
+            "guidelines": "The image is already sent to the UI, no need to print the URLs as it will just cause previews to display images twice.",
+            "context_results": _discordImageURLs,
+            "status": "Image generated successfully"
+        }
+    
     # Image editor
     async def tool_nb_sd_image_editor(self, prompt: str, image_url: list[str], enable_safety_checker: bool = True, model: str = "gemini-25-flash-image"):
         # Create image

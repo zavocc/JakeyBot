@@ -178,7 +178,7 @@ class AvatarTools(commands.Cog):
     )
     @commands.cooldown(1, 45, commands.BucketType.user)
     async def remix(self, ctx: discord.ApplicationContext, style: str, user: Member = None):
-        """Remix user avatar powered by Nano banana"""
+        """Remix user avatar powered by Nano banana 1 (2.5 Flash Image)"""
         await ctx.response.defer(ephemeral=True)
 
         _user = await self.bot.fetch_user(user.id if user else ctx.author.id)
@@ -214,7 +214,7 @@ class AvatarTools(commands.Cog):
             color=discord.Color.random()
         )
         _embed.set_image(url=_imageURL[0])
-        _embed.set_footer(text=f"Powered by Nano Banana")
+        _embed.set_footer(text=f"Powered by Nano Banana 1 (2.5 Flash Image) • Style: {style}")
         await ctx.respond(embed=_embed, ephemeral=True)
 
     @remix.error

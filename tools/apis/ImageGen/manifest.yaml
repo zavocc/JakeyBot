@@ -11,11 +11,16 @@ tool_list:
         aspect_ratio:
           type: string
           enum:
-            - "1:1"
-            - "9:16"
+            - "21:9"
             - "16:9"
+            - "3:2"
             - "4:3"
+            - "5:4"
+            - "1:1"
+            - "4:5"
             - "3:4"
+            - "2:3"
+            - "9:16"
           description: The aspect ratio of the generated image.
         resolution:
           type: string
@@ -30,7 +35,7 @@ tool_list:
         - prompt
 
   - name: gpt_image_gen
-    description: Generate high fidelity, diverse, and knowledge-driven images using GPT-4o. Use this to provide more style variety, stronger text inclusion, and stronger instruction following. Unlike DALL-E 3, this is the latest autoregressive image generation model.
+    description: Generate images using GPT-4o. Better text rendition, transparency, and polished images, but weaker at diverse artstyles than NBPro. Unlike DALL-E 3, this is the latest autoregressive image generation model by OpenAI. Generates images up to a minute and is generally slower.
     parameters:
       type: object
       properties:
@@ -70,9 +75,45 @@ tool_list:
       required:
         - prompt
 
+  - name: nb_pro_image_gen
+    description: Create or edit images with 4K support using Nano Banana Pro powered by Gemini 3 Pro. Offers superior quality plus speed than 4o, stronger world knowledge such as infographics, factuality, and consistency. Including prompt adherence. It is the strongest image model to date.
+    parameters:
+      type: object
+      properties:
+        prompt:
+          type: string
+          description: The prompt to generate or edit the image.
+        image_url:
+          type: array
+          items:
+            type: string
+          description: The URL of the image to be used as reference for editing or reference. It's recommended to put the images in order same as from user prompt's ordering.
+        aspect_ratio:
+          type: string
+          enum:
+            - "21:9"
+            - "16:9"
+            - "3:2"
+            - "4:3"
+            - "5:4"
+            - "1:1"
+            - "4:5"
+            - "3:4"
+            - "2:3"
+            - "9:16"
+        resolution:
+          type: string
+          enum:
+            - 1K
+            - 2K
+            - 4K
+          description: Native resolution, 2K being the default. 4K provides highest quality possible image but requires bit more time to generate.
+      required:
+        - prompt
+
   # Image editing tool powered by Nano Banana and Seedream 4
   - name: nb_sd_image_editor
-    description: Edit images with strong image referencing powered by Gemini 2.5 Flash (Nano Banana) and Seedream 4.
+    description: Edit images faster with strong image consistency powered by Gemini 2.5 Flash (Nano Banana) and Seedream 4.
     parameters:
       type: object
       properties:
