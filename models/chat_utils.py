@@ -2,6 +2,7 @@ from .validation import ModelProps
 from azure.storage.blob.aio import BlobServiceClient
 from core.database import History
 from core.exceptions import CustomErrorMessage
+from core.storage import get_storage_provider, StorageProvider, StorageUploadError
 from os import environ
 import aiofiles
 import filetype
@@ -38,28 +39,95 @@ async def save_history(user_id: int, thread_name: str, chat_thread: list, db_con
     """Save chat history for a specific thread_name using set_key method."""
     await db_conn.set_key(user_id, f"chat_thread_{thread_name}", chat_thread)
 
-# Upload files to blob storage
-async def upload_files_blob(file_path: str, file_name: str, blob_service_client: BlobServiceClient = None):
-    # Check if we have a blob service client
-    if not blob_service_client:
-        _blob_service_client = BlobServiceClient.from_connection_string(environ.get("AZURE_STORAGE_CONNECTION_STRING"))
-    else:
-        _blob_service_client = blob_service_client
-
-    # Upload the file
+# Upload files to storage (modular approach)
+async def upload_files_to_storage(
+    file_path: str,
+    file_name: str,
+    storage_provider: StorageProvider = None,
+    **kwargs
+) -> str:
+    """
+    Upload a file using a storage provider.
+    
+    This is the recommended way to upload files, supporting any registered
+    storage provider (Azure Blob, S3, GCP, etc.).
+    
+    Args:
+        file_path: Local path to the file to upload.
+        file_name: Name to use for the uploaded file.
+        storage_provider: A StorageProvider instance. If not provided,
+                         creates a default Azure Blob provider.
+        **kwargs: Additional options passed to the provider's upload method.
+    
+    Returns:
+        str: Public URL or identifier for the uploaded file.
+    
+    Example:
+        # With existing provider from bot
+        url = await upload_files_to_storage(
+            "/path/to/file.png",
+            "file.png",
+            storage_provider=bot.storage_provider
+        )
+        
+        # Or create one-off provider
+        provider = get_storage_provider("azure_blob", client=blob_client)
+        async with provider:
+            url = await upload_files_to_storage("/path/to/file.png", "file.png", provider)
+    """
+    _owns_provider = False
+    
     try:
-        _blob_client = _blob_service_client.get_blob_client(container=environ.get("AZURE_STORAGE_CONTAINER_NAME"), blob=file_name)
-
-        async with aiofiles.open(file_path, "rb") as _file_data:
-            await _blob_client.upload_blob(_file_data, overwrite=False)
-
-        # Return the blob URL
-        return _blob_client.url
+        if storage_provider is None:
+            # Create default Azure Blob provider for backward compatibility
+            storage_provider = get_storage_provider("azure_blob")
+            _owns_provider = True
+        
+        return await storage_provider.upload(file_path, file_name, **kwargs)
+    
+    except StorageUploadError as e:
+        logging.error("Storage upload error for %s: %s", file_name, e)
+        raise CustomErrorMessage("⚠️ There was an error uploading your file, please try again later.")
     except Exception as e:
-        logging.error("Error uploading file %s to blob storage, reason: %s", file_name, e)
+        logging.error("Unexpected error uploading file %s: %s", file_name, e)
         raise CustomErrorMessage("⚠️ There was an error uploading your file, please try again later.")
     finally:
-        if not blob_service_client:
-            logging.info("Closing one-off BlobServiceClient instance.")
-            await _blob_service_client.close()
+        if _owns_provider and storage_provider is not None:
+            await storage_provider.close()
+
+# Upload files to blob storage (legacy - kept for backward compatibility)
+async def upload_files_blob(file_path: str, file_name: str, blob_service_client: BlobServiceClient = None):
+    """
+    Upload a file to Azure Blob Storage.
+    
+    DEPRECATED: Use upload_files_to_storage() with a StorageProvider for new code.
+    This function is kept for backward compatibility.
+    
+    Args:
+        file_path: Local path to the file to upload.
+        file_name: Name to use for the blob.
+        blob_service_client: Optional BlobServiceClient. If not provided,
+                           creates one from AZURE_STORAGE_CONNECTION_STRING.
+    
+    Returns:
+        str: Public URL of the uploaded blob.
+    """
+    logging.warning(
+        "upload_files_blob is deprecated. Use upload_files_to_storage with StorageProvider instead."
+    )
+    
+    # Use the new modular system under the hood
+    storage_provider = get_storage_provider(
+        "azure_blob",
+        client=blob_service_client
+    )
+    
+    try:
+        return await storage_provider.upload(file_path, file_name, overwrite=False)
+    except StorageUploadError:
+        raise CustomErrorMessage("⚠️ There was an error uploading your file, please try again later.")
+    finally:
+        # Only close if we didn't receive an external client
+        if blob_service_client is None:
+            await storage_provider.close()
     

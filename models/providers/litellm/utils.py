@@ -1,5 +1,6 @@
 from core.exceptions import CustomErrorMessage
-from models.chat_utils import upload_files_blob
+from core.storage import get_storage_provider, StorageProvider
+from models.chat_utils import upload_files_to_storage
 from os import environ
 from tools.utils import fetch_tool_schema, return_tool_object
 from pathlib import Path
@@ -39,8 +40,13 @@ class LiteLLMUtils:
                     async for _chunk in file_dl.content.iter_chunked(8192):
                         await filepath.write(_chunk)
 
-            # Upload the file to blob storage
-            _blob_url = await upload_files_blob(file_path=_filename, file_name=Path(_filename).name, blob_service_client=self.discord_bot.blob_service_client)
+            # Upload the file using modular storage provider
+            _storage_provider = self._get_storage_provider()
+            _blob_url = await upload_files_to_storage(
+                file_path=_filename,
+                file_name=Path(_filename).name,
+                storage_provider=_storage_provider
+            )
         except Exception as e:
             # Raise exception
             raise e
@@ -48,20 +54,6 @@ class LiteLLMUtils:
             # Remove the file if it exists ensuring no data persists even on failure
             if Path(_filename).exists():
                 await aiofiles.os.remove(_filename)
-
-            # Close the temporary aiohttp session if we created one
-            if not hasattr(self.discord_bot, "aiohttp_instance"):
-                logging.info("Closing temporary aiohttp client session on models.providers.google.utils.GoogleUtils.upload_files")
-                await _aiohttp_session.close()
-
-        # Test if we have "self.discord_bot.aiohttp_instance"
-        if hasattr(self.discord_bot, "aiohttp_instance"):
-            logging.info("Found aiohttp_instance in discord bot, using that for downloading the file")
-            _aiohttp_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
-        else:
-            # Raise exception since we don't have a session
-            logging.warning("No aiohttp_instance found in discord bot, aborting")
-            raise CustomErrorMessage("⚠️ An error has occurred while processing the file, please try again later.")
 
         self.uploaded_files.append(
             {
@@ -80,6 +72,30 @@ class LiteLLMUtils:
                     "text": extra_metadata
                 }
             )
+
+    def _get_storage_provider(self) -> StorageProvider:
+        """
+        Get the storage provider instance.
+        
+        Override this method to use a different storage provider.
+        By default, uses Azure Blob Storage with the bot's blob service client.
+        
+        Returns:
+            StorageProvider: The storage provider to use for file uploads.
+        """
+        # Check if bot has a custom storage provider
+        if hasattr(self.discord_bot, "storage_provider"):
+            return self.discord_bot.storage_provider
+        
+        # Default to Azure Blob Storage with bot's client
+        if hasattr(self.discord_bot, "blob_service_client"):
+            return get_storage_provider(
+                "azure_blob",
+                client=self.discord_bot.blob_service_client
+            )
+        
+        # Fallback: create provider without client (will use env vars)
+        return get_storage_provider("azure_blob")
 
     # Tool Runs
     # Process Tools
