@@ -1,4 +1,4 @@
-from azure.storage.blob.aio import BlobServiceClient
+from core.storage.azure import AzureBlobStorage
 from discord.ext import bridge
 from google import genai
 from os import environ
@@ -34,16 +34,19 @@ class SubClassBotPlugServices(bridge.Bot):
         )
         logging.info("OpenAI client for Groq initialized successfully")
 
-        # Blob Service Client
-        self.blob_service_client = BlobServiceClient.from_connection_string(environ.get("AZURE_STORAGE_CONNECTION_STRING"))
-        logging.info("Blob service client initialized successfully")
+        # Storage Provider
+        self.storage_provider = AzureBlobStorage(
+            connection_string=environ.get("AZURE_STORAGE_CONNECTION_STRING"),
+            container_name=environ.get("AZURE_STORAGE_CONTAINER_NAME")
+        )
+        logging.info("Storage provider initialized successfully")
 
     async def stop_services(self):
         # Close aiohttp client sessions
         await self.aiohttp_instance.close()
         logging.info("aiohttp client session closed successfully")
 
-        # Close blob service client sessions if any
-        if hasattr(self, 'blob_service_client'):
-            await self.blob_service_client.close()
-            logging.info("Blob service client session closed successfully")
+        # Close storage provider sessions if any
+        if hasattr(self, 'storage_provider'):
+            await self.storage_provider.close()
+            logging.info("Storage provider session closed successfully")

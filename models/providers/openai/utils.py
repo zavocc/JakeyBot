@@ -1,5 +1,5 @@
 from core.exceptions import CustomErrorMessage
-from models.chat_utils import upload_files_blob
+from models.chat_utils import upload_file
 from os import environ
 from tools.utils import fetch_tool_schema, return_tool_object
 from typing_extensions import Literal
@@ -41,7 +41,7 @@ class OpenAIUtils:
                         await filepath.write(_chunk)
 
             # Upload the file to blob storage
-            _blob_url = await upload_files_blob(file_path=_filename, file_name=Path(_filename).name, blob_service_client=self.discord_bot.blob_service_client)
+            _blob_url = await upload_file(file_path=_filename, file_name=Path(_filename).name, storage_provider=self.discord_bot.storage_provider)
         except Exception as e:
             # Raise exception
             raise e
