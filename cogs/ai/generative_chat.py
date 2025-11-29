@@ -148,6 +148,35 @@ class BaseChat():
             # Remove the mention from the prompt
             message.content = re.sub(f"<@{self.bot.user.id}>", '', message.content).strip()
 
+            # Extract and append metadata for mentioned users (excluding the bot)
+            _mentioned_users_metadata = []
+            for _mentioned_user in message.mentions:
+                # Skip if the mentioned user is the bot itself
+                if _mentioned_user.id == self.bot.user.id:
+                    continue
+                
+                # Get member object for guild-specific display name, fallback to user if not in guild
+                if message.guild:
+                    _member = message.guild.get_member(_mentioned_user.id)
+                else:
+                    _member = None
+                
+                _user_metadata = inspect.cleandoc(
+                    f"""<additional_user_metadata_pinged>
+                    Username: @{_mentioned_user.name}
+                    Display name: {_member.display_name if _member else _mentioned_user.display_name}
+                    Global Display Name: {_mentioned_user.global_name if _mentioned_user.global_name else 'None'}
+                    Is Bot: {_mentioned_user.bot}
+                    Avatar URL: {_mentioned_user.display_avatar.url if _mentioned_user.display_avatar else 'None'}
+                    Snowflake ID: {_mentioned_user.id}
+                    </additional_user_metadata_pinged>"""
+                )
+                _mentioned_users_metadata.append(_user_metadata)
+            
+            # Append mentioned users metadata to the message content
+            if _mentioned_users_metadata:
+                message.content = message.content + "\n\n" + "\n".join(_mentioned_users_metadata)
+
             # If the bot is mentioned through reply with mentions, also add its previous message as context
             # So that the bot will reply to that query without quoting the message providing relevant response
             if message.reference:
