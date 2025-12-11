@@ -152,9 +152,12 @@ class Tools:
             "status": "Image generated successfully"
         }
     
-    async def tool_nb_pro_image_gen(self, prompt: str, image_url: list = None, aspect_ratio: str = "16:9", resolution: str = "2K"):
+    async def tool_nb_pro_image_gen(self, prompt: str, image_url: list = None, aspect_ratio: str = "16:9", resolution: str = "2K", enable_web_search: bool = False):
         # Create image
-        _message_curent = await self.discord_ctx.channel.send(f"🍌 Generating image using Nano Banana Pro with prompt **{prompt}**")
+        if enable_web_search:
+            _message_curent = await self.discord_ctx.channel.send(f"🔍 Searching the web for information and generating an image using Nano Banana Pro with prompt **{prompt}**")
+        else:
+            _message_curent = await self.discord_ctx.channel.send(f"🍌 Generating image using Nano Banana Pro with prompt **{prompt}**")
 
         if hasattr(self.discord_bot, "aiohttp_instance"):
             logging.info("Using existing aiohttp instance from discord bot subclass for Image Generation tool")
@@ -175,6 +178,7 @@ class Tools:
             "num_images": 1,
             "output_format": "png",
             "resolution": resolution,
+            "enable_web_search": enable_web_search
         })
 
         # Check if image_url is provided

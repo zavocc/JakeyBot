@@ -108,6 +108,9 @@ tool_list:
             - 2K
             - 4K
           description: Native resolution, 2K being the default. 4K provides highest quality possible image but requires bit more time to generate.
+        enable_web_search:
+          type: boolean
+          description: Connects to Google Search to retrieve latest and up-to-date information to inform image generation process.
       required:
         - prompt
 
