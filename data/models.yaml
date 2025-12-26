@@ -42,9 +42,6 @@
   enable_threads: true
   client_name: gemini_api_client
   thread_name: gemini
-  additional_params:
-    thinkingConfig:
-      thinking_level: low
 
 - model_alias: gemini::gemini-3-flash
   model_human_name: Gemini 3 Flash Thinking
@@ -57,10 +54,6 @@
   enable_system_instruction: true
   client_name: gemini_api_client
   thread_name: gemini
-  additional_params:
-    system_instruction: You are a helpful assistant that always thinks step by step.
-    thinkingConfig:
-      thinking_level: low
 
 - model_alias: openai::gpt-5.2
   model_human_name: OpenAI GPT-5.2
