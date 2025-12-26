@@ -4,7 +4,6 @@ from core.database import History
 from core.exceptions import CustomErrorMessage
 from os import environ
 import aiofiles
-import filetype
 import logging
 import yaml
 # Methods for generative_chat.py
