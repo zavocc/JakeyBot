@@ -6,6 +6,11 @@ import logging
 import os
 import yaml
 
+
+def _handle_missing_models(message: str):
+    logging.critical(message)
+    raise SystemExit(message)
+
 ############################################
 # ASYNC UTILITY FUNCTIONS
 ############################################
@@ -90,13 +95,20 @@ async def get_default_chat_model_async():
         _models_list = yaml.safe_load(await models.read())
 
     # Search through models for the first one with default: true
-    for _model in _models_list:
-        if _model.get("default") == True:
-            logging.info("Used default chat model %s", _model.get("model_id"))
-            return _model["model_alias"]
-    
-    # If no default model is found, raise an error
-    raise ValueError("No default model found in models.yaml. Please set at least one model with 'default: true'")
+    if _models_list:
+        for _model in _models_list:
+            if _model.get("default") is True:
+                logging.info("Used default chat model %s", _model.get("model_id"))
+                return _model["model_alias"]
+
+        # Fallback to first model when no default is set
+        _first_model = _models_list[0]
+        if _first_model:
+            logging.info("No default set; using first model %s", _first_model.get("model_id"))
+            return _first_model["model_alias"]
+
+    # If list is empty or first entry is empty, shut down
+    _handle_missing_models("No models are defined in models.yaml. Please add at least one model entry.")
 
 
 # Autocomplete to fetch available models in data/models.yaml
@@ -130,13 +142,20 @@ def get_default_chat_model():
         _models_list = yaml.safe_load(models)
 
     # Search through models for the first one with default: true
-    for _model in _models_list:
-        if _model.get("default") is True:
-            logging.info("Used default chat model %s", _model.get("model_id"))
-            return _model["model_alias"]
-    
-    # If no default model is found, raise an error
-    raise ValueError("No default model found in models.yaml. Please set at least one model with 'default: true'")
+    if _models_list:
+        for _model in _models_list:
+            if _model.get("default") is True:
+                logging.info("Used default chat model %s", _model.get("model_id"))
+                return _model["model_alias"]
+
+        # Fallback to first model when no default is set
+        _first_model = _models_list[0]
+        if _first_model:
+            logging.info("No default set; using first model %s", _first_model.get("model_id"))
+            return _first_model["model_alias"]
+
+    # If list is empty or first entry is empty, shut down
+    _handle_missing_models("No models are defined in models.yaml. Please add at least one model entry.")
  
 # For fetching available tools used in /agent command in cogs/ai/chat.py
 def get_tools_list_generator():
