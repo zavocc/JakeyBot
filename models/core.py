@@ -6,11 +6,6 @@ import logging
 import os
 import yaml
 
-def _handle_missing_default_model():
-    _error_message = "No default model found in models.yaml. Please set at least one model with 'default: true'"
-    logging.critical(_error_message)
-    raise SystemExit(_error_message)
-
 ############################################
 # ASYNC UTILITY FUNCTIONS
 ############################################
@@ -89,7 +84,6 @@ async def get_remix_styles_async(style: str = "I'm feeling lucky"):
             return styles["preprompt"]
 
 # For getting default chat model for async contexts
-# TODO: If there's no "default: true" set, we then pick the first model array regardless of default value, otherwise if there's empty dict then that's we're fully shutting down
 async def get_default_chat_model_async():
     # Load the models list from YAML file
     async with aiofiles.open("data/models.yaml", "r") as models:
@@ -101,8 +95,8 @@ async def get_default_chat_model_async():
             logging.info("Used default chat model %s", _model.get("model_id"))
             return _model["model_alias"]
     
-    # If no default model is found, shut down the bot
-    _handle_missing_default_model()
+    # If no default model is found, raise an error
+    raise ValueError("No default model found in models.yaml. Please set at least one model with 'default: true'")
 
 
 # Autocomplete to fetch available models in data/models.yaml
@@ -130,8 +124,6 @@ async def get_chat_models_autocomplete(ctx: discord.AutocompleteContext):
 ############################################
 # For getting default chat model for sync contexts, e.g. database.py History init constructor to set default model when chat history is reset
 # NOTE: This can only be used once, for example, initializing History class from database.py to only get default model
-
-# TODO: If there's no "default: true" set, we then pick the first model array regardless of default value, otherwise if there's empty dict then that's we're fully shutting down
 def get_default_chat_model():
     # Load the models list from YAML file
     with open("data/models.yaml", "r") as models:
@@ -143,8 +135,8 @@ def get_default_chat_model():
             logging.info("Used default chat model %s", _model.get("model_id"))
             return _model["model_alias"]
     
-    # If no default model is found, shut down the bot
-    _handle_missing_default_model()
+    # If no default model is found, raise an error
+    raise ValueError("No default model found in models.yaml. Please set at least one model with 'default: true'")
  
 # For fetching available tools used in /agent command in cogs/ai/chat.py
 def get_tools_list_generator():
