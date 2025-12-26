@@ -1,9 +1,11 @@
 from .validation import ModelProps
 from azure.storage.blob.aio import BlobServiceClient
+from azure.storage.blob import ContentSettings
 from core.database import History
 from core.exceptions import CustomErrorMessage
 from os import environ
 import aiofiles
+import filetype
 import logging
 import yaml
 # Methods for generative_chat.py
@@ -50,7 +52,11 @@ async def upload_files_blob(file_path: str, file_name: str, blob_service_client:
         _blob_client = _blob_service_client.get_blob_client(container=environ.get("AZURE_STORAGE_CONTAINER_NAME"), blob=file_name)
 
         async with aiofiles.open(file_path, "rb") as _file_data:
-            await _blob_client.upload_blob(_file_data, overwrite=False)
+            _file_bytes = await _file_data.read()
+            _mime_type = filetype.guess(_file_bytes)
+            await _blob_client.upload_blob(_file_bytes, 
+                                           overwrite=False,
+                                           content_settings=ContentSettings(content_type=_mime_type.mime if _mime_type else "application/octet-stream"))
 
         # Return the blob URL
         return _blob_client.url
