@@ -13,7 +13,7 @@
   default: true
 
 - model_id: gpt-5-mini
-  model_human_name: GPT-5 Mini Thinking
+  model_human_name: GPT-5 Mini
   sdk: openai
   model_specific_params:
     temperature: 1
@@ -22,8 +22,8 @@
   default: false
   client_name: openai_client
 
-- model_id: x-ai/grok-4-fast:free
-  model_human_name: Grok 4 Fast
+- model_id: x-ai/grok-4.1-fast
+  model_human_name: Grok 4.1 Fast
   sdk: openai
   model_specific_params:
     temperature: 1

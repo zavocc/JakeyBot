@@ -16,6 +16,7 @@ class SubClassBotPlugServices(bridge.Bot):
         self.gemini_api_client = genai.Client(api_key=environ.get("GEMINI_API_KEY"))
         logging.info("Gemini API client initialized successfully")
 
+        # for direct OpenAI models
         self.openai_client = openai.AsyncClient(
             api_key=environ.get("OPENAI_API_KEY"),
         )
@@ -28,11 +29,12 @@ class SubClassBotPlugServices(bridge.Bot):
         logging.info("OpenAI client for OpenRouter initialized successfully")
 
         # OpenAI client for Groq based models
-        self.openai_client_groq = openai.AsyncClient(
-            api_key=environ.get("GROQ_API_KEY"),
-            base_url="https://api.groq.com/openai/v1"
-        )
-        logging.info("OpenAI client for Groq initialized successfully")
+        # NOTE: Use litellm SDK instead of OpenAI SDK for Groq models
+        #self.openai_client_groq = openai.AsyncClient(
+        #    api_key=environ.get("GROQ_API_KEY"),
+        #    base_url="https://api.groq.com/openai/v1"
+        #)
+        #logging.info("OpenAI client for Groq initialized successfully")
 
         # Blob Service Client
         self.blob_service_client = BlobServiceClient.from_connection_string(environ.get("AZURE_STORAGE_CONNECTION_STRING"))

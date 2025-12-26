@@ -9,18 +9,19 @@
   enable_tools: true
   enable_files: false
   enable_threads: true
-  client_name: openai_client_groq
+  client_name: openai_client_openrouter
   thread_name: moonshotai
 
 - model_alias: x-ai::grok-4-fast
-  model_human_name: Grok 4 Fast
+  model_human_name: Grok 4.1 Fast
   model_description: SOTA-efficient fast reasoning model
-  sdk: litellm
-  model_id: openrouter/x-ai/grok-4-fast
+  sdk: openai
+  model_id: x-ai/grok-4.1-fast
   enable_tools: true
   enable_files: true
   enable_threads: true
   thread_name: xai
+  client_name: openai_client_openrouter
   additional_params:
     extra_body:
       reasoning:
@@ -30,11 +31,11 @@
       HTTP-Referer: https://github.com/zavocc/JakeyBot
       X-Title: Jakey AI - Discord Bot
 
-- model_alias: gemini::gemini-2.5-pro
-  model_human_name: Gemini 2.5 Pro
+- model_alias: gemini::gemini-3-pro
+  model_human_name: Gemini 3 Pro
   model_description: Reasoning, math, and code.
   sdk: google
-  model_id: gemini-2.5-pro
+  model_id: gemini-3-pro-preview
   has_reasoning: true
   enable_tools: true
   enable_files: true
@@ -43,13 +44,13 @@
   thread_name: gemini
   additional_params:
     thinkingConfig:
-      thinking_budget: 4096
+      thinking_level: low
 
-- model_alias: gemini::gemini-2.5-flash
-  model_human_name: Gemini 2.5 Flash Thinking
+- model_alias: gemini::gemini-3-flash
+  model_human_name: Gemini 3 Flash Thinking
   model_description: Balanced reasoning model with speed
   sdk: google
-  model_id: gemini-2.5-flash-preview-09-2025
+  model_id: gemini-3-flash-preview
   enable_tools: true
   enable_files: true
   enable_threads: true
@@ -59,43 +60,13 @@
   additional_params:
     system_instruction: You are a helpful assistant that always thinks step by step.
     thinkingConfig:
-      thinking_budget: 4096
+      thinking_level: low
 
-- model_alias: gemini::gemini-2.5-flash-nonthinking
-  model_human_name: Gemini 2.5 Flash Instant
-  model_description: Instant answers for fast all-around help
-  sdk: google
-  model_id: gemini-2.5-flash-preview-09-2025
-  has_reasoning: false
-  enable_tools: true
-  enable_files: true
-  enable_threads: true
-  client_name: gemini_api_client
-  thread_name: gemini
-  default: true
-  additional_params:
-    thinkingConfig:
-      thinking_budget: 0
-
-- model_alias: gemini::gemini-2.0-flash-001
-  model_human_name: Gemini 2.5 Flash Lite Thinking
-  model_description: Ultra fast thinking model
-  sdk: google
-  model_id: gemini-2.5-flash-lite-preview-09-2025
-  enable_tools: true
-  enable_files: true
-  enable_threads: true
-  client_name: gemini_api_client
-  thread_name: gemini
-  additional_params:
-    thinkingConfig:
-      thinking_budget: 4096
-
-- model_alias: openai::gpt-5
-  model_human_name: OpenAI GPT-5
+- model_alias: openai::gpt-5.2
+  model_human_name: OpenAI GPT-5.2
   model_description: OpenAI's latest reasoning model
   sdk: openai
-  model_id: gpt-5
+  model_id: gpt-5.2
   enable_tools: true
   enable_files: true
   enable_threads: true
