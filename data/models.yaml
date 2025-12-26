@@ -5,7 +5,7 @@
   model_human_name: Kimi K2
   model_description: Agentic open intelligence
   sdk: openai
-  model_id: moonshotai/kimi-k2-instruct-0905
+  model_id: moonshotai/kimi-k2-0905:exacto
   enable_tools: true
   enable_files: false
   enable_threads: true
