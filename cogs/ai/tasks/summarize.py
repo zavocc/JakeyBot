@@ -63,7 +63,7 @@ class AISummaries(commands.Cog):
         autocomplete=discord.utils.basic_autocomplete(models.tasks.text_model_utils.get_text_models_async_autocomplete),
         default=None
     )
-    @commands.cooldown(1, 50, commands.BucketType.user)
+    @commands.cooldown(2, 60, commands.BucketType.user)
     async def summarize(self, ctx, steer: str, before_date: str, after_date: str, around_date: str, max_references: int, limit: int, model: str):
         """Summarize or catch up latest messages based on the current channel"""
         await ctx.response.defer(ephemeral=True)
@@ -276,7 +276,7 @@ class AISummaries(commands.Cog):
         elif isinstance(_error, commands.CommandOnCooldown):
             await ctx.respond("ℹ️ Please wait for a minute before using this command again.")
         else:
-            await ctx.respond("❌ Sorry, I can't summarize messages at the moment, I'm still learning! Please try again, and please try again later.")
+            await ctx.respond("❌ Sorry, I can't summarize messages at the moment, I'm still learning! Please try again later.")
         
         logging.error("An error has occurred while generating an summaries, reason: %s", _error, exc_info=True)
 
