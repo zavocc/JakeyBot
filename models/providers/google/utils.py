@@ -1,7 +1,7 @@
 from core.exceptions import CustomErrorMessage
 from os import environ
 from pathlib import Path
-from tools.utils import fetch_tool_schema, return_tool_object
+from tools.utils import fetch_tool_schema, return_api_tools_object, return_builtin_tool_object
 from uuid import uuid4
 import discord as typehint_Discord
 import aiofiles
@@ -86,19 +86,24 @@ class GoogleUtils:
         self.tool_schema: list = await fetch_tool_schema(_tool_name, tool_type="google")
 
         # Tool class object containing all functions
-        self.tool_object_payload: object = await return_tool_object(_tool_name, discord_context=self.discord_context, discord_bot=self.discord_bot)
+        self.tool_object_payload: object = await return_api_tools_object(_tool_name, discord_context=self.discord_context, discord_bot=self.discord_bot)
 
     # Runs tools and outputs parts
     async def execute_tools(self, name: str, arguments: str) -> list:
         _tool_parts = []
         await self.discord_context.channel.send(f"> -# Using: ***{name}***")
 
+        # Import builtin tool payload if applicable
+        _builtin_tool_object_payload = await return_builtin_tool_object(name, discord_context=self.discord_context, discord_bot=self.discord_bot)
+
         # Execute tools
         if hasattr(self.tool_object_payload, f"tool_{name}"):
             _func_payload = getattr(self.tool_object_payload, f"tool_{name}")
+        elif hasattr(_builtin_tool_object_payload, f"tool_{name}"):
+            _func_payload = getattr(_builtin_tool_object_payload, f"tool_{name}")
         else:
             logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s")
-            raise CustomErrorMessage("⚠️ An error has occurred while performing action, try choosing another tools to continue.")
+            raise CustomErrorMessage("⚠️ An error has occurred while trying to execute agent tools, try choosing another tools to continue.")
 
         # Call the tools
         try:
