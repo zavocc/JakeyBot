@@ -1,6 +1,10 @@
 builtin_tool_list:
   - name: get_user_info
     description: Get information about the user who sent the message.
+    parameters:
+      type: object
+      properties: {}
+      required: []
   - name: file_write
     description: Create convenient downloadable artifacts when writing code, markdown, text, or any other human readable content. When enabled, responses with code snippets and other things that demands file operations implicit or explictly will be saved as artifacts as Discord attachment.
     parameters:
