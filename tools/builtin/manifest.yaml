@@ -1,0 +1,25 @@
+builtin_tool_list:
+  - name: file_write
+    description: Create convenient downloadable artifacts when writing code, markdown, text, or any other human readable content. When enabled, responses with code snippets and other things that demands file operations implicit or explictly will be saved as artifacts as Discord attachment. (System)
+    parameters:
+      type: object
+      properties:
+        file_contents:
+          type: string
+          description: The content of the file, it can be a code snippet, markdown content, body of text.
+        file_name:
+          type: string
+          description: The filename of the file, it's recommended to avoid using binary file extensions like .exe, .zip, .png, etc.
+      required:
+        - file_contents
+        - file_name
+  - name: react_message
+    description: React the prompt with an emoji. Do not report status whether react is successful or not, keep it silent. (System)
+    parameters:
+      type: object
+      properties:
+        emoji:
+          type: string
+          description: The emoji to react with, it can be a unicode emoji or a custom Discord emoji (if allowed through Emojis list in system instructions) using Discord emoji markdown format.
+      required:
+        - emoji

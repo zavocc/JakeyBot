@@ -1,5 +1,5 @@
 from core.exceptions import CustomErrorMessage
-from tools.utils import fetch_tool_schema, return_tool_object
+from tools.utils import fetch_tool_schema, return_builtin_tool_object, return_api_tools_object
 import discord as typehint_Discord
 import json
 import logging
@@ -42,7 +42,7 @@ class LiteLLMUtils:
         self.tool_schema: list = await fetch_tool_schema(_tool_name, tool_type="openai")
 
         # Tool class object containing all functions
-        self.tool_object_payload: object = await return_tool_object(_tool_name, discord_context=self.discord_context, discord_bot=self.discord_bot)
+        self.tool_object_payload: object = await return_api_tools_object(_tool_name, discord_context=self.discord_context, discord_bot=self.discord_bot)
 
     # Runs tools and outputs parts
     async def execute_tools(self, tool_calls: list) -> list:
@@ -50,11 +50,16 @@ class LiteLLMUtils:
         for _tool_call in tool_calls:
             await self.discord_context.channel.send(f"> -# Using: ***{_tool_call.function.name}***")
 
+            # Import builtin tool payload if applicable
+            _builtin_tool_object_payload = await return_builtin_tool_object(_tool_call.function.name, discord_context=self.discord_context, discord_bot=self.discord_bot)
+
             if hasattr(self.tool_object_payload, f"tool_{_tool_call.function.name}"):
                 _func_payload = getattr(self.tool_object_payload, f"tool_{_tool_call.function.name}")
+            elif hasattr(_builtin_tool_object_payload, f"tool_{_tool_call.function.name}"):
+                _func_payload = getattr(_builtin_tool_object_payload, f"tool_{_tool_call.function.name}")
             else:
-                logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s")
-                raise CustomErrorMessage("⚠️ An error has occurred while performing action, try choosing another tools to continue.")
+                logging.error("I think I found a problem related to function calling or the tool function implementation is not available")
+                raise CustomErrorMessage("⚠️ An error has occurred while trying to execute agent tools, try choosing another tools to continue.")
 
             # Call the tools
             try:
