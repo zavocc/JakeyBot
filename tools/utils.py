@@ -93,7 +93,7 @@ async def return_api_tools_object(tool_api_name: str, discord_message = None, di
 # For Built-in tools, compared to other methods, this one directly pulls tool functions from tools.builtin regardless of tool selection
 async def return_builtin_tool_object(function_name: str, discord_message = None, discord_bot = None):
     try:
-        _function_payload = importlib.import_module(f"tools.builtin.{function_name}.tool").BuiltInTool(
+        _function_payload = importlib.import_module(f"tools.builtin.tools.{function_name}").BuiltInTool(
             discord_message=discord_message,
             discord_bot=discord_bot
         )
