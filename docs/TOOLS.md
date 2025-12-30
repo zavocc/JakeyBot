@@ -55,22 +55,22 @@ tool_list: # Mapping of the basic OpenAPI schema, keep in mind we only support t
 ```
 
 ### The base tool class
-In the `tool.py` this is where the actual code is hosted, the skeletal of this python module must have the class name `Tools` on it with the constructors such as `discord_ctx` and `discord_bot` used to interact with Discord API and the user's application context for sending content to chat:
+In the `tool.py` this is where the actual code is hosted, the skeletal of this python module must have the class name `Tools` on it with the constructors such as `discord_message` and `discord_bot` used to interact with Discord API and the user's message context for sending content to chat:
 
 ```python
 # tool.py
 import discord
 class Tools:
-    def __init__(self, discord_ctx, discord_bot):
+    def __init__(self, discord_message, discord_bot):
         # Used for sending content, creating threads, or sending reactions to Discord chat UI to the current user's context such as the channel used for the bot to respond.
-        self.discord_ctx: discord.ApplicationContext = discord_ctx
+        self.discord_message: discord.Message = discord_message
 
         # The Discord Bot object subclass under core.startup with class name SubClassBotPlugServices used to access global attributes set there such as global aiohttp client and the bot's event loop.
         self.discord_bot: discord.Bot = discord_bot
 
     # When defining methods or functions, it must have tool_ prefix followed by the tool function name as defined in schema. The method must be async and returns string, dict, array, or number! 
     # 
-    # For non text content needed to be sent in Discord UI. Use the `self.discord_ctx.channel.send(file=discord.File())` function
+    # For non text content needed to be sent in Discord UI. Use the `self.discord_message.channel.send(file=discord.File())` function
     async def multiply(self, multiplicand, multiplier):
       return multiplicand * multiplier
 ```

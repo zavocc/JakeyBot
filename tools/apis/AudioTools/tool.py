@@ -9,8 +9,8 @@ import logging
 
 # Function implementations
 class Tools:
-    def __init__(self, discord_ctx, discord_bot):
-        self.discord_ctx = discord_ctx
+    def __init__(self, discord_message, discord_bot):
+        self.discord_message = discord_message
         self.discord_bot = discord_bot
 
     # Audio generator
@@ -48,7 +48,7 @@ class Tools:
         # Filename
         _fileName = f"generated_speech_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.{_formatExtension}"
 
-        _sentAud = await self.discord_ctx.channel.send(file=discord.File(io.BytesIO(_audiosInBytes), filename=_fileName))
+        _sentAud = await self.discord_message.channel.send(file=discord.File(io.BytesIO(_audiosInBytes), filename=_fileName))
         _discordAudioURLs.append(_sentAud.attachments[0].url)
 
         # Delete the _audiosInBytes to save memory
@@ -74,7 +74,7 @@ class Tools:
         _music_banner.set_footer(text="Powered by Stable Audio 2.5 provided by FAL")
         _music_banner.set_image(url="https://media.discordapp.net/attachments/1267742831062159370/1419625685328203838/tunesnanobanana.png")
 
-        _embedInterstMsg = await self.discord_ctx.channel.send(embed=_music_banner)
+        _embedInterstMsg = await self.discord_message.channel.send(embed=_music_banner)
 
         # Generate audio
         _audiosInURL = await run_audio(
@@ -141,7 +141,7 @@ class Tools:
         # Filename
         _fileName = f"generated_podcast_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.{_formatExtension}"
 
-        _sentAud = await self.discord_ctx.channel.send(file=discord.File(io.BytesIO(_audiosInBytes), filename=_fileName))
+        _sentAud = await self.discord_message.channel.send(file=discord.File(io.BytesIO(_audiosInBytes), filename=_fileName))
         _discordAudioURLs.append(_sentAud.attachments[0].url)
 
         # Delete the _audiosInBytes to save memory

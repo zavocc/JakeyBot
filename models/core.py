@@ -1,4 +1,3 @@
-from typing import Union
 import aiofiles
 import discord
 import io
@@ -15,7 +14,7 @@ def _handle_missing_models(message: str):
 # ASYNC UTILITY FUNCTIONS
 ############################################
 # Sends the AI response based on the length of the message
-async def send_ai_response(ctx: Union[discord.ApplicationContext, discord.Message], prompt: str, response: str, method_send, strip: bool = True) -> None:
+async def send_ai_response(ctx: discord.Message, prompt: str, response: str, method_send, strip: bool = True) -> None:
     """Optimized method to send message based on the length of the message"""
     # Check if we can strip the message
     if strip and type(response) == str:

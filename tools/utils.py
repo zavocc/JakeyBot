@@ -74,13 +74,13 @@ async def fetch_actual_tool_name(tool_api_name: str) -> str:
         return _manifest["tool_name"]
 
 # For APIs
-async def return_api_tools_object(tool_api_name: str, discord_context = None, discord_bot = None):
+async def return_api_tools_object(tool_api_name: str, discord_message = None, discord_bot = None):
     if tool_api_name is None:
         return None
 
     try:
         _function_payload = importlib.import_module(f"tools.apis.{tool_api_name}.tool").Tools(
-            discord_ctx=discord_context,
+            discord_message=discord_message,
             discord_bot=discord_bot
         )
     except ModuleNotFoundError as e:
@@ -91,10 +91,10 @@ async def return_api_tools_object(tool_api_name: str, discord_context = None, di
     return _function_payload
 
 # For Built-in tools, compared to other methods, this one directly pulls tool functions from tools.builtin regardless of tool selection
-async def return_builtin_tool_object(function_name: str, discord_context = None, discord_bot = None):
+async def return_builtin_tool_object(function_name: str, discord_message = None, discord_bot = None):
     try:
         _function_payload = importlib.import_module(f"tools.builtin.{function_name}.tool").BuiltInTool(
-            discord_ctx=discord_context,
+            discord_message=discord_message,
             discord_bot=discord_bot
         )
     except ModuleNotFoundError as e:

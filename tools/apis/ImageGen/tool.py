@@ -7,14 +7,14 @@ import io
 import logging
 
 class Tools:
-    def __init__(self, discord_ctx, discord_bot):
-        self.discord_ctx = discord_ctx
+    def __init__(self, discord_message, discord_bot):
+        self.discord_message = discord_message
         self.discord_bot = discord_bot
 
     # Image generator
     async def tool_imagen_image_gen(self, prompt: str, aspect_ratio: str = "1:1", resolution: str = "1K", negative_prompt: str = None):
         # Create image
-        _message_curent = await self.discord_ctx.channel.send(f"⌛ Generating image using Imagen 4 with prompt **{prompt}**")
+        _message_curent = await self.discord_message.channel.send(f"⌛ Generating image using Imagen 4 with prompt **{prompt}**")
         
         if hasattr(self.discord_bot, "aiohttp_instance"):
             logging.info("Using existing aiohttp instance from discord bot subclass for Image Generation tool")
@@ -62,7 +62,7 @@ class Tools:
             # Filename
             _fileName = f"image_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_index_{_index}.{_formatExtension}"
 
-            _sentImg = await self.discord_ctx.channel.send(file=discord.File(io.BytesIO(_images), filename=_fileName))
+            _sentImg = await self.discord_message.channel.send(file=discord.File(io.BytesIO(_images), filename=_fileName))
             _discordImageURLs.append(_sentImg.attachments[0].url)
             
 
@@ -81,7 +81,7 @@ class Tools:
 
     async def tool_gpt_image_gen(self, prompt: str, image_url: list = None, image_size: str = "auto", quality: str = "auto", background: str = "auto", input_fidelity: str = "high"):
         # Create image
-        _message_curent = await self.discord_ctx.channel.send(f"⌛ Generating image using GPT-4o with prompt **{prompt}**")
+        _message_curent = await self.discord_message.channel.send(f"⌛ Generating image using GPT-4o with prompt **{prompt}**")
 
         if hasattr(self.discord_bot, "aiohttp_instance"):
             logging.info("Using existing aiohttp instance from discord bot subclass for Image Generation tool")
@@ -135,7 +135,7 @@ class Tools:
             # Filename
             _fileName = f"image_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_index_{_index}.{_formatExtension}"
 
-            _sentImg = await self.discord_ctx.channel.send(file=discord.File(io.BytesIO(_images), filename=_fileName))
+            _sentImg = await self.discord_message.channel.send(file=discord.File(io.BytesIO(_images), filename=_fileName))
             _discordImageURLs.append(_sentImg.attachments[0].url)
             
 
@@ -237,7 +237,7 @@ class Tools:
     # Image editor
     async def tool_nb_sd_image_editor(self, prompt: str, image_url: list[str], enable_safety_checker: bool = True, model: str = "gemini-25-flash-image"):
         # Create image
-        _message_curent = await self.discord_ctx.channel.send(f"⌛ I will now edit the images with prompt **{prompt}**... this may take few minutes")
+        _message_curent = await self.discord_message.channel.send(f"⌛ I will now edit the images with prompt **{prompt}**... this may take few minutes")
         
         if hasattr(self.discord_bot, "aiohttp_instance"):
             logging.info("Using existing aiohttp instance from discord bot subclass for Image Editing tool")
@@ -286,7 +286,7 @@ class Tools:
             # Filename
             _fileName = f"image_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_index_{_index}.{_formatExtension}"
 
-            _sentImg = await self.discord_ctx.channel.send(file=discord.File(io.BytesIO(_images), filename=_fileName))
+            _sentImg = await self.discord_message.channel.send(file=discord.File(io.BytesIO(_images), filename=_fileName))
             _discordImageURLs.append(_sentImg.attachments[0].url)
             
 

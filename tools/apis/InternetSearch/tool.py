@@ -8,8 +8,8 @@ import logging
 
 # Function implementations
 class Tools:
-    def __init__(self, discord_ctx, discord_bot):
-        self.discord_ctx = discord_ctx
+    def __init__(self, discord_message, discord_bot):
+        self.discord_message = discord_message
         self.discord_bot = discord_bot
 
     async def tool_web_search(self, query: str = None, searchType: str = "auto", numResults: int = 5, includeDomains: list = None, excludeDomains: list = None, includeText: list = None, excludeText: list = None, showSummary: bool = False):
@@ -110,7 +110,7 @@ class Tools:
                 break
         _sembed.description = "\n".join(_desclinks)
         _sembed.set_footer(text="Used search tool powered by Exa to fetch results")
-        await self.discord_ctx.channel.send(f"🔍 Searched for **{query}**", embed=_sembed)
+        await self.discord_message.channel.send(f"🔍 Searched for **{query}**", embed=_sembed)
         
         return _output
 
@@ -127,7 +127,7 @@ class Tools:
 
         _endpoint = f"https://r.jina.ai/{url}"
 
-        await self.discord_ctx.channel.send(f"🖱️ Browsing: **`{url}`**")
+        await self.discord_message.channel.send(f"🖱️ Browsing: **`{url}`**")
 
         async with _session.get(_endpoint) as _response:
             if _response.status != 200:
@@ -210,7 +210,7 @@ class Tools:
         if not _videos[0]["videos"]:
             return f"No videos found for the given query: {query}"
 
-        await self.discord_ctx.channel.send(f"🔍 Searched for **{query}**")
+        await self.discord_message.channel.send(f"🔍 Searched for **{query}**")
 
         return _videos
 
@@ -331,11 +331,11 @@ class Tools:
         _endpoint = "https://emkc.org/api/v2/piston/execute"
 
         # Send the code and file
-        await self.discord_ctx.channel.send(f"▶️ Executing code, using version: **{version}** in language: **{language}**")
+        await self.discord_message.channel.send(f"▶️ Executing code, using version: **{version}** in language: **{language}**")
         for _file in files:
             # Use BytesIO directly (no thread offload needed)
             _buffer = io.BytesIO(_file["content"].encode("utf-8"))
-            await self.discord_ctx.channel.send(
+            await self.discord_message.channel.send(
                 file=discord.File(fp=_buffer, filename=_file["name"])
             )
 
@@ -357,7 +357,7 @@ class Tools:
                     _output = _data["run"]["output"]
                     if len(_output) > 1450:
                         _output = _output[:1450] + "\n...[truncated]"
-                    await self.discord_ctx.channel.send(f"✅ **Code Output:**\n```{_output}\n```")
+                    await self.discord_message.channel.send(f"✅ **Code Output:**\n```{_output}\n```")
             except ValueError:
                 logging.error(f"Invalid JSON response: {_textResult}")
                 raise Exception(f"Invalid response from code execution engine: {_textResult}")

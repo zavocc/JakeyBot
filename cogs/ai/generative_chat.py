@@ -33,7 +33,7 @@ class BaseChat():
             user_id=prompt.author.id,
             model_props=_model_props,
             discord_bot=self.bot,
-            discord_context=prompt,
+            discord_message=prompt,
             db_conn=self.DBConn,
             client_name=_model_props.client_name
         )
@@ -232,5 +232,4 @@ class BaseChat():
                 # Remove the user from the pending list
                 if _userID in self.pending_ids:
                     self.pending_ids.remove(_userID)
-
 
