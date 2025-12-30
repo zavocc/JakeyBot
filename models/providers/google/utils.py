@@ -91,7 +91,6 @@ class GoogleUtils:
     # Runs tools and outputs parts
     async def execute_tools(self, name: str, arguments: str) -> list:
         _tool_parts = []
-        await self.discord_message.channel.send(f"> -# Using: ***{name}***")
 
         # Import builtin tool payload if applicable
         _builtin_tool_object_payload = await return_builtin_tool_object(name, discord_message=self.discord_message, discord_bot=self.discord_bot)
@@ -99,8 +98,15 @@ class GoogleUtils:
         # Execute tools
         if hasattr(self.tool_object_payload, f"tool_{name}"):
             _func_payload = getattr(self.tool_object_payload, f"tool_{name}")
+
+            # Show indicator if the user-selected tool is being used
+            await self.discord_message.channel.send(f"> -# Using: ***{name}***")
+
+        # Check if it's a built-in tool, hopefully, and don't show indicator since it's not an agentic tool
         elif hasattr(_builtin_tool_object_payload, f"tool_{name}"):
             _func_payload = getattr(_builtin_tool_object_payload, f"tool_{name}")
+
+        # If all else fails
         else:
             logging.error("I think I found a problem related to function calling or the tool function implementation is not available: %s")
             raise CustomErrorMessage("⚠️ An error has occurred while trying to execute agent tools, try choosing another tools to continue.")
