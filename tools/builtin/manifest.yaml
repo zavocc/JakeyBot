@@ -16,7 +16,7 @@ builtin_tool_list:
         - file_contents
         - file_name
   - name: react_message
-    description: React the message with an emoji. React to something absurd, funny, or whatever wild or affectionate message you've encountered.
+    description: React the current message with an emoji. This only reacts to the current message you're currently interacting with, it doesn't react to any other or previous messages.
     parameters:
       type: object
       properties:
