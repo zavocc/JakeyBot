@@ -1,6 +1,8 @@
 builtin_tool_list:
+  - name: get_user_info
+    description: Get information about the user who sent the message.
   - name: file_write
-    description: Create convenient downloadable artifacts when writing code, markdown, text, or any other human readable content. When enabled, responses with code snippets and other things that demands file operations implicit or explictly will be saved as artifacts as Discord attachment. (System)
+    description: Create convenient downloadable artifacts when writing code, markdown, text, or any other human readable content. When enabled, responses with code snippets and other things that demands file operations implicit or explictly will be saved as artifacts as Discord attachment.
     parameters:
       type: object
       properties:
@@ -14,7 +16,7 @@ builtin_tool_list:
         - file_contents
         - file_name
   - name: react_message
-    description: React the prompt with an emoji. Do not report status whether react is successful or not, keep it silent. (System)
+    description: React the message with an emoji. React to something absurd, funny, or whatever wild or affectionate message you've encountered.
     parameters:
       type: object
       properties:
@@ -23,3 +25,12 @@ builtin_tool_list:
           description: The emoji to react with, it can be a unicode emoji or a custom Discord emoji (if allowed through Emojis list in system instructions) using Discord emoji markdown format.
       required:
         - emoji
+  - name: send_user_dm_message
+    description: Send a direct message to the current user you're interacting with.
+    parameters:
+      type: object
+      properties:
+        message_content:
+          type: string
+      required:
+        - message_content
