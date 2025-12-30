@@ -17,14 +17,14 @@ class ChatSession(GoogleUtils):
                  user_id: int, 
                  model_props: typehint_ModelProps,
                  discord_bot: discord.Bot = None,
-                 discord_context: discord.ApplicationContext = None,
+                 discord_message: discord.Message = None,
                  db_conn: typehint_History = None,
                  client_name: str = None):
         # Discord bot object - needed for interactions with current state of Discord API
         self.discord_bot: discord.Bot = discord_bot or None
 
         # For sending message
-        self.discord_context: discord.ApplicationContext = discord_context or None
+        self.discord_message: discord.Message = discord_message or None
 
         # Google GenAI client, for efficiency we can reuse the same client instance
         # Check if its a legitimate client SDK from google.genai
@@ -144,7 +144,7 @@ class ChatSession(GoogleUtils):
                             _part["text"] = "[<system_notice>File attachment processed but expired from history. DO NOT make stuff up about it! Ask the user to reattach for more details</system_notice>]"
 
                 # Send message
-                await self.discord_context.channel.send("Something went wrong, please send me a message again.")
+                await self.discord_message.channel.send("Something went wrong, please send me a message again.")
                 return chat_history
             else:
                 logging.error("Uh oh something went wrong while generating content: %s", e)
@@ -165,16 +165,16 @@ class ChatSession(GoogleUtils):
             for _part in _response.candidates[0].content.parts:
                 # Send text message if needed
                 if _part.text and _part.text.strip():
-                    await models.core.send_ai_response(self.discord_context, prompt, _part.text, self.discord_context.channel.send)
+                    await models.core.send_ai_response(self.discord_message, prompt, _part.text, self.discord_message.channel.send)
 
                 # Render the code execution inline data when needed
                 if _part.inline_data:
                     if _part.inline_data.mime_type == "image/png":
-                        await self.discord_context.channel.send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="image.png"))
+                        await self.discord_message.channel.send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="image.png"))
                     elif _part.inline_data.mime_type == "image/jpeg":
-                        await self.discord_context.channel.send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="image.jpeg"))
+                        await self.discord_message.channel.send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="image.jpeg"))
                     else:
-                        await self.discord_context.channel.send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="code_exec_artifact.bin"))
+                        await self.discord_message.channel.send(file=discord.File(io.BytesIO(_part.inline_data.data), filename="code_exec_artifact.bin"))
 
                 # Check for tool calls
                 if _part.function_call:
@@ -202,7 +202,7 @@ class ChatSession(GoogleUtils):
                 if not _response.function_calls:
                     _textResponse = _response.text or _response.candidates[0].content.parts[-1].text
                     if _textResponse and _textResponse.strip():
-                        await models.core.send_ai_response(self.discord_context, prompt, _textResponse, self.discord_context.channel.send)
+                        await models.core.send_ai_response(self.discord_message, prompt, _textResponse, self.discord_message.channel.send)
                 else:
                     continue  # Continue the while loop to process tool calls
                 

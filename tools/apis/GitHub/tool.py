@@ -6,8 +6,8 @@ import re
 
 # Function implementations
 class Tools:
-    def __init__(self, discord_ctx, discord_bot):
-        self.discord_ctx = discord_ctx
+    def __init__(self, discord_message, discord_bot):
+        self.discord_message = discord_message
         self.discord_bot = discord_bot
     
     # A method to extract relevant result from GitHub API to only extract the necessary information
@@ -87,7 +87,7 @@ class Tools:
         # Iterate over the filepath
         for _files in files:
             # Send
-            await self.discord_ctx.channel.send(f"📎 Reading the file **{_files}**")
+            await self.discord_message.channel.send(f"📎 Reading the file **{_files}**")
 
             # Check if the filepath starts with /
             if not _files.startswith("/"):
@@ -192,7 +192,7 @@ class Tools:
         _searchResult = None
 
         # Search
-        await self.discord_ctx.channel.send(f"🔍 Using GitHub API to search for **{query}**")
+        await self.discord_message.channel.send(f"🔍 Using GitHub API to search for **{query}**")
 
         # We cap the search results to 7 so that LLM doesn't get overwhelmed
         async with _session.get(_search_endpoint, headers=_headers, params={"q": html.escape(query), "page": page, "per_page": 7}) as _response:

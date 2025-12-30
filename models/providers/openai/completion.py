@@ -14,14 +14,14 @@ class ChatSession(OpenAIUtils):
                  user_id: int, 
                  model_props: typehint_ModelProps,
                  discord_bot: typehint_Discord.Bot = None,
-                 discord_context: typehint_Discord.ApplicationContext = None,
+                 discord_message: typehint_Discord.Message = None,
                  db_conn: typehint_History = None,
                  client_name: str = None):
         # Discord bot object - needed for interactions with current state of Discord API
         self.discord_bot: typehint_Discord.Bot = discord_bot or None
 
         # For sending message
-        self.discord_context: typehint_Discord.ApplicationContext = discord_context or None
+        self.discord_message: typehint_Discord.Message = discord_message or None
 
         # OpenAI Client, for efficiency we can reuse the same client instance
         # Check if its a legitimate client SDK from openai
@@ -145,7 +145,7 @@ class ChatSession(OpenAIUtils):
 
                 # Output text response if needed
                 if _response.choices[0].message.content:
-                    await models.core.send_ai_response(self.discord_context, prompt, _response.choices[0].message.content, self.discord_context.channel.send)
+                    await models.core.send_ai_response(self.discord_message, prompt, _response.choices[0].message.content, self.discord_message.channel.send)
 
                 # Tool calls
                 _tool_calls = _response.choices[0].message.tool_calls
@@ -166,7 +166,7 @@ class ChatSession(OpenAIUtils):
             # Check if we need to run tools again, this block will stop the loop and send the response
             if not _response.choices[0].message.tool_calls:
                 if _response.choices[0].message.content:
-                    await models.core.send_ai_response(self.discord_context, prompt, _response.choices[0].message.content, self.discord_context.channel.send)
+                    await models.core.send_ai_response(self.discord_message, prompt, _response.choices[0].message.content, self.discord_message.channel.send)
                 break
 
         # Append to chat history
