@@ -44,9 +44,16 @@ Other non-AI extras include:
 - View Channels
 - Add Reactions
 
-For demo version, you can add this bot and see the required permissions and capabilities: https://discord.com/oauth2/authorize?client_id=1051409808877699072&permissions=563330095107136&integration_type=0&scope=bot
+For demo version, join this server and talk to public version Jakey: https://discord.gg/cAHKNv2CJT
 
-Keep in mind that data training policy varies between model, if you need guaranteed data loss prevention, you need to provide your own endpoints and hosting your bot yourselves. The demo version should not be used as daily driver as we rotate models periodically.
+Includes models like Gemini 3 Flash, GPT-5, GLM 4.7 and more where you can explore its capabilities or just have a good chat.
+
+> Starting in early 2026, an advisory will be sent prompting everyone to join to the dedicated server to try Jakey, and the bot will leave within the following week, with the opportunity to complete tasks and control their data such as running `/sweep` command. To continue serving Jakey for your own users, you must self-host Jakey with the models of your own choice. 
+> 
+> We previously allowed users to join the public version of Jakey to their own servers. For security and scale reasons, we have to reverse this decision. There can be however an exceptions where users can still keep public version of Jakey to their own servers.
+
+Keep in mind that data training policy varies between model you selected, if you need guaranteed data loss prevention, you need to provide your own endpoints and hosting your bot yourselves. The demo version should not be used as daily driver as we rotate models periodically. For chat context stored within the database, the data is fully yours, use `/sweep reset_prefs:True` command to clear your Jakey data.
+
 
 ## Installation
 The best way to get started is through Docker method... You can directly pull the image from my Docker 🐳 Hub repository and simply run the bot below to pull the stable image.
