@@ -1,5 +1,5 @@
-import discord
 from tools.builtin._base import BuiltInToolDiscordStateBase
+import discord
 
 # Built-in tools regardless of tool selection unless Disabled
 class BuiltInTool(BuiltInToolDiscordStateBase):
