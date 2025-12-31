@@ -155,9 +155,9 @@ class Tools:
     async def tool_nb_pro_image_gen(self, prompt: str, image_url: list = None, aspect_ratio: str = "16:9", resolution: str = "2K", enable_web_search: bool = False):
         # Create image
         if enable_web_search:
-            _message_curent = await self.discord_ctx.channel.send(f"🔍 Searching the web for information and generating an image using Nano Banana Pro with prompt **{prompt}**")
+            _message_curent = await self.discord_message.channel.send(f"🔍 Searching the web for information and generating an image using Nano Banana Pro with prompt **{prompt}**")
         else:
-            _message_curent = await self.discord_ctx.channel.send(f"🍌 Generating image using Nano Banana Pro with prompt **{prompt}**")
+            _message_curent = await self.discord_message.channel.send(f"🍌 Generating image using Nano Banana Pro with prompt **{prompt}**")
 
         if hasattr(self.discord_bot, "aiohttp_instance"):
             logging.info("Using existing aiohttp instance from discord bot subclass for Image Generation tool")
@@ -213,11 +213,11 @@ class Tools:
                 _embed = discord.Embed(title="🍌 Generated Nano Banana Pro Image.", color=discord.Colour.yellow())
                 _embed.set_footer(text="Powered by Nano Banana Pro (also known as Gemini 3 Pro Image)")
                 _embed.set_image(url=_images)
-                await self.discord_ctx.channel.send(embed=_embed)
+                await self.discord_message.channel.send(embed=_embed)
                 _discordImageURLs.append(_images)
 
             else:
-                _sentImg = await self.discord_ctx.channel.send(file=discord.File(io.BytesIO(_images), filename=_fileName))
+                _sentImg = await self.discord_message.channel.send(file=discord.File(io.BytesIO(_images), filename=_fileName))
                 _discordImageURLs.append(_sentImg.attachments[0].url)
             
 
