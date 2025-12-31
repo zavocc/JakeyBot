@@ -1,6 +1,6 @@
+from tools.builtin._base import BuiltInToolDiscordStateBase
 import io
 import discord
-from tools.builtin._base import BuiltInToolDiscordStateBase
 
 # Built-in tools regardless of tool selection unless Disabled
 class BuiltInTool(BuiltInToolDiscordStateBase):
