@@ -1,11 +1,7 @@
-import discord
+from tools.builtin._base import BuiltInToolDiscordStateBase
 
 # Built-in tools regardless of tool selection unless Disabled
-class BuiltInTool:
-    def __init__(self, discord_message, discord_bot):
-        self.discord_message: discord.Message = discord_message
-        self.discord_bot: discord.Bot = discord_bot
-
+class BuiltInTool(BuiltInToolDiscordStateBase):
     async def tool_send_user_dm_message(self, message_content: str):
         # If it's more than 2000 characters, we need to split it up
         if len(message_content) > 2000:
