@@ -248,7 +248,7 @@ class Tools:
         # Requires OpenRouter client session to be specified from startup.py by instantating OpenAI AsyncClient with BaseURL to OpenRouter
         _response = await VQAModelCompletion(
             prompt=_prompt,
-            model_name="google/gemini-2.5-flash-lite-preview-09-2025",
+            model_name="google/gemini-2.5-flash-lite",
             return_text=True,
             client_session=self.discord_bot.openai_client_openrouter
         )
