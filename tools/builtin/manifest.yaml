@@ -19,8 +19,21 @@ builtin_tool_list:
       required:
         - file_contents
         - file_name
+  - name: pull_knowledge_base
+    description: Pulls docs or information about your features and capabilities to answer questions about yourself.
+    parameters:
+      type: object
+      properties:
+        kb_name:
+          type: string
+          enum:
+            - utilities_slash_commands
+            - chat_mgmt_slash_commands
+          description: The name of the doc to pull information from.
+      required:
+        - kb_name
   - name: react_message
-    description: React the current message with an emoji. This only reacts to the current message you're currently interacting with, it doesn't react to any other or previous messages.
+    description: React to the user's current message with a single emoji. This tool only reacts to current message you're interacting with, and reactions are displayed below the user's message instead of a text message form.
     parameters:
       type: object
       properties:

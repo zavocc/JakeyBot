@@ -213,7 +213,7 @@ class BaseChat():
                 elif isinstance(_error, CustomErrorMessage):
                     await message.reply(_error.message)
                 else:
-                    await message.reply(f"🚫 A problem occured while generating response, please try again later or change another model.\n> -# What went wrong: ***`{type(_error).__name__}`***")
+                    await message.reply(f"🚫 An error has occurred while generating response, please try again later or change another model.\n> -# What went wrong: ***`{type(_error).__name__}`***")
 
                 # Log the error
                 logging.error("An error has occurred while generating an answer, reason: ", exc_info=True)

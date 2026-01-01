@@ -91,12 +91,36 @@ class GoogleUtils:
     # Runs tools and outputs parts
     async def execute_tools(self, name: str, arguments: str) -> list:
         _tool_parts = []
+        # Reject tool calls when no schema is loaded to avoid hallucinated tools
+        if not isinstance(getattr(self, "tool_schema", None), list) or not self.tool_schema:
+            logging.critical("Attempted to call tools without a loaded schema nor proper initialization... THIS IS A SECURITY RISK! Therefore we stopped executing this tool: %s", name)
+            _tool_parts.append(
+                {
+                    "function_response": {
+                        "name": name,
+                        "response": {
+                            "error": "Tools and agents are not yet properly initialized. Please tell the user to activate any tools via the /agent slash command and try again."
+                        }
+                    }
+                }
+            )
+            return _tool_parts
+
+        # Check if the requested tool name is in the schema or hallucinated
+        _tool_names = [
+            _tool["name"] for _tool in self.tool_schema
+            if isinstance(_tool, dict) and _tool.get("name")
+        ]
+        if name not in _tool_names:
+            logging.critical("Attempted to call a tool that is not in the loaded tool schema: %s", name)
+            raise CustomErrorMessage("🛑 The response is terminated due to an invalid tool call.")
 
         # Import builtin tool payload if applicable
         _builtin_tool_object_payload = await return_builtin_tool_object(name, discord_message=self.discord_message, discord_bot=self.discord_bot)
 
         # Execute tools
-        if hasattr(self.tool_object_payload, f"tool_{name}"):
+        # Check for payloads and presence of the function to determine the type of tool to call
+        if self.tool_object_payload and hasattr(self.tool_object_payload, f"tool_{name}"):
             _func_payload = getattr(self.tool_object_payload, f"tool_{name}")
 
             # Show indicator if the user-selected tool is being used
