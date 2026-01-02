@@ -8,33 +8,33 @@ import yaml
 
 # Fetch, parse, and validate tool schema
 async def fetch_tool_schema(tool_api_name: str, tool_type: Literal['openai', 'google']) -> list:
-    if tool_api_name is None:
-        return None
-
     _parsed_schemas = []
-    
-    # Check if tool manifest exists
-    if not (await aiofiles.os.path.exists(f"tools/apis/{tool_api_name}/manifest.yaml")):
-        raise CustomErrorMessage("⚠️ The agent you selected is currently unavailable, please choose another agent using `/agent` command")
+    _manifest_list = {}
 
-    # Open the YAML
-    async with aiofiles.open(f"tools/apis/{tool_api_name}/manifest.yaml") as _manifest_file:
-        _manifest_list = yaml.safe_load((await _manifest_file.read()))
+    # Normalize disabled tool selection to None and only load agent tools when provided
+    if tool_api_name and tool_api_name != "disabled":
+        # Check if tool manifest exists
+        if not (await aiofiles.os.path.exists(f"tools/apis/{tool_api_name}/manifest.yaml")):
+            raise CustomErrorMessage("⚠️ The agent you selected is currently unavailable, please choose another agent using `/agent` command")
 
-    # if the manifest is empty list, raise error
-    if not _manifest_list.get("tool_list"):
-        raise CustomErrorMessage("⚠️ The agent you selected is currently misconfigured, please choose another agent using `/agent` command")
-    
+        # Open the YAML
+        async with aiofiles.open(f"tools/apis/{tool_api_name}/manifest.yaml") as _manifest_file:
+            _manifest_list = yaml.safe_load((await _manifest_file.read()))
+
+        # if the manifest is empty list, raise error
+        if not _manifest_list.get("tool_list"):
+            raise CustomErrorMessage("⚠️ The agent you selected is currently misconfigured, please choose another agent using `/agent` command")
+
     # Also add built-in tools from tools/builtin if there's both tool.py and manifest.yaml
-    if await aiofiles.os.path.exists(f"tools/builtin") and await aiofiles.os.path.exists(f"tools/builtin/manifest.yaml"):
-        async with aiofiles.open(f"tools/builtin/manifest.yaml") as _builtin_manifest_file:
+    if await aiofiles.os.path.exists("tools/builtin") and await aiofiles.os.path.exists("tools/builtin/manifest.yaml"):
+        async with aiofiles.open("tools/builtin/manifest.yaml") as _builtin_manifest_file:
             _builtin_manifest_list = yaml.safe_load((await _builtin_manifest_file.read()))
     else:
         _builtin_manifest_list = {}
 
     # Iterate each list and pop one of the dict keys to validate
     if tool_type == 'openai':
-        for _schema in _manifest_list["tool_list"]:
+        for _schema in _manifest_list.get("tool_list", []):
             _parsed_schemas.append(
                 {
                     "type": "function",
@@ -52,7 +52,7 @@ async def fetch_tool_schema(tool_api_name: str, tool_type: Literal['openai', 'go
                     }
                 )
     else:
-        for _schema in _manifest_list["tool_list"]:
+        for _schema in _manifest_list.get("tool_list", []):
             _parsed_schemas.append(_schema)
 
         # Also append built-in tools if applicable
@@ -75,7 +75,7 @@ async def fetch_actual_tool_name(tool_api_name: str) -> str:
 
 # For APIs
 async def return_api_tools_object(tool_api_name: str, discord_message = None, discord_bot = None):
-    if tool_api_name is None:
+    if tool_api_name is None or tool_api_name == "disabled":
         return None
 
     try:
