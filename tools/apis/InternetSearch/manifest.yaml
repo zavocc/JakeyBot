@@ -39,7 +39,10 @@ tool_list:
           description: A list of text to exclude from the search results, do not mix with includeText
         showSummary:
           type: boolean
-          description: Show summary in the search results. Only use this for quick insights, otherwise do not use this for faster search fetching only or full browsing using url_browse tool
+          description: Get page summary from the search API. Only use this for quick insights if needing information from the specified site without the need of full browsing, otherwise do not use this for faster search and fetching URLs only or full browsing using url_browse tool
+        showSourcesList:
+          type: boolean
+          description: Shows the list of sources considered to Discord chat UI, use this for information that requires user verifiability or fact-heavy searches that requires fact checking. For multi-step or multi-query searches, it's recommended to keep this off to reduce verbosity in the chat.
       required:
         - query
   

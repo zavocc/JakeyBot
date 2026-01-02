@@ -110,7 +110,7 @@ class Chat(commands.Cog):
 
         _strings = f"✅ Default model set to **{_model_props.model_human_name}** and chat thread is assigned to **{_thread_name}**"
         if not _model_props.enable_tools:
-            await ctx.respond(f"> This model lacks real time information and tools\n" + _strings)
+            await ctx.respond(f"> This model lacks the ability to use tools such as react, knowledge base, and to use other tools from `/agent` command\n" + _strings)
         else:
             await ctx.respond(_strings)
 

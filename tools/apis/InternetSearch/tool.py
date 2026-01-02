@@ -12,7 +12,7 @@ class Tools:
         self.discord_message = discord_message
         self.discord_bot = discord_bot
 
-    async def tool_web_search(self, query: str = None, searchType: str = "auto", numResults: int = 5, includeDomains: list = None, excludeDomains: list = None, includeText: list = None, excludeText: list = None, showSummary: bool = False):
+    async def tool_web_search(self, query: str = None, searchType: str = "auto", numResults: int = 5, includeDomains: list = None, excludeDomains: list = None, includeText: list = None, excludeText: list = None, showSummary: bool = False, showSourcesList: bool = False):
         if not query or not query.strip():
             raise ValueError("query parameter is required and cannot be empty")
         
@@ -96,20 +96,23 @@ class Tools:
             raise Exception("No results fetched")
         
          # Embed that contains first 10 sources
-        _sembed = discord.Embed(
-            title="Web Sources"
-        )
+        if showSourcesList:
+            _sembed = discord.Embed(
+                title="Web Sources"
+            )
 
-        # Iterate description
-        _desclinks = []
-        for _results in _output["results"]:
-            if len(_desclinks) <= 10:
-                _desclinks.append(f"- [{_results.get('title', 'No Title').replace("/", " ")}]({_results['url']})")
-            else:
-                _desclinks.append("...and more results")
-                break
-        _sembed.description = "\n".join(_desclinks)
-        _sembed.set_footer(text="Used search tool powered by Exa to fetch results")
+            # Iterate description
+            _desclinks = []
+            for _results in _output["results"]:
+                if len(_desclinks) <= 10:
+                    _desclinks.append(f"- [{_results.get('title', 'No Title').replace("/", " ")}]({_results['url']})")
+                else:
+                    _desclinks.append("...and more results")
+                    break
+            _sembed.description = "\n".join(_desclinks)
+            _sembed.set_footer(text="Used search tool powered by Exa to fetch results")
+        else:
+            _sembed = None
         await self.discord_message.channel.send(f"🔍 Searched for **{query}**", embed=_sembed)
         
         return _output
