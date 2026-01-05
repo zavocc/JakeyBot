@@ -37,7 +37,12 @@ class SubClassBotPlugServices(bridge.Bot):
         #logging.info("OpenAI client for Groq initialized successfully")
 
         # Blob Service Client
-        self.blob_service_client = BlobServiceClient.from_connection_string(environ.get("AZURE_STORAGE_CONNECTION_STRING"))
+        # Chunk files to 8mb for files larger than that to make sure there wont be performance issues
+        self.blob_service_client = BlobServiceClient.from_connection_string(
+            conn_str=environ.get("AZURE_STORAGE_CONNECTION_STRING"),
+            max_block_size=8*1024*1024,  # 8 MB chunk size
+            max_single_put_size=8*1024*1024
+        )
         logging.info("Blob service client initialized successfully")
 
     async def stop_services(self):
