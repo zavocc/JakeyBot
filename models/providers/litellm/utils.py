@@ -13,9 +13,21 @@ import logging
 class LiteLLMUtils:
     # Handle multimodal
     # Remove one per image restrictions so we'll just
-    async def upload_files(self, attachment: typehint_Discord.Attachment, extra_metadata: str = None):
-        # Check if the attachment is an image
-        if not attachment.content_type.startswith("image"):
+    async def upload_files(self, attachment: typehint_Discord.Attachment, extra_metadata: str = None, or_beta_openai_pdf_uploads_enabled: bool = False, or_beta_video_uploads_enabled: bool = False):
+        _content_type = attachment.content_type or ""
+        _is_pdf = _content_type == "application/pdf"
+        _is_video = _content_type.startswith("video/")
+        _is_image = _content_type.startswith("image/")
+
+        if _is_pdf:
+            if not or_beta_openai_pdf_uploads_enabled:
+                raise CustomErrorMessage("⚠️ This model only supports image attachments")
+            logging.info("Using PDF attachment with beta PDF upload support enabled")
+        elif _is_video:
+            if not or_beta_video_uploads_enabled:
+                raise CustomErrorMessage("⚠️ This model only supports image attachments")
+            logging.info("Using Video attachment with beta video upload support enabled")
+        elif not _is_image:
             raise CustomErrorMessage("⚠️ This model only supports image attachments")
 
         if not hasattr(self, "uploaded_files"):
@@ -51,7 +63,7 @@ class LiteLLMUtils:
 
             # Close the temporary aiohttp session if we created one
             if not hasattr(self.discord_bot, "aiohttp_instance"):
-                logging.info("Closing temporary aiohttp client session on models.providers.google.utils.GoogleUtils.upload_files")
+                logging.info("Closing temporary aiohttp client session on models.providers.litellm.utils.LiteLLMUtils.upload_files")
                 await _aiohttp_session.close()
 
         # Test if we have "self.discord_bot.aiohttp_instance"
@@ -63,14 +75,35 @@ class LiteLLMUtils:
             logging.warning("No aiohttp_instance found in discord bot, aborting")
             raise CustomErrorMessage("⚠️ An error has occurred while processing the file, please try again later.")
 
-        self.uploaded_files.append(
-            {
-                "type": "image_url",
-                "image_url": {
-                    "url": _blob_url
+        # Check if it's image, video, or pdf and append accordingly
+        if _is_pdf:
+            self.uploaded_files.append(
+                {
+                    "type": "file",
+                    "file": {
+                        "filename": attachment.filename,
+                        "file_data": _blob_url
+                    }
                 }
-            }
-        )
+            )
+        elif _is_video:
+            self.uploaded_files.append(
+                {
+                    "type": "video_url",
+                    "video_url": {
+                        "url": _blob_url
+                    }
+                }
+            )
+        else:  # Image
+            self.uploaded_files.append(
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": _blob_url
+                    }
+                }
+            )
 
         # Check for extra metadata
         if extra_metadata:
