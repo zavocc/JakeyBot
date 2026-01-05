@@ -86,8 +86,7 @@ class BaseChat():
                         # Also determine beta features for openrouter models
                         await _chat_session.upload_files(attachment=_attachment, 
                                                          extra_metadata=_extraMetadata, 
-                                                         or_beta_openai_pdf_uploads_enabled=_model_props.or_beta_openai_pdf_uploads_enabled,
-                                                         or_beta_video_uploads_enabled=_model_props.or_beta_video_uploads_enabled)
+                                                         or_beta_file_uploads=_model_props.or_beta_file_uploads)
                         
                         # Update status
                         _uploadedFilesCount += 1

@@ -13,23 +13,18 @@ import logging
 class OpenAIUtils:
     # Handle multimodal
     # Remove one per image restrictions so we'll just
-    async def upload_files(self, attachment: typehint_Discord.Attachment, extra_metadata: str = None, or_beta_openai_pdf_uploads_enabled: bool = False, or_beta_video_uploads_enabled: bool = False):
+    async def upload_files(self, attachment: typehint_Discord.Attachment, extra_metadata: str = None, or_beta_file_uploads: bool = False):
         _content_type = attachment.content_type or ""
-        _is_pdf = _content_type == "application/pdf"
+        _is_pdf = _content_type.startswith("application/pdf")
         _is_video = _content_type.startswith("video/")
         _is_image = _content_type.startswith("image/")
 
-        if _is_pdf:
-            if not or_beta_openai_pdf_uploads_enabled:
+        if or_beta_file_uploads:
+            if not (_is_image or _is_pdf or _is_video):
+                raise CustomErrorMessage("⚠️ This model only supports image, video, and PDF attachments")
+        else:
+            if not _is_image:
                 raise CustomErrorMessage("⚠️ This model only supports image attachments")
-            logging.info("Using PDF attachment with beta PDF upload support enabled")
-        elif _is_video:
-            if not or_beta_video_uploads_enabled:
-                raise CustomErrorMessage("⚠️ This model only supports image attachments")
-            logging.info("Using Video attachment with beta video upload support enabled")
-        elif not _is_image:
-            raise CustomErrorMessage("⚠️ This model only supports image attachments")
-
 
         if not hasattr(self, "uploaded_files"):
             self.uploaded_files = []

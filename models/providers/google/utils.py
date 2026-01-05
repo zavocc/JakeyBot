@@ -11,12 +11,10 @@ import logging
 
 class GoogleUtils:
     # Handle multimodal
-    async def upload_files(self, attachment: typehint_Discord.Attachment, extra_metadata: str = None, or_beta_openai_pdf_uploads_enabled: bool = False, or_beta_video_uploads_enabled: bool = False):
-        # Ignore or_beta prefixes since these are OpenAI SDK-specific features that's natively available for Google GenAI SDK
-        if or_beta_openai_pdf_uploads_enabled:
-            logging.info("Ignoring or_beta_openai_pdf_uploads_enabled since Google models under Google GenAI SDK natively support PDF uploads")
-        if or_beta_video_uploads_enabled:
-            logging.info("Ignoring or_beta_video_uploads_enabled since Google models under Google GenAI SDK natively support video uploads")
+    async def upload_files(self, attachment: typehint_Discord.Attachment, extra_metadata: str = None, or_beta_file_uploads: bool = False):
+        # Ignore or_beta_file_uploads since these are OpenAI/LiteLLM SDK-specific features that's natively available for Google GenAI SDK
+        if or_beta_file_uploads:
+            logging.info("Ignoring or_beta_file_uploads for Google models under Google GenAI SDK since it natively support video and PDFs file uploads")
 
         if not hasattr(self, "uploaded_files"):
             self.uploaded_files = []
