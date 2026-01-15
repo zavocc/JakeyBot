@@ -52,10 +52,12 @@ class Tools:
             _params["excludeText"] = excludeText
 
         # Add contents if needed
+        _params["contents"] = {}
         if showSummary:
-            _params["contents"] = {}
-            if showSummary:
-                _params["contents"]["summary"] = True
+            _params["contents"]["summary"] = True
+
+        # Show highlights
+        _params["contents"]["highlights"] = True
 
         # Endpoint
         _endpoint = "https://api.exa.ai/search"
@@ -89,9 +91,10 @@ class Tools:
                 "title": _results.get("title"),
                 "url": _results["url"],
                 "summary": _results.get("summary"),
+                "highlights": _results.get("highlights"),
                 "publishedDate": _results.get("publishedDate"),
             })
-
+        
         if not _output["results"]:
             raise Exception("No results fetched")
         
