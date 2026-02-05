@@ -37,6 +37,15 @@ builtin_tool_list:
         - question
         - multi_select
         - choices
+  - name: fetch_date_time
+    description: Fetches the current date and time in a specified timezone.
+    parameters:
+      type: object
+      properties:
+        timezone:
+          type: string
+          description: tzdata-based timezone format to fetch the current date and time for (e.g., "UTC", "America/New_York"). If not provided, defaults to UTC.
+      required: []
   - name: file_write
     description: Create convenient downloadable artifacts when writing code, markdown, text, or any other human readable content. When enabled, responses with code snippets and other things that demands file operations implicit or explictly will be saved as artifacts as Discord attachment.
     parameters:
