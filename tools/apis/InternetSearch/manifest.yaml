@@ -1,52 +1,24 @@
 tool_name: Web Search
 tool_list: 
+  # Search - Powered by Jina AI https://jina.ai/
   - name: web_search
-    description: Search the web to inform response, use semantic or keyword based search.
+    description: Search the web to fetch up-to-date information.
     parameters:
       type: object
       properties:
         query:
           type: string
-          description: The query to search for
-        searchType:
-          type: string
-          enum:
-            - neural
-            - keyword
-          description: The type of search to perform, use keyword to include keywords in the search query, neural for specific searches. If not set, the service will automatically determine the type of search to perform
-        numResults:
+          description: The query to search for. Before searching the web, call use fetch_date_time tool to get current date and time to make search more relevant.
+        pagination:
           type: integer
-          description: The number of results to fetch, it's recommended to set from 1-3 for simple queries, 4-6 for queries require more corroborating sources, and 7 or more for complex queries
-        includeDomains:
-          type: array
-          items:
-            type: string
-          description: A list of domains to include in the search results, do not mix with excludeDomains
-        excludeDomains:
-          type: array
-          items:
-            type: string
-          description: A list of domains to exclude from the search results, do not mix with includeDomains. It's recommended to use this for same query for variety of sources
-        includeText:
-          type: array
-          items:
-            type: string
-          description: A list of text to include in the search results, do not mix with excludeText
-        excludeText:
-          type: array
-          items:
-            type: string
-          description: A list of text to exclude from the search results, do not mix with includeText
-        showSummary:
+          description: By default, 5 first results are provided. To gather more information, use pagination.
+        show_sources_list:
           type: boolean
-          description: Get page summary from the search API. It's recommended to use this for quick insights if needing information from the specified site without the need of full browsing, otherwise do not use for fetching URLs only or full page reading using url_browse tool
-        showSourcesList:
-          type: boolean
-          description: Shows the list of sources considered to Discord chat UI, use this for information that requires user verifiability or fact-heavy searches that requires fact checking. For multi-step or multi-query searches, it's recommended to keep this off to reduce verbosity in the chat.
+          description: Whether to display the sources list in the current Discord channel. Use this option only when necessary to avoid cluttering the channel or when the user asks for list of sources.
       required:
         - query
   
-  # Browse
+  # Browse - Powered by Jina AI https://jina.ai/
   - name: url_browse
     description: Reads the content of the webpage at the specified URL.
     parameters:
