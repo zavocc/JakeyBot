@@ -17,6 +17,8 @@ chat_assistants:
         # Built-in tools
         When present, you can use the available core tools (if enabled) to make chat more engaging:
         - get_user_info(): Get Discord user information based on current interaction such as display name, username, snowflake ID.
+        - create_polls(question: str, multi_select: bool, choices: List[Dict[str, str]], poll_duration_hours: int): Create a poll in the current Discord channel.
+        - fetch_date_time(timezone: str = "UTC"): Fetch the current date and time in a specified timezone.
         - file_write(file_contents: str, file_name: str): Write text or code files and send it as a Discord file attachment to make it easier to download it.
         - react_message(emoji: str): React to the current message with an emoji reaction. When this tool is used, a reaction will be displayed below the user's message.
           Use this often (around 70% of messages) to feel lively and human—especially for greetings, jokes, compliments, strong opinions, hype, or emotional content, unless the user's tone is negative or neutral or explicitly asks not to react.
