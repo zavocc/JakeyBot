@@ -12,7 +12,7 @@ class Tools:
         self.discord_message = discord_message
         self.discord_bot = discord_bot
 
-    async def tool_web_search(self, query: str = None, searchType: str = "auto", numResults: int = 5, includeDomains: list = None, excludeDomains: list = None, includeText: list = None, excludeText: list = None, showSummary: bool = False, showSourcesList: bool = False):
+    async def tool_web_search(self, query: str, pagination: int = 1, show_sources_list: bool = False):
         if not query or not query.strip():
             raise ValueError("query parameter is required and cannot be empty")
         
@@ -25,45 +25,27 @@ class Tools:
             raise Exception("HTTP Client has not been initialized properly, please try again later.")
 
         # Bing Subscription Key
-        if not environ.get("EXA_AI_KEY"):
-            raise ValueError("EXA_AI_KEY key not set")
-        
-        _header = {
-            "accept": "application/json",
-            "content-type": "application/json",
-            "x-api-key": environ.get("EXA_AI_KEY")
-        }
+        if not environ.get("JINA_AI_KEY"):
+            raise ValueError("JINA_AI_KEY key not set")
         
         # Construct params with proper validation
         _params = {
-            "query": query.strip(),
-            "type": searchType,
-            "numResults": max(1, min(numResults, 10))  # Ensure valid range
+            "q": query.strip(),
+            "page": pagination
         }
 
-        # Add optional parameters if provided and valid
-        if includeDomains and isinstance(includeDomains, list):
-            _params["includeDomains"] = includeDomains
-        if excludeDomains and isinstance(excludeDomains, list):
-            _params["excludeDomains"] = excludeDomains
-        if includeText and isinstance(includeText, list):
-            _params["includeText"] = includeText
-        if excludeText and isinstance(excludeText, list):
-            _params["excludeText"] = excludeText
-
-        # Add contents if needed
-        _params["contents"] = {}
-        if showSummary:
-            _params["contents"]["summary"] = True
-
-        # Show highlights
-        _params["contents"]["highlights"] = True
+        # Headers
+        _headers = {
+            "Authorization": f"Bearer {environ.get('JINA_AI_KEY')}",
+            "Accept": "application/json",
+            "X-Respond-With": "no-content"
+        }
 
         # Endpoint
-        _endpoint = "https://api.exa.ai/search"
+        _endpoint = "https://s.jina.ai/"
        
         # Make a request
-        async with _session.post(_endpoint, headers=_header, json=_params) as _response:
+        async with _session.get(_endpoint, params=_params, headers=_headers) as _response:
             # Raise an exception
             try:
                 _response.raise_for_status()
@@ -71,49 +53,36 @@ class Tools:
             except aiohttp.ClientConnectionError:
                 raise Exception(f"Failed to fetch web search results with code {_response.status}, reason: {_response.reason}")
     
-            _data = await _response.json()
+            _searchResults = await _response.json()
 
-            # Check if the data is empty
-            if not _data and not _data.get("results"):
-                raise Exception("No results found")
+        # Check if the data is empty
+        if not _searchResults or not _searchResults.get("data"):
+            raise Exception("No results found from web search")
 
         # Build request
         _output = {
-            "guidelines": "You must always provide references and format links with [Page Title](Page URL). As possible, rank the most relevant and fresh sources based on dates.",
-            "formatting_rules": "Do not provide links as [Page URL](Page URL), always provide a title as this [Page Title](Page URL), if it doesn't just directly send the URL",
-            "formatting_reason": "Now the reason for this is Discord doesn't nicely format the links if you don't provide a title",
-            "showLinks": "No need to list all references, only most relevant ones",
-            "results": []
+            "guidelines": "The search results are only provided with titles and brief descriptions of the sites. If the user seeks more information or to ensure the response is factual, use url_browse tool to visit the links and extract more details.",
+            "token_use": "The following sites have token count information, when using url_browse tool, prioritize the token count that is lower to avoid exceeding limits.",
+            "url_visibility": "If show_sources_list is set to true, no need to cite sources. However, if you decide to disable it, you must show relevant links using the format [Title](URL) to ensure transparency and credibility of the information provided.",
+            "results": _searchResults["data"]
         }
-        for _results in _data["results"]:
-            # Append the data
-            _output["results"].append({
-                "title": _results.get("title"),
-                "url": _results["url"],
-                "summary": _results.get("summary"),
-                "highlights": _results.get("highlights"),
-                "publishedDate": _results.get("publishedDate"),
-            })
-        
-        if not _output["results"]:
-            raise Exception("No results fetched")
         
          # Embed that contains first 10 sources
-        if showSourcesList:
+        if show_sources_list:
             _sembed = discord.Embed(
                 title="Web Sources"
             )
 
             # Iterate description
             _desclinks = []
-            for _results in _output["results"]:
+            for _results in _searchResults["data"]:
                 if len(_desclinks) <= 10:
                     _desclinks.append(f"- [{_results.get('title', 'No Title').replace("/", " ")}]({_results['url']})")
                 else:
                     _desclinks.append("...and more results")
                     break
             _sembed.description = "\n".join(_desclinks)
-            _sembed.set_footer(text="Used search tool powered by Exa to fetch results")
+            _sembed.set_footer(text="Used search tool to fetch results")
         else:
             _sembed = None
         await self.discord_message.channel.send(f"🔍 Searched for **{query}**", embed=_sembed)
