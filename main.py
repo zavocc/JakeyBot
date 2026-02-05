@@ -1,5 +1,4 @@
 from core.startup import SubClassBotPlugServices
-from discord.ext import commands
 from inspect import cleandoc
 from os import chdir, mkdir, environ
 from pathlib import Path
@@ -68,6 +67,12 @@ class InitBot(SubClassBotPlugServices):
         except socket.error as e:
             logging.error("Failed to bind socket port: %s, reason: %s", port, str(e))
             raise e
+        
+    async def on_ready(self):
+        await self.change_presence(activity=discord.Game(f"Preparing the bot for it's first use..."))
+        #https://stackoverflow.com/a/65780398 - for multiple statuses
+        await self.change_presence(activity=discord.Game(f"@ me to get started!"))
+        logging.info("%s is ready and online!", self.user)
 
     # Shutdown the bot
     async def close(self):
@@ -86,16 +91,6 @@ class InitBot(SubClassBotPlugServices):
         await super().close()
 
 bot = InitBot(command_prefix=environ.get("BOT_PREFIX", "$"), intents = intents)
-
-###############################################
-# ON READY
-###############################################
-@bot.event
-async def on_ready():
-    await bot.change_presence(activity=discord.Game(f"Preparing the bot for it's first use..."))
-    #https://stackoverflow.com/a/65780398 - for multiple statuses
-    await bot.change_presence(activity=discord.Game(f"@ me to get started!"))
-    logging.info("%s is ready and online!", bot.user)
 
 ###############################################
 # ON USER MESSAGE
@@ -139,47 +134,5 @@ with open('commands.yaml', 'r') as file:
         except Exception as e:
             logging.error("cogs.%s failed to load, skipping... The following error of the cog: %s", command, e)
             continue
-
-# Initialize custom help
-class CustomHelp(commands.MinimalHelpCommand):
-    def __init__(self):
-        super().__init__()
-        self.no_category = "Misc"
-    
-    # Override "get_opening_note" with custom implementation
-    def get_opening_note(self):
-            """Returns help command's opening note. This is mainly useful to override for i18n purposes.
-
-            The default implementation returns ::
-
-                Use `{prefix}{command_name} [command]` for more info on a command.
-                You can also use `{prefix}{command_name} [category]` for more info on a category.
-
-            Returns
-            -------
-            :class:`str`
-                The help command opening note.
-            """
-            command_name = self.invoked_with
-            return (
-                cleandoc(f"""**{bot.user.name}** help
-
-                Welcome! here are the prefix commands that you can use!
-                
-                You can access my slash commands by just typing **/** and find the commands that is associated to me.
-                Slash commands are self documented, I will be constantly updated to update my slash command documentation
-
-                Use `{self.context.clean_prefix}{command_name} [command]` for more info on a command.
-
-                You can also use `{self.context.clean_prefix}{command_name} [category]` for more info on a category.""")
-            )
-
-    async def send_pages(self):
-        destination = self.get_destination()
-        for page in self.paginator.pages:
-            embed = discord.Embed(description=page, color=discord.Color.random())
-            await destination.send(embed=embed)
-
-bot.help_command = CustomHelp()
 
 bot.run(environ.get('TOKEN')) 
