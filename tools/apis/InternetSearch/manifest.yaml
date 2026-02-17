@@ -1,22 +1,39 @@
 tool_name: Web Search
 tool_list: 
-  # Search - Powered by Jina AI https://jina.ai/
+  # Search - Powered by Tavily https://tavily.com/
   - name: web_search
-    description: Search the web to fetch up-to-date information.
+    description: Search the web to fetch up-to-date information. Before searching the web, call use fetch_date_time tool to get current date and time to make search more relevant.
     parameters:
       type: object
       properties:
         query:
           type: string
-          description: The query to search for. Before searching the web, call use fetch_date_time tool to get current date and time to make search more relevant.
-        pagination:
+          description: The query to search for.
+        search_depth:
+          type: string
+          enum:
+            - "basic"
+            - "advanced"
+          description: Use advanced search to retrieve tailored and comprehesive results, for most queries use basic search, and advanced when the user asks for more depth.
+        max_results:
           type: integer
-          description: By default, 5 first results are provided. To gather more information, use pagination.
+          description: The maximum number of search results to return. Default is 5, and maximum is 20.
+        include_domains:
+          - type: array
+            items:
+              type: string
+            description: A list of domains to include in the search results. Maximum up-to 300 domains, and should not be used together with exclude_domains to avoid conflicts.
+        exclude_domains:
+          - type: array
+            items:
+              type: string
+            description: A list of domains to exclude from the search results. Maximum up-to 300 domains, and should not be used together with include_domains to avoid conflicts.
         show_sources_list:
           type: boolean
           description: Whether to display the sources list in the current Discord channel. Use this option only when necessary to avoid cluttering the channel or when the user asks for list of sources.
       required:
         - query
+        - search_depth
   
   # Browse - Powered by Jina AI https://jina.ai/
   - name: url_browse

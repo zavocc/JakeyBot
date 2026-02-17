@@ -10,40 +10,47 @@ class Tools:
         self.discord_message = discord_message
         self.discord_bot = discord_bot
 
-    async def tool_web_search(self, query: str, pagination: int = 1, show_sources_list: bool = False):
+    async def tool_web_search(self, query: str, search_depth: str = "basic", max_results: int = 5, include_domains: list = None, exclude_domains: list = None, show_sources_list: bool = False):
         if not query or not query.strip():
             raise ValueError("query parameter is required and cannot be empty")
         
         if hasattr(self.discord_bot, "aiohttp_instance"):
             logging.info("Using existing aiohttp client session for post requests")
-            _session = self.discord_bot.aiohttp_instance
+            _session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
         else:
             # Throw exception since we don't have a session
             logging.warning("No aiohttp_instance found in discord bot subclass, aborting")
             raise Exception("HTTP Client has not been initialized properly, please try again later.")
 
         # Bing Subscription Key
-        if not environ.get("JINA_AI_KEY"):
-            raise ValueError("JINA_AI_KEY key not set")
+        if not environ.get("TAVILY_SEARCH_API_KEY"):
+            raise ValueError("TAVILY_SEARCH_API_KEY key not set, sign up at https://tavily.com/ and get an API key from the dashboard")
         
         # Construct params with proper validation
+        if max_results < 0:
+            max_results = 5
+        elif max_results > 20:
+            max_results = 20
+
         _params = {
-            "q": query.strip(),
-            "page": pagination
+            "query": query.strip(),
+            "search_depth": search_depth,
+            "max_results": max_results,
+            "include_domains": include_domains,
+            "exclude_domains": exclude_domains
         }
 
         # Headers
         _headers = {
-            "Authorization": f"Bearer {environ.get('JINA_AI_KEY')}",
-            "Accept": "application/json",
-            "X-Respond-With": "no-content"
+            "Authorization": f"Bearer {environ.get('TAVILY_SEARCH_API_KEY')}",
+            "Content-Type": "application/json",
         }
 
         # Endpoint
-        _endpoint = "https://s.jina.ai/"
+        _endpoint = "https://api.tavily.com/search"
        
         # Make a request
-        async with _session.get(_endpoint, params=_params, headers=_headers) as _response:
+        async with _session.post(_endpoint, json=_params, headers=_headers) as _response:
             # Raise an exception
             try:
                 _response.raise_for_status()
@@ -53,16 +60,16 @@ class Tools:
     
             _searchResults = await _response.json()
 
-        # Check if the data is empty
-        if not _searchResults or not _searchResults.get("data"):
+        # Check if the results is empty
+        if not _searchResults or not _searchResults.get("results"):
             raise Exception("No results found from web search")
 
         # Build request
         _output = {
             "guidelines": "The search results are only provided with titles and brief descriptions of the sites. If the user seeks more information or to ensure the response is factual, use url_browse tool to visit the links and extract more details.",
-            "token_use": "The following sites have token count information, when using url_browse tool, prioritize the token count that is lower to avoid exceeding limits.",
             "url_visibility": "If show_sources_list is set to true, no need to cite sources. However, if you decide to disable it, you must show relevant links using the format [Title](URL) to ensure transparency and credibility of the information provided.",
-            "results": _searchResults["data"]
+            "scores": "Utilize the score field to rank the relevance of the search results. A higher score indicates a more relevant result to the query. Use this score to prioritize which sources to reference in your response.",
+            "results": _searchResults["results"]
         }
         
          # Embed that contains first 10 sources
@@ -73,9 +80,9 @@ class Tools:
 
             # Iterate description
             _desclinks = []
-            for _results in _searchResults["data"]:
+            for _results in _searchResults["results"]:
                 if len(_desclinks) <= 10:
-                    _desclinks.append(f"- [{_results.get('title', 'No Title').replace("/", " ")}]({_results['url']})")
+                    _desclinks.append(f"- [{_results.get('title', 'url').replace('/', ' ')}]({_results['url']})")
                 else:
                     _desclinks.append("...and more results")
                     break
