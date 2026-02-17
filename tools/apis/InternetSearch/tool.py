@@ -38,9 +38,14 @@ class Tools:
             "query": query.strip(),
             "search_depth": search_depth,
             "max_results": max_results,
-            "include_domains": include_domains,
-            "exclude_domains": exclude_domains
         }
+
+        # Add include_domains if provided
+        if include_domains and isinstance(include_domains, list):
+            _params["include_domains"] = include_domains
+        # Add exclude_domains if provided
+        if exclude_domains and isinstance(exclude_domains, list):
+            _params["exclude_domains"] = exclude_domains
 
         # Headers
         _headers = {
