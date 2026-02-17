@@ -19,15 +19,15 @@ tool_list:
           type: integer
           description: The maximum number of search results to return. Default is 5, and maximum is 20.
         include_domains:
-          - type: array
-            items:
-              type: string
-            description: A list of domains to include in the search results. Maximum up-to 300 domains, and should not be used together with exclude_domains to avoid conflicts.
+          type: array
+          items:
+            type: string
+          description: A list of domains to include in the search results. Maximum up-to 300 domains, and should not be used together with exclude_domains to avoid conflicts.
         exclude_domains:
-          - type: array
-            items:
-              type: string
-            description: A list of domains to exclude from the search results. Maximum up-to 300 domains, and should not be used together with include_domains to avoid conflicts.
+          type: array
+          items:
+            type: string
+          description: A list of domains to exclude from the search results. Maximum up-to 300 domains, and should not be used together with include_domains to avoid conflicts.
         show_sources_list:
           type: boolean
           description: Whether to display the sources list in the current Discord channel. Use this option only when necessary to avoid cluttering the channel or when the user asks for list of sources.
