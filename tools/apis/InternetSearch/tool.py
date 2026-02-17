@@ -87,7 +87,7 @@ class Tools:
                     _desclinks.append("...and more results")
                     break
             _sembed.description = "\n".join(_desclinks)
-            _sembed.set_footer(text="Used search tool to fetch results")
+            _sembed.set_footer(text=f"Used search tool to fetch results • Using {search_depth} search depth.")
         else:
             _sembed = None
         await self.discord_message.channel.send(f"🔍 Searched for **{query}**", embed=_sembed)
