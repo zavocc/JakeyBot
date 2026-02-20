@@ -1,5 +1,5 @@
 from core.exceptions import CustomErrorMessage
-from models.chat_utils import upload_files_blob
+from plugins.pluginsloader import load_plugin
 from os import environ
 from tools.utils import fetch_tool_schema, return_builtin_tool_object, return_api_tools_object
 from pathlib import Path
@@ -48,7 +48,8 @@ class LiteLLMUtils:
                         await filepath.write(_chunk)
 
             # Upload the file to blob storage
-            _blob_url = await upload_files_blob(file_path=_filename, file_name=Path(_filename).name, blob_service_client=self.discord_bot.blob_service_client)
+            _storage_plugin = load_plugin('storage')
+            _blob_url = await _storage_plugin.upload_file(file_path=_filename, file_name=Path(_filename).name, client=self.discord_bot.blob_service_client)
         except Exception as e:
             # Raise exception
             raise e
