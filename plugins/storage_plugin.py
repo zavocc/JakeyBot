@@ -19,6 +19,11 @@ class StoragePluginLoader:
         
         _storage_name = self._loaded_config["storage"]["name"].lower()
         self._imported_module = importlib.import_module(f"plugins.storage.{_storage_name}")
+
+        # Check if imported module have StoragePlugin class
+        if not hasattr(self._imported_module, "StoragePlugin"):
+            raise AttributeError(f"The storage plugin module 'plugins.storage.{_storage_name}' does not have a 'StoragePlugin' class.")
+
         self._storagepluginobject: Union[Storage, StorageOneOff] = self._imported_module.StoragePlugin()
 
         if isinstance(self._storagepluginobject, Storage):
