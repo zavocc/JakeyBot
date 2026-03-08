@@ -1,5 +1,10 @@
 from core.exceptions import CustomErrorMessage
+from os import environ
+from pathlib import Path
 from tools.utils import fetch_tool_schema, return_builtin_tool_object, return_api_tools_object
+from uuid import uuid4
+import aiofiles
+import aiohttp
 import discord as typehint_Discord
 import json
 import logging
@@ -8,6 +13,7 @@ class LiteLLMUtils:
     # Handle multimodal
     # Remove one per image restrictions so we'll just
     async def upload_files(self, attachment: typehint_Discord.Attachment, extra_metadata: str = None):
+        # Handle multimodal
         # Check if the attachment is an image
         if not attachment.content_type.startswith("image"):
             raise CustomErrorMessage("⚠️ This model only supports image attachments")
@@ -15,11 +21,44 @@ class LiteLLMUtils:
         if not hasattr(self, "uploaded_files"):
             self.uploaded_files = []
 
+        # Test if we have "self.discord_bot.aiohttp_instance"
+        if hasattr(self.discord_bot, "aiohttp_instance"):
+            logging.info("Found aiohttp_instance in discord bot, using that for downloading the file")
+            _aiohttp_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
+        else:
+            # Raise exception since we don't have a session
+            logging.warning("No aiohttp_instance found in discord bot, aborting")
+            raise CustomErrorMessage("⚠️ An error has occurred while processing the file, please try again later.")
+        
+        # Check if we have 'plugins_storage' from discord_bot
+        if not hasattr(self.discord_bot, "plugins_storage"):
+            logging.warning("No plugins_storage found in discord bot, aborting file upload")
+            raise CustomErrorMessage("⚠️ An error has occurred while processing the file, please try again later.")
+
+        # Grab filename
+        _filename = f"{environ.get('TEMP_DIR')}/JAKEY.{uuid4()}.{attachment.filename}"
+        try:
+            async with _aiohttp_session.get(attachment.url, allow_redirects=True) as file_dl:
+                # write to file with random number ID
+                async with aiofiles.open(_filename, "wb") as filepath:
+                    async for _chunk in file_dl.content.iter_chunked(8192):
+                        await filepath.write(_chunk)
+
+            # Upload the file to blob storage
+            _blob_url = await self.discord_bot.plugins_storage.upload_files(file_path=_filename, file_name=Path(_filename).name)
+        except Exception as e:
+            # Raise exception
+            raise e
+        finally:
+            # Remove the file if it exists ensuring no data persists even on failure
+            if Path(_filename).exists():
+                await aiofiles.os.remove(_filename)
+
         self.uploaded_files.append(
             {
                 "type": "image_url",
                 "image_url": {
-                    "url": attachment.url
+                    "url": _blob_url
                 }
             }
         )
