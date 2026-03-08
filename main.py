@@ -51,13 +51,16 @@ class InitBot(SubClassBotPlugServices):
             mkdir(environ.get("TEMP_DIR"))
 
         # Initialize SDK clients
-        self.loop.create_task(self.start_services())
+        self.start_services()
         logging.info("Services initialized successfully")
+
+        # Initialize Plugins
+        self.start_plugins()
+        logging.info("Plugins initialized successfully")
 
         # HTTP Client
         self.aiohttp_instance = aiohttp.ClientSession(loop=self.loop)
         logging.info("HTTP client session initialized successfully")
-
 
     def _lock_socket_instance(self, port):
         try:
@@ -76,6 +79,10 @@ class InitBot(SubClassBotPlugServices):
 
     # Shutdown the bot
     async def close(self):
+        # Close Plugins
+        await self.stop_plugins()
+        logging.info("Plugins stopped successfully")
+
         # Close services
         await self.stop_services()
         logging.info("Services stopped successfully")
