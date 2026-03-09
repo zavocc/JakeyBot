@@ -9,9 +9,9 @@ RUN useradd -u 6969 --home-dir /jakeybot jakey
 # Copy the source code
 COPY . .
 
-# Install C compiler
+# Install C compiler and Nano text editor
 RUN apt-get update
-RUN apt-get install g++ --no-install-recommends --yes
+RUN apt-get install g++ nano --no-install-recommends --yes
 
 # Correct ownership
 RUN chown -R 6969:6969 /jakeybot
@@ -23,4 +23,4 @@ USER jakey
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Start the bot
-CMD ["python", "main.py"]
+ENTRYPOINT ["/bin/bash", "/jakeybot/run.sh"]
