@@ -19,8 +19,11 @@ RUN chown -R 6969:6969 /jakeybot
 # Change the user
 USER jakey
 
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install plugin dependencies and optionally plugin dependencies
+RUN pip install --no-cache-dir -r requirements.txt && \
+    if [ -f plugins/requirements.txt ]; then \
+      pip install --no-cache-dir -r plugins/requirements.txt; \
+    fi
 
 # Start the bot
 ENTRYPOINT ["/bin/bash", "/jakeybot/run.sh"]
