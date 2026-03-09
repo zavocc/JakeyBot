@@ -1,5 +1,5 @@
 from os import environ
-from typing import Union
+from typing import Any, Union
 import aiohttp
 import fal_client
 
@@ -7,13 +7,13 @@ import fal_client
 async def run_image(
     model_name: str,
     aiohttp_session: aiohttp.ClientSession = None,
-    send_url_only: bool = False,
+    send_bytes: bool = True,
     **additional_client_args
-) -> Union[list[bytes], list[str]]:
+) -> dict[str, list[Any]]:
         # Check if we have aiohttp session supplied or use the default one
-        if not send_url_only:
+        if send_bytes:
             if not aiohttp_session:
-                raise ValueError("aiohttp_session must be provided if send_url_only is False")
+                raise ValueError("aiohttp_session must be provided if send_bytes is True")
             _aiohttp_session = aiohttp_session
     
         # check if FAL_KEY is set
@@ -37,25 +37,32 @@ async def run_image(
         # Wait for the result
         _result = await _status.get()
 
-        if send_url_only:
-            return [_image["url"] for _image in _result["images"]]
-        else:
+        # Extract the image URLs.
+        _images_urls = [_image["url"] for _image in _result["images"]]
+        _response_payload: dict[str, list[Any]] = {
+            "images_urls": _images_urls,
+            "images_in_bytes": []
+        }
+
+        if send_bytes:
             # Image in bytes
             _images_in_bytes = []
 
             # Download images
-            for _images in _result["images"]:
-                async with _aiohttp_session.get(_images["url"]) as response:
+            for _image_url in _images_urls:
+                async with _aiohttp_session.get(_image_url) as response:
                     if response.status == 200:
                         _image_data = await response.read()
                     
                         # Send the image
                         _images_in_bytes.append(_image_data)
                     else:
-                        raise ValueError(f"Failed to download image from {_images}, status code: {response.status}")
+                        raise ValueError(f"Failed to download image from {_image_url}, status code: {response.status}")
 
-            # Cleanup
-            return _images_in_bytes
+            _response_payload["images_in_bytes"] = _images_in_bytes
+
+        # Cleanup
+        return _response_payload
 
 async def run_audio(
     model_name: str,
