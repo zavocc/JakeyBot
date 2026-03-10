@@ -1,7 +1,8 @@
+from models.tasks.text.openai import completion as VQAModelCompletion
 from os import environ
 import aiohttp
 import discord
-import io
+import inspect
 import logging
 
 # Function implementations
@@ -233,7 +234,8 @@ class Tools:
         # Requires OpenRouter client session to be specified from startup.py by instantating OpenAI AsyncClient with BaseURL to OpenRouter
         _response = await VQAModelCompletion(
             prompt=_prompt,
-            model_name="google/gemini-2.5-flash-lite",
+            model_name="google/gemini-3.1-flash-lite-preview",
+            system_instruction=_sysprompt,
             return_text=True,
             client_session=self.discord_bot.openai_client_openrouter
         )
