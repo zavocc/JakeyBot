@@ -2,9 +2,18 @@ from .validation import ModelProps
 from core.database import History
 from core.exceptions import CustomErrorMessage
 import aiofiles
+import aiohttp
 import logging
 import yaml
 # Methods for generative_chat.py
+
+# Download File Attachments method
+async def download_attachment_to_file(attachment_url: str, file_path: str, aiohttp_session: aiohttp.ClientSession) -> None:
+    async with aiohttp_session.get(attachment_url, allow_redirects=True) as file_dl:
+        async with aiofiles.open(file_path, "wb") as filepath:
+            async for _chunk in file_dl.content.iter_chunked(8192):
+                await filepath.write(_chunk)
+    logging.info("File downloaded successfully to %s", file_path)
 
 # Fetch and validate models
 async def fetch_model(model_alias: str) -> ModelProps:
