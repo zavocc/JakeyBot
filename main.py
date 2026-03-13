@@ -18,8 +18,8 @@ chdir(Path(__file__).parent.resolve())
 dotenv.load_dotenv("dev.env")
 
 # Logging
-logging.basicConfig(format='%(levelname)s %(asctime)s [%(pathname)s:%(lineno)d - %(module)s.%(funcName)s()]: %(message)s', 
-                    datefmt='%m/%d/%Y %I:%M:%S %p', 
+logging.basicConfig(format='%(levelname)s %(asctime)s [%(pathname)s:%(lineno)d - %(module)s.%(funcName)s()]: %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p',
                     level=logging.INFO)
 
 # Check if TOKEN is set
@@ -70,11 +70,11 @@ class InitBot(SubClassBotPlugServices):
         except socket.error as e:
             logging.error("Failed to bind socket port: %s, reason: %s", port, str(e))
             raise e
-        
+
     async def on_ready(self):
-        await self.change_presence(activity=discord.Game(f"Preparing the bot for it's first use..."))
+        await self.change_presence(activity=discord.Game("Preparing the bot for it's first use..."))
         #https://stackoverflow.com/a/65780398 - for multiple statuses
-        await self.change_presence(activity=discord.Game(f"@ me to get started!"))
+        await self.change_presence(activity=discord.Game("@ me to get started!"))
         logging.info("%s is ready and online!", self.user)
 
     # Shutdown the bot
@@ -91,7 +91,7 @@ class InitBot(SubClassBotPlugServices):
         if Path(environ.get("TEMP_DIR", "temp")).exists():
             for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
                 await aiofiles.os.remove(file)
-            
+
         # Close socket
         self._socket.close()
 
@@ -109,7 +109,7 @@ async def on_message(message: discord.Message):
 
     if message.author == bot.user:
        return
-    
+
     # Check if the bot was only mentioned without any content or image attachments
     # On generative ask command, the same logic is used but it will just invoke return and the bot will respond with this
     if bot.user.mentioned_in(message) \
@@ -120,15 +120,15 @@ async def on_message(message: discord.Message):
                     I am an AI bot and I can also make your server fun and entertaining! 🎉
 
                     You just pinged me, but what can I do for you? 🤔
-                    
-                    - You can ask me anything by typing **/ask** and get started or by mentioning me again but with a message
-                    - You can access most of my useful commands with **/**slash commands or use `{bot.command_prefix}help` to see the list prefixed commands I have.
+
+                    - You can ask me anything by mentioning me with a message
+                    - You can access most of my useful commands with **/**slash commands or ask me what I can do to pull my internal knowledge base.
                     - You can access my apps by **tapping and holding any message** or **clicking the three-dots menu** and click **Apps** to see the list of apps I have
-                    
+
                     You can ask me questions, such as:
-                    - **@{bot.user.name}** How many R's in the word strawberry?  
-                    - **/ask** `prompt:`Can you tell me a joke?  
-                    - Hey **@{bot.user.name}** can you give me quotes for today?  
+                    - **@{bot.user.name}** How many R's in the word strawberry?
+                    - Hey **@{bot.user.name}** can you give me quotes for today?
+                    - **@{bot.user.name}** list me your slash commands
 
                     If you have any questions, you can visit my [documentation or contact me here](https://zavocc.github.io)"""))
 
@@ -142,4 +142,4 @@ with open('commands.yaml', 'r') as file:
             logging.error("cogs.%s failed to load, skipping... The following error of the cog: %s", command, e)
             continue
 
-bot.run(environ.get('TOKEN')) 
+bot.run(environ.get('TOKEN'))
