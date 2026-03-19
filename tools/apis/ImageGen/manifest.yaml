@@ -1,34 +1,5 @@
 tool_name: Image Generation and Editing
 tool_list:
-  - name: imagen_image_gen
-    description: Generate high quality image using Imagen 4 Ultra, A diffusion based model. This provides faster way of photorealistic and surrealistic image generation.
-    parameters:
-      type: object
-      properties:
-        prompt:
-          type: string
-          description: The prompt to generate the image.
-        aspect_ratio:
-          type: string
-          enum:
-            - "1:1"
-            - "9:16"
-            - "16:9"
-            - "4:3"
-            - "3:4"
-          description: The aspect ratio of the generated image.
-        resolution:
-          type: string
-          enum:
-            - 1K
-            - 2K
-          description: Using native resolution which quality to output for the generated image.
-        negative_prompt:
-          type: string
-          description: The negative prompt to avoid certain elements in the generated image. This is only supported for Imagen 4.
-      required:
-        - prompt
-
   - name: gpt_image_gen
     description: Generate high fidelity, diverse, and knowledge-driven images using GPT-4o. Use this to provide more style variety, stronger text inclusion, and stronger instruction following. Unlike DALL-E 3, this is the latest autoregressive image generation model.
     parameters:
@@ -70,9 +41,9 @@ tool_list:
       required:
         - prompt
 
-  # Image editing tool powered by Nano Banana and Seedream 4
-  - name: nb_sd_image_editor
-    description: Edit images with strong image referencing powered by Gemini 2.5 Flash (Nano Banana) and Seedream 4.
+  # Image Generation and Editing tool powered by Nano Banana 2
+  - name: nano_banana_ii_gen
+    description: Create or edit images with 4K support using Nano Banana 2 powered by Gemini 3.1 Flash Image. Offers superior quality plus speed than 4o, stronger world knowledge such as infographics, factuality, and consistency. Including prompt adherence. It is the strongest image model to date.  
     parameters:
       type: object
       properties:
@@ -83,13 +54,29 @@ tool_list:
           type: array
           items:
             type: string
-          description: The URL of the image to edit. It's recommended to keep the image in order from attached images for consistency.
-        model:
+          description: The URL of the image to be used as reference for editing or reference. It's recommended to put the images in order same as from user prompt's ordering.
+        aspect_ratio:
           type: string
           enum:
-            - gemini-25-flash-image/edit
-            - bytedance/seedream/v4/edit
-          description: The model to use for image editing. It's recommended to use Gemini 2.5 Flash for precise and consistently locked edits like photo restoration, while Seedream 4 for quality 4K edits, upscales, and remasters but may result in drift.
+            - "21:9"
+            - "16:9"
+            - "3:2"
+            - "4:3"
+            - "5:4"
+            - "1:1"
+            - "4:5"
+            - "3:4"
+            - "2:3"
+            - "9:16"
+        resolution:
+          type: string
+          enum:
+            - 1K
+            - 2K
+            - 4K
+          description: Native resolution, 2K being the default. 4K provides highest quality possible image but requires bit more time to generate.
+        enable_web_search:
+          type: boolean
+          description: Connects to Google Search to retrieve latest and up-to-date information to inform image generation process.
       required:
         - prompt
-        - image_url

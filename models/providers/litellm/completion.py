@@ -1,17 +1,17 @@
 from .utils import LiteLLMUtils
 from core.database import History as typehint_History
-from core.exceptions import CustomErrorMessage
+
 from models.validation import ModelParamsOpenAIDefaults as typehint_ModelParams
 from models.validation import ModelProps as typehint_ModelProps
-from os import environ
+
 import discord as typehint_Discord
 import litellm
 import logging
 import models.core
 
 class ChatSession(LiteLLMUtils):
-    def __init__(self, 
-                 user_id: int, 
+    def __init__(self,
+                 user_id: int,
                  model_props: typehint_ModelProps,
                  discord_bot: typehint_Discord.Bot = None,
                  discord_message: typehint_Discord.Message = None,
@@ -48,11 +48,11 @@ class ChatSession(LiteLLMUtils):
 
         # Database
         self.db_conn: typehint_History = db_conn or None
-        
+
     # Chat
     async def send_message(self, prompt: str, chat_history: list = None, system_instructions: str = None):
         # Load chat history and system instructions
-        if chat_history is None or type(chat_history) != list:
+        if chat_history is None or type(chat_history) is not list:
             chat_history = []
             if self.model_props.enable_system_instruction and system_instructions:
                 chat_history.append({
@@ -71,7 +71,7 @@ class ChatSession(LiteLLMUtils):
         if hasattr(self, "uploaded_files") and self.uploaded_files:
             # Add the attachment part to the prompt
             _prep_prompt["content"].extend(self.uploaded_files)
-        
+
         # Append the actual prompt
         _prep_prompt["content"].append({
             "type": "text",
@@ -89,13 +89,13 @@ class ChatSession(LiteLLMUtils):
         # Get response
         if not self.model_props.model_id:
             raise ValueError("Model is required, chose nothing")
-        
+
         # Additional model params
         # Log
         if self.model_props.additional_params:
             logging.info("Merging additional_params into model_params: %s", self.model_props.additional_params)
 
-        # Reverse merge 
+        # Reverse merge
         _merged_params = self.model_props.additional_params.copy() if self.model_props.additional_params else {}
 
         # Remove model and messages if they exist in additional_params to avoid conflicts
@@ -114,7 +114,7 @@ class ChatSession(LiteLLMUtils):
         # Update with model defaults
         _merged_params.update(self.model_params)
         logging.info("Final merged model parameters: %s", _merged_params)
-        
+
         # Drop unnecessary params
         litellm.drop_params = True
         _response = await litellm.acompletion(
@@ -131,6 +131,11 @@ class ChatSession(LiteLLMUtils):
                 chat_history.append(_response.choices[0].message.model_dump(exclude_defaults=True, exclude_none=True, exclude_unset=True))
 
                 # Output text response if needed
+                if _response.choices[0].message.get("reasoning_content"):
+                    _reasoning_content = "\n".join(line.lstrip("> ").rstrip() for line in _response.choices[0].message.reasoning_content.splitlines()).strip()
+                    if _reasoning_content:
+                        await models.core.send_ai_response(self.discord_message, prompt, "\n".join(f"> {line}" for line in _reasoning_content.splitlines()) , self.discord_message.channel.send, strip=False)
+
                 if _response.choices[0].message.content:
                     await models.core.send_ai_response(self.discord_message, prompt, _response.choices[0].message.content, self.discord_message.channel.send)
 
@@ -152,6 +157,10 @@ class ChatSession(LiteLLMUtils):
 
             # Check if we need to run tools again, this block will stop the loop and send the response
             if not _response.choices[0].message.tool_calls:
+                if _response.choices[0].message.get("reasoning_content"):
+                    _reasoning_content = "\n".join(line.lstrip("> ").rstrip() for line in _response.choices[0].message.reasoning_content.splitlines()).strip()
+                    if _reasoning_content:
+                        await models.core.send_ai_response(self.discord_message, prompt, "\n".join(f"> {line}" for line in _reasoning_content.splitlines()) , self.discord_message.channel.send, strip=False)
                 if _response.choices[0].message.content:
                     await models.core.send_ai_response(self.discord_message, prompt, _response.choices[0].message.content, self.discord_message.channel.send)
                 break

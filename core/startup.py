@@ -1,3 +1,6 @@
+# plugins
+from plugins.storage_plugin import StoragePluginLoader
+
 from discord.ext import bridge
 from google import genai
 from os import environ
@@ -10,7 +13,22 @@ class SubClassBotPlugServices(bridge.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    async def start_services(self):
+        # Load storage plugin
+        self.plugins_storage = StoragePluginLoader()
+
+    def start_plugins(self):
+        # Start storage plugin client if it has start method
+        if hasattr(self.plugins_storage, 'start_storage_client'): 
+            self.plugins_storage.start_storage_client()
+        logging.info("Storage plugin client started successfully")
+
+    async def stop_plugins(self):
+        # Close storage plugin client if it has close method
+        if hasattr(self.plugins_storage, 'close_storage_client'):
+            await self.plugins_storage.close_storage_client()
+        logging.info("Storage plugin client closed successfully")
+
+    def start_services(self):
         # Gemini API Client
         self.gemini_api_client = genai.Client(api_key=environ.get("GEMINI_API_KEY"))
         logging.info("Gemini API client initialized successfully")
@@ -26,14 +44,6 @@ class SubClassBotPlugServices(bridge.Bot):
             base_url="https://openrouter.ai/api/v1"
         )
         logging.info("OpenAI client for OpenRouter initialized successfully")
-
-        # OpenAI client for Groq based models
-        # NOTE: Use litellm SDK instead of OpenAI SDK for Groq models
-        #self.openai_client_groq = openai.AsyncClient(
-        #    api_key=environ.get("GROQ_API_KEY"),
-        #    base_url="https://api.groq.com/openai/v1"
-        #)
-        #logging.info("OpenAI client for Groq initialized successfully")
 
     async def stop_services(self):
         # Close aiohttp client sessions
