@@ -1,5 +1,5 @@
 tool_name: Web Search
-tool_list: 
+tool_list:
   # Search - Powered by Tavily https://tavily.com/
   - name: web_search
     description: Search the web to fetch up-to-date information. Before searching the web, call use fetch_date_time tool to get current date and time to make search more relevant.
@@ -34,19 +34,21 @@ tool_list:
       required:
         - query
         - search_depth
-  
-  # Browse - Powered by Jina AI https://jina.ai/
+
+  # Browse - Powered by Tavily https://tavily.com/
   - name: url_browse
     description: Reads the content of the webpage at the specified URL.
     parameters:
       type: object
       properties:
-        url:
-          type: string
-          description: The URL of the webpage to read
+        urls:
+          type: array
+          items:
+            type: string
+          description: The URLs of the webpage to read
       required:
-        - url
-    
+        - urls
+
   # YouTube Search
   - name: youtube_video_search
     description: Search for YouTube videos.
