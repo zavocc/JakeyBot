@@ -11,7 +11,7 @@ class Tools:
         self.discord_message = discord_message
         self.discord_bot = discord_bot
 
-    async def tool_web_search(self, query: str, search_depth: str = "basic", max_results: int = 5, include_domains: list = None, exclude_domains: list = None, show_sources_list: bool = False):
+    async def tool_web_search(self, query: str, search_depth: str = "basic", max_results: int = 5, show_images = False, include_domains: list = None, exclude_domains: list = None, show_sources_list: bool = False):
         if not query or not query.strip():
             raise ValueError("query parameter is required and cannot be empty")
 
@@ -37,6 +37,8 @@ class Tools:
             "query": query.strip(),
             "search_depth": search_depth,
             "max_results": max_results,
+            "include_images": show_images,
+            "include_image_descriptions": show_images
         }
 
         # Add include_domains if provided
@@ -77,6 +79,11 @@ class Tools:
             "scores": "Utilize the score field to rank the relevance of the search results. A higher score indicates a more relevant result to the query. Use this score to prioritize which sources to reference in your response.",
             "results": _searchResults["results"]
         }
+
+        if show_images:
+            _output["url_browse_rules"] = "Do not call url_browse tool if the tasks involves image search.",
+            _output["image_guidelines"] = "When showing images, format as [description](url) and without the exclamation mark as Discord does not do inline images natively within text. IDEALLY and PRIMARILY you can alternatively use discord_embed_tool to show inline images using ONLY title and image_url only for cleaner presentation, unless otherwise asked."
+            _output["images"] = _searchResults.get("images", None)
 
          # Embed that contains first 10 sources
         if show_sources_list:
@@ -123,7 +130,7 @@ class Tools:
         # Params
         _params = {
             "urls": urls,
-            "include_images": True
+            "include_images": False
         }
 
         # Headers
@@ -146,7 +153,6 @@ class Tools:
 
         # Return the data
         return {
-            "image_guidelines": "When showing images, always format as [description](url). Discord does not do inline images natively.",
             "results": _data.get("results")
         }
 

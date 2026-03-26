@@ -18,6 +18,9 @@ tool_list:
         max_results:
           type: integer
           description: The maximum number of search results to return. Default is 5, and maximum is 20.
+        show_images:
+          type: boolean
+          description: Whether to include image URLs in the search results alongside text results with the search query. By default, this is disabled.
         include_domains:
           type: array
           items:
