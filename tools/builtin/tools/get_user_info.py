@@ -8,6 +8,7 @@ class BuiltInTool(BuiltInToolDiscordStateBase):
         return {
             "username": _user.name,
             "display_name": _user.display_name,
-            "snowflake": _user.id,
-            "created_at": _user.created_at.isoformat()
+            # we stringify the snowflake to avoid issues passing the tool result which may cause integer overflow
+            "snowflake": str(_user.id),
+            "created_at": _user.created_at.isoformat(),
         }

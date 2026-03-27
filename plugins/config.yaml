@@ -1,0 +1,4 @@
+# Used in /models/providers/litellm/utils.py and /models/providers/openai/utils.py for file attachments
+storage:
+  name: azure
+  enabled: true # If disabled, it will use Discord CDN but files would expire

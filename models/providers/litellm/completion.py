@@ -1,17 +1,17 @@
 from .utils import LiteLLMUtils
 from core.database import History as typehint_History
-from core.exceptions import CustomErrorMessage
+
 from models.validation import ModelParamsOpenAIDefaults as typehint_ModelParams
 from models.validation import ModelProps as typehint_ModelProps
-from os import environ
+
 import discord as typehint_Discord
 import litellm
 import logging
 import models.core
 
 class ChatSession(LiteLLMUtils):
-    def __init__(self, 
-                 user_id: int, 
+    def __init__(self,
+                 user_id: int,
                  model_props: typehint_ModelProps,
                  discord_bot: typehint_Discord.Bot = None,
                  discord_message: typehint_Discord.Message = None,
@@ -48,11 +48,11 @@ class ChatSession(LiteLLMUtils):
 
         # Database
         self.db_conn: typehint_History = db_conn or None
-        
+
     # Chat
     async def send_message(self, prompt: str, chat_history: list = None, system_instructions: str = None):
         # Load chat history and system instructions
-        if chat_history is None or type(chat_history) != list:
+        if chat_history is None or type(chat_history) is not list:
             chat_history = []
             if self.model_props.enable_system_instruction and system_instructions:
                 chat_history.append({

@@ -1,5 +1,4 @@
 from tools.builtin._base import BuiltInToolDiscordStateBase
-from typing import Literal
 import discord
 
 # Built-in tools regardless of tool selection unless Disabled

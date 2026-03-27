@@ -1,5 +1,4 @@
 from models.tasks.media.fal_ai import run_audio
-from os import environ
 import aiohttp
 import datetime
 import discord
