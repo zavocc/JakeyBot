@@ -5,7 +5,6 @@ from models.tasks.media.fal_ai import run_image
 from discord.ext import commands
 from discord import Member, DiscordException
 from os import environ
-import asyncio
 import base64
 import discord
 import importlib
