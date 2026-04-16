@@ -1,5 +1,4 @@
 from core.exceptions import CustomErrorMessage
-from models.chat_utils import download_attachment_to_file
 from os import environ
 from pathlib import Path
 from tools.utils import fetch_tool_schema, return_api_tools_object, return_builtin_tool_object
@@ -7,6 +6,7 @@ from uuid import uuid4
 import discord as typehint_Discord
 import aiofiles
 import aiohttp
+import asyncio
 import logging
 
 class GoogleUtils:
@@ -24,34 +24,28 @@ class GoogleUtils:
             logging.warning("No aiohttp_instance found in discord bot, aborting")
             raise CustomErrorMessage("⚠️ An error has occurred while processing the file, please try again later.")
 
-        # Check if we have 'plugins_storage' from discord_bot
-        if not hasattr(self.discord_bot, "plugins_storage"):
-            logging.warning("No plugins_storage found in discord bot, aborting file upload")
-            raise CustomErrorMessage("⚠️ An error has occurred while processing the file, please try again later.")
-
         # Grab filename
         _filename = f"{environ.get('TEMP_DIR')}/JAKEY.{uuid4()}.{attachment.filename}"
          # Sometimes mimetype has text/plain; charset=utf-8, we need to grab the first part
         _mimetype = attachment.content_type.split(";")[0]
         try:
-            # Check if enabled is set in config
-            if self.discord_bot.plugins_storage.enabled:
-                # Download file using shared chunked helper.
-                await download_attachment_to_file(
-                    attachment_url=attachment.url,
-                    file_path=_filename,
-                    aiohttp_session=_aiohttp_session,
-                )
+            async with _aiohttp_session.get(attachment.url, allow_redirects=True) as file_dl:
+                # write to file with random number ID
+                async with aiofiles.open(_filename, "wb") as filepath:
+                    async for _chunk in file_dl.content.iter_chunked(8192):
+                        await filepath.write(_chunk)
 
-                # Upload the file to blob storage
-                _blob_url = await self.discord_bot.plugins_storage.upload_files(file_path=_filename, file_name=Path(_filename).name)
+            # Upload the file
+            _filedata = await self.google_genai_client.aio.files.upload(
+                file=_filename, 
+                config={
+                    "mime_type": _mimetype
+                }
+            )
 
-                # Log
-                logging.info("The file %s has been uploaded to storage successfully, direct link URL: %s", attachment.filename, _blob_url)
-            else:
-                # If not enabled, use the attachment URL directly but with a warning about TTL
-                _blob_url = attachment.url
-                logging.warning("Storage plugin is disabled, attached with filename %s using Discord CDN URL directly which may expire: %s", attachment.filename, _blob_url)
+            while _filedata.state == "PROCESSING":
+                _filedata = await self.google_genai_client.aio.files.get(name=_filedata.name)
+                await asyncio.sleep(2.5)
         except Exception as e:
             # Raise exception
             raise e
@@ -60,11 +54,16 @@ class GoogleUtils:
             if Path(_filename).exists():
                 await aiofiles.os.remove(_filename)
 
+            # Close the temporary aiohttp session if we created one
+            if not hasattr(self.discord_bot, "aiohttp_instance"):
+                logging.info("Closing temporary aiohttp client session on models.providers.google.utils.GoogleUtils.upload_files")
+                await _aiohttp_session.close()
+
         # Add to the uploaded files
         self.uploaded_files.append(
             {
                 "file_data": {
-                    "file_uri": _blob_url,
+                    "file_uri": _filedata.uri,
                     "mime_type": _mimetype
                 }
             }
