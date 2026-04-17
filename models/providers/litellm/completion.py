@@ -90,38 +90,29 @@ class ChatSession(LiteLLMUtils):
         if not self.model_props.model_id:
             raise ValueError("Model is required, chose nothing")
         
-        # Additional model params
-        # Log
-        if self.model_props.additional_params:
-            logging.info("Merging additional_params into model_params: %s", self.model_props.additional_params)
-
-        # Reverse merge 
-        _merged_params = self.model_props.additional_params.copy() if self.model_props.additional_params else {}
-
-        # Remove model and messages if they exist in additional_params to avoid conflicts
-        logging.info("Removing conflicting keys from additional_params if present")
-        # Remove core conflicting keys
-        _merged_params.pop("model", None)
-        _merged_params.pop("messages", None)
-        _merged_params.pop("tools", None)
-
-        # Remove others found in model_params
-        for _keys in self.model_params.keys():
-            if _keys in _merged_params:
-                logging.info("Removing key from additional_params to avoid conflict: %s", _keys)
-                _merged_params.pop(_keys, None)
-
-        # Update with model defaults
-        _merged_params.update(self.model_params)
+        # Merge additional model params with defaults.
+        # Order matters: additional_params is loaded first, model_params overrides conflicts.
+        _additional_params = self.model_props.additional_params or {}
+        if _additional_params:
+            logging.info("Merging additional_params into model_params: %s", _additional_params)
+        _merged_params = {
+            **_additional_params,
+            **self.model_params,
+        }
         logging.info("Final merged model parameters: %s", _merged_params)
+
+        # Keep request-owned fields authoritative.
+        _base_request_kwargs = {
+            **_merged_params,
+            "model": self.model_props.model_id,
+        }
         
         # Drop unnecessary params
         litellm.drop_params = True
-        _response = await litellm.acompletion(
-            model=self.model_props.model_id,
-            messages=chat_history,
-            **_merged_params
-        )
+        _response = await litellm.acompletion(**{
+            **_base_request_kwargs,
+            "messages": chat_history,
+        })
 
         # Check for tool calls
         while True:
@@ -144,11 +135,10 @@ class ChatSession(LiteLLMUtils):
                 chat_history.extend(_tool_parts)
 
                 # Run the response the second time
-                _response = await litellm.acompletion(
-                    model=self.model_props.model_id,
-                    messages=chat_history,
-                    **_merged_params
-                )
+                _response = await litellm.acompletion(**{
+                    **_base_request_kwargs,
+                    "messages": chat_history,
+                })
 
             # Check if we need to run tools again, this block will stop the loop and send the response
             if not _response.choices[0].message.tool_calls:

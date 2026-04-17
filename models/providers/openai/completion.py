@@ -98,42 +98,35 @@ class ChatSession(OpenAIUtils):
         if not self.model_props.model_id:
             raise ValueError("Model is required, chose nothing")
         
-        # Additional model params
-        # Log
-        if self.model_props.additional_params:
-            logging.info("Merging additional_params into model_params: %s", self.model_props.additional_params)
+        # Merge additional model params with defaults.
+        # Order matters: additional_params is loaded first, model_params overrides conflicts.
+        _additional_params = (self.model_props.additional_params or {}).copy()
+        _effective_model_params = self.model_params.copy()
+        if _additional_params:
+            logging.info("Merging additional_params into model_params: %s", _additional_params)
 
-        # Reverse merge 
-        _merged_params = self.model_props.additional_params.copy() if self.model_props.additional_params else {}
-
-        # Remove model and messages if they exist in additional_params to avoid conflicts
-        logging.info("Removing conflicting keys from additional_params if present")
-        # Remove core conflicting keys
-        _merged_params.pop("model", None)
-        _merged_params.pop("messages", None)
-        _merged_params.pop("tools", None)
-
-        # Check if reasoning_effort exists as max_tokens cannot coexist and must be max_completion_tokens instead
-        if "reasoning_effort" in _merged_params:
+        # reasoning_effort cannot coexist with max_tokens; map defaults to max_completion_tokens.
+        if "reasoning_effort" in _additional_params:
             logging.info("reasoning_effort found in additional_params, converting from max_tokens to max_completion_tokens")
-            _merged_params["max_completion_tokens"] = self.model_params.pop("max_tokens", 16000)
+            _additional_params["max_completion_tokens"] = _effective_model_params.pop("max_tokens", 16000)
 
-        # Remove others found in model_params
-        for _keys in self.model_params.keys():
-            if _keys in _merged_params:
-                logging.info("Removing key from additional_params to avoid conflict: %s", _keys)
-                _merged_params.pop(_keys, None)
-
-        # Update with model defaults
-        _merged_params.update(self.model_params)
+        _merged_params = {
+            **_additional_params,
+            **_effective_model_params,
+        }
         logging.info("Final merged model parameters: %s", _merged_params)
+
+        # Keep request-owned fields authoritative.
+        _base_request_kwargs = {
+            **_merged_params,
+            "model": self.model_props.model_id,
+        }
         
         # Generate responses
-        _response = await self.openai_client.chat.completions.create(
-            model=self.model_props.model_id,
-            messages=chat_history,
-            **_merged_params
-        )
+        _response = await self.openai_client.chat.completions.create(**{
+            **_base_request_kwargs,
+            "messages": chat_history,
+        })
 
         # Check for tool calls
         while True:
@@ -156,11 +149,10 @@ class ChatSession(OpenAIUtils):
                 chat_history.extend(_tool_parts)
 
                 # Run the response the second time
-                _response = await self.openai_client.chat.completions.create(
-                    model=self.model_props.model_id,
-                    messages=chat_history,
-                    **_merged_params
-                )
+                _response = await self.openai_client.chat.completions.create(**{
+                    **_base_request_kwargs,
+                    "messages": chat_history,
+                })
 
             # Check if we need to run tools again, this block will stop the loop and send the response
             if not _response.choices[0].message.tool_calls:
