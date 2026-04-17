@@ -1,4 +1,4 @@
-from core.exceptions import *
+from core.exceptions import CustomErrorMessage
 from core.database import History as typehint_History
 from discord import Message
 from models.core import set_assistant_type
@@ -49,11 +49,11 @@ class BaseChat():
             _chat_history = await load_history(user_id=prompt.author.id, thread_name=_thread_name, db_conn=self.DBConn)
 
             # Check for /chat:ephemeral only if enable_threads is true
-            if not "/chat:ephemeral" in prompt.content:
+            if "/chat:ephemeral" not in prompt.content:
                 _append_history = True
             else:
-                await prompt.channel.send("🔒 This conversation is not saved and Jakey won't remember this")
-                _append_history = False  
+                await prompt.channel.send("> -# This conversation is not saved and Jakey won't remember this")
+                _append_history = False
         else:
             await prompt.channel.send("> -# ⚠️ This model doesn't support threads and therefore this interaction won't remember the previous and won't be saved.")
             _chat_history = None
@@ -70,7 +70,6 @@ class BaseChat():
             if prompt.attachments:
                 if _model_props.enable_files:
                     _uploadedFilesCount = 0
-                    _processFileInterstitial = await prompt.channel.send("⬆️ Please wait...")
                     for _attachment in prompt.attachments:
                         # Check for alt text
                         _extraMetadata = inspect.cleandoc(
@@ -83,10 +82,9 @@ class BaseChat():
                             </meta>
                             """)
                         await _chat_session.upload_files(attachment=_attachment, extra_metadata=_extraMetadata)
-                        
+
                         # Update status
                         _uploadedFilesCount += 1
-                        await _processFileInterstitial.edit(f"✅ Added: **{_uploadedFilesCount}** file(s)...")
                 else:
                     raise CustomErrorMessage("⚠️ This model doesn't support file attachments, please choose another model to continue")
 
@@ -130,7 +128,7 @@ class BaseChat():
                     _command = message.content.split(" ")[0].replace(self.bot.command_prefix, "")
                     if self.bot.get_command(_command):
                         return
-                    
+
             # User ID
             _userID = message.author.id
 
@@ -138,13 +136,13 @@ class BaseChat():
             if _userID in self.pending_ids:
                 await message.reply("⚠️ I'm still processing your previous request, please wait for a moment...")
                 return
-            
+
             # Check if the bot was only mentioned without any content or image attachments
             # If none, then on main.py event, proceed sending the introductory message
             if not message.attachments \
                 and not re.sub(f"<@{self.bot.user.id}>", '', message.content).strip():
                 return
-            
+
             # Remove the mention from the prompt
             message.content = re.sub(f"<@{self.bot.user.id}>", '', message.content).strip()
 
@@ -154,13 +152,13 @@ class BaseChat():
                 # Skip if the mentioned user is the bot itself
                 if _mentioned_user.id == self.bot.user.id:
                     continue
-                
+
                 # Get member object for guild-specific display name, fallback to user if not in guild
                 if message.guild:
                     _member = message.guild.get_member(_mentioned_user.id)
                 else:
                     _member = None
-                
+
                 _user_metadata = inspect.cleandoc(
                     f"""<additional_user_metadata_pinged>
                     Username: @{_mentioned_user.name}
@@ -172,7 +170,7 @@ class BaseChat():
                     </additional_user_metadata_pinged>"""
                 )
                 _mentioned_users_metadata.append(_user_metadata)
-            
+
             # Append mentioned users metadata to the message content
             if _mentioned_users_metadata:
                 message.content = message.content + "\n\n" + "\n".join(_mentioned_users_metadata)
@@ -183,20 +181,20 @@ class BaseChat():
                 _context_message = await message.channel.fetch_message(message.reference.message_id)
                 message.content = inspect.cleandoc(
                     f"""<reply_metadata>
-                    
+
                     # Replying to referenced message excerpt from {_context_message.author.display_name} (username: @{_context_message.author.name}):
                     <|begin_msg_contexts|diff>
                     {_context_message.content}
                     <|end_msg_contexts|diff>
-                    
+
                     <constraints>Do not echo this metadata, only use for retrieval purposes</constraints>
                     </reply_metadata>
                     {message.content}"""
                 )
-                await message.channel.send(f"✅ Referenced message: {_context_message.jump_url}")
+                await message.channel.send(f"> -# Referenced message: {_context_message.jump_url}")
 
 
-            # For now the entire function is under try 
+            # For now the entire function is under try
             # Maybe this can be separated into another function
             try:
                 # Add the user to the pending list
@@ -232,4 +230,3 @@ class BaseChat():
                 # Remove the user from the pending list
                 if _userID in self.pending_ids:
                     self.pending_ids.remove(_userID)
-

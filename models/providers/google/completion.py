@@ -99,38 +99,29 @@ class ChatSession(GoogleUtils):
         if not self.model_props.model_id:
             raise ValueError("Model is required, chose nothing")
         
-        # Additional model params
-        # Log
-        if self.model_props.additional_params:
-            logging.info("Merging additional_params into model_params: %s", self.model_props.additional_params)
+        # Merge additional model params with defaults.
+        # Order matters: additional_params is loaded first, model_params overrides conflicts.
+        _additional_params = self.model_props.additional_params or {}
+        if _additional_params:
+            logging.info("Merging additional_params into model_params: %s", _additional_params)
+        _merged_params = {
+            **_additional_params,
+            **self.model_params,
+        }
+        logging.info("Final merged model parameters: %s", _merged_params)
 
-        # Reverse merge 
-        _merged_params = self.model_props.additional_params.copy() if self.model_props.additional_params else {}
-
-        # Remove model and messages if they exist in additional_params to avoid conflicts
-        logging.info("Removing conflicting keys from additional_params if present")
-        # Remove core conflicting keys
-        _merged_params.pop("system_instruction", None)
-        _merged_params.pop("tools", None)
-
-        # Remove others found in model_params
-        for _keys in self.model_params.keys():
-            if _keys in _merged_params:
-                logging.info("Removing key from additional_params to avoid conflict: %s", _keys)
-                _merged_params.pop(_keys, None)
-
-        # Update with model defaults
-        _merged_params.update(self.model_params)
+        # Keep system instruction authoritative at request time.
+        _request_config = {
+            **_merged_params,
+            "system_instruction": system_instructions or None,
+        }
         
         # Generate
         try:
             _response: google_genai_types.GenerateContentResponse = await self.google_genai_client.aio.models.generate_content(
                 model=self.model_props.model_id,
                 contents=chat_history,
-                config={
-                    "system_instruction": system_instructions or None,
-                    **_merged_params
-                }
+                config=_request_config
             )
         except google_genai_errors.ClientError as e:
             # Attempt to clear all file URLs since they may be expired
@@ -190,10 +181,7 @@ class ChatSession(GoogleUtils):
                     _response: google_genai_types.GenerateContentResponse = await self.google_genai_client.aio.models.generate_content(
                         model=self.model_props.model_id,
                         contents=chat_history,
-                        config={
-                            **self.model_params,
-                            "system_instruction": system_instructions or None
-                        }
+                        config=_request_config
                     )
 
             # Check if we need to run tools again, this block will stop the loop and response should have been sent

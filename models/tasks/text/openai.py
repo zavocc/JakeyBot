@@ -44,6 +44,10 @@ async def completion(prompt: Union[str, list],
         **_oparams
     )
 
+    # If client session was not provided, we should close the default client session to prevent resource leaks
+    if not client_session:
+        await _client.close()
+
     if return_text:
         return _response.choices[0].message.content
     else:

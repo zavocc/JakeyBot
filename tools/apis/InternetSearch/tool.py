@@ -1,7 +1,8 @@
+from models.tasks.text.openai import completion as VQAModelCompletion
 from os import environ
 import aiohttp
 import discord
-import io
+import inspect
 import logging
 
 # Function implementations
@@ -10,10 +11,10 @@ class Tools:
         self.discord_message = discord_message
         self.discord_bot = discord_bot
 
-    async def tool_web_search(self, query: str, search_depth: str = "basic", max_results: int = 5, include_domains: list = None, exclude_domains: list = None, show_sources_list: bool = False):
+    async def tool_web_search(self, query: str, search_depth: str = "basic", max_results: int = 5, show_images = False, include_domains: list = None, exclude_domains: list = None, show_sources_list: bool = False):
         if not query or not query.strip():
             raise ValueError("query parameter is required and cannot be empty")
-        
+
         if hasattr(self.discord_bot, "aiohttp_instance"):
             logging.info("Using existing aiohttp client session for post requests")
             _session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
@@ -25,7 +26,7 @@ class Tools:
         # Bing Subscription Key
         if not environ.get("TAVILY_SEARCH_API_KEY"):
             raise ValueError("TAVILY_SEARCH_API_KEY key not set, sign up at https://tavily.com/ and get an API key from the dashboard")
-        
+
         # Construct params with proper validation
         if max_results < 0:
             max_results = 5
@@ -36,6 +37,8 @@ class Tools:
             "query": query.strip(),
             "search_depth": search_depth,
             "max_results": max_results,
+            "include_images": show_images,
+            "include_image_descriptions": show_images
         }
 
         # Add include_domains if provided
@@ -53,7 +56,7 @@ class Tools:
 
         # Endpoint
         _endpoint = "https://api.tavily.com/search"
-       
+
         # Make a request
         async with _session.post(_endpoint, json=_params, headers=_headers) as _response:
             # Raise an exception
@@ -62,7 +65,7 @@ class Tools:
                 # Hide sensitive data by abstracting it
             except aiohttp.ClientConnectionError:
                 raise Exception(f"Failed to fetch web search results with code {_response.status}, reason: {_response.reason}")
-    
+
             _searchResults = await _response.json()
 
         # Check if the results is empty
@@ -76,7 +79,12 @@ class Tools:
             "scores": "Utilize the score field to rank the relevance of the search results. A higher score indicates a more relevant result to the query. Use this score to prioritize which sources to reference in your response.",
             "results": _searchResults["results"]
         }
-        
+
+        if show_images:
+            _output["url_browse_rules"] = "Do not call url_browse tool if the tasks involves image search.",
+            _output["image_guidelines"] = "When showing images, format as [description](url) and without the exclamation mark as Discord does not do inline images natively within text. IDEALLY and PRIMARILY you can alternatively use discord_embed_tool to show inline images using ONLY title and image_url only for cleaner presentation, unless otherwise asked."
+            _output["images"] = _searchResults.get("images", None)
+
          # Embed that contains first 10 sources
         if show_sources_list:
             _sembed = discord.Embed(
@@ -96,33 +104,56 @@ class Tools:
         else:
             _sembed = None
         await self.discord_message.channel.send(f"🔍 Searched for **{query}**", embed=_sembed)
-        
+
         return _output
 
-    async def tool_url_browse(self, url: str):
-        # Powered by Jina AI
-        
+    async def tool_url_browse(self, urls: list[str]):
+        # Powered by Tavily
         if hasattr(self.discord_bot, "aiohttp_instance"):
             logging.info("Using existing aiohttp client session for GET requests using Jina AI")
-            _session = self.discord_bot.aiohttp_instance
+            _session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
         else:
             # Throw exception since we don't have a session
             logging.warning("No aiohttp_instance found in discord bot subclass, aborting")
             raise Exception("HTTP Client has not been initialized properly, please try again later.")
 
-        _endpoint = f"https://r.jina.ai/{url}"
+        # Upto 10 URLs only
+        if len(urls) > 10:
+            raise ValueError("Only up to 10 URLs are allowed")
 
-        await self.discord_message.channel.send(f"🖱️ Browsing: **`{url}`**")
+        # Check if TAVILY_SEARCH_API_KEY is set
+        if not environ.get("TAVILY_SEARCH_API_KEY"):
+            raise ValueError("TAVILY_SEARCH_API_KEY key not set, sign up at https://tavily.com/ and get an API key from the dashboard")
 
-        async with _session.get(_endpoint) as _response:
+        _endpoint = "https://api.tavily.com/extract"
+
+        # Params
+        _params = {
+            "urls": urls,
+            "include_images": False
+        }
+
+        # Headers
+        _headers = {
+            "Authorization": f"Bearer {environ.get('TAVILY_SEARCH_API_KEY')}",
+            "Content-Type": "application/json",
+        }
+
+        for _url in urls:
+            await self.discord_message.channel.send(f"🖱️ Reading: **`{_url}`**")
+
+        async with _session.post(_endpoint, json=_params, headers=_headers) as _response:
             if _response.status != 200:
-                raise Exception(f"Failed to fetch URL content with code {_response.status}, reason: {_response.reason}")
-            _data = await _response.text()
+                raise Exception(f"Failed to fetch provided URLs content with code {_response.status}, reason: {_response.reason}")
+            _data = await _response.json()
+
+        # Check if results are not empty
+        if not _data.get("results", []):
+            raise Exception("No results found for the provided URLs")
 
         # Return the data
         return {
-            "url": url,
-            "content": _data
+            "results": _data.get("results")
         }
 
 
@@ -163,11 +194,11 @@ class Tools:
             # If the Content-Type is not application/json
             if "application/json" not in _response.headers["Content-Type"]:
                 raise Exception("The response from the YouTube API is not in JSON format")
-            
+
             # If the response is not successful
             if _response.status != 200:
                 raise Exception(f"Failed to fetch YouTube search results with code {_response.status}, reason: {_response.reason}")
-            
+
         # Iterate over items list
         _videos = [
             {
@@ -202,7 +233,7 @@ class Tools:
     # YouTube video watcher
     async def tool_youtube_video_watcher(self, video_id: str, question: str):
         # System instruction
-        _sysprompt = inspect.cleandoc("""Your name is Video QA tool.                              
+        _sysprompt = inspect.cleandoc("""Your name is Video QA tool.
         Your goal is to summarize and gain insights from the given video based on the user's question.
         ## Guidelines:
         - Provide timestamps to ensure accuracy and trustworthiness of the information in each summary.
@@ -233,7 +264,8 @@ class Tools:
         # Requires OpenRouter client session to be specified from startup.py by instantating OpenAI AsyncClient with BaseURL to OpenRouter
         _response = await VQAModelCompletion(
             prompt=_prompt,
-            model_name="google/gemini-2.5-flash-lite",
+            model_name="google/gemini-3.1-flash-lite-preview",
+            system_instruction=_sysprompt,
             return_text=True,
             client_session=self.discord_bot.openai_client_openrouter
         )

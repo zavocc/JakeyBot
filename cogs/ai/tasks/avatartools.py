@@ -5,7 +5,6 @@ from models.tasks.media.fal_ai import run_image
 from discord.ext import commands
 from discord import Member, DiscordException
 from os import environ
-import asyncio
 import base64
 import discord
 import importlib
@@ -197,13 +196,15 @@ class AvatarTools(commands.Cog):
         _params = {
             "prompt": _crafted_prompt,
             "image_urls": [_avatar_url],
+            "limit_generations": True,
+            "num_images": 1
         }
 
         # Run the image generation
-        _imageURL = await run_image(
-            model_name="gemini-25-flash-image/edit",
+        _image_payload = await run_image(
+            model_name="nano-banana-2/edit",
             aiohttp_session=self.bot.aiohttp_instance,
-            send_url_only=True,
+            send_bytes=False,
             **_params
         )
 
@@ -213,8 +214,8 @@ class AvatarTools(commands.Cog):
             description=f"Here's a remixed avatar of {_user.name}",
             color=discord.Color.random()
         )
-        _embed.set_image(url=_imageURL[0])
-        _embed.set_footer(text=f"Powered by Nano Banana")
+        _embed.set_image(url=_image_payload["images_urls"][0])
+        _embed.set_footer(text=f"Powered by Nano Banana 2")
         await ctx.respond(embed=_embed, ephemeral=True)
 
     @remix.error

@@ -1,12 +1,17 @@
 from core.exceptions import CustomErrorMessage
+from models.chat_utils import download_attachment_to_file
+from os import environ
+from pathlib import Path
 from tools.utils import fetch_tool_schema, return_builtin_tool_object, return_api_tools_object
+from uuid import uuid4
+import aiofiles
+import aiohttp
 import discord as typehint_Discord
 import json
 import logging
 
 class OpenAIUtils:
     # Handle multimodal
-    # Remove one per image restrictions so we'll just
     async def upload_files(self, attachment: typehint_Discord.Attachment, extra_metadata: str = None):
         # Check if the attachment is an image
         if not attachment.content_type.startswith("image"):
@@ -15,11 +20,54 @@ class OpenAIUtils:
         if not hasattr(self, "uploaded_files"):
             self.uploaded_files = []
 
+        # Test if we have "self.discord_bot.aiohttp_instance"
+        if hasattr(self.discord_bot, "aiohttp_instance"):
+            logging.info("Found aiohttp_instance in discord bot, using that for downloading the file")
+            _aiohttp_session: aiohttp.ClientSession = self.discord_bot.aiohttp_instance
+        else:
+            # Raise exception since we don't have a session
+            logging.warning("No aiohttp_instance found in discord bot, aborting")
+            raise CustomErrorMessage("⚠️ An error has occurred while processing the file, please try again later.")
+        
+        # Check if we have 'plugins_storage' from discord_bot
+        if not hasattr(self.discord_bot, "plugins_storage"):
+            logging.warning("No plugins_storage found in discord bot, aborting file upload")
+            raise CustomErrorMessage("⚠️ An error has occurred while processing the file, please try again later.")
+
+        # Grab filename
+        _filename = f"{environ.get('TEMP_DIR')}/JAKEY.{uuid4()}.{attachment.filename}"
+        try:
+            # Check if enabled is set in config
+            if self.discord_bot.plugins_storage.enabled:
+                # Download file using shared chunked helper.
+                await download_attachment_to_file(
+                    attachment_url=attachment.url,
+                    file_path=_filename,
+                    aiohttp_session=_aiohttp_session,
+                )
+
+                # Upload the file to blob storage
+                _blob_url = await self.discord_bot.plugins_storage.upload_files(file_path=_filename, file_name=Path(_filename).name)
+
+                # Log
+                logging.info("The file %s has been uploaded to storage successfully, direct link URL: %s", attachment.filename, _blob_url)
+            else:
+                # If not enabled, use the attachment URL directly but with a warning about TTL
+                _blob_url = attachment.url
+                logging.warning("Storage plugin is disabled, attached with filename %s using Discord CDN URL directly which may expire: %s", attachment.filename, _blob_url)
+        except Exception as e:
+            # Raise exception
+            raise e
+        finally:
+            # Remove the file if it exists ensuring no data persists even on failure
+            if Path(_filename).exists():
+                await aiofiles.os.remove(_filename)
+
         self.uploaded_files.append(
             {
                 "type": "image_url",
                 "image_url": {
-                    "url": attachment.url
+                    "url": _blob_url
                 }
             }
         )

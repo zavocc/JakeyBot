@@ -37,6 +37,71 @@ builtin_tool_list:
         - question
         - multi_select
         - choices
+  - name: discord_embed_tool
+    description: Creates a Discord embed message in-line for visual appeal and better formatting and presentation.
+    parameters:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Title of the embed
+        description:
+          type: string
+        color:
+          type: string
+          description: Hex color code for the embed
+        fields:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: The name of the field.
+              value:
+                type: string
+                description: The value of the field.
+              inline:
+                type: boolean
+                description: Whether the field should be displayed inline.
+            required:
+              - name
+              - value
+              - inline
+          description: A list of fields to include in the embed (up to 25 fields).
+        footer:
+          type: object
+          properties:
+            text:
+              type: string
+              description: The text to display in the footer of the embed.
+            icon_url:
+              type: string
+              description: The URL of the icon to display in the footer of the embed.
+          required:
+            - text
+        author:
+          type: object
+          properties:
+            name:
+              type: string
+              description: The name of the author to display in the embed.
+            url:
+              type: string
+              description: The URL of the author to display in the embed.
+            icon_url:
+              type: string
+              description: The URL of the icon to display for the author in the embed.
+          required:
+            - name
+        thumbnail_url:
+          type: string
+          description: The URL of the thumbnail image to display in the embed.
+        image_url:
+          type: string
+          description: The URL of the image to display in the embed.
+      required:
+        - title
   - name: fetch_date_time
     description: Fetches the current date and time in a specified timezone.
     parameters:

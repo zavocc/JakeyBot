@@ -41,9 +41,7 @@ class GeminiSafetySetting(BaseModel):
 class ModelParamsGeminiDefaults(BaseModel):
     candidate_count: int = Field(default=1)
     max_output_tokens: int = Field(default=8192)
-    temperature: float = Field(default=0.7)
-    top_p: float = Field(default=0.95)
-    top_k: int = Field(default=40)
+    temperature: float = Field(default=1)
     safety_settings: List[GeminiSafetySetting] = Field(
         default=[
             GeminiSafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_MEDIUM_AND_ABOVE"),
