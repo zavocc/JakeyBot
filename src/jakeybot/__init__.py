@@ -1,3 +1,1 @@
-from .bot import main
-
-main()
+# __init__.py
