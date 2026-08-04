@@ -1,0 +1,17 @@
+[project]
+name = "jakeybot"
+version = "2.0.0"
+description = "Run LLMs on your Discord!"
+readme = "README.md"
+authors = [
+    { name = "zavocc", email = "buffer.0verfl0w1030@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = []
+
+[project.scripts]
+jakeybot = "jakeybot:main"
+
+[build-system]
+requires = ["uv_build>=0.12.1,<0.13.0"]
+build-backend = "uv_build"
