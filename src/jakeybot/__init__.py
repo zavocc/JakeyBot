@@ -1,2 +1,3 @@
-def main() -> None:
-    print("Hello from jakeybot!")
+from .bot import main
+
+main()
