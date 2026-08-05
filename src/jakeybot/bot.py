@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 bot = discord.Bot()
+BOTNAME = "jakeybot"
 
 @bot.event
 async def on_ready():
@@ -14,6 +15,9 @@ async def on_ready():
 async def hello(ctx: discord.ApplicationContext):
     await ctx.respond("Hey!")
 
-def main() -> None:
-    print(f"Token: {os.getenv('DISCORD_TOKEN')}")
+def main():
+    # Traverse through cogs and load them
+    for cog in os.listdir(f"src/{BOTNAME}/cogs"):
+        if cog.endswith(".py"):
+            bot.load_extension(f"jakeybot.cogs.{cog[:-3]}")
     bot.run(os.getenv('DISCORD_TOKEN')) # run the bot with the token
