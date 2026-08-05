@@ -3,13 +3,11 @@ import os
 import discord
 from dotenv import load_dotenv
 
-load_dotenv()
-bot = discord.Bot()
-BOTNAME = "jakeybot"
+from .subclass import SCJakeyBot
 
-@bot.event
-async def on_ready():
-    print(f"{bot.user} is ready and online!")
+load_dotenv()
+bot = SCJakeyBot()
+BOTNAME = "jakeybot"
 
 @bot.slash_command(name="hello", description="Say hello to the bot")
 async def hello(ctx: discord.ApplicationContext):
