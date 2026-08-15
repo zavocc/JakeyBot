@@ -25,3 +25,8 @@ build-backend = "uv_build"
 dev = [
     "ruff>=0.16.1",
 ]
+
+[tool.basedpyright]
+typeCheckingMode = "recommended"
+reportUntypedFunctionDecorator = false
+reportUnknownMemberType = false

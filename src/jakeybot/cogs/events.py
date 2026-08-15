@@ -1,10 +1,12 @@
 import discord
 from discord.ext import commands
 
+from jakeybot import BotClient
+
 
 class EventListeners(commands.Cog):
-    def __init__(self, bot):
-        self.bot: discord.Bot = bot
+    def __init__(self, bot: BotClient): # pyright: ignore[reportMissingSuperCall]
+        self.bot: BotClient = bot
 
     # on_message
     @commands.Cog.listener()
@@ -13,7 +15,7 @@ class EventListeners(commands.Cog):
         if message.author == self.bot.user:
             return
 
-        await message.channel.send(f"{message.author.mention} said: {message.content}")
+        _ = await message.channel.send(f"{message.author.mention} said: {message.content}")
 
-def setup(bot: discord.Bot):
+def setup(bot: BotClient):
     bot.add_cog(EventListeners(bot))

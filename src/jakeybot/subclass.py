@@ -1,3 +1,5 @@
+from typing import override
+
 import aiohttp
 import discord
 import google.genai
@@ -5,22 +7,21 @@ import openai
 
 
 class SCJakeyBot(discord.Bot):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     # Run services
     async def service_register(self) -> None:
-        self.csession_aiohttp = aiohttp.ClientSession(loop=self.loop)
-        self.csession_google = google.genai.Client()
-        self.csession_openai = openai.Client()
+        self.csession_aiohttp: aiohttp.ClientSession = aiohttp.ClientSession(loop=self.loop)
+        self.csession_google: google.genai.Client = google.genai.Client()
+        self.csession_openai: openai.Client = openai.Client()
 
     async def cleanup_services(self) -> None:
         await self.csession_aiohttp.close()
 
-    async def start(self, *args, **kwargs) -> None:
+    @override
+    async def start(self, token: str, *, reconnect: bool = True) -> None:
         await self.service_register()
-        return await super().start(*args, **kwargs)
+        return await super().start(token, reconnect=reconnect)
 
+    @override
     async def close(self) -> None:
         try:
             await self.cleanup_services()
